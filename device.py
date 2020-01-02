@@ -2,8 +2,10 @@
 
 import torch
 
+
 def get_cpu_device():
     return torch.device("cuda")
+
 
 def get_device():
     if torch.cuda.is_available():
