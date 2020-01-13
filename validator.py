@@ -2,8 +2,9 @@ import copy
 import torch
 import torch.nn.functional as F
 
-import gradient as gd
 from .device import get_device
+from .gradient import get_gradient as _get_gradient
+from .hessian_vector_product import hessian_vector_product as _hessian_vector_product
 
 
 class validator:
@@ -50,9 +51,25 @@ class validator:
         def after_batch_callback(model, batch_loss):
             nonlocal gradient
             if gradient is None:
-                gradient = gd.get_gradient(model, batch_loss)
+                gradient = _get_gradient(model, batch_loss)
             else:
-                gradient += gd.get_gradient(model, batch_loss)
+                gradient += _get_gradient(model, batch_loss)
 
         self.validate(64, after_batch_callback)
         return gradient / len(self.validation_dataset)
+
+    def hessian_vector_product(self, v, damping=0):
+        res = None
+
+        def after_batch_callback(model, batch_loss):
+            nonlocal res
+            if res is None:
+                res = _hessian_vector_product(model, batch_loss, v)
+            else:
+                res += _hessian_vector_product(model, batch_loss, v)
+
+        self.validate(64, after_batch_callback)
+        res /= len(self.validation_dataset)
+        if damping != 0:
+            res += damping * v
+        return res
