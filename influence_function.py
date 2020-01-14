@@ -2,10 +2,10 @@
 
 import torch
 
-from hessian_vector_product import hessian_vector_product
-from conjugate_gradient import conjugate_gradient_general
-from device import get_device
-from gradient import get_gradient
+from .hessian_vector_product import hessian_vector_product
+from .conjugate_gradient import conjugate_gradient_general
+from .device import get_device
+from .gradient import get_gradient
 
 
 def get_s_test(model, loss_fun, test_instance, training_data_loader):

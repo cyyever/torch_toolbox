@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import torch
-from device import get_device
+from .device import get_device
 
 
 def steepest_descent(A, b, max_iteration=None, epsilon=0.0001):
