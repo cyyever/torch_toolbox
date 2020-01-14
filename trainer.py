@@ -56,8 +56,10 @@ class trainer:
                                "reduction") and loss_fun.reduction == "mean":
                         batch_loss *= len(outputs)
                     training_loss += batch_loss
-            training_loss /= sum([len(training_dataset)
-                                  for training_dataset in self.training_datasets])
+                if hasattr(
+                        loss_fun,
+                        "reduction") and loss_fun.reduction == "mean":
+                    training_loss /= len(training_data_loader.dataset)
             print(
                 "trainer:{}, epoch: {}, training loss: {}".format(
                     self.name, epoch, training_loss
