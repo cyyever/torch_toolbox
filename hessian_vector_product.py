@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import torch.autograd as autograd
-from device import get_device
+from .device import get_device
 from .util import parameters_to_vector
 
 
