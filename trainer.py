@@ -70,9 +70,13 @@ class trainer:
                     self.name, epoch, training_loss
                 )
             )
-            if self.min_training_loss is None or training_loss < self.min_training_loss:
-                self.min_training_loss = training_loss
+            if (
+                self.min_training_loss is None
+                or training_loss.data.item() < self.min_training_loss
+            ):
+                self.min_training_loss = training_loss.data.item()
                 self.min_training_loss_model = copy.deepcopy(self.model)
+                self.min_training_loss_model.to(get_cpu_device())
 
             if after_training_callback:
                 after_training_callback(epoch, self.model)
@@ -86,7 +90,7 @@ class trainer:
                 model = self.min_training_loss_model
             else:
                 raise ValueError("no min model to save")
-
+        model.to(get_cpu_device())
         torch.save(model, os.path.join(save_dir, "model.pt"))
 
     def save_dataset(self, save_dir):
@@ -96,6 +100,13 @@ class trainer:
             pickle.dumps(self.training_datasets)
         )
 
-    def parameters(self):
-        self.model.to(get_cpu_device())
-        return self.model.parameters()
+    def parameters(self, use_min_model=False):
+        model = self.model
+        if use_min_model:
+            if self.min_training_loss_model:
+                model = self.min_training_loss_model
+            else:
+                raise ValueError("no min model to use")
+
+        model.to(get_cpu_device())
+        return model.parameters()
