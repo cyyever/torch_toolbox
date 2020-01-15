@@ -40,7 +40,7 @@ class validator:
                     batch_loss *= len(outputs)
                     batch_loss /= len(self.validation_dataset)
                 if after_batch_callback:
-                    after_batch_callback(self.model, batch_loss),
+                    after_batch_callback(self.model, batch_loss)
                 validation_loss += batch_loss
                 correct = torch.eq(
                     torch.max(F.softmax(outputs, dim=1), dim=1)[1], targets
