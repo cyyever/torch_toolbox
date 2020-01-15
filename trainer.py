@@ -52,13 +52,16 @@ class trainer:
                     loss.backward()
                     optimizer.step()
                     batch_loss = loss.data.item()
-                    if hasattr(loss_fun,
-                               "reduction") and loss_fun.reduction == "mean":
+                    if hasattr(loss_fun, "reduction") and (
+                        loss_fun.reduction == "mean"
+                        or loss_fun.reduction == "elementwise_mean"
+                    ):
                         batch_loss *= len(outputs)
                     training_loss += batch_loss
-                if hasattr(
-                        loss_fun,
-                        "reduction") and loss_fun.reduction == "mean":
+                if hasattr(loss_fun, "reduction") and (
+                    loss_fun.reduction == "mean"
+                    or loss_fun.reduction == "elementwise_mean"
+                ):
                     training_loss /= len(training_data_loader.dataset)
             print(
                 "trainer:{}, epoch: {}, training loss: {}".format(
