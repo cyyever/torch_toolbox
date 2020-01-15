@@ -23,6 +23,8 @@ class trainer:
         self.loss_funs = loss_funs
         self.training_datasets = training_datasets
         self.name = name
+        self.min_training_loss = None
+        self.min_training_loss_model = None
 
     def train(
         self, epochs, batch_size, learning_rate, after_training_callback=None,
@@ -68,13 +70,24 @@ class trainer:
                     self.name, epoch, training_loss
                 )
             )
+            if self.min_training_loss is None or training_loss < self.min_training_loss:
+                self.min_training_loss = training_loss
+                self.min_training_loss_model = copy.deepcopy(self.model)
+
             if after_training_callback:
                 after_training_callback(epoch, self.model)
 
-    def save(self, save_dir):
+    def save(self, save_dir, save_min_model=False):
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
-        torch.save(self.model, os.path.join(save_dir, "model.pt"))
+        model = self.model
+        if save_min_model:
+            if self.min_training_loss_model:
+                model = self.min_training_loss_model
+            else:
+                raise ValueError("no min model to save")
+
+        torch.save(model, os.path.join(save_dir, "model.pt"))
 
     def save_dataset(self, save_dir):
         if not os.path.isdir(save_dir):
