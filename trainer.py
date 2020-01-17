@@ -59,22 +59,15 @@ class trainer:
                         or loss_fun.reduction == "elementwise_mean"
                     ):
                         batch_loss *= len(outputs)
+                        training_loss /= len(training_data_loader.dataset)
                     training_loss += batch_loss
-                if hasattr(loss_fun, "reduction") and (
-                    loss_fun.reduction == "mean"
-                    or loss_fun.reduction == "elementwise_mean"
-                ):
-                    training_loss /= len(training_data_loader.dataset)
             print(
                 "trainer:{}, epoch: {}, training loss: {}".format(
                     self.name, epoch, training_loss
                 )
             )
-            if (
-                self.min_training_loss is None
-                or training_loss.data.item() < self.min_training_loss
-            ):
-                self.min_training_loss = training_loss.data.item()
+            if self.min_training_loss is None or training_loss < self.min_training_loss:
+                self.min_training_loss = training_loss
                 self.min_training_loss_model = copy.deepcopy(self.model)
                 self.min_training_loss_model.to(get_cpu_device())
 
