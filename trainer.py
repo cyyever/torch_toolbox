@@ -10,7 +10,12 @@ from .device import get_device
 
 class trainer:
     def __init__(
-        self, model, loss_funs, training_datasets, name="",
+        self,
+        model,
+        loss_funs,
+        training_datasets,
+        optimizer_fun=optim.Adam,
+        name="",
     ):
         self.model = copy.deepcopy(model)
         if not isinstance(loss_funs, list):
@@ -25,6 +30,7 @@ class trainer:
         self.name = name
         self.min_training_loss = None
         self.min_training_loss_model = None
+        self.optimizer_fun = optimizer_fun
 
     def train(
         self, epochs, batch_size, learning_rate, after_training_callback=None,
@@ -36,7 +42,8 @@ class trainer:
 
         device = get_device()
         self.model.to(device)
-        optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
+        optimizer = self.optimizer_fun(
+            self.model.parameters(), lr=learning_rate)
 
         for epoch in range(epochs):
             self.model.train()
