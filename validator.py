@@ -28,7 +28,8 @@ class validator:
             validation_loss = torch.zeros(1)
             validation_loss = validation_loss.to(device)
             for batch in validation_data_loader:
-                inputs, targets = batch
+                inputs = batch[0]
+                targets = batch[1]
                 inputs = inputs.to(device)
                 targets = targets.to(device)
                 outputs = self.model(inputs)
@@ -39,9 +40,9 @@ class validator:
                 ):
                     batch_loss *= len(outputs)
                     batch_loss /= len(self.validation_dataset)
+                validation_loss += batch_loss
                 if after_batch_callback:
                     after_batch_callback(self.model, batch_loss)
-                validation_loss += batch_loss
                 correct = torch.eq(
                     torch.max(F.softmax(outputs, dim=1), dim=1)[1], targets
                 ).view(-1)

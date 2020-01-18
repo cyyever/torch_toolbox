@@ -32,11 +32,11 @@ class trainer:
         self.min_training_loss_model = None
         self.optimizer_fun = optimizer_fun
 
-    def train(
-        self, epochs, batch_size, learning_rate, after_training_callback=None,
-    ):
+    def train(self, epochs, batch_size, learning_rate, **kwargs):
         training_data_loaders = [
-            torch.utils.data.DataLoader(training_dataset, batch_size=batch_size)
+            torch.utils.data.DataLoader(
+                training_dataset, batch_size=batch_size, shuffle=True
+            )
             for training_dataset in self.training_datasets
         ]
 
@@ -52,8 +52,11 @@ class trainer:
                 training_data_loaders, self.loss_funs
             ):
                 for batch in training_data_loader:
+                    if "pre_batch_callback" in kwargs:
+                        kwargs["pre_batch_callback"](self.model, batch)
                     optimizer.zero_grad()
-                    inputs, targets = batch
+                    inputs = batch[0]
+                    targets = batch[1]
                     inputs = inputs.to(device)
                     targets = targets.to(device)
                     outputs = self.model(inputs)
@@ -61,25 +64,26 @@ class trainer:
                     loss.backward()
                     optimizer.step()
                     batch_loss = loss.data.item()
+
                     if hasattr(loss_fun, "reduction") and (
                         loss_fun.reduction == "mean"
                         or loss_fun.reduction == "elementwise_mean"
                     ):
                         batch_loss *= len(outputs)
-                        training_loss /= len(training_data_loader.dataset)
+                        batch_loss /= len(training_data_loader.dataset)
                     training_loss += batch_loss
+
             print(
                 "trainer:{}, epoch: {}, training loss: {}".format(
                     self.name, epoch, training_loss
                 )
             )
+            if "after_epoch_callback" in kwargs:
+                kwargs["after_epoch_callback"](self.model, epoch)
             if self.min_training_loss is None or training_loss < self.min_training_loss:
                 self.min_training_loss = training_loss
                 self.min_training_loss_model = copy.deepcopy(self.model)
                 self.min_training_loss_model.to(get_cpu_device())
-
-            if after_training_callback:
-                after_training_callback(epoch, self.model)
 
     def save(self, save_dir, save_min_model=False):
         if not os.path.isdir(save_dir):
