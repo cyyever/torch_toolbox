@@ -53,7 +53,10 @@ class trainer:
             ):
                 for batch in training_data_loader:
                     if "pre_batch_callback" in kwargs:
-                        kwargs["pre_batch_callback"](self.model, batch)
+                        kwargs["pre_batch_callback"](
+                            self.model, batch, self.learning_rate
+                        )
+                    self.model.to(device)
                     optimizer.zero_grad()
                     inputs = batch[0]
                     targets = batch[1]
