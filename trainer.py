@@ -10,12 +10,7 @@ from .device import get_device
 
 class trainer:
     def __init__(
-        self,
-        model,
-        loss_funs,
-        training_datasets,
-        optimizer_fun=optim.Adam,
-        name="",
+        self, model, loss_funs, training_datasets, name="",
     ):
         self.model = copy.deepcopy(model)
         if not isinstance(loss_funs, list):
@@ -30,6 +25,9 @@ class trainer:
         self.name = name
         self.min_training_loss = None
         self.min_training_loss_model = None
+        self.optimizer_fun = optim.Adam
+
+    def set_optimizer_function(self, optimizer_fun):
         self.optimizer_fun = optimizer_fun
 
     def train(self, epochs, batch_size, learning_rate, **kwargs):
@@ -54,8 +52,7 @@ class trainer:
                 for batch in training_data_loader:
                     if "pre_batch_callback" in kwargs:
                         kwargs["pre_batch_callback"](
-                            self.model, batch, self.learning_rate
-                        )
+                            self.model, batch, learning_rate)
                     self.model.to(device)
                     optimizer.zero_grad()
                     inputs = batch[0]
@@ -107,9 +104,9 @@ class trainer:
             pickle.dumps(self.training_datasets)
         )
 
-    def parameters(self, use_min_model=False):
+    def parameters(self, use_best_model=False):
         model = self.model
-        if use_min_model:
+        if use_best_model:
             if self.min_training_loss_model:
                 model = self.min_training_loss_model
             else:
