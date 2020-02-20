@@ -6,6 +6,7 @@ from .util import parameters_to_vector
 
 
 def hessian_vector_product(model, loss, v, damping=0):
+    model.zero_grad()
     grad = parameters_to_vector(
         autograd.grad(loss, model.parameters(), create_graph=True)
     )

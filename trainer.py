@@ -7,6 +7,7 @@ import torch.optim as optim
 from .device import get_cpu_device
 from .device import get_device
 from .util import model_gradients_to_vector
+from .validator import validator
 
 
 class trainer:
@@ -35,17 +36,19 @@ class trainer:
             self.model.parameters(), lr=learning_rate)
         example_size = len(self.training_dataset)
 
+        batch_index = 0
         for epoch in range(epochs):
             self.model.train()
             training_loss = 0.0
-            batch_index = 0
             for batch in training_data_loader:
-                if "pre_batch_callback" in kwargs:
-                    kwargs["pre_batch_callback"](
-                        self.model, batch, learning_rate)
                 self.model.to(device)
                 optimizer.zero_grad()
                 batch_loss = 0
+
+                if "pre_batch_callback" in kwargs:
+                    kwargs["pre_batch_callback"](
+                        self.model, batch, batch_index, learning_rate)
+
                 if "per_example_gradient_callback" in kwargs:
                     prev_accumulated_gradient = None
                     example_inputs, example_targets, example_indices = batch
@@ -69,7 +72,7 @@ class trainer:
 
                         if "per_example_gradient_callback" in kwargs:
                             kwargs["per_example_gradient_callback"](
-                                self.model, example_index, example_gradient, learning_rate)
+                                self.model, example_index, example_gradient, learning_rate, real_batch_size)
                 else:
                     inputs = batch[0].to(device)
                     targets = batch[1].to(device)
@@ -78,21 +81,33 @@ class trainer:
                     batch_loss = loss.data.item()
                     loss.backward()
 
-                optimizer.step()
                 print(
                     "trainer:{}, epoch: {}, batch: {}, batch training loss: {}".format(
                         self.name, epoch, batch_index, batch_loss))
+
+                optimizer.step()
                 batch_index += 1
                 training_loss += (batch_loss * real_batch_size / example_size)
-                if "after_batch_callback" in kwargs:
-                    kwargs["after_batch_callback"](
-                        self.model, batch, learning_rate)
 
             print(
                 "trainer:{}, epoch: {}, epoch training loss: {}".format(
                     self.name, epoch, training_loss
                 )
             )
+
+            if "validation_dataset" in kwargs:
+                validation_epoch_interval = 1
+                if "validation_epoch_interval" in kwargs:
+                    validation_epoch_interval = int(
+                        kwargs["validation_epoch_interval"])
+
+                if epoch % validation_epoch_interval == 0:
+                    validation_loss, accuracy = validator(
+                        self.model, self.loss_fun, kwargs["validation_dataset"]
+                    ).validate(batch_size)
+                    print("trainer:{}, epoch: {}, validation loss: {}, accuracy = {}".format(
+                        self.name, epoch, validation_loss.data.item(), accuracy))
+
             if "after_epoch_callback" in kwargs:
                 kwargs["after_epoch_callback"](self.model, epoch)
             if self.min_training_loss is None or training_loss < self.min_training_loss:
