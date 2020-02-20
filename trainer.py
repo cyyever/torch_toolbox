@@ -34,7 +34,7 @@ class trainer:
         self.model.to(device)
         optimizer = self.optimizer_fun(
             self.model.parameters(), lr=learning_rate)
-        example_size = len(self.training_dataset)
+        instance_size = len(self.training_dataset)
 
         batch_index = 0
         for epoch in range(epochs):
@@ -49,30 +49,30 @@ class trainer:
                     kwargs["pre_batch_callback"](
                         self.model, batch, batch_index, learning_rate)
 
-                if "per_example_gradient_callback" in kwargs:
+                if "per_instance_gradient_callback" in kwargs:
                     prev_accumulated_gradient = None
-                    example_inputs, example_targets, example_indices = batch
-                    real_batch_size = len(example_indices)
-                    for i, example_index in enumerate(example_indices):
-                        example_index = example_indices[i]
-                        example_input = example_inputs[i].to(device)
-                        example_target = example_targets[i].to(device)
-                        output = self.model(torch.stack([example_input]))
+                    instance_inputs, instance_targets, instance_indices = batch
+                    real_batch_size = len(instance_indices)
+                    for i, instance_index in enumerate(instance_indices):
+                        instance_index = instance_indices[i]
+                        instance_input = instance_inputs[i].to(device)
+                        instance_target = instance_targets[i].to(device)
+                        output = self.model(torch.stack([instance_input]))
                         loss = self.loss_fun(
-                            output, torch.stack([example_target]))
+                            output, torch.stack([instance_target]))
                         batch_loss += loss.data.item() / real_batch_size
                         loss.backward()
                         cur_accumulated_gradient = model_gradients_to_vector(
                             self.model)
-                        example_gradient = None
+                        instance_gradient = None
                         if prev_accumulated_gradient is None:
-                            example_gradient = cur_accumulated_gradient
+                            instance_gradient = cur_accumulated_gradient
                         else:
-                            example_gradient = cur_accumulated_gradient - prev_accumulated_gradient
+                            instance_gradient = cur_accumulated_gradient - prev_accumulated_gradient
 
-                        if "per_example_gradient_callback" in kwargs:
-                            kwargs["per_example_gradient_callback"](
-                                self.model, example_index, example_gradient, learning_rate, real_batch_size)
+                        if "per_instance_gradient_callback" in kwargs:
+                            kwargs["per_instance_gradient_callback"](
+                                self.model, instance_index, instance_gradient, learning_rate, real_batch_size)
                 else:
                     inputs = batch[0].to(device)
                     targets = batch[1].to(device)
@@ -87,7 +87,7 @@ class trainer:
 
                 optimizer.step()
                 batch_index += 1
-                training_loss += (batch_loss * real_batch_size / example_size)
+                training_loss += (batch_loss * real_batch_size / instance_size)
 
             print(
                 "trainer:{}, epoch: {}, epoch training loss: {}".format(
