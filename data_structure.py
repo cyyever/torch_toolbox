@@ -1,7 +1,8 @@
 import uuid
 import shutil
-import pickle
 import os
+
+import torch
 
 
 class LargeDict(dict):
@@ -50,8 +51,7 @@ class LargeDict(dict):
         if not super().__contains__(key):
             raise RuntimeError("no key " + str(key))
 
-        with open(os.path.join(self.__get_key_storage_path(key)), "wb") as f:
-            pickle.dump(super().__getitem__(key), f)
+        torch.save(super().__getitem__(key), self.__get_key_storage_path(key))
         super().__delitem__(key)
 
     def __load_item(self, key):
@@ -60,8 +60,7 @@ class LargeDict(dict):
         if super().__contains__(key):
             return
 
-        with open(os.path.join(self.__get_key_storage_path(key)), "rb") as f:
-            super().__setitem__(key, pickle.load(f))
+        super().__setitem__(torch.load(self.__get_key_storage_path(key)))
         if not super().__contains__(key):
             raise RuntimeError("no key " + str(key) + " after load")
         return
