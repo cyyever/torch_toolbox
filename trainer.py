@@ -55,7 +55,7 @@ class trainer:
                     prev_accumulated_gradient = None
                     instance_inputs, instance_targets, instance_indices = batch
                     for i, instance_index in enumerate(instance_indices):
-                        instance_index = instance_indices[i]
+                        instance_index = instance_indices[i].data.item()
                         instance_input = instance_inputs[i].to(device)
                         instance_target = instance_targets[i].to(device)
                         output = self.model(torch.stack([instance_input]))
