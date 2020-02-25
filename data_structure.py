@@ -24,7 +24,8 @@ class LargeDict(dict):
 
     def set_storage_dir(self, storage_dir):
         self.storage_dir = storage_dir
-        os.makedirs(self.storage_dir)
+        if not os.path.exists(self.storage_dir):
+            os.makedirs(self.storage_dir)
 
     def set_in_memory_key_number(self, num):
         self.in_memory_key_number = num
