@@ -1,4 +1,3 @@
-import uuid
 import shutil
 import os
 
@@ -6,17 +5,26 @@ import torch
 
 
 class LargeDict(dict):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.storage_dir = None
-        self.id = str(uuid.uuid4())
+    def __init__(self, storage_dir=None):
+        super().__init__()
         self.in_memory_key_number = 128
         self.all_keys = set()
-        self.permanent = False
+        self.storage_dir = None
+        if storage_dir is not None:
+            self.set_storage_dir(storage_dir)
+            self.all_keys = {
+                f
+                for f in os.listdir(storage_dir)
+                if os.path.isfile(os.path.join(storage_dir, f))
+            }
+            print(self.all_keys)
+            self.permanent = True
+        else:
+            self.permanent = False
 
     def set_storage_dir(self, storage_dir):
         self.storage_dir = storage_dir
-        os.makedirs(os.path.join(self.storage_dir, self.id))
+        os.makedirs(self.storage_dir)
 
     def set_in_memory_key_number(self, num):
         self.in_memory_key_number = num
@@ -33,11 +41,7 @@ class LargeDict(dict):
 
     def __setitem__(self, key, val):
         self.all_keys.add(key)
-        while super().__len__() > self.in_memory_key_number:
-            for other_key in list(super().keys()):
-                if other_key == key:
-                    continue
-                self.__save_item(other_key)
+        self.__save_other_keys(key)
         return super().__setitem__(key, val)
 
     def __delitem__(self, key):
@@ -49,17 +53,21 @@ class LargeDict(dict):
             self.save()
             return
         if self.storage_dir is not None:
-            shutil.rmtree(os.path.join(self.storage_dir, self.id))
+            shutil.rmtree(self.storage_dir)
+
+    def __save_other_keys(self, excluded_key):
+        while super().__len__() > self.in_memory_key_number:
+            for other_key in list(super().keys()):
+                if other_key == excluded_key:
+                    continue
+                self.__save_item(other_key)
 
     def __get_key_storage_path(self, key):
         if self.storage_dir is None:
             raise RuntimeError("no storage_dir")
-        return os.path.join(self.storage_dir, self.id, str(key))
+        return os.path.join(self.storage_dir, str(key))
 
     def __save_item(self, key):
-        if not super().__contains__(key):
-            raise RuntimeError("no key " + str(key))
-
         torch.save(super().__getitem__(key), self.__get_key_storage_path(key))
         super().__delitem__(key)
 
@@ -68,8 +76,5 @@ class LargeDict(dict):
             raise RuntimeError("no key " + str(key))
         if super().__contains__(key):
             return
-
         super().__setitem__(torch.load(self.__get_key_storage_path(key)))
-        if not super().__contains__(key):
-            raise RuntimeError("no key " + str(key) + " after load")
         return
