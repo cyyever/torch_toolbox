@@ -8,12 +8,12 @@ class LargeDict(dict):
     def __init__(self, storage_dir=None):
         super().__init__()
         self.in_memory_key_number = 128
-        self.all_keys = set()
+        self.key_sync = dict()
         self.storage_dir = None
         if storage_dir is not None:
             self.set_storage_dir(storage_dir)
-            self.all_keys = {
-                f
+            self.key_sync = {
+                int(f): True
                 for f in os.listdir(storage_dir)
                 if os.path.isfile(os.path.join(storage_dir, f))
             }
@@ -35,17 +35,17 @@ class LargeDict(dict):
             self.__save_item(k)
 
     def __getitem__(self, key):
-        if key in self.all_keys:
-            self.__load_item(key)
-        return super().__getitem__(key)
+        self.__save_other_keys(key)
+        return self.__load_item(key)
 
     def __setitem__(self, key, val):
-        self.all_keys.add(key)
         self.__save_other_keys(key)
-        return super().__setitem__(key, val)
+        res = super().__setitem__(key, val)
+        self.key_sync[key] = True
+        return res
 
     def __delitem__(self, key):
-        self.all_keys.remove(key)
+        self.key_sync.remove(key)
         return super().__delitem__(key)
 
     def __del__(self):
@@ -56,7 +56,7 @@ class LargeDict(dict):
             shutil.rmtree(self.storage_dir)
 
     def __save_other_keys(self, excluded_key):
-        while super().__len__() > self.in_memory_key_number:
+        while super().__len__() - 1 > self.in_memory_key_number:
             for other_key in list(super().keys()):
                 if other_key == excluded_key:
                     continue
@@ -68,13 +68,17 @@ class LargeDict(dict):
         return os.path.join(self.storage_dir, str(key))
 
     def __save_item(self, key):
-        torch.save(super().__getitem__(key), self.__get_key_storage_path(key))
+        if not self.key_sync[key]:
+            torch.save(
+                super().__getitem__(key),
+                self.__get_key_storage_path(key))
+            self.key_sync[key] = True
         super().__delitem__(key)
 
     def __load_item(self, key):
-        if key not in self.all_keys:
-            raise RuntimeError("no key " + str(key))
         if super().__contains__(key):
-            return
-        super().__setitem__(torch.load(self.__get_key_storage_path(key)))
-        return
+            return super().__getitem__(key)
+        value = torch.load(self.__get_key_storage_path(key))
+        super().__setitem__(key, value)
+        self.key_sync[key] = True
+        return value
