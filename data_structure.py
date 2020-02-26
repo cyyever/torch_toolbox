@@ -17,7 +17,6 @@ class LargeDict(dict):
                 for f in os.listdir(storage_dir)
                 if os.path.isfile(os.path.join(storage_dir, f))
             }
-            print(self.all_keys)
             self.permanent = True
         else:
             self.permanent = False
