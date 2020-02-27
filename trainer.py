@@ -72,6 +72,8 @@ class trainer:
                         else:
                             instance_gradient = (
                                 cur_accumulated_gradient - prev_accumulated_gradient)
+                        prev_accumulated_gradient = cur_accumulated_gradient
+                        del cur_accumulated_gradient
 
                         if "per_instance_gradient_callback" in kwargs:
                             kwargs["per_instance_gradient_callback"](
@@ -104,10 +106,10 @@ class trainer:
             )
 
             if "validation_dataset" in kwargs:
-                validation_epoch_interval = 1
-                if "validation_epoch_interval" in kwargs:
-                    validation_epoch_interval = int(
-                        kwargs["validation_epoch_interval"])
+                validation_epoch_interval = int(
+                    kwargs.get("validation_epoch_interval", 1)
+                )
+                assert validation_epoch_interval > 0
 
                 if epoch % validation_epoch_interval == 0:
                     validation_loss, accuracy = validator(
