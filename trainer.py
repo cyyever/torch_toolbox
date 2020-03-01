@@ -73,7 +73,6 @@ class trainer:
                             instance_gradient = (
                                 cur_accumulated_gradient - prev_accumulated_gradient)
                         prev_accumulated_gradient = cur_accumulated_gradient
-                        del cur_accumulated_gradient
 
                         if "per_instance_gradient_callback" in kwargs:
                             kwargs["per_instance_gradient_callback"](
