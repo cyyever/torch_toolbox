@@ -13,6 +13,26 @@ class dataset_with_indices:
         return self.dataset.__len__()
 
 
+class dataset_filter:
+    def __init__(self, dataset, filters):
+        self.dataset = dataset
+        self.filters = filters
+        self.indices = self.__get_indices()
+
+    def __getitem__(self, index):
+        return self.dataset.__getitem__(self.indices[index])
+
+    def __len__(self):
+        return len(self.indices)
+
+    def __get_indices(self):
+        indices = []
+        for index, item in enumerate(self.dataset):
+            if all(f(item) for f in self.filters):
+                indices.append(index)
+        return indices
+
+
 def split_dataset_by_label(dataset):
     label_map = {}
     for index, sampler in enumerate(dataset):
