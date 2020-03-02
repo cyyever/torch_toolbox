@@ -1,18 +1,6 @@
 import torch
 
 
-class dataset_with_indices:
-    def __init__(self, dataset):
-        self.dataset = dataset
-
-    def __getitem__(self, index):
-        data, target = self.dataset.__getitem__(index)
-        return data, target, index
-
-    def __len__(self):
-        return self.dataset.__len__()
-
-
 class dataset_filter:
     def __init__(self, dataset, filters):
         self.dataset = dataset
@@ -28,9 +16,37 @@ class dataset_filter:
     def __get_indices(self):
         indices = []
         for index, item in enumerate(self.dataset):
-            if all(f(item) for f in self.filters):
+            if all(f(index, item) for f in self.filters):
                 indices.append(index)
         return indices
+
+
+class dataset_mapper:
+    def __init__(self, dataset, mappers):
+        self.dataset = dataset
+        self.mappers = mappers
+
+    def __getitem__(self, index):
+        item = self.dataset.__getitem__(index)
+        for mapper in self.mappers:
+            item = mapper(index, item)
+        return item
+
+    def __len__(self):
+        return self.dataset.__len__()
+
+
+class dataset_with_indices(dataset_mapper):
+    def __init__(self, dataset):
+        super().__init__(dataset, (lambda index, item: (index, *item)))
+
+
+def split_dataset(dataset):
+    return [
+        torch.utils.data.Subset(
+            dataset,
+            index) for index in range(
+            len(dataset))]
 
 
 def split_dataset_by_label(dataset):
