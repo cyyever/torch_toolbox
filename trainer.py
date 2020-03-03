@@ -60,7 +60,6 @@ class Trainer:
                 batch_loss = 0
                 real_batch_size = batch[0].shape[0]
                 cur_learning_rates = lr_scheduler.get_last_lr()
-                print("aaaaaaaaa cur_learning_rate", cur_learning_rates)
 
                 if "pre_batch_callback" in kwargs:
                     kwargs["pre_batch_callback"](
