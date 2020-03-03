@@ -7,7 +7,7 @@ import torch.optim as optim
 from .device import get_cpu_device
 from .device import get_device
 from .util import model_gradients_to_vector
-from .validator import validator
+from .validator import Validator
 
 
 class trainer:
@@ -111,7 +111,7 @@ class trainer:
                 assert validation_epoch_interval > 0
 
                 if epoch % validation_epoch_interval == 0:
-                    validation_loss, accuracy = validator(
+                    validation_loss, accuracy = Validator(
                         self.model, self.loss_fun, kwargs["validation_dataset"]
                     ).validate(batch_size)
                     print(

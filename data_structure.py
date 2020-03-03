@@ -4,22 +4,22 @@ import os
 import torch
 
 
-class LargeDict(dict):
+class LargeDict:
     def __init__(self, storage_dir=None):
-        super().__init__()
         self.in_memory_key_number = 128
-        self.key_sync = dict()
+        self.in_memory_storage = dict()
         self.storage_dir = None
         if storage_dir is not None:
             self.set_storage_dir(storage_dir)
-            self.key_sync = {
-                int(f): True
+            self.in_memory_storage = {
+                int(f): None
                 for f in os.listdir(storage_dir)
                 if os.path.isfile(os.path.join(storage_dir, f))
             }
             self.permanent = True
         else:
             self.permanent = False
+        self.in_memory_storage_keys = set()
 
     def set_storage_dir(self, storage_dir):
         self.storage_dir = storage_dir
@@ -31,8 +31,14 @@ class LargeDict(dict):
 
     def save(self):
         self.permanent = True
-        for k in list(super().keys()):
+        for k in self.in_memory_storage_keys:
             self.__save_item(k)
+
+    def keys(self):
+        return self.in_memory_storage.keys()
+
+    def __len__(self):
+        return len(self.in_memory_storage)
 
     def __getitem__(self, key):
         self.__save_other_keys(key)
@@ -40,24 +46,25 @@ class LargeDict(dict):
 
     def __setitem__(self, key, val):
         self.__save_other_keys(key)
-        res = super().__setitem__(key, val)
-        self.key_sync[key] = True
-        return res
+        self.in_memory_storage[key] = val
+        self.in_memory_storage_keys.add(key)
 
     def __delitem__(self, key):
-        self.key_sync.remove(key)
-        return super().__delitem__(key)
+        assert key in self.in_memory_storage
+        self.in_memory_storage[key] = None
+        self.in_memory_storage_keys.remove(key)
+        shutil.rmtree(self.__get_key_storage_path(key))
 
     def __del__(self):
         if self.permanent:
-            self.save()
             return
         if self.storage_dir is not None:
+            print("rmtree ", self.storage_dir)
             shutil.rmtree(self.storage_dir)
 
     def __save_other_keys(self, excluded_key):
-        while super().__len__() - 1 > self.in_memory_key_number:
-            for other_key in list(super().keys()):
+        while len(self.in_memory_storage_keys) - 1 > self.in_memory_key_number:
+            for other_key in list(self.in_memory_storage_keys):
                 if other_key == excluded_key:
                     continue
                 self.__save_item(other_key)
@@ -68,17 +75,19 @@ class LargeDict(dict):
         return os.path.join(self.storage_dir, str(key))
 
     def __save_item(self, key):
-        if not self.key_sync[key]:
-            torch.save(
-                super().__getitem__(key),
-                self.__get_key_storage_path(key))
-            self.key_sync[key] = True
-        super().__delitem__(key)
+        assert key in self.in_memory_storage and self.in_memory_storage[key] is not None
+        torch.save(
+            self.in_memory_storage[key],
+            self.__get_key_storage_path(key))
+        self.in_memory_storage[key] = None
+        self.in_memory_storage_keys.remove(key)
 
     def __load_item(self, key):
-        if super().__contains__(key):
-            return super().__getitem__(key)
-        value = torch.load(self.__get_key_storage_path(key))
-        super().__setitem__(key, value)
-        self.key_sync[key] = True
-        return value
+        assert key in self.in_memory_storage
+
+        if key not in self.in_memory_storage_keys:
+            value = torch.load(self.__get_key_storage_path(key))
+            assert value is not None
+            self.in_memory_storage[key] = value
+            self.in_memory_storage_keys.add(key)
+        return self.in_memory_storage[key]

@@ -7,7 +7,7 @@ from .gradient import get_gradient as _get_gradient
 from .hessian_vector_product import hessian_vector_product as _hessian_vector_product
 
 
-class validator:
+class Validator:
     def __init__(
         self, model, loss_fun, validation_dataset,
     ):
@@ -24,6 +24,7 @@ class validator:
             num_examples = 0
             device = get_device()
             self.model.eval()
+            self.model.zero_grad()
             self.model.to(device)
             validation_loss = torch.zeros(1)
             validation_loss = validation_loss.to(device)

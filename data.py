@@ -38,14 +38,14 @@ class dataset_mapper:
 
 class dataset_with_indices(dataset_mapper):
     def __init__(self, dataset):
-        super().__init__(dataset, (lambda index, item: (index, *item)))
+        super().__init__(dataset, [lambda index, item: (*item, index)])
 
 
 def split_dataset(dataset):
     return [
         torch.utils.data.Subset(
             dataset,
-            index) for index in range(
+            [index]) for index in range(
             len(dataset))]
 
 
