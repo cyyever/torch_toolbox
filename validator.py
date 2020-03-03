@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 
 from .device import get_device
-from .gradient import get_gradient as _get_gradient
+from .util import model_gradients_to_vector
 from .hessian_vector_product import hessian_vector_product as _hessian_vector_product
 
 
@@ -34,7 +34,9 @@ class Validator:
                 inputs = inputs.to(device)
                 targets = targets.to(device)
                 outputs = self.model(inputs)
-                batch_loss = self.loss_fun(outputs, targets)
+                loss = self.loss_fun(outputs, targets)
+                loss.backward()
+                batch_loss = loss.data.item()
                 if hasattr(self.loss_fun, "reduction") and (
                     self.loss_fun.reduction == "mean"
                     or self.loss_fun.reduction == "elementwise_mean"
@@ -52,17 +54,8 @@ class Validator:
             return (validation_loss, num_correct / num_examples)
 
     def get_gradient(self):
-        gradient = None
-
-        def after_batch_callback(model, batch_loss):
-            nonlocal gradient
-            if gradient is None:
-                gradient = _get_gradient(model, batch_loss)
-            else:
-                gradient += _get_gradient(model, batch_loss)
-
-        self.validate(64, True, after_batch_callback)
-        return gradient
+        self.validate(64, True)
+        return model_gradients_to_vector(self.model)
 
     def hessian_vector_product(self, v, damping=0):
         res = None

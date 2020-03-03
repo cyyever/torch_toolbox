@@ -111,7 +111,14 @@ class Trainer:
 
                 optimizer.step()
                 batch_index += 1
-                training_loss += batch_loss * real_batch_size / instance_size
+
+                if hasattr(self.loss_fun, "reduction") and (
+                    self.loss_fun.reduction == "mean"
+                    or self.loss_fun.reduction == "elementwise_mean"
+                ):
+                    batch_loss *= real_batch_size
+                    batch_loss /= instance_size
+                training_loss += batch_loss
 
             print(
                 "trainer:{}, epoch: {}, epoch training loss: {}".format(
