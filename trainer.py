@@ -10,7 +10,7 @@ from .util import model_gradients_to_vector
 from .validator import Validator
 
 
-class trainer:
+class Trainer:
     def __init__(
         self, model, loss_fun, training_dataset, name="",
     ):
@@ -21,11 +21,15 @@ class trainer:
         self.min_training_loss = None
         self.min_training_loss_model = None
         self.optimizer_fun = optim.Adam
+        self.lr_scheduler_fun = None
 
     def set_optimizer_function(self, optimizer_fun):
         self.optimizer_fun = optimizer_fun
 
-    def train(self, epochs, batch_size, learning_rate, **kwargs):
+    def set_lr_scheduler(self, lr_scheduler_fun):
+        self.lr_scheduler_fun = lr_scheduler_fun
+
+    def train(self, epochs, batch_size, init_learning_rate, **kwargs):
         training_data_loader = torch.utils.data.DataLoader(
             self.training_dataset, batch_size=batch_size, shuffle=True
         )
@@ -33,7 +37,17 @@ class trainer:
         device = get_device()
         self.model.to(device)
         optimizer = self.optimizer_fun(
-            self.model.parameters(), lr=learning_rate)
+            self.model.parameters(),
+            lr=init_learning_rate)
+        lr_scheduler = None
+
+        if self.lr_scheduler_fun is not None:
+            lr_scheduler = self.lr_scheduler_fun(optimizer)
+        else:
+            lr_scheduler = optim.lr_scheduler.LambdaLR(
+                optimizer, lr_lambda=(lambda epoch: 1)
+            )
+
         instance_size = len(self.training_dataset)
 
         batch_index = 0
@@ -44,11 +58,13 @@ class trainer:
                 self.model.to(device)
                 optimizer.zero_grad()
                 batch_loss = 0
-
                 real_batch_size = batch[0].shape[0]
+                cur_learning_rates = lr_scheduler.get_last_lr()
+                print("aaaaaaaaa cur_learning_rate", cur_learning_rates)
+
                 if "pre_batch_callback" in kwargs:
                     kwargs["pre_batch_callback"](
-                        self.model, batch, batch_index, learning_rate
+                        self.model, batch, batch_index, cur_learning_rates
                     )
 
                 if "per_instance_gradient_callback" in kwargs:
@@ -79,7 +95,7 @@ class trainer:
                                 self.model,
                                 instance_index,
                                 instance_gradient,
-                                learning_rate,
+                                cur_learning_rates,
                                 real_batch_size,
                             )
                 else:
@@ -120,6 +136,7 @@ class trainer:
                         )
                     )
 
+            lr_scheduler.step()
             if "after_epoch_callback" in kwargs:
                 kwargs["after_epoch_callback"](self.model, epoch)
             if self.min_training_loss is None or training_loss < self.min_training_loss:
