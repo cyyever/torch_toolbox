@@ -106,8 +106,12 @@ class Trainer:
                     loss.backward()
 
                 print(
-                    "trainer:{}, epoch: {}, batch: {}, batch training loss: {}".format(
-                        self.name, epoch, batch_index, batch_loss))
+                    "trainer:{}, epoch: {}, batch: {}, learning rate: {}, batch training loss: {}".format(
+                        self.name,
+                        epoch,
+                        batch_index,
+                        cur_learning_rates,
+                        batch_loss))
 
                 optimizer.step()
                 batch_index += 1
