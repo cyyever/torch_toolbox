@@ -35,7 +35,8 @@ class Validator:
                 targets = targets.to(device)
                 outputs = self.model(inputs)
                 loss = self.loss_fun(outputs, targets)
-                loss.backward()
+                if use_grad:
+                    loss.backward()
                 batch_loss = loss.data.item()
                 if hasattr(self.loss_fun, "reduction") and (
                     self.loss_fun.reduction == "mean"
