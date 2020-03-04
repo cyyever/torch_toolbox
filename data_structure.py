@@ -1,7 +1,14 @@
+from multiprocessing import Process, Queue
+
 import shutil
 import os
 
 import torch
+
+
+class SentinelData:
+    def __init__(self):
+        self.flag = True
 
 
 class LargeDict:
@@ -20,6 +27,21 @@ class LargeDict:
         else:
             self.permanent = False
         self.in_memory_storage_keys = set()
+        self.write_queue = Queue()
+        self.write_proc = Process(
+            target=LargeDict.write_item, args=(
+                self.write_queue,))
+        self.write_proc.start()
+
+    @staticmethod
+    def write_item(q):
+        while True:
+            item = q.get()
+            if isinstance(item, SentinelData):
+                print("exit process")
+                break
+            value, stored_path = item
+            torch.save(value, stored_path)
 
     def set_storage_dir(self, storage_dir):
         self.storage_dir = storage_dir
@@ -56,6 +78,9 @@ class LargeDict:
         shutil.rmtree(self.__get_key_storage_path(key))
 
     def __del__(self):
+        self.write_queue.close()
+        self.write_queue.join_thread()
+        self.write_proc.join()
         if self.permanent:
             return
         if self.storage_dir is not None:
@@ -76,9 +101,9 @@ class LargeDict:
 
     def __save_item(self, key):
         assert key in self.in_memory_storage and self.in_memory_storage[key] is not None
-        torch.save(
-            self.in_memory_storage[key],
-            self.__get_key_storage_path(key))
+        self.write_queue.put(
+            (self.in_memory_storage[key], self.__get_key_storage_path(key))
+        )
         self.in_memory_storage[key] = None
         self.in_memory_storage_keys.remove(key)
 
