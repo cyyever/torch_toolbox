@@ -11,7 +11,6 @@ from .thread_pool import ThreadPool
 from .log import get_logger
 
 
-
 class DataInfo(Enum):
     IN_MEMORY = auto()
     IN_DISK = auto()
@@ -188,6 +187,28 @@ class LargeDict:
                 self.fetch_queue.add_task((self, key))
         return result
 
+    def release(self):
+        if self.permanent:
+            self.flush_all()
+        self.flush_threads.stop()
+        self.fetch_queue.force_stop()
+        self.delete_queue.force_stop()
+        self.write_queue.force_stop()
+        self.data = None
+
+        if (
+            not self.permanent
+            and self.storage_dir is not None
+            and os.path.exists(self.storage_dir)
+        ):
+            get_logger().debug("rmtree %s", self.storage_dir)
+            shutil.rmtree(self.storage_dir)
+
+    def get_key_storage_path(self, key):
+        if self.storage_dir is None:
+            raise RuntimeError("no storage_dir")
+        return os.path.join(self.storage_dir, str(key))
+
     def __len__(self):
         return len(self.keys())
 
@@ -214,23 +235,8 @@ class LargeDict:
             self.data_info[key] = DataInfo.PRE_DELETE
             self.delete_queue.add_task((self, key))
 
-    def release(self):
-        if self.permanent:
-            self.flush_all()
-        self.fetch_queue.force_stop()
-        self.delete_queue.force_stop()
-        self.write_queue.force_stop()
-        self.flush_threads.stop()
-        self.data = None
-
-        if self.storage_dir is not None:
-            get_logger().debug("rmtree %s", self.storage_dir)
-            shutil.rmtree(self.storage_dir)
-
-    def get_key_storage_path(self, key):
-        if self.storage_dir is None:
-            raise RuntimeError("no storage_dir")
-        return os.path.join(self.storage_dir, str(key))
+    def __del__(self):
+        self.release()
 
     def __remove_access_time(self, key):
         with self.lock:
