@@ -22,7 +22,7 @@ class DataInfo(Enum):
 class LargeDict:
     def __init__(self, storage_dir=None):
         self.in_memory_key_number = 128
-        self.lock = threading.lock()
+        self.lock = threading.RLock()
         self.data = dict()
         self.data_info = dict()
         self.storage_dir = None
@@ -63,7 +63,7 @@ class LargeDict:
                 return
             if large_dict.data_info[key] == DataInfo.SAVING:
                 large_dict.data_info[key] = DataInfo.IN_DISK
-                large_dict.data.remove(key)
+                large_dict.data.pop(key)
 
     @staticmethod
     def delete_item(task):
@@ -76,8 +76,8 @@ class LargeDict:
             if large_dict.data_info[key] != DataInfo.PRE_DELETE:
                 get_logger().info("canceled key", key)
                 return
-            large_dict.data_info.remove(key)
-            large_dict.data.remove(key)
+            large_dict.data_info.pop(key)
+            large_dict.data.pop(key)
             shutil.rmtree(item_path)
 
     @staticmethod
@@ -125,11 +125,11 @@ class LargeDict:
         return len(self.keys())
 
     def __getitem__(self, key):
-        self.__flush_items(key)
+        # self.__flush_items(key)
         return self.__load_item(key)
 
     def __setitem__(self, key, val):
-        self.__flush_items(key)
+        # self.__flush_items(key)
         with self.lock:
             self.data_info[key] = DataInfo.IN_MEMORY
             self.data[key] = val
