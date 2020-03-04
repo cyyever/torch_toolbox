@@ -45,7 +45,7 @@ class LargeDict:
             self.permanent = True
         else:
             self.permanent = False
-        self.write_queue = TaskQueue(LargeDict.write_item, 8)
+        self.write_queue = TaskQueue(LargeDict.write_item, 1)
         self.delete_queue = TaskQueue(LargeDict.delete_item, 1)
         self.fetch_queue = TaskQueue(LargeDict.read_item, 1)
         self.flush_threads = ThreadPool()
@@ -161,13 +161,17 @@ class LargeDict:
                 if len(self.time_to_key) == 0:
                     return
 
-    def in_memory_keys(self):
-        real_keys = set()
+    def print_data_info(self):
+        cnt = {}
         with self.lock:
             for k, v in self.data_info.items():
-                if v == DataInfo.IN_MEMORY:
-                    real_keys.add(k)
-        return real_keys
+                if v not in cnt:
+                    cnt[v] = 1
+                else:
+                    cnt[v] += 1
+        for k, v in cnt.items():
+            get_logger().debug("%s => %s", k, v)
+        return
 
     def keys(self):
         real_keys = set()
@@ -197,26 +201,17 @@ class LargeDict:
             self.delete_queue.add_task((self, key))
 
     def release(self):
-        print("do_release")
         if self.permanent:
-            print("begin_save")
             self.flush_all()
-            print("end_save")
         self.fetch_queue.force_stop()
-        print("end fetch_queue")
         self.delete_queue.force_stop()
-        print("end delete_queue")
         self.write_queue.force_stop()
-        print("end write_queue")
         self.flush_threads.stop()
-        print("end flush_threads")
-        print("end_stop")
         self.data = None
 
         if self.storage_dir is not None:
-            print("rmtree ", self.storage_dir)
+            get_logger().debug("rmtree %s", self.storage_dir)
             shutil.rmtree(self.storage_dir)
-        print("end LargeDict")
 
     def get_key_storage_path(self, key):
         if self.storage_dir is None:
