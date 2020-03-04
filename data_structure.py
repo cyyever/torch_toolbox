@@ -1,6 +1,7 @@
 from enum import Enum, auto
 import shutil
 import os
+import time
 import threading
 
 import torch
@@ -29,6 +30,7 @@ class LargeDict:
         self.time_to_key = []
         self.key_to_time = dict()
         self.storage_dir = None
+        self.flush_all_once = False
 
         if storage_dir is not None:
             self.set_storage_dir(storage_dir)
@@ -50,12 +52,22 @@ class LargeDict:
     def flush_old_items(large_dict):
         with large_dict.lock:
             cached_len = len(large_dict.time_to_key)
-            if cached_len <= large_dict.in_memory_key_number:
+            if cached_len == 0 and large_dict.flush_all_once:
+                large_dict.flush_all_once = False
                 return
-            key = large_dict.time_to_key.pop(0)
-            large_dict.key_to_time.pop(key)
-            large_dict.data_info[key] = DataInfo.PRE_SAVING
-            large_dict.write_queue.add_task((large_dict, key))
+            if (
+                cached_len <= large_dict.in_memory_key_number
+                and not large_dict.flush_all_once
+            ):
+                return
+            if cached_len > 0:
+                key = large_dict.time_to_key.pop(0)
+                large_dict.key_to_time.pop(key)
+                assert len(
+                    large_dict.time_to_key) == len(
+                    large_dict.key_to_time)
+                large_dict.data_info[key] = DataInfo.PRE_SAVING
+                large_dict.write_queue.add_task((large_dict, key))
 
     @staticmethod
     def write_item(task):
@@ -77,9 +89,12 @@ class LargeDict:
             if key not in large_dict.data_info:
                 shutil.rmtree(item_path)
                 return
-            if large_dict.data_info[key] == DataInfo.SAVING:
-                large_dict.data_info[key] = DataInfo.IN_DISK
-                large_dict.data.pop(key)
+            if large_dict.data_info[key] != DataInfo.SAVING:
+                get_logger().warning("canceled key %s", key)
+                return
+            large_dict.data_info[key] = DataInfo.IN_DISK
+            large_dict.data.pop(key)
+            large_dict.__remove_access_time(key)
 
     @staticmethod
     def delete_item(task):
@@ -94,6 +109,7 @@ class LargeDict:
                 return
             large_dict.data_info.pop(key)
             large_dict.data.pop(key)
+            large_dict.__remove_access_time(key)
             shutil.rmtree(item_path)
 
     @staticmethod
@@ -101,21 +117,24 @@ class LargeDict:
         large_dict, key = task
         with large_dict.lock:
             if key not in large_dict.data_info:
-                get_logger().info("deleted key", key, ",ignore")
+                get_logger().warning("deleted key", key, ",ignore")
                 return
             if large_dict.data_info[key] != DataInfo.PRE_LOAD:
-                get_logger().info("canceled key", key)
+                get_logger().warning("canceled key %s", key)
                 return
             large_dict.data_info[key] = DataInfo.LOADING
 
         value = torch.load(large_dict.get_key_storage_path(key))
         with large_dict.lock:
             if key not in large_dict.data_info:
+                get_logger().warning("canceled key %s", key)
                 return
-            if large_dict.data_info[key] == DataInfo.LOADING:
-                large_dict.data[key] = value
-                large_dict.data_info[key] = DataInfo.IN_MEMORY
-                large_dict.__update_access_time(key)
+            if large_dict.data_info[key] != DataInfo.LOADING:
+                get_logger().warning("canceled key %s", key)
+                return
+            large_dict.data[key] = value
+            large_dict.data_info[key] = DataInfo.IN_MEMORY
+            large_dict.__update_access_time(key)
 
     def set_storage_dir(self, storage_dir):
         self.storage_dir = storage_dir
@@ -123,12 +142,18 @@ class LargeDict:
             os.makedirs(self.storage_dir)
 
     def set_in_memory_key_number(self, num):
-        self.in_memory_key_number = num
+        with self.lock:
+            self.in_memory_key_number = num
 
     def save(self):
         self.permanent = True
-        for k in self.keys():
-            self.__save_item(k)
+        with self.lock:
+            self.flush_all_once = True
+        while True:
+            time.sleep(1)
+            with self.lock:
+                if len(self.time_to_key) == 0:
+                    return
 
     def keys(self):
         real_keys = set()
@@ -142,7 +167,6 @@ class LargeDict:
         return len(self.keys())
 
     def __getitem__(self, key):
-        # self.__flush_items(key)
         return self.__load_item(key)
 
     def __setitem__(self, key, val):
@@ -173,26 +197,10 @@ class LargeDict:
             shutil.rmtree(self.storage_dir)
         print("end LargeDict")
 
-    def __flush_items(self, excluded_key):
-        real_keys = self.keys()
-        while len(real_keys) - 1 > self.in_memory_key_number:
-            for other_key in real_keys:
-                if other_key == excluded_key:
-                    continue
-                self.__save_item(other_key)
-
     def get_key_storage_path(self, key):
         if self.storage_dir is None:
             raise RuntimeError("no storage_dir")
         return os.path.join(self.storage_dir, str(key))
-
-    def __save_item(self, key):
-        with self.lock:
-            if key not in self.data_info:
-                return
-            if self.data_info[key] == DataInfo.IN_MEMORY:
-                self.data_info[key] = DataInfo.PRE_SAVING
-                self.write_queue.add_task((self, key))
 
     def __load_item(self, key):
         with self.lock:
@@ -202,16 +210,24 @@ class LargeDict:
                 self.data_info[key] = DataInfo.IN_MEMORY
                 self.__update_access_time(key)
                 return self.data[key]
+            self.data_info[key] = DataInfo.PRE_LOAD
             LargeDict.read_item((self, key))
             if key not in self.data:
                 raise KeyError(key)
             return self.data[key]
 
-    def __update_access_time(self, key):
+    def __remove_access_time(self, key):
         with self.lock:
             if key in self.key_to_time:
-                idx = self.key_to_time[key]
-                self.time_to_key.remove(idx)
+                idx = self.key_to_time.pop(key)
+                print(idx," and ",len(self.time_to_key))
+                assert idx < len(self.time_to_key)
+                self.time_to_key.pop(idx)
+                assert len(self.time_to_key) == len(self.key_to_time)
 
+    def __update_access_time(self, key):
+        with self.lock:
+            self.__remove_access_time(key)
             self.time_to_key.append(key)
             self.key_to_time[key] = len(self.time_to_key) - 1
+            assert len(self.time_to_key) == len(self.key_to_time)
