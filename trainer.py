@@ -112,6 +112,10 @@ class Trainer:
                         batch_index,
                         cur_learning_rates,
                         batch_loss))
+                if "after_batch_callback" in kwargs:
+                    kwargs["after_batch_callback"](
+                        self.model, batch, batch_index, cur_learning_rates
+                    )
 
                 optimizer.step()
                 batch_index += 1
