@@ -11,9 +11,6 @@ from .thread_pool import ThreadPool
 from .log import get_logger
 
 
-def current_milli_time():
-    return int(round(time.time() * 1000))
-
 
 class DataInfo(Enum):
     IN_MEMORY = auto()
@@ -73,25 +70,18 @@ class LargeDict:
 
         large_dict, key = task
         value = None
-        cur_time = current_milli_time()
         with large_dict.lock:
             if key not in large_dict.data_info:
-                get_logger().info("deleted key %s,ignore", key)
+                get_logger().warning("deleted key %s,ignore", key)
                 return
             if large_dict.data_info[key] != DataInfo.PRE_SAVING:
-                get_logger().info("canceled key %s", key)
+                get_logger().warning("canceled key %s", key)
                 return
             large_dict.data_info[key] = DataInfo.SAVING
             value = large_dict.data[key]
 
         item_path = large_dict.get_key_storage_path(key)
-        cur_time2 = current_milli_time()
-        print("check time ", cur_time2 - cur_time)
-        print("save ", key, item_path)
-        cur_time = cur_time2
         torch.save(value, item_path)
-        cur_time2 = current_milli_time()
-        print("save time ", cur_time2 - cur_time)
         with large_dict.lock:
             if key not in large_dict.data_info:
                 shutil.rmtree(item_path)
@@ -109,10 +99,10 @@ class LargeDict:
         item_path = large_dict.get_key_storage_path(key)
         with large_dict.lock:
             if key not in large_dict.data_info:
-                get_logger().info("deleted key %s,ignore", key)
+                get_logger().warning("deleted key %s,ignore", key)
                 return
             if large_dict.data_info[key] != DataInfo.PRE_DELETE:
-                get_logger().info("canceled key %s", key)
+                get_logger().warning("canceled key %s", key)
                 return
             large_dict.data_info.pop(key)
             large_dict.data.pop(key)
@@ -124,14 +114,13 @@ class LargeDict:
         large_dict, key = task
         with large_dict.lock:
             if key not in large_dict.data_info:
-                get_logger().info("deleted key %s,ignore", key)
+                get_logger().warning("deleted key %s,ignore", key)
                 return
             if large_dict.data_info[key] != DataInfo.PRE_LOAD:
                 get_logger().warning("canceled key %s", key)
                 return
             large_dict.data_info[key] = DataInfo.LOADING
 
-        print("load key")
         value = torch.load(large_dict.get_key_storage_path(key))
         with large_dict.lock:
             if key not in large_dict.data_info:
@@ -184,25 +173,28 @@ class LargeDict:
                     real_keys.add(k)
         return real_keys
 
-    def pre_fetch(self, key):
+    def prefetch(self, keys):
+        result = []
         with self.lock:
-            if key not in self.data_info:
-                raise KeyError(key)
-            if key in self.data:
-                self.data_info[key] = DataInfo.IN_MEMORY
-                self.__update_access_time(key)
-                return self.data_info[key], True
-            self.data_info[key] = DataInfo.PRE_LOAD
-            self.fetch_queue.add_task((self, key))
-            return None, False
+            for key in keys:
+                if key not in self.data_info:
+                    raise KeyError(key)
+                if key in self.data:
+                    self.data_info[key] = DataInfo.IN_MEMORY
+                    self.__update_access_time(key)
+                    result = [self.data[key]]
+                    continue
+                self.data_info[key] = DataInfo.PRE_LOAD
+                self.fetch_queue.add_task((self, key))
+        return result
 
     def __len__(self):
         return len(self.keys())
 
     def __getitem__(self, key):
-        value, flag = self.pre_fetch(key)
-        if flag:
-            return value
+        result = self.prefetch([key])
+        if result:
+            return result[0]
         while self.fetch_event.wait():
             with self.lock:
                 if self.data_info[key] == DataInfo.IN_MEMORY:
