@@ -1,4 +1,5 @@
-from multiprocessing import Process, Queue, Manager
+import multiprocessing
+
 from enum import Enum, auto
 
 import shutil
@@ -14,13 +15,9 @@ class SentinelData:
 
 class DataInfo(Enum):
     IN_MEMORY = auto()
+    IN_DISK = auto()
     IN_SAVING = auto()
-    DOCKER_BUILD = auto()
-    AFTER_INSTALL = auto()
-    UNIT_TEST = auto()
-    STATIC_ANALYSIS = auto()
-    FUZZING = auto()
-    PROFILING = auto()
+    IN_LOADING = auto()
 
 
 class LargeDict:
@@ -28,23 +25,23 @@ class LargeDict:
         self.in_memory_key_number = 128
         self.data = dict()
         self.storage_dir = None
-        self.manager = Manager()
-        self.data_info
+        self.manager = multiprocessing.Manager()
+        self.data_info = self.manager.dict()
+        self.lock = self.manager.lock()
         if storage_dir is not None:
             self.set_storage_dir(storage_dir)
-            self.data = {
-                int(f): None
+            self.data_info = {
+                int(f): DataInfo.IN_DISK
                 for f in os.listdir(storage_dir)
                 if os.path.isfile(os.path.join(storage_dir, f))
             }
             self.permanent = True
         else:
             self.permanent = False
-        self.in_memory_keys = set()
-        self.write_queue = Queue()
-        self.write_proc = Process(
-            target=LargeDict.write_item, args=(
-                self.write_queue,))
+        self.write_queue = multiprocessing.Queue()
+        self.write_proc = multiprocessing.Process(
+            target=LargeDict.write_item, args=(self.write_queue,)
+        )
         self.write_proc.start()
 
     @staticmethod
@@ -55,9 +52,14 @@ class LargeDict:
             if isinstance(item, SentinelData):
                 print("exit process")
                 break
-            key, value, stored_path = item
-            torch.save(value, stored_path)
-            print("save item", stored_path)
+            lock, data_info, key, value, stored_path = item
+            with lock:
+                if key not in data_info:
+                    print("deleted key,ignore")
+                    continue
+                if data_info[key] == DataInfo.IN_SAVING:
+                    torch.save(value, stored_path)
+                    print("save item", stored_path)
 
     def set_storage_dir(self, storage_dir):
         self.storage_dir = storage_dir
