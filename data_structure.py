@@ -26,9 +26,8 @@ class LargeDict:
         self.lock = threading.RLock()
         self.data = dict()
         self.data_info = dict()
-        self.time_to_key = dict()
+        self.time_to_key = []
         self.key_to_time = dict()
-        self.next_access_time = 0
         self.storage_dir = None
 
         if storage_dir is not None:
@@ -49,7 +48,14 @@ class LargeDict:
 
     @staticmethod
     def flush_old_items(large_dict):
-        pass
+        with large_dict.lock:
+            cached_len = len(large_dict.time_to_key)
+            if cached_len <= large_dict.in_memory_key_number:
+                return
+            key = large_dict.time_to_key.pop(0)
+            large_dict.key_to_time.pop(key)
+            large_dict.data_info[key] = DataInfo.PRE_SAVING
+            large_dict.write_queue.add_task((large_dict, key))
 
     @staticmethod
     def write_item(task):
@@ -204,10 +210,8 @@ class LargeDict:
     def __update_access_time(self, key):
         with self.lock:
             if key in self.key_to_time:
-                t = self.key_to_time[key]
-                self.time_to_key.pop(t)
+                idx = self.key_to_time[key]
+                self.time_to_key.remove(idx)
 
-            t = self.next_access_time
-            self.next_access_time += 1
-            self.key_to_time[key] = t
-            self.time_to_key[t] = key
+            self.time_to_key.append(key)
+            self.key_to_time[key] = len(self.time_to_key) - 1
