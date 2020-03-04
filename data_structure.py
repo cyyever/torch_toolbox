@@ -34,6 +34,7 @@ class LargeDict:
         self.time_to_key = []
         self.storage_dir = None
         self.flush_all_once = False
+        self.fetch_event = threading.Event()
 
         if storage_dir is not None:
             self.set_storage_dir(storage_dir)
@@ -45,6 +46,7 @@ class LargeDict:
             self.permanent = True
         else:
             self.permanent = False
+
         self.write_queue = TaskQueue(LargeDict.write_item, 1)
         self.delete_queue = TaskQueue(LargeDict.delete_item, 1)
         self.fetch_queue = TaskQueue(LargeDict.read_item, 1)
@@ -141,6 +143,7 @@ class LargeDict:
             large_dict.data[key] = value
             large_dict.data_info[key] = DataInfo.IN_MEMORY
             large_dict.__update_access_time(key)
+            large_dict.fetch_event.set()
 
     def set_storage_dir(self, storage_dir):
         self.storage_dir = storage_dir
@@ -181,11 +184,30 @@ class LargeDict:
                     real_keys.add(k)
         return real_keys
 
+    def pre_fetch(self, key):
+        with self.lock:
+            if key not in self.data_info:
+                raise KeyError(key)
+            if key in self.data:
+                self.data_info[key] = DataInfo.IN_MEMORY
+                self.__update_access_time(key)
+                return self.data_info[key], True
+            self.data_info[key] = DataInfo.PRE_LOAD
+            self.fetch_queue.add_task((self, key))
+            return None, False
+
     def __len__(self):
         return len(self.keys())
 
     def __getitem__(self, key):
-        return self.__load_item(key)
+        value, flag = self.pre_fetch(key)
+        if flag:
+            return value
+        while self.fetch_event.wait():
+            with self.lock:
+                if self.data_info[key] == DataInfo.IN_MEMORY:
+                    return self.data[key]
+                self.fetch_event.clear()
 
     def __setitem__(self, key, val):
         with self.lock:
@@ -217,20 +239,6 @@ class LargeDict:
         if self.storage_dir is None:
             raise RuntimeError("no storage_dir")
         return os.path.join(self.storage_dir, str(key))
-
-    def __load_item(self, key):
-        with self.lock:
-            if key not in self.data_info:
-                raise KeyError(key)
-            if key in self.data:
-                self.data_info[key] = DataInfo.IN_MEMORY
-                self.__update_access_time(key)
-                return self.data[key]
-            self.data_info[key] = DataInfo.PRE_LOAD
-            LargeDict.read_item((self, key))
-            if key not in self.data:
-                raise KeyError(key)
-            return self.data[key]
 
     def __remove_access_time(self, key):
         with self.lock:
