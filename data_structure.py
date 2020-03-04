@@ -6,6 +6,7 @@ import threading
 import torch
 
 from .task_queue import TaskQueue
+from .thread_pool import ThreadPool
 from .log import get_logger
 
 
@@ -25,6 +26,9 @@ class LargeDict:
         self.lock = threading.RLock()
         self.data = dict()
         self.data_info = dict()
+        self.time_to_key = dict()
+        self.key_to_time = dict()
+        self.next_access_time = 0
         self.storage_dir = None
 
         if storage_dir is not None:
@@ -40,6 +44,12 @@ class LargeDict:
         self.write_queue = TaskQueue(LargeDict.write_item, 1)
         self.delete_queue = TaskQueue(LargeDict.delete_item, 1)
         self.fetch_queue = TaskQueue(LargeDict.read_item, 1)
+        self.flush_threads = ThreadPool()
+        self.flush_threads.submit(1, LargeDict.flush_old_items, self)
+
+    @staticmethod
+    def flush_old_items(large_dict):
+        pass
 
     @staticmethod
     def write_item(task):
@@ -97,8 +107,9 @@ class LargeDict:
             if key not in large_dict.data_info:
                 return
             if large_dict.data_info[key] == DataInfo.LOADING:
-                large_dict.data_info[key] = DataInfo.IN_MEMORY
                 large_dict.data[key] = value
+                large_dict.data_info[key] = DataInfo.IN_MEMORY
+                large_dict.__update_access_time(key)
 
     def set_storage_dir(self, storage_dir):
         self.storage_dir = storage_dir
@@ -129,10 +140,10 @@ class LargeDict:
         return self.__load_item(key)
 
     def __setitem__(self, key, val):
-        # self.__flush_items(key)
         with self.lock:
-            self.data_info[key] = DataInfo.IN_MEMORY
             self.data[key] = val
+            self.data_info[key] = DataInfo.IN_MEMORY
+            self.__update_access_time(key)
 
     def __delitem__(self, key):
         with self.lock:
@@ -143,6 +154,7 @@ class LargeDict:
 
     def __del__(self):
         print("del LargeDict")
+        self.flush_threads.stop()
         self.fetch_queue.stop()
         self.delete_queue.stop()
         self.write_queue.stop()
@@ -182,8 +194,20 @@ class LargeDict:
                 raise KeyError(key)
             if key in self.data:
                 self.data_info[key] = DataInfo.IN_MEMORY
+                self.__update_access_time(key)
                 return self.data[key]
             LargeDict.read_item((self, key))
             if key not in self.data:
                 raise KeyError(key)
             return self.data[key]
+
+    def __update_access_time(self, key):
+        with self.lock:
+            if key in self.key_to_time:
+                t = self.key_to_time[key]
+                self.time_to_key.pop(t)
+
+            t = self.next_access_time
+            self.next_access_time += 1
+            self.key_to_time[key] = t
+            self.time_to_key[t] = key
