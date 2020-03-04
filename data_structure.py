@@ -11,6 +11,10 @@ from .thread_pool import ThreadPool
 from .log import get_logger
 
 
+def current_milli_time():
+    return int(round(time.time() * 1000))
+
+
 class DataInfo(Enum):
     IN_MEMORY = auto()
     IN_DISK = auto()
@@ -41,45 +45,51 @@ class LargeDict:
             self.permanent = True
         else:
             self.permanent = False
-        self.write_queue = TaskQueue(LargeDict.write_item, 1)
+        self.write_queue = TaskQueue(LargeDict.write_item, 8)
         self.delete_queue = TaskQueue(LargeDict.delete_item, 1)
         self.fetch_queue = TaskQueue(LargeDict.read_item, 1)
         self.flush_threads = ThreadPool()
-        self.flush_threads.submit(1, LargeDict.flush_old_items, self)
+        self.flush_threads.submit(0.05, LargeDict.flush_old_items, self)
 
     @staticmethod
     def flush_old_items(large_dict):
         with large_dict.lock:
-            cached_len = len(large_dict.time_to_key)
-            if cached_len == 0 and large_dict.flush_all_once:
+            if len(large_dict.time_to_key) == 0:
                 large_dict.flush_all_once = False
                 return
-            if (
-                cached_len <= large_dict.in_memory_key_number
-                and not large_dict.flush_all_once
+
+            while (
+                len(large_dict.time_to_key) > large_dict.in_memory_key_number
+                or large_dict.flush_all_once
             ):
-                return
-            if cached_len > 0:
                 key = large_dict.time_to_key.pop(0)
                 large_dict.data_info[key] = DataInfo.PRE_SAVING
                 large_dict.write_queue.add_task((large_dict, key))
 
     @staticmethod
     def write_item(task):
+
         large_dict, key = task
         value = None
+        cur_time = current_milli_time()
         with large_dict.lock:
             if key not in large_dict.data_info:
-                get_logger().info("deleted key", key, ",ignore")
+                get_logger().info("deleted key %s,ignore", key)
                 return
             if large_dict.data_info[key] != DataInfo.PRE_SAVING:
-                get_logger().info("canceled key", key)
+                get_logger().info("canceled key %s", key)
                 return
             large_dict.data_info[key] = DataInfo.SAVING
             value = large_dict.data[key]
 
         item_path = large_dict.get_key_storage_path(key)
+        cur_time2 = current_milli_time()
+        print("check time ", cur_time2 - cur_time)
+        print("save ", key, item_path)
+        cur_time = cur_time2
         torch.save(value, item_path)
+        cur_time2 = current_milli_time()
+        print("save time ", cur_time2 - cur_time)
         with large_dict.lock:
             if key not in large_dict.data_info:
                 shutil.rmtree(item_path)
@@ -97,10 +107,10 @@ class LargeDict:
         item_path = large_dict.get_key_storage_path(key)
         with large_dict.lock:
             if key not in large_dict.data_info:
-                get_logger().info("deleted key", key, ",ignore")
+                get_logger().info("deleted key %s,ignore", key)
                 return
             if large_dict.data_info[key] != DataInfo.PRE_DELETE:
-                get_logger().info("canceled key", key)
+                get_logger().info("canceled key %s", key)
                 return
             large_dict.data_info.pop(key)
             large_dict.data.pop(key)
@@ -112,13 +122,14 @@ class LargeDict:
         large_dict, key = task
         with large_dict.lock:
             if key not in large_dict.data_info:
-                get_logger().warning("deleted key", key, ",ignore")
+                get_logger().info("deleted key %s,ignore", key)
                 return
             if large_dict.data_info[key] != DataInfo.PRE_LOAD:
                 get_logger().warning("canceled key %s", key)
                 return
             large_dict.data_info[key] = DataInfo.LOADING
 
+        print("load key")
         value = torch.load(large_dict.get_key_storage_path(key))
         with large_dict.lock:
             if key not in large_dict.data_info:
@@ -140,7 +151,7 @@ class LargeDict:
         with self.lock:
             self.in_memory_key_number = num
 
-    def save(self):
+    def flush_all(self):
         self.permanent = True
         with self.lock:
             self.flush_all_once = True
@@ -149,6 +160,14 @@ class LargeDict:
             with self.lock:
                 if len(self.time_to_key) == 0:
                     return
+
+    def in_memory_keys(self):
+        real_keys = set()
+        with self.lock:
+            for k, v in self.data_info.items():
+                if v == DataInfo.IN_MEMORY:
+                    real_keys.add(k)
+        return real_keys
 
     def keys(self):
         real_keys = set()
@@ -177,16 +196,23 @@ class LargeDict:
             self.data_info[key] = DataInfo.PRE_DELETE
             self.delete_queue.add_task((self, key))
 
-    def __del__(self):
-        print("del LargeDict")
-        self.flush_threads.stop()
-        self.fetch_queue.stop()
-        self.delete_queue.stop()
-        self.write_queue.stop()
-        print("end put join")
+    def release(self):
+        print("do_release")
         if self.permanent:
-            print("end LargeDict")
-            return
+            print("begin_save")
+            self.flush_all()
+            print("end_save")
+        self.fetch_queue.force_stop()
+        print("end fetch_queue")
+        self.delete_queue.force_stop()
+        print("end delete_queue")
+        self.write_queue.force_stop()
+        print("end write_queue")
+        self.flush_threads.stop()
+        print("end flush_threads")
+        print("end_stop")
+        self.data = None
+
         if self.storage_dir is not None:
             print("rmtree ", self.storage_dir)
             shutil.rmtree(self.storage_dir)
