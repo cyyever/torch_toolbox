@@ -28,7 +28,6 @@ class LargeDict:
         self.data = dict()
         self.data_info = dict()
         self.time_to_key = []
-        self.key_to_time = dict()
         self.storage_dir = None
         self.flush_all_once = False
 
@@ -62,10 +61,6 @@ class LargeDict:
                 return
             if cached_len > 0:
                 key = large_dict.time_to_key.pop(0)
-                large_dict.key_to_time.pop(key)
-                assert len(
-                    large_dict.time_to_key) == len(
-                    large_dict.key_to_time)
                 large_dict.data_info[key] = DataInfo.PRE_SAVING
                 large_dict.write_queue.add_task((large_dict, key))
 
@@ -218,16 +213,12 @@ class LargeDict:
 
     def __remove_access_time(self, key):
         with self.lock:
-            if key in self.key_to_time:
-                idx = self.key_to_time.pop(key)
-                print(idx," and ",len(self.time_to_key))
-                assert idx < len(self.time_to_key)
-                self.time_to_key.pop(idx)
-                assert len(self.time_to_key) == len(self.key_to_time)
+            try:
+                self.time_to_key.remove(key)
+            except ValueError:
+                pass
 
     def __update_access_time(self, key):
         with self.lock:
             self.__remove_access_time(key)
             self.time_to_key.append(key)
-            self.key_to_time[key] = len(self.time_to_key) - 1
-            assert len(self.time_to_key) == len(self.key_to_time)
