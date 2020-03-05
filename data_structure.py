@@ -66,7 +66,6 @@ class LargeDict:
 
     @staticmethod
     def write_item(task):
-
         large_dict, key = task
         value = None
         with large_dict.lock:
@@ -80,9 +79,7 @@ class LargeDict:
             value = large_dict.data[key]
 
         item_path = large_dict.get_key_storage_path(key)
-        get_logger().error("before save item %s", key)
         torch.save(value, item_path)
-        get_logger().error("after save item %s", key)
         with large_dict.lock:
             if key not in large_dict.data_info:
                 shutil.rmtree(item_path)
@@ -106,7 +103,8 @@ class LargeDict:
                 get_logger().warning("canceled key %s", key)
                 return
             large_dict.data_info.pop(key)
-            large_dict.data.pop(key)
+            if key in large_dict.data:
+                large_dict.data.pop(key)
             large_dict.__remove_access_time(key)
             shutil.rmtree(item_path)
 
@@ -122,9 +120,14 @@ class LargeDict:
                 return
             large_dict.data_info[key] = DataInfo.LOADING
 
-        get_logger().error("before load item %s", key)
-        value = torch.load(large_dict.get_key_storage_path(key))
-        get_logger().error("end load item %s", key)
+        value = None
+        try:
+            value = torch.load(large_dict.get_key_storage_path(key))
+        except Exception:
+            get_logger().error("load key %s failed,delete it", key)
+            large_dict.__delitem__(key)
+            large_dict.fetch_event.set()
+
         with large_dict.lock:
             if key not in large_dict.data_info:
                 get_logger().warning("canceled key %s", key)
@@ -192,6 +195,7 @@ class LargeDict:
         return result
 
     def release(self):
+        get_logger().debug("release data structure")
         if self.permanent:
             self.flush_all()
         self.flush_threads.stop()
@@ -226,6 +230,8 @@ class LargeDict:
                 if self.data_info[key] == DataInfo.IN_MEMORY:
                     get_logger().debug("read key %s from prefetch", key)
                     return self.data[key]
+                if self.data_info[key] == DataInfo.PRE_DELETE:
+                    raise KeyError(key)
                 self.fetch_event.clear()
         raise KeyError(key)
 
@@ -237,7 +243,6 @@ class LargeDict:
 
     def __delitem__(self, key):
         with self.lock:
-            assert key in self.data
             assert key in self.data_info
             self.data_info[key] = DataInfo.PRE_DELETE
             self.delete_queue.add_task((self, key))
