@@ -7,7 +7,6 @@ import threading
 import torch
 
 from .task_queue import TaskQueue
-from .thread_pool import ThreadPool
 from .log import get_logger
 
 
@@ -46,11 +45,11 @@ class LargeDict:
         self.write_queue = TaskQueue(LargeDict.write_item, 1)
         self.delete_queue = TaskQueue(LargeDict.delete_item, 1)
         self.fetch_queue = TaskQueue(LargeDict.read_item, 1)
-        self.flush_threads = ThreadPool()
-        self.flush_threads.submit(0.05, LargeDict.flush_old_items, self)
+        self.flush_thread = TaskQueue(LargeDict.flush_old_items, 1)
 
     @staticmethod
-    def flush_old_items(large_dict):
+    def flush_old_items(task):
+        large_dict = task
         with large_dict.lock:
             if len(large_dict.time_to_key) == 0:
                 large_dict.flush_all_once = False
@@ -164,6 +163,7 @@ class LargeDict:
         self.permanent = True
         with self.lock:
             self.flush_all_once = True
+            self.flush_thread.add_task(self)
         while True:
             time.sleep(1)
             with self.lock:
@@ -180,7 +180,6 @@ class LargeDict:
                     cnt[v] += 1
         for k, v in cnt.items():
             get_logger().debug("%s => %s", k, v)
-        return
 
     def keys(self):
         real_keys = set()
@@ -209,7 +208,7 @@ class LargeDict:
         get_logger().debug("release data structure")
         if self.permanent:
             self.flush_all()
-        self.flush_threads.stop()
+        self.flush_thread.stop()
         self.fetch_queue.force_stop()
         self.delete_queue.force_stop()
         self.write_queue.force_stop()
@@ -272,3 +271,5 @@ class LargeDict:
         with self.lock:
             self.__remove_access_time(key)
             self.time_to_key.append(key)
+            if len(self.time_to_key) > self.in_memory_key_number:
+                self.flush_thread.add_task(self)

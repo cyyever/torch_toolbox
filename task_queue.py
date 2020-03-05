@@ -39,11 +39,11 @@ class TaskQueue(queue.Queue):
 
     def __worker(self, stop_event):
         while True:
-            if stop_event.wait(0.00001):
+            if stop_event.wait():
                 break
             task = None
             try:
-                task = self.get(block=False, timeout=1)
+                task = self.get()
             except queue.Empty:
                 continue
             if task is None:
