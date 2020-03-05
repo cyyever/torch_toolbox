@@ -208,7 +208,7 @@ class LargeDict:
         get_logger().debug("release data structure")
         if self.permanent:
             self.flush_all()
-        self.flush_thread.stop()
+        self.flush_thread.force_stop()
         self.fetch_queue.force_stop()
         self.delete_queue.force_stop()
         self.write_queue.force_stop()
