@@ -5,11 +5,10 @@ import traceback
 from .log import get_logger
 
 
-class SentinelTask:
-    pass
-
-
 class TaskQueue(queue.Queue):
+    class SentinelTask:
+        pass
+
     def __init__(self, processor, worker_num=10):
         queue.Queue.__init__(self)
         self.worker_num = worker_num
@@ -24,7 +23,7 @@ class TaskQueue(queue.Queue):
     def stop(self):
         # stop workers
         for _ in range(self.worker_num):
-            self.put(SentinelTask)
+            self.put(TaskQueue.SentinelTask())
         # block until all tasks are done
         self.join()
         for thd in self.threads:
@@ -34,7 +33,7 @@ class TaskQueue(queue.Queue):
         self.stop_event.set()
         # stop workers
         for _ in range(self.worker_num):
-            self.put(SentinelTask)
+            self.put(TaskQueue.SentinelTask())
         for thd in self.threads:
             thd.join()
 
@@ -44,7 +43,7 @@ class TaskQueue(queue.Queue):
     def __worker(self, stop_event):
         while not stop_event.is_set():
             task = self.get()
-            if isinstance(task, SentinelTask):
+            if isinstance(task, TaskQueue.SentinelTask):
                 self.task_done()
                 break
             try:
