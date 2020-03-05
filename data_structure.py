@@ -79,13 +79,23 @@ class LargeDict:
             value = large_dict.data[key]
 
         item_path = large_dict.get_key_storage_path(key)
-        torch.save(value, item_path)
+        save_flag = True
+        try:
+            torch.save(value, item_path)
+        except Exception:
+            get_logger().error("save key %s failed,delete it", key)
+            save_flag = False
+
         with large_dict.lock:
             if key not in large_dict.data_info:
-                shutil.rmtree(item_path)
+                if os.path.exists(item_path):
+                    shutil.rmtree(item_path)
                 return
             if large_dict.data_info[key] != DataInfo.SAVING:
                 get_logger().warning("canceled key %s", key)
+                return
+            if not save_flag:
+                large_dict.data_info[key] = DataInfo.IN_MEMORY
                 return
             large_dict.data_info[key] = DataInfo.IN_DISK
             large_dict.data.pop(key)
@@ -106,7 +116,8 @@ class LargeDict:
             if key in large_dict.data:
                 large_dict.data.pop(key)
             large_dict.__remove_access_time(key)
-            shutil.rmtree(item_path)
+            if os.path.exists(item_path):
+                shutil.rmtree(item_path)
 
     @staticmethod
     def read_item(task):
