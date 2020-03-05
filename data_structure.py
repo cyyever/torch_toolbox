@@ -80,7 +80,9 @@ class LargeDict:
             value = large_dict.data[key]
 
         item_path = large_dict.get_key_storage_path(key)
+        get_logger().error("before save item %s", key)
         torch.save(value, item_path)
+        get_logger().error("after save item %s", key)
         with large_dict.lock:
             if key not in large_dict.data_info:
                 shutil.rmtree(item_path)
@@ -120,7 +122,9 @@ class LargeDict:
                 return
             large_dict.data_info[key] = DataInfo.LOADING
 
+        get_logger().error("before load item %s", key)
         value = torch.load(large_dict.get_key_storage_path(key))
+        get_logger().error("end load item %s", key)
         with large_dict.lock:
             if key not in large_dict.data_info:
                 get_logger().warning("canceled key %s", key)
@@ -215,12 +219,15 @@ class LargeDict:
     def __getitem__(self, key):
         result = self.prefetch([key])
         if result:
+            get_logger().debug("read key %s in memory", key)
             return result[0]
         while self.fetch_event.wait():
             with self.lock:
                 if self.data_info[key] == DataInfo.IN_MEMORY:
+                    get_logger().debug("read key %s from prefetch", key)
                     return self.data[key]
                 self.fetch_event.clear()
+        raise KeyError(key)
 
     def __setitem__(self, key, val):
         with self.lock:
