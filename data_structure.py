@@ -233,12 +233,11 @@ class LargeDict:
     def __getitem__(self, key):
         result = self.prefetch([key])
         if result:
-            get_logger().debug("read key %s in memory", key)
             return result[0]
         while self.fetch_event.wait():
             with self.lock:
                 if self.data_info[key] == DataInfo.IN_MEMORY:
-                    get_logger().debug("read key %s from prefetch", key)
+                    get_logger().debug("read key %s from disk", key)
                     return self.data[key]
                 if self.data_info[key] == DataInfo.PRE_DELETE:
                     raise KeyError(key)
