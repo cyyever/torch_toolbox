@@ -212,6 +212,10 @@ class LargeDict:
     def __len__(self):
         return len(self.keys())
 
+    def __contains__(self, key):
+        with self.lock:
+            return key in self.data_info and self.data_info[key] != DataInfo.PRE_DELETE
+
     def __getitem__(self, key):
         result = self.prefetch([key])
         if result:
