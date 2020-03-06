@@ -12,6 +12,7 @@ from .log import get_logger
 
 class DataInfo(Enum):
     IN_MEMORY = auto()
+    IN_MEMORY_NEW_DATA = auto()
     IN_DISK = auto()
     PRE_SAVING = auto()
     SAVING = auto()
@@ -44,7 +45,7 @@ class LargeDict:
 
         self.write_queue = TaskQueue(LargeDict.write_item, 1)
         self.delete_queue = TaskQueue(LargeDict.delete_item, 1)
-        self.fetch_queue = TaskQueue(LargeDict.read_item, 1)
+        self.fetch_queue = TaskQueue(LargeDict.read_item, 2)
         self.flush_thread = TaskQueue(LargeDict.flush_old_items, 1)
 
     @staticmethod
@@ -55,10 +56,8 @@ class LargeDict:
                 large_dict.flush_all_once = False
                 return
 
-            while (
-                len(large_dict.time_to_key) > large_dict.in_memory_key_number
-                or large_dict.flush_all_once
-            ):
+            while len(large_dict.time_to_key) > large_dict.in_memory_key_number or (
+                    large_dict.flush_all_once and len(large_dict.time_to_key) > 0):
                 key = large_dict.time_to_key.pop(0)
                 large_dict.data_info[key] = DataInfo.PRE_SAVING
                 large_dict.write_queue.add_task((large_dict, key))
@@ -100,7 +99,7 @@ class LargeDict:
                     large_dict.data_info[key])
                 return
             if not save_flag:
-                large_dict.data_info[key] = DataInfo.IN_MEMORY
+                large_dict.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
                 return
             large_dict.data_info[key] = DataInfo.IN_DISK
             large_dict.data.pop(key)
@@ -214,7 +213,8 @@ class LargeDict:
                         DataInfo.PRE_LOAD, DataInfo.LOADING):
                     continue
                 if key in self.data:
-                    self.data_info[key] = DataInfo.IN_MEMORY
+                    if self.data_info[key] != DataInfo.IN_MEMORY_NEW_DATA:
+                        self.data_info[key] = DataInfo.IN_MEMORY
                     self.__update_access_time(key)
                     result = [self.data[key]]
                     continue
@@ -258,7 +258,10 @@ class LargeDict:
             return result[0]
         while self.fetch_event.wait():
             with self.lock:
-                if self.data_info[key] == DataInfo.IN_MEMORY:
+                if self.data_info[key] in (
+                    DataInfo.IN_MEMORY,
+                    DataInfo.IN_MEMORY_NEW_DATA,
+                ):
                     get_logger().debug("read key %s from disk", key)
                     return self.data[key]
                 if self.data_info[key] == DataInfo.PRE_DELETE:
@@ -269,7 +272,7 @@ class LargeDict:
     def __setitem__(self, key, val):
         with self.lock:
             self.data[key] = val
-            self.data_info[key] = DataInfo.IN_MEMORY
+            self.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
             self.__update_access_time(key)
 
     def __delitem__(self, key):
