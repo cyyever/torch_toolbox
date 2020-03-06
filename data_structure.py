@@ -72,7 +72,10 @@ class LargeDict:
                 get_logger().warning("deleted key %s,ignore", key)
                 return
             if large_dict.data_info[key] != DataInfo.PRE_SAVING:
-                get_logger().warning("canceled key %s", key)
+                get_logger().warning(
+                    "canceled key %s, info is %s",
+                    key,
+                    large_dict.data_info[key])
                 return
             large_dict.data_info[key] = DataInfo.SAVING
             value = large_dict.data[key]
@@ -82,7 +85,7 @@ class LargeDict:
         try:
             torch.save(value, item_path)
         except Exception:
-            get_logger().error("save key %s failed,delete it", key)
+            get_logger().error("save key %s failed,keep it in memory", key)
             save_flag = False
 
         with large_dict.lock:
@@ -91,7 +94,10 @@ class LargeDict:
                     shutil.rmtree(item_path)
                 return
             if large_dict.data_info[key] != DataInfo.SAVING:
-                get_logger().warning("canceled key %s", key)
+                get_logger().warning(
+                    "canceled key %s, info is %s",
+                    key,
+                    large_dict.data_info[key])
                 return
             if not save_flag:
                 large_dict.data_info[key] = DataInfo.IN_MEMORY
@@ -111,6 +117,7 @@ class LargeDict:
             if large_dict.data_info[key] != DataInfo.PRE_DELETE:
                 get_logger().warning("canceled key %s", key)
                 return
+            get_logger().warning("delete key %s", key)
             large_dict.data_info.pop(key)
             if key in large_dict.data:
                 large_dict.data.pop(key)
@@ -126,7 +133,10 @@ class LargeDict:
                 get_logger().warning("deleted key %s,ignore", key)
                 return
             if large_dict.data_info[key] != DataInfo.PRE_LOAD:
-                get_logger().warning("canceled key %s", key)
+                get_logger().warning(
+                    "canceled key %s, info is %s",
+                    key,
+                    large_dict.data_info[key])
                 return
             large_dict.data_info[key] = DataInfo.LOADING
 
@@ -143,7 +153,10 @@ class LargeDict:
                 get_logger().warning("canceled key %s", key)
                 return
             if large_dict.data_info[key] != DataInfo.LOADING:
-                get_logger().warning("canceled key %s", key)
+                get_logger().warning(
+                    "canceled key %s, info is %s",
+                    key,
+                    large_dict.data_info[key])
                 return
             large_dict.data[key] = value
             large_dict.data_info[key] = DataInfo.IN_MEMORY
@@ -189,12 +202,17 @@ class LargeDict:
                     real_keys.add(k)
         return real_keys
 
-    def prefetch(self, keys):
+    def prefetch(self, keys, ignore_unknown_keys=True):
         result = []
-        with self.lock:
-            for key in keys:
+        for key in keys:
+            with self.lock:
                 if key not in self.data_info:
+                    if ignore_unknown_keys:
+                        continue
                     raise KeyError(key)
+                if self.data_info[key] in (
+                        DataInfo.PRE_LOAD, DataInfo.LOADING):
+                    continue
                 if key in self.data:
                     self.data_info[key] = DataInfo.IN_MEMORY
                     self.__update_access_time(key)
