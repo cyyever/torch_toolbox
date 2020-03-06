@@ -153,10 +153,10 @@ class Trainer:
             lr_scheduler.step()
             if "after_epoch_callback" in kwargs:
                 kwargs["after_epoch_callback"](self.model, epoch)
-            if self.min_training_loss is None or training_loss < self.min_training_loss:
-                self.min_training_loss = training_loss
-                self.min_training_loss_model = copy.deepcopy(self.model)
-                self.min_training_loss_model.to(get_cpu_device())
+            # if self.min_training_loss is None or training_loss < self.min_training_loss:
+            #     self.min_training_loss = training_loss
+            #     self.min_training_loss_model = copy.deepcopy(self.model)
+            #     self.min_training_loss_model.to(get_cpu_device())
 
     def save(self, save_dir, save_min_model=False):
         if not os.path.isdir(save_dir):
