@@ -46,10 +46,10 @@ class LargeDict:
         self.write_queue = TaskQueue(LargeDict.write_item, 1)
         self.delete_queue = TaskQueue(LargeDict.delete_item, 1)
         self.fetch_queue = TaskQueue(LargeDict.read_item, 2)
-        self.flush_thread = TaskQueue(LargeDict.flush_old_items, 1)
+        self.flush_thread = TaskQueue(LargeDict.flush_item, 1)
 
     @staticmethod
-    def flush_old_items(task):
+    def flush_item(task):
         large_dict = task
         with large_dict.lock:
             if len(large_dict.time_to_key) == 0:
@@ -59,8 +59,9 @@ class LargeDict:
             while len(large_dict.time_to_key) > large_dict.in_memory_key_number or (
                     large_dict.flush_all_once and len(large_dict.time_to_key) > 0):
                 key = large_dict.time_to_key.pop(0)
-                large_dict.data_info[key] = DataInfo.PRE_SAVING
-                large_dict.write_queue.add_task((large_dict, key))
+                if large_dict.data_info[key] == DataInfo.IN_MEMORY_NEW_DATA:
+                    large_dict.data_info[key] = DataInfo.PRE_SAVING
+                    large_dict.write_queue.add_task((large_dict, key))
 
     @staticmethod
     def write_item(task):
