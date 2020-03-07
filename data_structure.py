@@ -174,11 +174,6 @@ class LargeDict:
         with self.lock:
             self.flush_all_once = True
             self.flush_thread.add_task(self)
-        while True:
-            time.sleep(1)
-            with self.lock:
-                if not self.flush_all_once:
-                    return
 
     def print_data_info(self):
         cnt = {}
@@ -233,10 +228,10 @@ class LargeDict:
         get_logger().debug("release data structure")
         if self.permanent:
             self.flush_all()
-        self.flush_thread.force_stop()
         self.fetch_queue.force_stop()
-        self.delete_queue.force_stop()
-        self.write_queue.force_stop()
+        self.flush_thread.stop()
+        self.delete_queue.stop()
+        self.write_queue.stop()
         self.data = None
 
         if (
