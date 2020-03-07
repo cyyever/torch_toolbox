@@ -3,6 +3,7 @@ import shutil
 import os
 import time
 import threading
+import collections
 
 import torch
 
@@ -27,10 +28,9 @@ class LargeDict:
         self.lock = threading.RLock()
         self.data = dict()
         self.data_info = dict()
-        self.time_to_key = []
+        self.LRU_keys = collections.OrderedDict()
         self.storage_dir = None
-        self.flush_all_once = False
-        self.fetch_event = threading.Event()
+        self.permanent = False
 
         if storage_dir is not None:
             self.set_storage_dir(storage_dir)
@@ -40,13 +40,13 @@ class LargeDict:
                 if os.path.isfile(os.path.join(storage_dir, f))
             }
             self.permanent = True
-        else:
-            self.permanent = False
 
         self.write_queue = TaskQueue(LargeDict.write_item, 1)
         self.delete_queue = TaskQueue(LargeDict.delete_item, 1)
         self.fetch_queue = TaskQueue(LargeDict.read_item, 1)
         self.flush_thread = TaskQueue(LargeDict.flush_item, 1)
+        self.flush_all_once = False
+        self.fetch_event = threading.Event()
 
     @staticmethod
     def flush_item(task):
@@ -141,7 +141,7 @@ class LargeDict:
                 large_dict.data_info[key] = DataInfo.IN_DISK
                 large_dict.fetch_event.set()
 
-        get_logger().warning("do lock")
+        get_logger().debug("do lock")
         with large_dict.lock:
             if key not in large_dict.data_info:
                 get_logger().warning("canceled key %s", key)
@@ -154,11 +154,11 @@ class LargeDict:
                 return
             large_dict.data[key] = value
             large_dict.data_info[key] = DataInfo.IN_MEMORY
-            get_logger().warning("end data_info")
+            get_logger().debug("begin update acc")
             large_dict.__update_access_time(key)
-            get_logger().warning("end update acc")
+            get_logger().debug("end update acc")
             large_dict.fetch_event.set()
-        get_logger().warning("end lock")
+        get_logger().debug("end lock")
 
     def set_storage_dir(self, storage_dir):
         self.storage_dir = storage_dir
@@ -307,36 +307,6 @@ class LargeDict:
     def __del__(self):
         self.release()
 
-    def __remove_access_time(self, key):
-        with self.lock:
-            try:
-                self.time_to_key.remove(key)
-                if not self.time_to_key:
-                    self.flush_all_once = False
-                    return
-            except ValueError:
-                pass
-
-    def __pop_expired_access_time(self):
-        with self.lock:
-            if len(self.time_to_key) > self.in_memory_key_number or (
-                self.flush_all_once and len(self.time_to_key) > 0
-            ):
-                key = self.time_to_key[0]
-                self.__remove_access_time(key)
-                return True, self.time_to_key[0]
-            if not self.time_to_key:
-                self.flush_all_once = False
-            return False, None
-
-    def __update_access_time(self, key):
-        with self.lock:
-            self.__remove_access_time(key)
-            self.time_to_key.append(key)
-            assert self.get_in_memeory_cnt() == len(self.time_to_key)
-            if len(self.time_to_key) > self.in_memory_key_number:
-                self.flush_thread.add_task(self)
-
     def __change_data_info(self, key, from_info, to_info):
         with self.lock:
             if key not in self.data_info:
@@ -349,3 +319,34 @@ class LargeDict:
                 return False
             self.data_info[key] = to_info
             return True
+
+    def __remove_access_time(self, key):
+        with self.lock:
+            if key in self.LRU_keys:
+                del self.LRU_keys[key]
+
+    def __pop_expired_access_time(self):
+        with self.lock:
+            if len(self.LRU_keys) > self.in_memory_key_number or (
+                self.flush_all_once and len(self.LRU_keys) > 0
+            ):
+                key = self.LRU_keys.popitem(last=False)
+                return True, key
+            if not self.LRU_keys:
+                self.flush_all_once = False
+            return False, None
+
+    def __update_access_time(self, key):
+        with self.lock:
+            new_item = False
+            if key in self.LRU_keys:
+                get_logger().debug("begin move_to_end")
+                self.LRU_keys.move_to_end(key)
+                get_logger().debug("end move_to_end")
+            else:
+                get_logger().debug("begin add LRU_keys")
+                self.LRU_keys[key] = 1
+                new_item = True
+                get_logger().debug("end add LRU_keys")
+            if new_item and len(self.LRU_keys) > self.in_memory_key_number:
+                self.flush_thread.add_task(self)
