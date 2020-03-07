@@ -8,6 +8,7 @@ from .device import get_cpu_device
 from .device import get_device
 from .util import model_gradients_to_vector
 from .validator import Validator
+from .log import get_logger
 
 
 class Trainer:
@@ -105,13 +106,14 @@ class Trainer:
                     batch_loss = loss.data.item()
                     loss.backward()
 
-                print(
-                    "trainer:{}, epoch: {}, batch: {}, learning rate: {}, batch training loss: {}".format(
-                        self.name,
-                        epoch,
-                        batch_index,
-                        cur_learning_rates,
-                        batch_loss))
+                get_logger().info(
+                    "trainer: %s, epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
+                    self.name,
+                    epoch,
+                    batch_index,
+                    cur_learning_rates,
+                    batch_loss,
+                )
                 if "after_batch_callback" in kwargs:
                     kwargs["after_batch_callback"](
                         self.model, batch, batch_index, cur_learning_rates
@@ -128,10 +130,11 @@ class Trainer:
                     batch_loss /= instance_size
                 training_loss += batch_loss
 
-            print(
-                "trainer:{}, epoch: {}, epoch training loss: {}".format(
-                    self.name, epoch, training_loss
-                )
+            get_logger().info(
+                "trainer:%s, epoch: %s, epoch training loss: %s",
+                self.name,
+                epoch,
+                training_loss,
             )
 
             if "validation_dataset" in kwargs:
@@ -144,10 +147,12 @@ class Trainer:
                     validation_loss, accuracy = Validator(
                         self.model, self.loss_fun, kwargs["validation_dataset"]
                     ).validate(batch_size)
-                    print(
-                        "trainer:{}, epoch: {}, validation loss: {}, accuracy = {}".format(
-                            self.name, epoch, validation_loss.data.item(), accuracy
-                        )
+                    get_logger().info(
+                        "trainer:%s, epoch: %s, validation loss: %s, accuracy = %s",
+                        self.name,
+                        epoch,
+                        validation_loss.data.item(),
+                        accuracy,
                     )
 
             lr_scheduler.step()

@@ -262,13 +262,9 @@ class LargeDict:
 
     def __getitem__(self, key):
         get_logger().debug("before get lock")
-        cur_time = time.time()
         result = self.prefetch([key])
         if result:
-            get_logger().debug(
-                "end get key %s %s", key, (time.time() - cur_time) * 1000
-            )
-            # get_logger().debug("end get key %s", key)
+            get_logger().debug("end get key %s", key)
             return result[0]
         with self.lock:
             self.wait_fetch_event = True
@@ -291,7 +287,6 @@ class LargeDict:
         with self.lock:
             self.data[key] = val
             self.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
-            # self._update_item_access_time(key)
 
     def __delitem__(self, key):
         with self.lock:
