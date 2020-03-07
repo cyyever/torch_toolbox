@@ -54,7 +54,7 @@ class LargeDict:
         large_dict = task
         while True:
             with large_dict.lock:
-                succ_flag, key = large_dict.__pop_expired_access_time()
+                succ_flag, key = large_dict.__pop_expired_key()
                 if not succ_flag:
                     return
                 assert large_dict.data_info[key] in (
@@ -100,11 +100,11 @@ class LargeDict:
                 return
             if not succ_flag:
                 large_dict.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
-                large_dict.__add_access_time(key)
+                large_dict.__add_item_access_time(key)
                 return
             large_dict.data_info[key] = DataInfo.IN_DISK
             large_dict.data.pop(key)
-            large_dict.__remove_access_time(key)
+            large_dict.__remove_item_access_time(key)
 
     @staticmethod
     def delete_item(task):
@@ -121,7 +121,7 @@ class LargeDict:
             large_dict.data_info.pop(key)
             if key in large_dict.data:
                 large_dict.data.pop(key)
-            large_dict.__remove_access_time(key)
+            large_dict.__remove_item_access_time(key)
             if os.path.exists(item_path):
                 shutil.rmtree(item_path)
 
@@ -155,7 +155,7 @@ class LargeDict:
                 return
             large_dict.data[key] = value
             large_dict.data_info[key] = DataInfo.IN_MEMORY
-            large_dict.__add_access_time(key)
+            large_dict.__add_item_access_time(key)
             if large_dict.wait_fetch_event:
                 large_dict.fetch_event.set()
                 get_logger().debug("end fetch_event set")
@@ -223,7 +223,7 @@ class LargeDict:
                 if key in self.data:
                     if self.data_info[key] != DataInfo.IN_MEMORY_NEW_DATA:
                         self.data_info[key] = DataInfo.IN_MEMORY
-                    # self.__update_access_time(key)
+                    # self._update_item_access_time(key)
                     result = [self.data[key]]
                     continue
                 self.data_info[key] = DataInfo.PRE_LOAD
@@ -291,7 +291,7 @@ class LargeDict:
         with self.lock:
             self.data[key] = val
             self.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
-            # self.__update_access_time(key)
+            # self._update_item_access_time(key)
 
     def __delitem__(self, key):
         with self.lock:
@@ -315,12 +315,11 @@ class LargeDict:
             self.data_info[key] = to_info
             return True
 
-    def __remove_access_time(self, key):
+    def __remove_item_access_time(self, key):
         with self.lock:
-            if key in self.LRU_keys:
-                del self.LRU_keys[key]
+            del self.LRU_keys[key]
 
-    def __pop_expired_access_time(self):
+    def __pop_expired_key(self):
         with self.lock:
             if len(self.LRU_keys) > self.in_memory_key_number or (
                 self.flush_all_once and len(self.LRU_keys) > 0
@@ -331,13 +330,13 @@ class LargeDict:
                 self.flush_all_once = False
             return False, None
 
-    def __update_access_time(self, key):
+    def _update_item_access_time(self, key):
         get_logger().debug("begin update acc")
         with self.lock:
             self.LRU_keys.move_to_end(key)
         get_logger().debug("end update acc")
 
-    def __add_access_time(self, key):
+    def __add_item_access_time(self, key):
         get_logger().debug("begin add acc")
         with self.lock:
             self.LRU_keys[key] = None
