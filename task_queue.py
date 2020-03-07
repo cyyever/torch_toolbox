@@ -15,12 +15,18 @@ class TaskQueue(queue.Queue):
         self.processor = processor
         self.threads = []
         self.stop_event = threading.Event()
+        self.start()
+
+    def start(self):
+        self.stop()
         for _ in range(self.worker_num):
             t = threading.Thread(target=self.__worker, args=(self.stop_event,))
             self.threads.append(t)
             t.start()
 
     def stop(self):
+        if not self.threads:
+            return
         # stop workers
         for _ in range(self.worker_num):
             self.put(TaskQueue.SentinelTask())
@@ -28,14 +34,19 @@ class TaskQueue(queue.Queue):
         self.join()
         for thd in self.threads:
             thd.join()
+        self.threads = None
 
     def force_stop(self):
+        if not self.threads:
+            return
         self.stop_event.set()
         # stop workers
         for _ in range(self.worker_num):
             self.put(TaskQueue.SentinelTask())
         for thd in self.threads:
             thd.join()
+        self.threads = None
+        self.stop_event.clear()
 
     def add_task(self, task):
         self.put(task)

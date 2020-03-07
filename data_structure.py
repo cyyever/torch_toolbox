@@ -1,7 +1,6 @@
 from enum import Enum, auto
 import shutil
 import os
-import time
 import threading
 import collections
 
@@ -225,7 +224,7 @@ class LargeDict:
         return result
 
     def release(self):
-        get_logger().debug("release data structure")
+        get_logger().info("release data structure")
         if self.permanent:
             self.flush_all()
         self.fetch_queue.force_stop()
@@ -306,9 +305,10 @@ class LargeDict:
             return True
 
     def __pop_expired_key(self):
-        if len(self.LRU_keys) > self.in_memory_key_number or (
-            self.flush_all_once and len(self.LRU_keys) > 0
-        ):
+        threshhold = self.in_memory_key_number
+        if self.flush_all_once:
+            threshhold = 0
+        if len(self.LRU_keys) > threshhold:
             key = self.LRU_keys.popitem(last=False)[0]
             return True, key
         if not self.LRU_keys:
