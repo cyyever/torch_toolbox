@@ -223,7 +223,7 @@ class LargeDict:
                 if key in self.data:
                     if self.data_info[key] != DataInfo.IN_MEMORY_NEW_DATA:
                         self.data_info[key] = DataInfo.IN_MEMORY
-                    # self._update_item_access_time(key)
+                    # self.__update_item_access_time(key)
                     result = [self.data[key]]
                     continue
                 self.data_info[key] = DataInfo.PRE_LOAD
@@ -285,6 +285,11 @@ class LargeDict:
 
     def __setitem__(self, key, val):
         with self.lock:
+            if key in self.LRU_keys:
+                self.__update_item_access_time(key)
+            else:
+                self.__add_item_access_time(key)
+
             self.data[key] = val
             self.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
 
@@ -325,7 +330,7 @@ class LargeDict:
                 self.flush_all_once = False
             return False, None
 
-    def _update_item_access_time(self, key):
+    def __update_item_access_time(self, key):
         get_logger().debug("begin update acc")
         with self.lock:
             self.LRU_keys.move_to_end(key)
