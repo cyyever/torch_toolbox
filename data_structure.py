@@ -143,7 +143,6 @@ class LargeDict:
                 if large_dict.wait_fetch_event:
                     large_dict.fetch_event.set()
 
-        get_logger().debug("do lock")
         with large_dict.lock:
             if key not in large_dict.data_info:
                 get_logger().warning("canceled key %s", key)
@@ -160,7 +159,6 @@ class LargeDict:
             if large_dict.wait_fetch_event:
                 large_dict.fetch_event.set()
                 get_logger().debug("end fetch_event set")
-        get_logger().debug("end lock")
 
     def set_storage_dir(self, storage_dir):
         self.storage_dir = storage_dir
