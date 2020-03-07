@@ -100,7 +100,7 @@ class LargeDict:
                 return
             if not succ_flag:
                 large_dict.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
-                large_dict.__update_access_time(key)
+                large_dict.__add_access_time(key)
                 return
             large_dict.data_info[key] = DataInfo.IN_DISK
             large_dict.data.pop(key)
@@ -155,7 +155,7 @@ class LargeDict:
                 return
             large_dict.data[key] = value
             large_dict.data_info[key] = DataInfo.IN_MEMORY
-            large_dict.__update_access_time(key)
+            large_dict.__add_access_time(key)
             if large_dict.wait_fetch_event:
                 large_dict.fetch_event.set()
                 get_logger().debug("end fetch_event set")
@@ -291,7 +291,7 @@ class LargeDict:
         with self.lock:
             self.data[key] = val
             self.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
-            self.__update_access_time(key)
+            # self.__update_access_time(key)
 
     def __delitem__(self, key):
         with self.lock:
@@ -334,12 +334,14 @@ class LargeDict:
     def __update_access_time(self, key):
         get_logger().debug("begin update acc")
         with self.lock:
-            new_item = False
-            if key in self.LRU_keys:
-                self.LRU_keys.move_to_end(key)
-            else:
-                self.LRU_keys[key] = None
-                new_item = True
-            if new_item and len(self.LRU_keys) > self.in_memory_key_number:
-                self.flush_thread.add_task(self)
+            self.LRU_keys.move_to_end(key)
         get_logger().debug("end update acc")
+
+    def __add_access_time(self, key):
+        get_logger().debug("begin add acc")
+        with self.lock:
+            self.LRU_keys[key] = None
+            # assert len(self.data) == len(self.LRU_keys)
+            if len(self.LRU_keys) > self.in_memory_key_number:
+                self.flush_thread.add_task(self)
+        get_logger().debug("end add acc")
