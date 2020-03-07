@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import concurrent.futures
 import threading
 import traceback
@@ -14,6 +13,7 @@ class ThreadPool:
     def stop(self):
         self.stopEvent.set()
         concurrent.futures.wait(self.futures)
+        self.stopEvent.clear()
 
     def submit(self, loop_interval, fn, *args, **kwargs):
         def process():
