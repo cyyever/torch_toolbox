@@ -104,7 +104,6 @@ class LargeDict:
                 return
             large_dict.data_info[key] = DataInfo.IN_DISK
             large_dict.data.pop(key)
-            large_dict.__remove_item_access_time(key)
 
     @staticmethod
     def delete_item(task):
@@ -121,7 +120,6 @@ class LargeDict:
             large_dict.data_info.pop(key)
             if key in large_dict.data:
                 large_dict.data.pop(key)
-            large_dict.__remove_item_access_time(key)
             if os.path.exists(item_path):
                 shutil.rmtree(item_path)
 
@@ -223,7 +221,8 @@ class LargeDict:
                 if key in self.data:
                     if self.data_info[key] != DataInfo.IN_MEMORY_NEW_DATA:
                         self.data_info[key] = DataInfo.IN_MEMORY
-                    # self.__update_item_access_time(key)
+
+                    self.__add_or_update_item_access_time(key)
                     result = [self.data[key]]
                     continue
                 self.data_info[key] = DataInfo.PRE_LOAD
@@ -285,11 +284,7 @@ class LargeDict:
 
     def __setitem__(self, key, val):
         with self.lock:
-            if key in self.LRU_keys:
-                self.__update_item_access_time(key)
-            else:
-                self.__add_item_access_time(key)
-
+            self.__add_or_update_item_access_time(key)
             self.data[key] = val
             self.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
 
@@ -315,32 +310,31 @@ class LargeDict:
             self.data_info[key] = to_info
             return True
 
-    def __remove_item_access_time(self, key):
-        with self.lock:
-            del self.LRU_keys[key]
-
     def __pop_expired_key(self):
-        with self.lock:
-            if len(self.LRU_keys) > self.in_memory_key_number or (
-                self.flush_all_once and len(self.LRU_keys) > 0
-            ):
-                key = self.LRU_keys.popitem(last=False)[0]
-                return True, key
-            if not self.LRU_keys:
-                self.flush_all_once = False
-            return False, None
+        if len(self.LRU_keys) > self.in_memory_key_number or (
+            self.flush_all_once and len(self.LRU_keys) > 0
+        ):
+            key = self.LRU_keys.popitem(last=False)[0]
+            return True, key
+        if not self.LRU_keys:
+            self.flush_all_once = False
+        return False, None
+
+    def __add_or_update_item_access_time(self, key):
+        if key in self.LRU_keys:
+            self.__update_item_access_time(key)
+        else:
+            self.__add_item_access_time(key)
 
     def __update_item_access_time(self, key):
         get_logger().debug("begin update acc")
-        with self.lock:
-            self.LRU_keys.move_to_end(key)
+        self.LRU_keys.move_to_end(key)
         get_logger().debug("end update acc")
 
     def __add_item_access_time(self, key):
         get_logger().debug("begin add acc")
-        with self.lock:
-            self.LRU_keys[key] = None
-            # assert len(self.data) == len(self.LRU_keys)
-            if len(self.LRU_keys) > self.in_memory_key_number:
-                self.flush_thread.add_task(self)
+        self.LRU_keys[key] = None
+        # assert len(self.data) == len(self.LRU_keys)
+        if len(self.LRU_keys) > self.in_memory_key_number:
+            self.flush_thread.add_task(self)
         get_logger().debug("end add acc")
