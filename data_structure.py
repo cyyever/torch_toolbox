@@ -192,12 +192,11 @@ class LargeDict:
                     cnt[v] += 1
         for k, v in cnt.items():
             get_logger().debug("%s => %s", k, v)
-        get_logger().debug("len(time_to_key) => %s", len(self.time_to_key))
 
     def get_in_memeory_cnt(self):
         cnt = 0
         with self.lock:
-            for k, v in self.data_info.items():
+            for v in self.data_info.values():
                 if v in (DataInfo.IN_MEMORY, DataInfo.IN_MEMORY_NEW_DATA,):
                     cnt += 1
         return cnt
