@@ -53,50 +53,38 @@ class LargeDict:
         large_dict = task
         while True:
             with large_dict.lock:
-                if len(large_dict.time_to_key) > large_dict.in_memory_key_number or (
-                        large_dict.flush_all_once and len(large_dict.time_to_key) > 0):
-                    key = large_dict.time_to_key.pop(0)
-                    assert large_dict.data_info[key] in (
-                        DataInfo.IN_MEMORY,
-                        DataInfo.IN_MEMORY_NEW_DATA,
-                    )
-                    # get_logger().warning("flush %s", key)
-                    if large_dict.data_info[key] == DataInfo.IN_MEMORY_NEW_DATA:
-                        large_dict.data_info[key] = DataInfo.PRE_SAVING
-                        large_dict.write_queue.add_task((large_dict, key))
-                    else:
-                        large_dict.data_info[key] = DataInfo.IN_DISK
-                        large_dict.data.pop(key)
-                else:
-                    large_dict.flush_all_once = False
+                succ_flag, key = large_dict.__pop_expired_access_time()
+                if not succ_flag:
                     return
+                assert large_dict.data_info[key] in (
+                    DataInfo.IN_MEMORY,
+                    DataInfo.IN_MEMORY_NEW_DATA,
+                )
+                if large_dict.data_info[key] == DataInfo.IN_MEMORY_NEW_DATA:
+                    large_dict.data_info[key] = DataInfo.PRE_SAVING
+                    large_dict.write_queue.add_task((large_dict, key))
+                else:
+                    large_dict.data_info[key] = DataInfo.IN_DISK
+                    large_dict.data.pop(key)
 
     @staticmethod
     def write_item(task):
         large_dict, key = task
         value = None
-        assert False
         with large_dict.lock:
-            if key not in large_dict.data_info:
-                get_logger().warning("deleted key %s,ignore", key)
+            if not large_dict.__change_data_info(
+                key, DataInfo.PRE_SAVING, DataInfo.SAVING
+            ):
                 return
-            if large_dict.data_info[key] != DataInfo.PRE_SAVING:
-                get_logger().warning(
-                    "canceled key %s, info is %s",
-                    key,
-                    large_dict.data_info[key])
-                return
-            large_dict.data_info[key] = DataInfo.SAVING
             value = large_dict.data[key]
 
         item_path = large_dict.get_key_storage_path(key)
-        save_flag = True
+        succ_flag = True
         try:
-            assert False
             torch.save(value, item_path)
         except Exception:
             get_logger().error("save key %s failed,keep it in memory", key)
-            save_flag = False
+            succ_flag = False
 
         with large_dict.lock:
             if key not in large_dict.data_info:
@@ -109,14 +97,13 @@ class LargeDict:
                     key,
                     large_dict.data_info[key])
                 return
-            if not save_flag:
+            if not succ_flag:
                 large_dict.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
                 large_dict.__update_access_time()
                 return
             large_dict.data_info[key] = DataInfo.IN_DISK
             large_dict.data.pop(key)
             large_dict.__remove_access_time(key)
-            assert self.get_in_memeory_cnt() == len(self.time_to_key)
 
     @staticmethod
     def delete_item(task):
@@ -141,18 +128,9 @@ class LargeDict:
     def read_item(task):
         large_dict, key = task
 
-        get_logger().warning("do lock")
-        with large_dict.lock:
-            if key not in large_dict.data_info:
-                get_logger().warning("deleted key %s,ignore", key)
-                return
-            if large_dict.data_info[key] != DataInfo.PRE_LOAD:
-                get_logger().warning(
-                    "canceled key %s, info is %s",
-                    key,
-                    large_dict.data_info[key])
-                return
-            large_dict.data_info[key] = DataInfo.LOADING
+        if not large_dict.__change_data_info(
+                key, DataInfo.PRE_LOAD, DataInfo.LOADING):
+            return
 
         value = None
         try:
@@ -176,8 +154,11 @@ class LargeDict:
                 return
             large_dict.data[key] = value
             large_dict.data_info[key] = DataInfo.IN_MEMORY
+            get_logger().warning("end data_info")
             large_dict.__update_access_time(key)
+            get_logger().warning("end update acc")
             large_dict.fetch_event.set()
+        get_logger().warning("end lock")
 
     def set_storage_dir(self, storage_dir):
         self.storage_dir = storage_dir
@@ -198,7 +179,7 @@ class LargeDict:
         while True:
             time.sleep(1)
             with self.lock:
-                if len(self.time_to_key) == 0:
+                if not self.flush_all_once:
                     return
 
     def print_data_info(self):
@@ -248,7 +229,6 @@ class LargeDict:
                     continue
                 self.data_info[key] = DataInfo.PRE_LOAD
                 self.fetch_queue.add_task((self, key))
-                # get_logger().warning("add_task key %s ",key)
         return result
 
     def release(self):
@@ -282,8 +262,7 @@ class LargeDict:
             return key in self.data_info and self.data_info[key] != DataInfo.PRE_DELETE
 
     def __getitem__(self, key):
-        get_logger().debug(
-                    "before get lock")
+        get_logger().debug("before get lock")
         cur_time = time.time()
         with self.lock:
             if key in self.data:
@@ -333,8 +312,23 @@ class LargeDict:
         with self.lock:
             try:
                 self.time_to_key.remove(key)
+                if not self.time_to_key:
+                    self.flush_all_once = False
+                    return
             except ValueError:
                 pass
+
+    def __pop_expired_access_time(self):
+        with self.lock:
+            if len(self.time_to_key) > self.in_memory_key_number or (
+                self.flush_all_once and len(self.time_to_key) > 0
+            ):
+                key = self.time_to_key[0]
+                self.__remove_access_time(key)
+                return True, self.time_to_key[0]
+            if not self.time_to_key:
+                self.flush_all_once = False
+            return False, None
 
     def __update_access_time(self, key):
         with self.lock:
@@ -343,3 +337,16 @@ class LargeDict:
             assert self.get_in_memeory_cnt() == len(self.time_to_key)
             if len(self.time_to_key) > self.in_memory_key_number:
                 self.flush_thread.add_task(self)
+
+    def __change_data_info(self, key, from_info, to_info):
+        with self.lock:
+            if key not in self.data_info:
+                get_logger().warning("no key %s,ignore", key)
+                return False
+            if self.data_info[key] != from_info:
+                get_logger().warning(
+                    "canceled key %s, info is %s", key, self.data_info[key]
+                )
+                return False
+            self.data_info[key] = to_info
+            return True
