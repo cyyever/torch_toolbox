@@ -186,27 +186,28 @@ class LargeDict:
 
     def prefetch(self, keys, ignore_unknown_keys=True):
         result = []
+        get_logger().debug("prefetch len is %s ",len(keys))
         for key in keys:
             with self.lock:
-                if key not in self.data_info:
+                data_info = self.data_info.get(key, None)
+                if data_info is None:
                     if ignore_unknown_keys:
                         continue
                     raise KeyError(key)
-                if self.data_info[key] in (
-                        DataInfo.PRE_LOAD, DataInfo.LOADING):
+                if data_info in (DataInfo.PRE_LOAD, DataInfo.LOADING):
                     continue
                 if key in self.data:
-                    in_LRU = self.data_info[key] in (
+                    in_LRU = data_info in (
                         DataInfo.IN_MEMORY,
                         DataInfo.IN_MEMORY_NEW_DATA,
                     )
-                    if self.data_info[key] != DataInfo.IN_MEMORY_NEW_DATA:
+                    if data_info != DataInfo.IN_MEMORY_NEW_DATA:
                         self.data_info[key] = DataInfo.IN_MEMORY
 
-                    if in_LRU:
-                        self.__update_item_access_time(key)
-                    else:
-                        self.__add_item_access_time(key)
+                    # if in_LRU:
+                    #     self.__update_item_access_time(key)
+                    # else:
+                    #     self.__add_item_access_time(key)
                     result = [self.data[key]]
                     continue
                 self.data_info[key] = DataInfo.PRE_LOAD
@@ -269,9 +270,9 @@ class LargeDict:
 
     def __setitem__(self, key, val):
         with self.lock:
-            self.__add_or_update_item_access_time(key)
             self.data[key] = val
             self.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
+            self.__add_or_update_item_access_time(key)
 
     def __delitem__(self, key):
         with self.lock:
