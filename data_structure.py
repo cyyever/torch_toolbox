@@ -1,6 +1,7 @@
 from enum import Enum, auto
 import shutil
 import os
+import time
 import threading
 import collections
 
@@ -18,7 +19,6 @@ class DataInfo(Enum):
     SAVING = auto()
     PRE_LOAD = auto()
     LOADING = auto()
-    PRE_DELETE = auto()
 
 
 class LargeDict:
@@ -109,16 +109,11 @@ class LargeDict:
         large_dict, key = task
         item_path = large_dict.get_key_storage_path(key)
         with large_dict.lock:
-            if key not in large_dict.data_info:
-                get_logger().warning("deleted key %s,ignore", key)
-                return
-            if large_dict.data_info[key] != DataInfo.PRE_DELETE:
-                get_logger().warning("canceled key %s", key)
+            data_info = large_dict.get(key, None)
+            if data_info is not None:
+                get_logger().warning("canceled key delete %s", key)
                 return
             get_logger().warning("delete key %s", key)
-            large_dict.data_info.pop(key)
-            if key in large_dict.data:
-                large_dict.data.pop(key)
             if os.path.exists(item_path):
                 shutil.rmtree(item_path)
 
@@ -194,12 +189,8 @@ class LargeDict:
         return cnt
 
     def keys(self):
-        real_keys = set()
         with self.lock:
-            for k, v in self.data_info.items():
-                if v != DataInfo.PRE_DELETE:
-                    real_keys.add(k)
-        return real_keys
+            return self.data_info.keys()
 
     def prefetch(self, keys, ignore_unknown_keys=True):
         result = []
@@ -213,10 +204,17 @@ class LargeDict:
                         DataInfo.PRE_LOAD, DataInfo.LOADING):
                     continue
                 if key in self.data:
+                    in_LRU = self.data_info[key] in (
+                        DataInfo.IN_MEMORY,
+                        DataInfo.IN_MEMORY_NEW_DATA,
+                    )
                     if self.data_info[key] != DataInfo.IN_MEMORY_NEW_DATA:
                         self.data_info[key] = DataInfo.IN_MEMORY
 
-                    self.__add_or_update_item_access_time(key)
+                    if in_LRU:
+                        self.__update_item_access_time(key)
+                    else:
+                        self.__add_item_access_time(key)
                     result = [self.data[key]]
                     continue
                 self.data_info[key] = DataInfo.PRE_LOAD
@@ -251,13 +249,16 @@ class LargeDict:
 
     def __contains__(self, key):
         with self.lock:
-            return key in self.data_info and self.data_info[key] != DataInfo.PRE_DELETE
+            return key in self.data_info
 
     def __getitem__(self, key):
         get_logger().debug("before get lock")
+        cur_time = time.time()
         result = self.prefetch([key])
         if result:
-            get_logger().debug("end get key %s", key)
+            get_logger().debug(
+                "end get key %s %s", key, (time.time() - cur_time) * 1000
+            )
             return result[0]
         with self.lock:
             self.wait_fetch_event = True
@@ -270,8 +271,6 @@ class LargeDict:
                 ):
                     get_logger().debug("read key %s from disk", key)
                     return self.data[key]
-                if self.data_info[key] == DataInfo.PRE_DELETE:
-                    raise KeyError(key)
                 self.fetch_event.clear()
                 self.wait_fetch_event = True
         raise KeyError(key)
@@ -284,8 +283,11 @@ class LargeDict:
 
     def __delitem__(self, key):
         with self.lock:
-            assert key in self.data_info
-            self.data_info[key] = DataInfo.PRE_DELETE
+            data_info = self.data_info.pop(key, None)
+            if data_info is None:
+                raise KeyError(key)
+            self.data.pop(key, None)
+            self.LRU_keys.pop(key, None)
             self.delete_queue.add_task((self, key))
 
     def __del__(self):
@@ -293,13 +295,12 @@ class LargeDict:
 
     def __change_data_info(self, key, from_info, to_info):
         with self.lock:
-            if key not in self.data_info:
+            data_info = self.data_info.pop(key, None)
+            if data_info is None:
                 get_logger().warning("no key %s,ignore", key)
                 return False
-            if self.data_info[key] != from_info:
-                get_logger().warning(
-                    "canceled key %s, info is %s", key, self.data_info[key]
-                )
+            if data_info != from_info:
+                get_logger().warning("canceled key %s, info is %s", key, data_info)
                 return False
             self.data_info[key] = to_info
             return True
