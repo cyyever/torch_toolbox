@@ -186,7 +186,6 @@ class LargeDict:
 
     def prefetch(self, keys, ignore_unknown_keys=True):
         result = []
-        get_logger().debug("prefetch len is %s ",len(keys))
         for key in keys:
             with self.lock:
                 data_info = self.data_info.get(key, None)
@@ -316,14 +315,14 @@ class LargeDict:
             self.__add_item_access_time(key)
 
     def __update_item_access_time(self, key):
-        get_logger().debug("begin update acc")
+        get_logger().debug("begin update acc %s", key)
         self.LRU_keys.move_to_end(key)
-        get_logger().debug("end update acc")
+        get_logger().debug("end update acc %s", key)
 
     def __add_item_access_time(self, key):
-        get_logger().debug("begin add acc")
+        get_logger().debug("begin add acc %s ", key)
         self.LRU_keys[key] = None
         # assert len(self.data) == len(self.LRU_keys)
         if len(self.LRU_keys) > self.in_memory_key_number:
             self.flush_thread.add_task(self)
-        get_logger().debug("end add acc")
+        get_logger().debug("end add acc %s ", key)
