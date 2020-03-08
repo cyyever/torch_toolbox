@@ -56,11 +56,11 @@ class LargeDict:
                 succ_flag, key = large_dict.__pop_expired_key()
                 if not succ_flag:
                     return
-                assert large_dict.data_info[key] in (
+                data_info = large_dict.data_info.get(key, None)
+                assert data_info in (
                     DataInfo.IN_MEMORY,
-                    DataInfo.IN_MEMORY_NEW_DATA,
-                )
-                if large_dict.data_info[key] == DataInfo.IN_MEMORY_NEW_DATA:
+                    DataInfo.IN_MEMORY_NEW_DATA)
+                if data_info == DataInfo.IN_MEMORY_NEW_DATA:
                     large_dict.data_info[key] = DataInfo.PRE_SAVING
                     large_dict.write_queue.add_task((large_dict, key))
                 else:
@@ -87,15 +87,13 @@ class LargeDict:
             succ_flag = False
 
         with large_dict.lock:
-            if key not in large_dict.data_info:
+            data_info = large_dict.data_info.get(key, None)
+            if data_info is None:
                 if os.path.exists(item_path):
                     shutil.rmtree(item_path)
                 return
-            if large_dict.data_info[key] != DataInfo.SAVING:
-                get_logger().warning(
-                    "canceled key %s, info is %s",
-                    key,
-                    large_dict.data_info[key])
+            if data_info != DataInfo.SAVING:
+                get_logger().warning("canceled key %s, info is %s", key, data_info)
                 return
             if not succ_flag:
                 large_dict.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
@@ -109,7 +107,7 @@ class LargeDict:
         large_dict, key = task
         item_path = large_dict.get_key_storage_path(key)
         with large_dict.lock:
-            data_info = large_dict.get(key, None)
+            data_info = large_dict.data_info.get(key, None)
             if data_info is not None:
                 get_logger().warning("canceled key delete %s", key)
                 return
@@ -136,17 +134,11 @@ class LargeDict:
                     large_dict.fetch_event.set()
 
         with large_dict.lock:
-            if key not in large_dict.data_info:
-                get_logger().warning("canceled key %s", key)
-                return
-            if large_dict.data_info[key] != DataInfo.LOADING:
-                get_logger().warning(
-                    "canceled key %s, info is %s",
-                    key,
-                    large_dict.data_info[key])
+            if not large_dict.__change_data_info(
+                key, DataInfo.LOADING, DataInfo.IN_MEMORY
+            ):
                 return
             large_dict.data[key] = value
-            large_dict.data_info[key] = DataInfo.IN_MEMORY
             large_dict.__add_item_access_time(key)
             if large_dict.wait_fetch_event:
                 large_dict.fetch_event.set()
