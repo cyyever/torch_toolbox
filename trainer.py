@@ -21,7 +21,7 @@ class Trainer:
         self.name = name
         self.min_training_loss = None
         self.min_training_loss_model = None
-        self.optimizer_fun = optim.Adam
+        self.optimizer_fun = None
         self.lr_scheduler_fun = None
 
     def set_optimizer_function(self, optimizer_fun):
@@ -38,14 +38,12 @@ class Trainer:
         device = get_device()
         self.model.to(device)
         optimizer = self.optimizer_fun(self.model.parameters())
-        lr_scheduler = None
 
+        lr_scheduler = optim.lr_scheduler.LambdaLR(
+            optimizer, lr_lambda=(lambda epoch: 1)
+        )
         if self.lr_scheduler_fun is not None:
             lr_scheduler = self.lr_scheduler_fun(optimizer)
-        else:
-            lr_scheduler = optim.lr_scheduler.LambdaLR(
-                optimizer, lr_lambda=(lambda epoch: 1)
-            )
 
         instance_size = len(self.training_dataset)
 
@@ -130,7 +128,7 @@ class Trainer:
                 training_loss += batch_loss
 
             get_logger().info(
-                "trainer:%s, epoch: %s, epoch training loss: %s",
+                "trainer: %s, epoch: %s, epoch training loss: %s",
                 self.name,
                 epoch,
                 training_loss,
@@ -147,7 +145,7 @@ class Trainer:
                         self.model, self.loss_fun, kwargs["validation_dataset"]
                     ).validate(batch_size)
                     get_logger().info(
-                        "trainer:%s, epoch: %s, validation loss: %s, accuracy = %s",
+                        "trainer: %s, epoch: %s, validation loss: %s, accuracy = %s",
                         self.name,
                         epoch,
                         validation_loss.data.item(),
