@@ -27,19 +27,17 @@ class Trainer:
     def set_optimizer_function(self, optimizer_fun):
         self.optimizer_fun = optimizer_fun
 
-    def set_lr_scheduler(self, lr_scheduler_fun):
+    def set_lr_scheduler_funcition(self, lr_scheduler_fun):
         self.lr_scheduler_fun = lr_scheduler_fun
 
-    def train(self, epochs, batch_size, init_learning_rate, **kwargs):
+    def train(self, epochs, batch_size, **kwargs):
         training_data_loader = torch.utils.data.DataLoader(
             self.training_dataset, batch_size=batch_size, shuffle=True
         )
 
         device = get_device()
         self.model.to(device)
-        optimizer = self.optimizer_fun(
-            self.model.parameters(),
-            lr=init_learning_rate)
+        optimizer = self.optimizer_fun(self.model.parameters())
         lr_scheduler = None
 
         if self.lr_scheduler_fun is not None:
@@ -106,14 +104,15 @@ class Trainer:
                     batch_loss = loss.data.item()
                     loss.backward()
 
-                get_logger().info(
-                    "trainer: %s, epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
-                    self.name,
-                    epoch,
-                    batch_index,
-                    cur_learning_rates,
-                    batch_loss,
-                )
+                if batch_index % (1000 // batch_size) == 0:
+                    get_logger().info(
+                        "trainer: %s, epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
+                        self.name,
+                        epoch,
+                        batch_index,
+                        cur_learning_rates,
+                        batch_loss,
+                    )
                 if "after_batch_callback" in kwargs:
                     kwargs["after_batch_callback"](
                         self.model, batch, batch_index, cur_learning_rates
