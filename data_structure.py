@@ -196,17 +196,17 @@ class LargeDict:
                 if data_info in (DataInfo.PRE_LOAD, DataInfo.LOADING):
                     continue
                 if key in self.data:
-                    in_LRU = data_info in (
+                    in_lru = data_info in (
                         DataInfo.IN_MEMORY,
                         DataInfo.IN_MEMORY_NEW_DATA,
                     )
                     if data_info != DataInfo.IN_MEMORY_NEW_DATA:
                         self.data_info[key] = DataInfo.IN_MEMORY
 
-                    # if in_LRU:
-                    #     self.__update_item_access_time(key)
-                    # else:
-                    #     self.__add_item_access_time(key)
+                    if in_lru:
+                        self.__update_item_access_time(key)
+                    else:
+                        self.__add_item_access_time(key)
                     result = [self.data[key]]
                     continue
                 self.data_info[key] = DataInfo.PRE_LOAD
