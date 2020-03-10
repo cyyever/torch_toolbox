@@ -34,7 +34,6 @@ class Trainer:
         training_data_loader = torch.utils.data.DataLoader(
             self.training_dataset, batch_size=batch_size, shuffle=True
         )
-
         device = get_device()
         self.model.to(device)
         optimizer = self.optimizer_fun(self.model.parameters())
@@ -45,8 +44,13 @@ class Trainer:
         if self.lr_scheduler_fun is not None:
             lr_scheduler = self.lr_scheduler_fun(optimizer)
 
-        instance_size = len(self.training_dataset)
+        get_logger(
+            self.name).info(
+            "begin training,lr_scheduler is %s",
+            lr_scheduler)
+        get_logger(self.name).info("begin training,optimizer is %s", optimizer)
 
+        instance_size = len(self.training_dataset)
         batch_index = 0
         for epoch in range(epochs):
             self.model.train()
@@ -103,9 +107,9 @@ class Trainer:
                     loss.backward()
 
                 if batch_index % (1000 // batch_size) == 0:
-                    get_logger().info(
-                        "trainer: %s, epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
-                        self.name,
+                    get_logger(
+                        self.name).info(
+                        "epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
                         epoch,
                         batch_index,
                         cur_learning_rates,
@@ -127,11 +131,8 @@ class Trainer:
                     batch_loss /= instance_size
                 training_loss += batch_loss
 
-            get_logger().info(
-                "trainer: %s, epoch: %s, epoch training loss: %s",
-                self.name,
-                epoch,
-                training_loss,
+            get_logger(self.name).info(
+                "epoch: %s, epoch training loss: %s", epoch, training_loss,
             )
 
             if "validation_dataset" in kwargs:
@@ -144,10 +145,11 @@ class Trainer:
                     validation_loss, accuracy = Validator(
                         self.model, self.loss_fun, kwargs["validation_dataset"]
                     ).validate(batch_size)
-                    get_logger().info(
-                        "trainer: %s, epoch: %s, validation loss: %s, accuracy = %s",
-                        self.name,
+                    get_logger(
+                        self.name).info(
+                        "epoch: %s, learning_rate:%s, validation loss: %s, accuracy = %s",
                         epoch,
+                        cur_learning_rates,
                         validation_loss.data.item(),
                         accuracy,
                     )
