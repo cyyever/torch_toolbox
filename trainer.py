@@ -16,23 +16,19 @@ class Trainer:
         self.model = copy.deepcopy(model)
         self.loss_fun = loss_fun
         self.training_dataset = training_dataset
+        self.validation_dataset = None
         self.hyper_parameter = None
         self.min_training_loss = None
         self.min_training_loss_model = None
-        # self.optimizer_fun = None
-        # self.lr_scheduler_fun = None
 
     def set_name(self, name):
         self.name = name
 
+    def set_validation_dataset(self, validation_dataset):
+        self.validation_dataset = validation_dataset
+
     def set_hyper_parameter(self, hyper_parameter):
         self.hyper_parameter = hyper_parameter
-
-    # def set_optimizer_function(self, optimizer_fun):
-    # self.optimizer_fun = optimizer_fun
-
-    # def set_lr_scheduler_funcition(self, lr_scheduler_fun):
-    # self.lr_scheduler_fun = lr_scheduler_fun
 
     def train(self, **kwargs):
         optimizer = self.hyper_parameter.get_optimizer(self.model.parameters())
@@ -143,9 +139,12 @@ class Trainer:
                 )
                 assert validation_epoch_interval > 0
 
-                if epoch % validation_epoch_interval == 0:
+                if (
+                    epoch % validation_epoch_interval == 0
+                    and self.validation_dataset is not None
+                ):
                     validation_loss, accuracy = Validator(
-                        self.model, self.loss_fun, kwargs["validation_dataset"]
+                        self.model, self.loss_fun, self.validation_dataset
                     ).validate(self.hyper_parameter.batch_size)
                     get_logger(
                         self.name).info(
