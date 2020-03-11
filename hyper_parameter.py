@@ -2,7 +2,9 @@ import torch
 
 
 class HyperParameter:
-    def __init__(self, learning_rate, weight_decay):
+    def __init__(self, epoches, batch_size, learning_rate, weight_decay=None):
+        self.epoches = epoches
+        self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.lr_scheduler_factory = lambda optimizer: torch.optim.lr_scheduler.LambdaLR(
@@ -20,5 +22,4 @@ class HyperParameter:
 
     def get_optimizer(self, params):
         return self.optimizer_factory(
-            params, lr=self.learning_rate, weight_decay=self.weight_decay
-        )
+            params, self.learning_rate, self.weight_decay)

@@ -1,10 +1,12 @@
 import torch
+import torchvision
+import torchvision.transforms as transforms
 
 
-class dataset_filter:
-    def __init__(self, dataset, filters):
+class DatasetReducer:
+    def __init__(self, dataset, reducers):
         self.dataset = dataset
-        self.filters = filters
+        self.reducers = reducers
         self.indices = self.__get_indices()
 
     def __getitem__(self, index):
@@ -16,12 +18,12 @@ class dataset_filter:
     def __get_indices(self):
         indices = []
         for index, item in enumerate(self.dataset):
-            if all(f(index, item) for f in self.filters):
+            if all(f(index, item) for f in self.reducers):
                 indices.append(index)
         return indices
 
 
-class dataset_mapper:
+class DatasetMapper:
     def __init__(self, dataset, mappers):
         self.dataset = dataset
         self.mappers = mappers
@@ -36,7 +38,7 @@ class dataset_mapper:
         return self.dataset.__len__()
 
 
-class dataset_with_indices(dataset_mapper):
+class DatasetWithIndices(DatasetMapper):
     def __init__(self, dataset):
         super().__init__(dataset, [lambda index, item: (*item, index)])
 
@@ -59,3 +61,35 @@ def split_dataset_by_label(dataset):
             label_map[label] = []
         label_map[label].append(index)
     return label_map
+
+
+def get_dataset(name, for_train):
+    if name == "MNIST":
+        return torchvision.datasets.MNIST(
+            root="./data/MNIST/" + str(for_train),
+            train=for_train,
+            download=True,
+            transform=transforms.Compose(
+                [
+                    transforms.Resize((32, 32)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=[0.1307], std=[0.3081]),
+                ]
+            ),
+        )
+    if name == "CIFAR10":
+        return torchvision.datasets.CIFAR10(
+            root="./data/CIFAR10/" + str(for_train),
+            train=for_train,
+            download=True,
+            transform=transforms.Compose(
+                [
+                    transforms.Resize((32, 32)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(
+                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                    ),
+                ]
+            ),
+        )
+    raise NotImplementedError(name)

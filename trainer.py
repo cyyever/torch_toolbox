@@ -2,7 +2,6 @@ import os
 import pickle
 import copy
 import torch
-import torch.optim as optim
 
 from .device import get_cpu_device
 from .device import get_device
@@ -12,37 +11,32 @@ from .log import get_logger
 
 
 class Trainer:
-    def __init__(
-        self, model, loss_fun, training_dataset, name="",
-    ):
+    def __init__(self, model, loss_fun, training_dataset):
+        self.name = model.__class__.__name__
         self.model = copy.deepcopy(model)
         self.loss_fun = loss_fun
         self.training_dataset = training_dataset
-        self.name = name
+        self.hyper_parameter = None
         self.min_training_loss = None
         self.min_training_loss_model = None
-        self.optimizer_fun = None
-        self.lr_scheduler_fun = None
+        # self.optimizer_fun = None
+        # self.lr_scheduler_fun = None
 
-    def set_optimizer_function(self, optimizer_fun):
-        self.optimizer_fun = optimizer_fun
+    def set_name(self, name):
+        self.name = name
 
-    def set_lr_scheduler_funcition(self, lr_scheduler_fun):
-        self.lr_scheduler_fun = lr_scheduler_fun
+    def set_hyper_parameter(self, hyper_parameter):
+        self.hyper_parameter = hyper_parameter
 
-    def train(self, epochs, batch_size, **kwargs):
-        training_data_loader = torch.utils.data.DataLoader(
-            self.training_dataset, batch_size=batch_size, shuffle=True
-        )
-        device = get_device()
-        self.model.to(device)
-        optimizer = self.optimizer_fun(self.model.parameters())
+    # def set_optimizer_function(self, optimizer_fun):
+    # self.optimizer_fun = optimizer_fun
 
-        lr_scheduler = optim.lr_scheduler.LambdaLR(
-            optimizer, lr_lambda=(lambda epoch: 1)
-        )
-        if self.lr_scheduler_fun is not None:
-            lr_scheduler = self.lr_scheduler_fun(optimizer)
+    # def set_lr_scheduler_funcition(self, lr_scheduler_fun):
+    # self.lr_scheduler_fun = lr_scheduler_fun
+
+    def train(self, **kwargs):
+        optimizer = self.hyper_parameter.get_optimizer(self.model.parameters())
+        lr_scheduler = self.hyper_parameter.get_lr_scheduler(optimizer)
 
         get_logger(
             self.name).info(
@@ -50,9 +44,17 @@ class Trainer:
             lr_scheduler)
         get_logger(self.name).info("begin training,optimizer is %s", optimizer)
 
+        training_data_loader = torch.utils.data.DataLoader(
+            self.training_dataset,
+            batch_size=self.hyper_parameter.batch_size,
+            shuffle=True,
+        )
+        device = get_device()
+        self.model.to(device)
+
         instance_size = len(self.training_dataset)
         batch_index = 0
-        for epoch in range(epochs):
+        for epoch in range(self.hyper_parameter.epoches):
             self.model.train()
             training_loss = 0.0
             for batch in training_data_loader:
@@ -106,7 +108,7 @@ class Trainer:
                     batch_loss = loss.data.item()
                     loss.backward()
 
-                if batch_index % (1000 // batch_size) == 0:
+                if batch_index % (1000 // real_batch_size) == 0:
                     get_logger(
                         self.name).info(
                         "epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
@@ -144,7 +146,7 @@ class Trainer:
                 if epoch % validation_epoch_interval == 0:
                     validation_loss, accuracy = Validator(
                         self.model, self.loss_fun, kwargs["validation_dataset"]
-                    ).validate(batch_size)
+                    ).validate(self.hyper_parameter.batch_size)
                     get_logger(
                         self.name).info(
                         "epoch: %s, learning_rate:%s, validation loss: %s, accuracy = %s",
