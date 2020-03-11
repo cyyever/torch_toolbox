@@ -133,16 +133,13 @@ class Trainer:
                 "epoch: %s, epoch training loss: %s", epoch, training_loss,
             )
 
-            if "validation_dataset" in kwargs:
+            if self.validation_dataset is not None:
                 validation_epoch_interval = int(
                     kwargs.get("validation_epoch_interval", 1)
                 )
                 assert validation_epoch_interval > 0
 
-                if (
-                    epoch % validation_epoch_interval == 0
-                    and self.validation_dataset is not None
-                ):
+                if epoch % validation_epoch_interval == 0:
                     validation_loss, accuracy = Validator(
                         self.model, self.loss_fun, self.validation_dataset
                     ).validate(self.hyper_parameter.batch_size)
@@ -157,7 +154,7 @@ class Trainer:
 
             lr_scheduler.step()
             if "after_epoch_callback" in kwargs:
-                kwargs["after_epoch_callback"](self.model, epoch)
+                kwargs["after_epoch_callback"](self, epoch)
             # if self.min_training_loss is None or training_loss < self.min_training_loss:
             #     self.min_training_loss = training_loss
             #     self.min_training_loss_model = copy.deepcopy(self.model)
