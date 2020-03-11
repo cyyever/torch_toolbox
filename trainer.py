@@ -39,6 +39,7 @@ class Trainer:
             "begin training,lr_scheduler is %s",
             lr_scheduler)
         get_logger(self.name).info("begin training,optimizer is %s", optimizer)
+        get_logger(self.name).info("begin training,model is %s", self.model)
 
         training_data_loader = torch.utils.data.DataLoader(
             self.training_dataset,

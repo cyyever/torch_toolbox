@@ -6,6 +6,7 @@ import torchvision
 from .hyper_parameter import HyperParameter
 from .trainer import Trainer
 from .validator import Validator
+from .log import get_logger
 from .dataset import get_dataset
 from .model import LeNet5
 
@@ -45,6 +46,7 @@ def get_task_configuration(task_name, for_training):
         training_dataset = get_dataset(task_name, True)
         validation_dataset = get_dataset(task_name, False)
         model = torchvision.models.mobilenet_v2(num_classes=10)
+        model.features[0][0].stride = (1, 1)
         loss_fun = nn.CrossEntropyLoss()
         if for_training:
             trainer = Trainer(model, loss_fun, training_dataset)
