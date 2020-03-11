@@ -9,17 +9,26 @@ from .dataset import get_dataset
 from .model import LeNet5
 
 
-def get_task_configuration(task_name, for_training, hyper_parameter=None):
+def get_task_configuration(task_name, for_training):
     if task_name == "MNIST":
         training_dataset = get_dataset(task_name, True)
         validation_dataset = get_dataset(task_name, False)
         model = LeNet5()
         loss_fun = nn.CrossEntropyLoss()
         if for_training:
-            trainer = Trainer(model, loss_fun, training_dataset, task_name)
+            trainer = Trainer(model, loss_fun, training_dataset)
             hyper_parameter = HyperParameter(
                 epoches=50, batch_size=64, learning_rate=0.01
             )
+
+            hyper_parameter.set_optimizer_factory(
+                lambda params, learning_rate, weight_decay: optim.SGD(
+                    params,
+                    lr=learning_rate,
+                    weight_decay=(weight_decay / len(training_dataset)),
+                )
+            )
+
             hyper_parameter.set_lr_scheduler_factory(
                 lambda optimizer: optim.lr_scheduler.LambdaLR(
                     optimizer, lr_lambda=lambda epoch: math.pow(

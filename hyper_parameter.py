@@ -2,7 +2,7 @@ import torch
 
 
 class HyperParameter:
-    def __init__(self, epoches, batch_size, learning_rate, weight_decay=None):
+    def __init__(self, epoches, batch_size, learning_rate, weight_decay=0):
         self.epoches = epoches
         self.batch_size = batch_size
         self.learning_rate = learning_rate
