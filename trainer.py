@@ -31,10 +31,7 @@ class Trainer:
         self.hyper_parameter = hyper_parameter
 
     def train(self, **callbacks):
-        visual_win = None
-
         def pre_training_callback(trainer, optimizer, lr_scheduler):
-            nonlocal visual_win
             get_logger(
                 trainer.name).info(
                 "begin training,optimizer is %s ,lr_scheduler is %s, model is %s",
@@ -42,7 +39,6 @@ class Trainer:
                 lr_scheduler,
                 trainer.model,
             )
-            visual_win = Window.get("training & validation loss")
 
         callbacks = Trainer.__append_callback(
             callbacks, "pre_training_callback", pre_training_callback
@@ -67,11 +63,13 @@ class Trainer:
         )
 
         def after_epoch_callback(trainer, epoch, learning_rates):
-            nonlocal visual_win
+            loss_win = Window.get("training & validation loss")
             get_logger(trainer.name).info(
                 "epoch: %s, epoch training loss: %s", epoch, trainer.training_loss[-1],
             )
-            visual_win.plot_loss(trainer.training_loss, "training loss")
+            loss_win.plot_loss(epoch,
+                               trainer.training_loss[-1],
+                               "training loss")
             if trainer.validation_dataset is None:
                 return
             validation_epoch_interval = int(
@@ -91,8 +89,10 @@ class Trainer:
                     validation_loss,
                     accuracy,
                 )
-                visual_win.plot_loss(
-                    trainer.validation_loss, "validation loss")
+                loss_win.plot_loss(epoch, validation_loss, "validation loss")
+                Window.get("validation accuracy").plot_accuracy(
+                    epoch, accuracy, "accuracy"
+                )
 
         callbacks = Trainer.__append_callback(
             callbacks, "after_epoch_callback", after_epoch_callback
@@ -126,7 +126,9 @@ class Trainer:
                 optimizer.zero_grad()
                 batch_loss = 0
                 real_batch_size = batch[0].shape[0]
-                cur_learning_rates = lr_scheduler.get_last_lr()
+
+                cur_learning_rates = [group["lr"]
+                                      for group in optimizer.param_groups]
 
                 if "pre_batch_callback" in callbacks:
                     callbacks["pre_batch_callback"](
@@ -198,11 +200,18 @@ class Trainer:
             if "after_epoch_callback" in callbacks:
                 callbacks["after_epoch_callback"](
                     self, epoch, cur_learning_rates)
+
+            if isinstance(
+                    lr_scheduler,
+                    torch.optim.lr_scheduler.ReduceLROnPlateau):
+                lr_scheduler.step(self.training_loss[-1])
+            else:
+                lr_scheduler.step()
+
             # if self.min_training_loss is None or training_loss < self.min_training_loss:
             #     self.min_training_loss = training_loss
             #     self.min_training_loss_model = copy.deepcopy(self.model)
             #     self.min_training_loss_model.to(get_cpu_device())
-            lr_scheduler.step()
 
     def save(self, save_dir, save_min_model=False):
         if not os.path.isdir(save_dir):

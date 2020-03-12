@@ -17,27 +17,38 @@ class Window:
         self.win = None
         self.title = title
 
-    def plot_loss(self, loss, name):
-        if isinstance(loss, list):
-            loss = torch.Tensor(loss)
-            epoches = torch.arange(len(loss), dtype=torch.int64)
-        elif isinstance(loss, dict):
-            keys = sorted(loss.keys())
-            epoches = torch.LongTensor(keys)
-            loss = torch.Tensor([loss[k] for k in keys])
+    def plot_loss(self, epoch, loss, name):
+        self.__plot_line(
+            torch.LongTensor(
+                [epoch]), "Epoch", torch.Tensor(
+                [loss]), "Loss", name)
+
+    def plot_accuracy(self, epoch, accuracy, name):
+        self.__plot_line(
+            torch.LongTensor([epoch]),
+            "Epoch",
+            torch.Tensor([accuracy]),
+            "Accuracy",
+            name,
+        )
+
+    def __plot_line(self, x, x_label, y, y_label, name):
         update = None
 
         if self.win is not None and not self.vis.win_exists(self.win):
             self.win = None
 
         if self.win is not None:
-            update = "replace"
+            if x.shape[0] == 1:
+                update = "append"
+            else:
+                update = "replace"
 
         self.win = self.vis.line(
-            Y=loss,
-            X=epoches,
+            Y=y,
+            X=x,
             win=self.win,
             name=name,
             update=update,
-            opts=dict(xlabel="Epoch", ylabel="Loss", title=self.title),
+            opts=dict(xlabel=x_label, ylabel=y_label, title=self.title),
         )

@@ -70,8 +70,8 @@ def get_task_configuration(task_name, for_training):
             #                 epoch / 10)), ))
 
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer: optim.lr_scheduler.StepLR(
-                    optimizer, step_size=10, gamma=0.5
+                lambda optimizer: optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer, verbose=True
                 )
             )
 
