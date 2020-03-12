@@ -42,19 +42,15 @@ class Trainer:
                 lr_scheduler,
                 trainer.model,
             )
-            visual_win = Window()
+            visual_win = Window.get("training & validation loss")
 
         callbacks = Trainer.__append_callback(
             callbacks, "pre_training_callback", pre_training_callback
         )
 
         def after_batch_callback(
-                trainer,
-                epoch,
-                batch_index,
-                batch_size,
-                batch_loss,
-                learning_rates):
+            trainer, epoch, batch_index, batch_size, batch_loss, learning_rates
+        ):
             if batch_index % (len(trainer.training_dataset) //
                               (10 * batch_size)) == 0:
                 get_logger(
@@ -71,9 +67,11 @@ class Trainer:
         )
 
         def after_epoch_callback(trainer, epoch, learning_rates):
+            nonlocal visual_win
             get_logger(trainer.name).info(
                 "epoch: %s, epoch training loss: %s", epoch, trainer.training_loss[-1],
             )
+            visual_win.plot_loss(trainer.training_loss, "training loss")
             if trainer.validation_dataset is None:
                 return
             validation_epoch_interval = int(
@@ -93,6 +91,8 @@ class Trainer:
                     validation_loss,
                     accuracy,
                 )
+                visual_win.plot_loss(
+                    trainer.validation_loss, "validation loss")
 
         callbacks = Trainer.__append_callback(
             callbacks, "after_epoch_callback", after_epoch_callback
