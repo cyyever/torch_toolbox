@@ -1,5 +1,5 @@
 import os
-import pickle
+
 import copy
 import torch
 
@@ -8,6 +8,7 @@ from .device import get_device
 from .util import model_gradients_to_vector
 from .validator import Validator
 from .log import get_logger
+from .visualization import Window
 
 
 class Trainer:
@@ -18,7 +19,7 @@ class Trainer:
         self.training_dataset = training_dataset
         self.validation_dataset = None
         self.hyper_parameter = None
-        self.__reset_losses()
+        self.__reset_loss()
 
     def set_name(self, name):
         self.name = name
@@ -29,28 +30,94 @@ class Trainer:
     def set_hyper_parameter(self, hyper_parameter):
         self.hyper_parameter = hyper_parameter
 
-    def train(self, **kwargs):
+    def train(self, **callbacks):
+        visual_win = None
+
+        def pre_training_callback(trainer, optimizer, lr_scheduler):
+            nonlocal visual_win
+            get_logger(
+                trainer.name).info(
+                "begin training,optimizer is %s ,lr_scheduler is %s, model is %s",
+                optimizer,
+                lr_scheduler,
+                trainer.model,
+            )
+            visual_win = Window()
+
+        callbacks = Trainer.__append_callback(
+            callbacks, "pre_training_callback", pre_training_callback
+        )
+
+        def after_batch_callback(
+                trainer,
+                epoch,
+                batch_index,
+                batch_size,
+                batch_loss,
+                learning_rates):
+            if batch_index % (len(trainer.training_dataset) //
+                              (10 * batch_size)) == 0:
+                get_logger(
+                    trainer.name).info(
+                    "epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
+                    epoch,
+                    batch_index,
+                    learning_rates,
+                    batch_loss,
+                )
+
+        callbacks = Trainer.__append_callback(
+            callbacks, "after_batch_callback", after_batch_callback
+        )
+
+        def after_epoch_callback(trainer, epoch, learning_rates):
+            get_logger(trainer.name).info(
+                "epoch: %s, epoch training loss: %s", epoch, trainer.training_loss[-1],
+            )
+            if trainer.validation_dataset is None:
+                return
+            validation_epoch_interval = int(
+                callbacks.get("validation_epoch_interval", 1)
+            )
+            if epoch % validation_epoch_interval == 0:
+                validation_loss, accuracy = Validator(
+                    trainer.model, trainer.loss_fun, trainer.validation_dataset
+                ).validate(trainer.hyper_parameter.batch_size)
+                validation_loss = validation_loss.data.item()
+                trainer.validation_loss[epoch] = validation_loss
+                get_logger(
+                    trainer.name).info(
+                    "epoch: %s, learning_rate: %s, validation loss: %s, accuracy = %s",
+                    epoch,
+                    learning_rates,
+                    validation_loss,
+                    accuracy,
+                )
+
+        callbacks = Trainer.__append_callback(
+            callbacks, "after_epoch_callback", after_epoch_callback
+        )
+
+        return self.__train(**callbacks)
+
+    def __train(self, **callbacks):
         optimizer = self.hyper_parameter.get_optimizer(self.model.parameters())
         lr_scheduler = self.hyper_parameter.get_lr_scheduler(optimizer)
-
-        get_logger(
-            self.name).info(
-            "begin training,lr_scheduler is %s",
-            lr_scheduler)
-        get_logger(self.name).info("begin training,optimizer is %s", optimizer)
-        get_logger(self.name).info("begin training,model is %s", self.model)
-        self.__reset_losses()
-
+        self.__reset_loss()
         training_data_loader = torch.utils.data.DataLoader(
             self.training_dataset,
             batch_size=self.hyper_parameter.batch_size,
             shuffle=True,
         )
+
+        if "pre_training_callback" in callbacks:
+            callbacks["pre_training_callback"](self, optimizer, lr_scheduler)
+
+        training_set_size = len(self.training_dataset)
+        batch_index = 0
         device = get_device()
         self.model.to(device)
 
-        instance_size = len(self.training_dataset)
-        batch_index = 0
         for epoch in range(self.hyper_parameter.epoches):
             self.model.train()
             training_loss = 0.0
@@ -61,12 +128,12 @@ class Trainer:
                 real_batch_size = batch[0].shape[0]
                 cur_learning_rates = lr_scheduler.get_last_lr()
 
-                if "pre_batch_callback" in kwargs:
-                    kwargs["pre_batch_callback"](
+                if "pre_batch_callback" in callbacks:
+                    callbacks["pre_batch_callback"](
                         self.model, batch, batch_index, cur_learning_rates
                     )
 
-                if "per_instance_gradient_callback" in kwargs:
+                if "per_instance_gradient_callback" in callbacks:
                     prev_accumulated_gradient = None
                     instance_inputs, instance_targets, instance_indices = batch
                     for i, instance_index in enumerate(instance_indices):
@@ -89,8 +156,8 @@ class Trainer:
                                 cur_accumulated_gradient - prev_accumulated_gradient)
                         prev_accumulated_gradient = cur_accumulated_gradient
 
-                        if "per_instance_gradient_callback" in kwargs:
-                            kwargs["per_instance_gradient_callback"](
+                        if "per_instance_gradient_callback" in callbacks:
+                            callbacks["per_instance_gradient_callback"](
                                 self.model,
                                 instance_index,
                                 instance_gradient,
@@ -105,65 +172,37 @@ class Trainer:
                     batch_loss = loss.data.item()
                     loss.backward()
 
-                if batch_index % (1000 // real_batch_size) == 0:
-                    get_logger(
-                        self.name).info(
-                        "epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
-                        epoch,
-                        batch_index,
-                        cur_learning_rates,
-                        batch_loss,
-                    )
-                if "after_batch_callback" in kwargs:
-                    kwargs["after_batch_callback"](
-                        self.model, batch, batch_index, cur_learning_rates
-                    )
-
-                optimizer.step()
-                batch_index += 1
-
                 if hasattr(self.loss_fun, "reduction") and (
                     self.loss_fun.reduction == "mean"
                     or self.loss_fun.reduction == "elementwise_mean"
                 ):
                     batch_loss *= real_batch_size
-                    batch_loss /= instance_size
-                training_loss += batch_loss
+                    batch_loss /= training_set_size
 
-            self.training_losses.append(training_loss)
-            get_logger(self.name).info(
-                "epoch: %s, epoch training loss: %s", epoch, training_loss,
-            )
-
-            if self.validation_dataset is not None:
-                validation_epoch_interval = int(
-                    kwargs.get("validation_epoch_interval", 1)
-                )
-                assert validation_epoch_interval > 0
-
-                if epoch % validation_epoch_interval == 0:
-                    validation_loss, accuracy = Validator(
-                        self.model, self.loss_fun, self.validation_dataset
-                    ).validate(self.hyper_parameter.batch_size)
-                    validation_loss = validation_loss.data.item()
-                    self.validation_losses[epoch] = validation_loss
-                    get_logger(
-                        self.name).info(
-                        "epoch: %s, learning_rate: %s, training loss: %s, validation loss: %s, accuracy = %s",
+                if "after_batch_callback" in callbacks:
+                    callbacks["after_batch_callback"](
+                        self,
                         epoch,
+                        batch_index,
+                        real_batch_size,
+                        batch_loss,
                         cur_learning_rates,
-                        training_loss,
-                        validation_loss,
-                        accuracy,
                     )
 
-            lr_scheduler.step()
-            if "after_epoch_callback" in kwargs:
-                kwargs["after_epoch_callback"](self, epoch)
+                batch_index += 1
+                training_loss += batch_loss
+                optimizer.step()
+
+            self.training_loss.append(training_loss)
+
+            if "after_epoch_callback" in callbacks:
+                callbacks["after_epoch_callback"](
+                    self, epoch, cur_learning_rates)
             # if self.min_training_loss is None or training_loss < self.min_training_loss:
             #     self.min_training_loss = training_loss
             #     self.min_training_loss_model = copy.deepcopy(self.model)
             #     self.min_training_loss_model.to(get_cpu_device())
+            lr_scheduler.step()
 
     def save(self, save_dir, save_min_model=False):
         if not os.path.isdir(save_dir):
@@ -177,13 +216,6 @@ class Trainer:
         model.to(get_cpu_device())
         torch.save(model, os.path.join(save_dir, "model.pt"))
 
-    def save_dataset(self, save_dir):
-        if not os.path.isdir(save_dir):
-            os.makedirs(save_dir)
-        open(os.path.join(save_dir, "training_dataset"), "wb").write(
-            pickle.dumps(self.training_dataset)
-        )
-
     def parameters(self, use_best_model=False):
         model = self.model
         if use_best_model:
@@ -195,8 +227,21 @@ class Trainer:
         model.to(get_cpu_device())
         return model.parameters()
 
-    def __reset_losses(self):
+    def __reset_loss(self):
         self.min_training_loss = None
         self.min_training_loss_model = None
-        self.training_losses = []
-        self.validation_losses = {}
+        self.training_loss = []
+        self.validation_loss = {}
+
+    @staticmethod
+    def __append_callback(callbacks, name, new_fun):
+        old_callback = callbacks.get(name, None)
+
+        def new_callback(*args, **kwargs):
+            nonlocal old_callback
+            if old_callback is not None:
+                old_callback(*args, **kwargs)
+            new_fun(*args, **kwargs)
+
+        callbacks[name] = new_callback
+        return callbacks

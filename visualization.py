@@ -2,7 +2,7 @@ import visdom
 import torch
 
 
-class Visualization:
+class Window:
     def __init__(self, env="main"):
         self.vis = visdom.Visdom(env=env)
         self.win = None
