@@ -18,8 +18,7 @@ class Trainer:
         self.training_dataset = training_dataset
         self.validation_dataset = None
         self.hyper_parameter = None
-        self.min_training_loss = None
-        self.min_training_loss_model = None
+        self.__reset_losses()
 
     def set_name(self, name):
         self.name = name
@@ -40,6 +39,7 @@ class Trainer:
             lr_scheduler)
         get_logger(self.name).info("begin training,optimizer is %s", optimizer)
         get_logger(self.name).info("begin training,model is %s", self.model)
+        self.__reset_losses()
 
         training_data_loader = torch.utils.data.DataLoader(
             self.training_dataset,
@@ -130,6 +130,7 @@ class Trainer:
                     batch_loss /= instance_size
                 training_loss += batch_loss
 
+            self.training_losses.append(training_loss)
             get_logger(self.name).info(
                 "epoch: %s, epoch training loss: %s", epoch, training_loss,
             )
@@ -144,12 +145,15 @@ class Trainer:
                     validation_loss, accuracy = Validator(
                         self.model, self.loss_fun, self.validation_dataset
                     ).validate(self.hyper_parameter.batch_size)
+                    validation_loss = validation_loss.data.item()
+                    self.validation_losses[epoch] = validation_loss
                     get_logger(
                         self.name).info(
-                        "epoch: %s, learning_rate:%s, validation loss: %s, accuracy = %s",
+                        "epoch: %s, learning_rate: %s, training loss: %s, validation loss: %s, accuracy = %s",
                         epoch,
                         cur_learning_rates,
-                        validation_loss.data.item(),
+                        training_loss,
+                        validation_loss,
                         accuracy,
                     )
 
@@ -190,3 +194,9 @@ class Trainer:
 
         model.to(get_cpu_device())
         return model.parameters()
+
+    def __reset_losses(self):
+        self.min_training_loss = None
+        self.min_training_loss_model = None
+        self.training_losses = []
+        self.validation_losses = {}

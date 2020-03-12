@@ -58,15 +58,22 @@ def get_task_configuration(task_name, for_training):
                 lambda params, learning_rate, weight_decay: optim.SGD(
                     params,
                     lr=learning_rate,
+                    momentum=0.9,
                     weight_decay=(weight_decay / len(training_dataset)),
                 )
             )
 
+            # hyper_parameter.set_lr_scheduler_factory(
+            #     lambda optimizer: optim.lr_scheduler.LambdaLR(
+            #         optimizer, lr_lambda=lambda epoch: math.pow(
+            #             0.9, math.floor(
+            #                 epoch / 10)), ))
+
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer: optim.lr_scheduler.LambdaLR(
-                    optimizer, lr_lambda=lambda epoch: math.pow(
-                        0.9, math.floor(
-                            epoch / 10)), ))
+                lambda optimizer: optim.lr_scheduler.StepLR(
+                    optimizer, step_size=10, gamma=0.5
+                )
+            )
 
             trainer.set_hyper_parameter(hyper_parameter)
             trainer.set_validation_dataset(validation_dataset)
