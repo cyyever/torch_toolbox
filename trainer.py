@@ -5,7 +5,7 @@ import torch
 
 from .device import get_cpu_device
 from .device import get_device
-from .util import model_gradients_to_vector
+from .util import model_gradients_to_vector, split_list_to_chunks
 from .validator import Validator
 from .log import get_logger
 from .visualization import Window
@@ -78,9 +78,9 @@ class Trainer:
                 callbacks.get("validation_epoch_interval", 1)
             )
             if epoch % validation_epoch_interval == 0:
-                validation_loss, accuracy = Validator(
-                    trainer.model, trainer.loss_fun, trainer.validation_dataset
-                ).validate(trainer.hyper_parameter.batch_size)
+                validation_loss, accuracy, class_accuracy = Validator(
+                    trainer.model, trainer.loss_fun, trainer.validation_dataset).validate(
+                    trainer.hyper_parameter.batch_size, per_class_accuracy=True)
                 validation_loss = validation_loss.data.item()
                 trainer.validation_loss[epoch] = validation_loss
                 get_logger(
@@ -95,6 +95,15 @@ class Trainer:
                 Window.get("validation accuracy").plot_accuracy(
                     epoch, accuracy, "accuracy"
                 )
+
+                for idx, sub_list in enumerate(
+                    split_list_to_chunks(list(class_accuracy.keys()), 3)
+                ):
+                    class_accuracy_win = Window.get(
+                        "class accuracy part " + str(idx))
+                    for k in sub_list:
+                        class_accuracy_win.plot_accuracy(
+                            epoch, class_accuracy[k], "class_" + str(k) + "_accuracy")
 
         callbacks = Trainer.__append_callback(
             callbacks, "after_epoch_callback", after_epoch_callback
