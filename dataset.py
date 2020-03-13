@@ -1,12 +1,14 @@
+import functools
+
 import torch
 import torchvision
 import torchvision.transforms as transforms
 
 
-class DatasetReducer:
-    def __init__(self, dataset, reducers):
+class DatasetFilter:
+    def __init__(self, dataset, filters):
         self.dataset = dataset
-        self.reducers = reducers
+        self.filters = filters
         self.indices = self.__get_indices()
 
     def __getitem__(self, index):
@@ -18,7 +20,7 @@ class DatasetReducer:
     def __get_indices(self):
         indices = []
         for index, item in enumerate(self.dataset):
-            if all(f(index, item) for f in self.reducers):
+            if all(f(index, item) for f in self.filters):
                 indices.append(index)
         return indices
 
@@ -61,6 +63,14 @@ def split_dataset_by_label(dataset):
             label_map[label] = []
         label_map[label].append(index)
     return label_map
+
+
+def get_label_count(dataset):
+    def count_instance(container, instance):
+        label = instance[1].data.item()
+        container[label] = container.get(label, 0) + 1
+
+    return functools.reduce(count_instance, dataset, dict())
 
 
 def get_dataset(name, for_train):
