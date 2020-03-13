@@ -53,22 +53,25 @@ def split_dataset(dataset):
             len(dataset))]
 
 
-def split_dataset_by_label(dataset):
-    label_map = {}
+def split_dataset_by_class(dataset):
+    class_map = {}
     for index, sampler in enumerate(dataset):
         label = sampler[1]
         if isinstance(label, torch.Tensor):
             label = label.data.item()
-        if label not in label_map:
-            label_map[label] = []
-        label_map[label].append(index)
-    return label_map
+        if label not in class_map:
+            class_map[label] = []
+        class_map[label].append(index)
+    return class_map
 
 
-def get_label_count(dataset):
+def get_class_count(dataset):
     def count_instance(container, instance):
-        label = instance[1].data.item()
+        label = instance[1]
+        if isinstance(label, torch.Tensor):
+            label = label.data.item()
         container[label] = container.get(label, 0) + 1
+        return container
 
     return functools.reduce(count_instance, dataset, dict())
 
