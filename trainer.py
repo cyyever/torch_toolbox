@@ -102,6 +102,14 @@ class Trainer:
                     class_accuracy_win = Window.get(
                         "class accuracy part " + str(idx))
                     for k in sub_list:
+                        get_logger(
+                            trainer.name).info(
+                            "epoch: %s, learning_rate: %s, class %s accuracy = %s",
+                            epoch,
+                            learning_rates,
+                            k,
+                            class_accuracy[k],
+                        )
                         class_accuracy_win.plot_accuracy(
                             epoch, class_accuracy[k], "class_" + str(k) + "_accuracy")
 
