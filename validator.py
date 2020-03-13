@@ -31,7 +31,6 @@ class Validator:
             validation_loss = validation_loss.to(device)
             for batch in validation_data_loader:
                 real_batch_size = batch[0].shape[0]
-                get_logger().info("validator batch size is %s", real_batch_size)
                 inputs = batch[0]
                 targets = batch[1]
                 inputs = inputs.to(device)
@@ -50,11 +49,9 @@ class Validator:
                 validation_loss += batch_loss
                 if after_batch_callback:
                     after_batch_callback(self.model, batch_loss)
-                correct = torch.eq(
-                    torch.max(F.softmax(outputs, dim=1), dim=1)[1], targets
-                ).view(-1)
+                correct = torch.eq(torch.max(outputs, dim=1)
+                                   [1], targets).view(-1)
                 num_correct += torch.sum(correct).item()
-                assert real_batch_size == correct.shape[0]
                 num_examples += correct.shape[0]
             return (validation_loss, num_correct / num_examples)
 
