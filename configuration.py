@@ -63,15 +63,9 @@ def get_task_configuration(task_name, for_training):
                 )
             )
 
-            # hyper_parameter.set_lr_scheduler_factory(
-            #     lambda optimizer: optim.lr_scheduler.LambdaLR(
-            #         optimizer, lr_lambda=lambda epoch: math.pow(
-            #             0.9, math.floor(
-            #                 epoch / 10)), ))
-
             hyper_parameter.set_lr_scheduler_factory(
                 lambda optimizer: optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, verbose=True
+                    optimizer, verbose=True, factor=0.5
                 )
             )
 
