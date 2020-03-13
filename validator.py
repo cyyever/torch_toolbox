@@ -1,8 +1,6 @@
 import copy
 import torch
-import torch.nn.functional as F
 
-from .log import get_logger
 from .device import get_device
 from .util import model_gradients_to_vector
 from .hessian_vector_product import hessian_vector_product as _hessian_vector_product

@@ -70,6 +70,8 @@ class Trainer:
             loss_win.plot_loss(epoch,
                                trainer.training_loss[-1],
                                "training loss")
+            Window.get("learning rate").plot_learning_rate(
+                epoch, learning_rates[0])
             if trainer.validation_dataset is None:
                 return
             validation_epoch_interval = int(
