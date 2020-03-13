@@ -44,7 +44,19 @@ def get_task_configuration(task_name, for_training):
     if task_name == "CIFAR10":
         training_dataset = get_dataset(task_name, True)
         validation_dataset = get_dataset(task_name, False)
-        model = torchvision.models.mobilenet_v2(num_classes=10)
+        model = torchvision.models.mobilenet_v2(
+            num_classes=10,
+            inverted_residual_setting=[
+                [1, 16, 1, 1],
+                # [6, 24, 2, 2],
+                [6, 24, 2, 1],
+                [6, 32, 3, 2],
+                [6, 64, 4, 2],
+                [6, 96, 3, 1],
+                [6, 160, 3, 2],
+                [6, 320, 1, 1],
+            ],
+        )
         model.features[0][0].stride = (1, 1)
         loss_fun = nn.CrossEntropyLoss()
         if for_training:
