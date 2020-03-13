@@ -2,6 +2,7 @@ import copy
 import torch
 import torch.nn.functional as F
 
+from .log import get_logger
 from .device import get_device
 from .util import model_gradients_to_vector
 from .hessian_vector_product import hessian_vector_product as _hessian_vector_product
@@ -29,6 +30,8 @@ class Validator:
             validation_loss = torch.zeros(1)
             validation_loss = validation_loss.to(device)
             for batch in validation_data_loader:
+                real_batch_size = batch[0].shape[0]
+                get_logger().info("validator batch size is %s", real_batch_size)
                 inputs = batch[0]
                 targets = batch[1]
                 inputs = inputs.to(device)
@@ -42,7 +45,7 @@ class Validator:
                     self.loss_fun.reduction == "mean"
                     or self.loss_fun.reduction == "elementwise_mean"
                 ):
-                    batch_loss *= len(outputs)
+                    batch_loss *= real_batch_size
                     batch_loss /= len(self.validation_dataset)
                 validation_loss += batch_loss
                 if after_batch_callback:
@@ -51,6 +54,7 @@ class Validator:
                     torch.max(F.softmax(outputs, dim=1), dim=1)[1], targets
                 ).view(-1)
                 num_correct += torch.sum(correct).item()
+                assert real_batch_size == correct.shape[0]
                 num_examples += correct.shape[0]
             return (validation_loss, num_correct / num_examples)
 

@@ -65,7 +65,7 @@ class Trainer:
         def after_epoch_callback(trainer, epoch, learning_rates):
             loss_win = Window.get("training & validation loss")
             get_logger(trainer.name).info(
-                "epoch: %s, epoch training loss: %s", epoch, trainer.training_loss[-1],
+                "epoch: %s, training loss: %s", epoch, trainer.training_loss[-1],
             )
             loss_win.plot_loss(epoch,
                                trainer.training_loss[-1],
@@ -181,6 +181,8 @@ class Trainer:
                     batch_loss *= real_batch_size
                     batch_loss /= training_set_size
 
+                training_loss += batch_loss
+                optimizer.step()
                 if "after_batch_callback" in callbacks:
                     callbacks["after_batch_callback"](
                         self,
@@ -192,8 +194,6 @@ class Trainer:
                     )
 
                 batch_index += 1
-                training_loss += batch_loss
-                optimizer.step()
 
             self.training_loss.append(training_loss)
 
