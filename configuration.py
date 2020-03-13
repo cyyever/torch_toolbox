@@ -6,7 +6,6 @@ import torchvision
 from .hyper_parameter import HyperParameter
 from .trainer import Trainer
 from .validator import Validator
-from .log import get_logger
 from .dataset import get_dataset
 from .model import LeNet5
 
@@ -65,7 +64,7 @@ def get_task_configuration(task_name, for_training):
 
             hyper_parameter.set_lr_scheduler_factory(
                 lambda optimizer: optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, verbose=True, factor=0.5
+                    optimizer, verbose=True, factor=0.5, patience=5
                 )
             )
 

@@ -97,7 +97,7 @@ class Trainer:
                 )
 
                 for idx, sub_list in enumerate(
-                    split_list_to_chunks(list(class_accuracy.keys()), 3)
+                    split_list_to_chunks(list(class_accuracy.keys()), 2)
                 ):
                     class_accuracy_win = Window.get(
                         "class accuracy part " + str(idx))
