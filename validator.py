@@ -31,9 +31,6 @@ class Validator:
             for k in class_count.keys():
                 class_correct_count[k] = 0
 
-        get_logger().info("class_count %s", class_count)
-        get_logger().info("class_correct_count %s", class_correct_count)
-
         validation_data_loader = torch.utils.data.DataLoader(
             self.validation_dataset, batch_size=batch_size
         )
