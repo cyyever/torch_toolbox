@@ -17,6 +17,15 @@ class Window:
         self.win = None
         self.title = title
 
+    def plot_learning_rate(self, epoch, learning_rate):
+        self.__plot_line(
+            torch.LongTensor([epoch]),
+            "Epoch",
+            torch.Tensor([learning_rate]),
+            "Learning Rate",
+            None,
+        )
+
     def plot_loss(self, epoch, loss, name):
         self.__plot_line(
             torch.LongTensor(
@@ -43,6 +52,8 @@ class Window:
                 update = "append"
             else:
                 update = "replace"
+        if name is None:
+            name = y_label
 
         self.win = self.vis.line(
             Y=y,
