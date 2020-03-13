@@ -19,16 +19,20 @@ class Trainer:
         self.training_dataset = training_dataset
         self.validation_dataset = None
         self.hyper_parameter = None
+        self.stop_criterion = None
         self.__reset_loss()
 
     def set_name(self, name):
         self.name = name
 
+    def set_hyper_parameter(self, hyper_parameter):
+        self.hyper_parameter = hyper_parameter
+
     def set_validation_dataset(self, validation_dataset):
         self.validation_dataset = validation_dataset
 
-    def set_hyper_parameter(self, hyper_parameter):
-        self.hyper_parameter = hyper_parameter
+    def set_stop_criterion(self, stop_criterion):
+        self.stop_criterion = stop_criterion
 
     def train(self, **callbacks):
         def pre_training_callback(trainer, optimizer, lr_scheduler):
@@ -220,6 +224,11 @@ class Trainer:
                 callbacks["after_epoch_callback"](
                     self, epoch, cur_learning_rates)
 
+            if self.stop_criterion is not None and self.stop_criterion(
+                self, epoch, cur_learning_rates
+            ):
+                break
+
             if isinstance(
                     lr_scheduler,
                     torch.optim.lr_scheduler.ReduceLROnPlateau):
@@ -236,21 +245,21 @@ class Trainer:
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         model = self.model
-        if save_min_model:
-            if self.min_training_loss_model:
-                model = self.min_training_loss_model
-            else:
-                raise ValueError("no min model to save")
+        # if save_min_model:
+        #     if self.min_training_loss_model:
+        #         model = self.min_training_loss_model
+        #     else:
+        #         raise ValueError("no min model to save")
         model.to(get_cpu_device())
         torch.save(model, os.path.join(save_dir, "model.pt"))
 
     def parameters(self, use_best_model=False):
         model = self.model
-        if use_best_model:
-            if self.min_training_loss_model:
-                model = self.min_training_loss_model
-            else:
-                raise ValueError("no min model to use")
+        # if use_best_model:
+        #     if self.min_training_loss_model:
+        #         model = self.min_training_loss_model
+        #     else:
+        #         raise ValueError("no min model to use")
 
         model.to(get_cpu_device())
         return model.parameters()
