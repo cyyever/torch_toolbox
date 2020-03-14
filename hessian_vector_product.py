@@ -12,6 +12,7 @@ def hessian_vector_product(model, loss, v, damping=0):
     )
     grad = grad.to(get_device())
     product = grad @ v
+    # TODO: retain_graph should be false?
     res = parameters_to_vector(
         autograd.grad(product, model.parameters(), retain_graph=True)
     )
