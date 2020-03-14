@@ -3,6 +3,7 @@
 import collections
 
 import torch.nn as nn
+import torchvision
 
 
 class LeNet5(nn.Module):
@@ -54,3 +55,21 @@ class LeNet5(nn.Module):
         output = output.view(x.size(0), -1)
         output = self.fc(output)
         return output
+
+
+class MobileNetV2CIFAR10(torchvision.models.MobileNetV2):
+    def __init__(self):
+        super(MobileNetV2CIFAR10, self).__init__(
+            num_classes=10,
+            inverted_residual_setting=[
+                [1, 16, 1, 1],
+                # [6, 24, 2, 2],
+                [6, 24, 2, 1],
+                [6, 32, 3, 2],
+                [6, 64, 4, 2],
+                [6, 96, 3, 1],
+                [6, 160, 3, 2],
+                [6, 320, 1, 1],
+            ],
+        )
+        self.features[0][0].stride = (1, 1)
