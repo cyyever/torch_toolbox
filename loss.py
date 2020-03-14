@@ -12,21 +12,25 @@ class CrossEntropyLossWithCoefficents(nn.CrossEntropyLoss):
         self.__coefficent_init_value = coefficent_init_value
         self.__final_reduction = final_reduction
         self.device = None
+        self.__coefficients = []
+
+    def get_coefficients(self):
+        return self.__coefficients
 
     def forward(self, input, target):
         self.reduction = "none"
         loss = super().forward(input, target)
         loss_cnt = loss.shape[0]
-        coefficents = []
+        self.__coefficients = []
         for _ in range(loss_cnt):
-            coefficent = torch.Tensor([self.__coefficent_init_value])
-            coefficent.requires_grad_(True)
+            coefficient = torch.Tensor([self.__coefficent_init_value])
+            coefficient.requires_grad_(True)
             if self.device is not None:
-                coefficent = coefficent.to(self.device)
-            coefficents.append(coefficent)
+                coefficient = coefficient.to(self.device)
+            self.__coefficients.append(coefficient)
         if self.__final_reduction == "none":
-            return torch.mul(coefficent, loss)
-        result = loss @ torch.stack(coefficents)
+            return torch.mul(self.__coefficients, loss)
+        result = loss @ torch.stack(self.__coefficients)
         if self.__final_reduction == "mean":
             result /= loss_cnt
         self.reduction = self.__final_reduction
