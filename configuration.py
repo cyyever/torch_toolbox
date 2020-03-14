@@ -35,8 +35,8 @@ def get_task_configuration(task_name, for_training):
                         0.5, math.floor(
                             epoch / 10)), ))
 
-            trainer.set_hyper_parameter(hyper_parameter)
-            trainer.set_validation_dataset(validation_dataset)
+            trainer.hyper_parameter = hyper_parameter
+            trainer.validation_dataset = validation_dataset
             return trainer
         validator = Validator(model, loss_fun, validation_dataset)
         return validator
@@ -66,8 +66,8 @@ def get_task_configuration(task_name, for_training):
                 )
             )
 
-            trainer.set_hyper_parameter(hyper_parameter)
-            trainer.set_validation_dataset(validation_dataset)
+            trainer.hyper_parameter = hyper_parameter
+            trainer.validation_dataset = validation_dataset
             return trainer
         validator = Validator(model, loss_fun, validation_dataset)
         return validator

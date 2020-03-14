@@ -22,19 +22,7 @@ class Trainer:
         self.stop_criterion = None
         self.__reset_loss()
 
-    def set_name(self, name):
-        self.name = name
-
-    def set_hyper_parameter(self, hyper_parameter):
-        self.hyper_parameter = hyper_parameter
-
-    def set_validation_dataset(self, validation_dataset):
-        self.validation_dataset = validation_dataset
-
-    def set_stop_criterion(self, stop_criterion):
-        self.stop_criterion = stop_criterion
-
-    def train(self, **callbacks):
+    def train(self, **kwargs):
         def pre_training_callback(trainer, optimizer, lr_scheduler):
             get_logger(
                 trainer.name).info(
@@ -44,8 +32,8 @@ class Trainer:
                 trainer.model,
             )
 
-        callbacks = Trainer.__append_callback(
-            callbacks, "pre_training_callback", pre_training_callback
+        kwargs = Trainer.__append_callback(
+            kwargs, "pre_training_callback", pre_training_callback
         )
 
         def after_batch_callback(
@@ -62,8 +50,8 @@ class Trainer:
                     batch_loss,
                 )
 
-        callbacks = Trainer.__append_callback(
-            callbacks, "after_batch_callback", after_batch_callback
+        kwargs = Trainer.__append_callback(
+            kwargs, "after_batch_callback", after_batch_callback
         )
 
         def after_epoch_callback(trainer, epoch, learning_rates):
@@ -79,8 +67,7 @@ class Trainer:
             if trainer.validation_dataset is None:
                 return
             validation_epoch_interval = int(
-                callbacks.get("validation_epoch_interval", 1)
-            )
+                kwargs.get("validation_epoch_interval", 1))
             if epoch % validation_epoch_interval == 0:
                 validation_loss, accuracy, class_accuracy = Validator(
                     trainer.model, trainer.loss_fun, trainer.validation_dataset).validate(
@@ -117,13 +104,13 @@ class Trainer:
                         class_accuracy_win.plot_accuracy(
                             epoch, class_accuracy[k], "class_" + str(k) + "_accuracy")
 
-        callbacks = Trainer.__append_callback(
-            callbacks, "after_epoch_callback", after_epoch_callback
+        kwargs = Trainer.__append_callback(
+            kwargs, "after_epoch_callback", after_epoch_callback
         )
 
-        return self.__train(**callbacks)
+        return self.__train(**kwargs)
 
-    def __train(self, **callbacks):
+    def __train(self, **kwargs):
         optimizer = self.hyper_parameter.get_optimizer(self.model.parameters())
         lr_scheduler = self.hyper_parameter.get_lr_scheduler(optimizer)
         self.__reset_loss()
@@ -133,8 +120,8 @@ class Trainer:
             shuffle=True,
         )
 
-        if "pre_training_callback" in callbacks:
-            callbacks["pre_training_callback"](self, optimizer, lr_scheduler)
+        if "pre_training_callback" in kwargs:
+            kwargs["pre_training_callback"](self, optimizer, lr_scheduler)
 
         training_set_size = len(self.training_dataset)
         batch_index = 0
@@ -153,12 +140,12 @@ class Trainer:
                 cur_learning_rates = [group["lr"]
                                       for group in optimizer.param_groups]
 
-                if "pre_batch_callback" in callbacks:
-                    callbacks["pre_batch_callback"](
+                if "pre_batch_callback" in kwargs:
+                    kwargs["pre_batch_callback"](
                         self.model, batch, batch_index, cur_learning_rates
                     )
 
-                if "per_instance_gradient_callback" in callbacks:
+                if "per_instance_gradient_callback" in kwargs:
                     prev_accumulated_gradient = None
                     instance_inputs, instance_targets, instance_indices = batch
                     for i, instance_index in enumerate(instance_indices):
@@ -170,7 +157,9 @@ class Trainer:
                             output, torch.stack(
                                 [instance_target]))
                         batch_loss += loss.data.item() / real_batch_size
-                        loss.backward()
+                        loss.backward(
+                            retain_graph=(
+                                "loss_retain_graph" in kwargs))
                         cur_accumulated_gradient = model_gradients_to_vector(
                             self.model)
                         instance_gradient = None
@@ -181,8 +170,8 @@ class Trainer:
                                 cur_accumulated_gradient - prev_accumulated_gradient)
                         prev_accumulated_gradient = cur_accumulated_gradient
 
-                        if "per_instance_gradient_callback" in callbacks:
-                            callbacks["per_instance_gradient_callback"](
+                        if "per_instance_gradient_callback" in kwargs:
+                            kwargs["per_instance_gradient_callback"](
                                 self.model,
                                 instance_index,
                                 instance_gradient,
@@ -195,7 +184,7 @@ class Trainer:
                     outputs = self.model(inputs)
                     loss = self.loss_fun(outputs, targets)
                     batch_loss = loss.data.item()
-                    loss.backward()
+                    loss.backward(retain_graph=("loss_retain_graph" in kwargs))
 
                 if hasattr(self.loss_fun, "reduction") and (
                     self.loss_fun.reduction == "mean"
@@ -206,8 +195,8 @@ class Trainer:
 
                 training_loss += batch_loss
                 optimizer.step()
-                if "after_batch_callback" in callbacks:
-                    callbacks["after_batch_callback"](
+                if "after_batch_callback" in kwargs:
+                    kwargs["after_batch_callback"](
                         self,
                         epoch,
                         batch_index,
@@ -220,9 +209,8 @@ class Trainer:
 
             self.training_loss.append(training_loss)
 
-            if "after_epoch_callback" in callbacks:
-                callbacks["after_epoch_callback"](
-                    self, epoch, cur_learning_rates)
+            if "after_epoch_callback" in kwargs:
+                kwargs["after_epoch_callback"](self, epoch, cur_learning_rates)
 
             if self.stop_criterion is not None and self.stop_criterion(
                 self, epoch, cur_learning_rates
@@ -271,8 +259,8 @@ class Trainer:
         self.validation_loss = {}
 
     @staticmethod
-    def __append_callback(callbacks, name, new_fun):
-        old_callback = callbacks.get(name, None)
+    def __append_callback(kwargs, name, new_fun):
+        old_callback = kwargs.get(name, None)
 
         def new_callback(*args, **kwargs):
             nonlocal old_callback
@@ -280,5 +268,5 @@ class Trainer:
                 old_callback(*args, **kwargs)
             new_fun(*args, **kwargs)
 
-        callbacks[name] = new_callback
-        return callbacks
+        kwargs[name] = new_callback
+        return kwargs
