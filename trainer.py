@@ -157,9 +157,7 @@ class Trainer:
                             output, torch.stack(
                                 [instance_target]))
                         batch_loss += loss.data.item() / real_batch_size
-                        loss.backward(
-                            retain_graph=(
-                                "loss_retain_graph" in kwargs))
+                        loss.backward()
                         cur_accumulated_gradient = model_gradients_to_vector(
                             self.model)
                         instance_gradient = None
@@ -184,7 +182,7 @@ class Trainer:
                     outputs = self.model(inputs)
                     loss = self.loss_fun(outputs, targets)
                     batch_loss = loss.data.item()
-                    loss.backward(retain_graph=("loss_retain_graph" in kwargs))
+                    loss.backward()
 
                 if hasattr(self.loss_fun, "reduction") and (
                     self.loss_fun.reduction == "mean"
