@@ -1,7 +1,6 @@
 from enum import Enum, auto
 import shutil
 import os
-import time
 import threading
 import collections
 
@@ -56,7 +55,6 @@ class LargeDict:
         large_dict = task
         LRU_keys = collections.OrderedDict()
         while True:
-            get_logger().error("begin flush")
             LRU_keys_len = large_dict.__get_LRU_key_num()
             if LRU_keys_len == 0:
                 break
@@ -78,8 +76,8 @@ class LargeDict:
             with large_dict.lock:
                 threshold = large_dict.__get_in_memory_key_number()
 
+            write_keys = []
             while len(LRU_keys) > threshold:
-                get_logger().error("LRU_keys_len is %s", len(LRU_keys))
                 key = LRU_keys.popitem(last=False)[0]
 
                 with large_dict.lock:
@@ -92,10 +90,12 @@ class LargeDict:
                         continue
                     if data_info == DataInfo.IN_MEMORY_NEW_DATA:
                         large_dict.data_info[key] = DataInfo.PRE_SAVING
-                        large_dict.write_queue.add_task((large_dict, key))
+                        write_keys.append(key)
                     else:
                         large_dict.data_info[key] = DataInfo.IN_DISK
                         large_dict.data.pop(key)
+            if write_keys:
+                large_dict.write_queue.add_task((large_dict, write_keys))
 
         LRU_keys_list = [None] * len(LRU_keys)
         LRU_keys_list.clear()
@@ -117,44 +117,42 @@ class LargeDict:
                     continue_flush = True
         if continue_flush:
             large_dict.flush_thread.add_task(large_dict)
-        get_logger().error("end flush")
 
     @staticmethod
     def write_item(task):
-        large_dict, key = task
-        value = None
-        get_logger().error("begin write_item")
-        with large_dict.lock:
-            if not large_dict.__change_data_info(
-                key, DataInfo.PRE_SAVING, DataInfo.SAVING
-            ):
-                return
-            value = large_dict.data[key]
+        large_dict, keys = task
+        for key in keys:
+            value = None
+            with large_dict.lock:
+                if not large_dict.__change_data_info(
+                    key, DataInfo.PRE_SAVING, DataInfo.SAVING
+                ):
+                    continue
+                value = large_dict.data[key]
 
-        item_path = large_dict.get_key_storage_path(key)
-        succ_flag = True
-        try:
-            torch.save(value, item_path)
-        except Exception:
-            get_logger().error("save key %s failed,keep it in memory", key)
-            succ_flag = False
+            item_path = large_dict.get_key_storage_path(key)
+            succ_flag = True
+            try:
+                torch.save(value, item_path)
+            except Exception:
+                get_logger().error("save key %s failed,keep it in memory", key)
+                succ_flag = False
 
-        with large_dict.lock:
-            data_info = large_dict.data_info.get(key, None)
-            if data_info is None:
-                if os.path.exists(item_path):
-                    shutil.rmtree(item_path)
-                return
-            if data_info != DataInfo.SAVING:
-                get_logger().warning("canceled key %s, info is %s", key, data_info)
-                return
-            if not succ_flag:
-                large_dict.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
-                large_dict.__update_item_access_time(key)
-                return
-            large_dict.data_info[key] = DataInfo.IN_DISK
-            large_dict.data.pop(key)
-            get_logger().error("end write_item")
+            with large_dict.lock:
+                data_info = large_dict.data_info.get(key, None)
+                if data_info is None:
+                    if os.path.exists(item_path):
+                        shutil.rmtree(item_path)
+                    continue
+                if data_info != DataInfo.SAVING:
+                    get_logger().warning("canceled key %s, info is %s", key, data_info)
+                    continue
+                if not succ_flag:
+                    large_dict.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
+                    large_dict.__update_item_access_time(key)
+                    continue
+                large_dict.data_info[key] = DataInfo.IN_DISK
+                large_dict.data.pop(key)
 
     @staticmethod
     def delete_item(task):
@@ -196,7 +194,6 @@ class LargeDict:
             large_dict.__update_item_access_time(key)
             if large_dict.wait_fetch_event:
                 large_dict.fetch_event.set()
-                get_logger().debug("end fetch_event set")
 
     def set_storage_dir(self, storage_dir):
         self.storage_dir = storage_dir
@@ -298,13 +295,8 @@ class LargeDict:
             return key in self.data_info
 
     def __getitem__(self, key):
-        get_logger().debug("before get lock")
-        cur_time = time.time()
         result = self.prefetch([key])
         if result:
-            get_logger().warning(
-                "end get key %s %s", key, (time.time() - cur_time) * 1000
-            )
             return result[0]
         with self.lock:
             self.wait_fetch_event = True
@@ -322,17 +314,10 @@ class LargeDict:
         raise KeyError(key)
 
     def __setitem__(self, key, val):
-        cur_time = time.time()
         with self.lock:
             self.data[key] = val
             self.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
-            get_logger().warning(
-                "set data ,use time %s", (time.time() - cur_time) * 1000
-            )
             self.__update_item_access_time(key)
-            get_logger().warning(
-                "update access time ,use time %s",
-                (time.time() - cur_time) * 1000)
 
     def __delitem__(self, key):
         with self.lock:
@@ -373,32 +358,13 @@ class LargeDict:
             return self.__next_LRU_key_index
 
     def __update_item_access_time(self, key):
-        cur_time = time.time()
         if self.__next_LRU_key_index < self.__LRU_key_len:
             self.__LRU_keys[self.__next_LRU_key_index] = key
-            get_logger().warning(
-                "end inplace %s ", (time.time() - cur_time) * 1000,
-            )
         else:
             self.__LRU_key_len += 1
             self.__LRU_keys.append(key)
-            get_logger().warning(
-                "end  append %s len %s ",
-                (time.time() - cur_time) * 1000,
-                len(self.__LRU_keys),
-            )
-        get_logger().warning(
-            "begin here %s %s ",
-            self.__next_LRU_key_index,
-            (time.time() - cur_time) * 1000,
-        )
         self.__next_LRU_key_index += 1
-        get_logger().warning(
-            "end  here %s ", (time.time() - cur_time) * 1000,
-        )
         if (not self.in_flush and self.__next_LRU_key_index >
                 self.__get_in_memory_key_number() * 1.5):
-            cur_time = time.time()
             self.flush_thread.add_task(self)
-            get_logger().warning("end add_task %s ", (time.time() - cur_time) * 1000)
             self.in_flush = True
