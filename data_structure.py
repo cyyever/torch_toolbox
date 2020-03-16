@@ -56,6 +56,7 @@ class LargeDict:
         large_dict = task
         LRU_keys = collections.OrderedDict()
         while True:
+            get_logger().error("begin flush")
             LRU_keys_len = large_dict.__get_LRU_key_num()
             if LRU_keys_len == 0:
                 break
@@ -72,34 +73,31 @@ class LargeDict:
                     LRU_keys.move_to_end(k)
                 else:
                     LRU_keys[k] = None
-            LRU_keys_len = len(LRU_keys)
-            if LRU_keys_len == 0:
-                break
 
             threshold = None
             with large_dict.lock:
                 threshold = large_dict.__get_in_memory_key_number()
 
-            key = None
-            if LRU_keys_len > threshold:
+            while len(LRU_keys) > threshold:
+                get_logger().error("LRU_keys_len is %s", len(LRU_keys))
                 key = LRU_keys.popitem(last=False)[0]
-            else:
-                break
 
-            with large_dict.lock:
-                data_info = large_dict.data_info.get(key, None)
-                assert data_info in (
-                    DataInfo.IN_MEMORY,
-                    DataInfo.IN_MEMORY_NEW_DATA)
-                if data_info is None:
-                    continue
-                if data_info == DataInfo.IN_MEMORY_NEW_DATA:
-                    large_dict.data_info[key] = DataInfo.PRE_SAVING
-                    large_dict.write_queue.add_task((large_dict, key))
-                else:
-                    large_dict.data_info[key] = DataInfo.IN_DISK
-                    large_dict.data.pop(key)
+                with large_dict.lock:
+                    data_info = large_dict.data_info.get(key, None)
+                    assert data_info in (
+                        DataInfo.IN_MEMORY,
+                        DataInfo.IN_MEMORY_NEW_DATA,
+                    )
+                    if data_info is None:
+                        continue
+                    if data_info == DataInfo.IN_MEMORY_NEW_DATA:
+                        large_dict.data_info[key] = DataInfo.PRE_SAVING
+                        large_dict.write_queue.add_task((large_dict, key))
+                    else:
+                        large_dict.data_info[key] = DataInfo.IN_DISK
+                        large_dict.data.pop(key)
 
+        LRU_keys_list = [None] * len(LRU_keys)
         LRU_keys_list.clear()
         while LRU_keys:
             key = LRU_keys.popitem(last=False)[0]
@@ -119,11 +117,13 @@ class LargeDict:
                     continue_flush = True
         if continue_flush:
             large_dict.flush_thread.add_task(large_dict)
+        get_logger().error("end flush")
 
     @staticmethod
     def write_item(task):
         large_dict, key = task
         value = None
+        get_logger().error("begin write_item")
         with large_dict.lock:
             if not large_dict.__change_data_info(
                 key, DataInfo.PRE_SAVING, DataInfo.SAVING
@@ -154,6 +154,7 @@ class LargeDict:
                 return
             large_dict.data_info[key] = DataInfo.IN_DISK
             large_dict.data.pop(key)
+            get_logger().error("end write_item")
 
     @staticmethod
     def delete_item(task):
@@ -211,7 +212,13 @@ class LargeDict:
 
     def flush_all(self):
         with self.lock:
+            self.in_flush = True
             self.flush_all_once = True
+            self.flush_thread.add_task(self)
+
+    def flush(self):
+        with self.lock:
+            self.in_flush = True
             self.flush_thread.add_task(self)
 
     def print_data_info(self):
@@ -322,7 +329,6 @@ class LargeDict:
             get_logger().warning(
                 "set data ,use time %s", (time.time() - cur_time) * 1000
             )
-            cur_time = time.time()
             self.__update_item_access_time(key)
             get_logger().warning(
                 "update access time ,use time %s",
@@ -381,13 +387,17 @@ class LargeDict:
                 (time.time() - cur_time) * 1000,
                 len(self.__LRU_keys),
             )
+        get_logger().warning(
+            "begin here %s %s ",
+            self.__next_LRU_key_index,
+            (time.time() - cur_time) * 1000,
+        )
         self.__next_LRU_key_index += 1
-        cur_time = time.time()
+        get_logger().warning(
+            "end  here %s ", (time.time() - cur_time) * 1000,
+        )
         if (not self.in_flush and self.__next_LRU_key_index >
                 self.__get_in_memory_key_number() * 1.5):
-            get_logger().warning(
-                "end check in flush %s ", (time.time() - cur_time) * 1000
-            )
             cur_time = time.time()
             self.flush_thread.add_task(self)
             get_logger().warning("end add_task %s ", (time.time() - cur_time) * 1000)
