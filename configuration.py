@@ -6,7 +6,7 @@ from .hyper_parameter import HyperParameter
 from .trainer import Trainer
 from .validator import Validator
 from .dataset import get_dataset
-from .model import LeNet5, MobileNetV2CIFAR10
+from .model import LeNet5, densenet_cifar
 
 
 def get_task_configuration(task_name, for_training):
@@ -43,7 +43,7 @@ def get_task_configuration(task_name, for_training):
     if task_name == "CIFAR10":
         training_dataset = get_dataset(task_name, True)
         validation_dataset = get_dataset(task_name, False)
-        model = MobileNetV2CIFAR10()
+        model = densenet_cifar()
         loss_fun = nn.CrossEntropyLoss()
         if for_training:
             trainer = Trainer(model, loss_fun, training_dataset)
@@ -55,16 +55,14 @@ def get_task_configuration(task_name, for_training):
                 lambda params, learning_rate, weight_decay: optim.SGD(
                     params,
                     lr=learning_rate,
-                    momentum=0.9,
+                    # momentum=0.9,
                     weight_decay=(weight_decay / len(training_dataset)),
                 )
             )
 
             hyper_parameter.set_lr_scheduler_factory(
                 lambda optimizer: optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, verbose=True, factor=0.5, patience=5
-                )
-            )
+                    optimizer, verbose=True, factor=0.5, patience=5, threshold=1e-2))
 
             trainer.hyper_parameter = hyper_parameter
             trainer.validation_dataset = validation_dataset
