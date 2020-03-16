@@ -37,7 +37,13 @@ class Trainer:
         )
 
         def after_batch_callback(
-            trainer, epoch, batch_index, batch_size, batch_loss, learning_rates
+            trainer,
+            epoch,
+            batch_index,
+            batch_size,
+            batch_loss,
+            learning_rates,
+            **kwargs
         ):
             if batch_index % (len(trainer.training_dataset) //
                               (10 * batch_size)) == 0:
@@ -145,13 +151,20 @@ class Trainer:
                         self.model, batch, batch_index, cur_learning_rates
                     )
 
+                instance_inputs = batch[0]
+                instance_inputs = instance_inputs.to(device)
+                instance_targets = batch[1]
+                instance_targets = instance_targets.to(device)
+                instance_indices = None
+                if len(batch) >= 3:
+                    instance_indices = [idx.data.item() for idx in batch[2]]
+
                 if "per_instance_gradient_callback" in kwargs:
                     prev_accumulated_gradient = None
-                    instance_inputs, instance_targets, instance_indices = batch
                     for i, instance_index in enumerate(instance_indices):
-                        instance_index = instance_indices[i].data.item()
-                        instance_input = instance_inputs[i].to(device)
-                        instance_target = instance_targets[i].to(device)
+                        instance_index = instance_indices[i]
+                        instance_input = instance_inputs[i]
+                        instance_target = instance_targets[i]
                         output = self.model(torch.stack([instance_input]))
                         loss = self.loss_fun(
                             output, torch.stack(
@@ -177,10 +190,8 @@ class Trainer:
                                 real_batch_size,
                             )
                 else:
-                    inputs = batch[0].to(device)
-                    targets = batch[1].to(device)
-                    outputs = self.model(inputs)
-                    loss = self.loss_fun(outputs, targets)
+                    outputs = self.model(instance_inputs)
+                    loss = self.loss_fun(outputs, instance_targets)
                     batch_loss = loss.data.item()
                     loss.backward()
 
@@ -192,6 +203,10 @@ class Trainer:
                     batch_loss /= training_set_size
 
                 training_loss += batch_loss
+                batch_grad = None
+                if kwargs.get("batch_callback_need_grad", False):
+                    batch_grad = model_gradients_to_vector(self.model)
+
                 optimizer.step()
                 cur_learning_rates = [group["lr"]
                                       for group in optimizer.param_groups]
@@ -204,6 +219,8 @@ class Trainer:
                         real_batch_size,
                         batch_loss,
                         cur_learning_rates,
+                        batch_grad=batch_grad,
+                        instance_indices=instance_indices,
                     )
 
                 batch_index += 1
