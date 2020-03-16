@@ -74,6 +74,7 @@ class Trainer:
                     trainer.hyper_parameter.batch_size, per_class_accuracy=True)
                 validation_loss = validation_loss.data.item()
                 trainer.validation_loss[epoch] = validation_loss
+                trainer.validation_accuracy[epoch] = accuracy
                 get_logger(
                     trainer.name).info(
                     "epoch: %s, learning_rate: %s, validation loss: %s, accuracy = %s",
@@ -131,14 +132,13 @@ class Trainer:
         for epoch in range(self.hyper_parameter.epoches):
             self.model.train()
             training_loss = 0.0
+            cur_learning_rates = [group["lr"]
+                                  for group in optimizer.param_groups]
             for batch in training_data_loader:
                 self.model.to(device)
                 optimizer.zero_grad()
                 batch_loss = 0
                 real_batch_size = batch[0].shape[0]
-
-                cur_learning_rates = [group["lr"]
-                                      for group in optimizer.param_groups]
 
                 if "pre_batch_callback" in kwargs:
                     kwargs["pre_batch_callback"](
@@ -193,6 +193,9 @@ class Trainer:
 
                 training_loss += batch_loss
                 optimizer.step()
+                cur_learning_rates = [group["lr"]
+                                      for group in optimizer.param_groups]
+
                 if "after_batch_callback" in kwargs:
                     kwargs["after_batch_callback"](
                         self,
@@ -213,6 +216,7 @@ class Trainer:
             if self.stop_criterion is not None and self.stop_criterion(
                 self, epoch, cur_learning_rates
             ):
+                get_logger().warning("early stop")
                 break
 
             if isinstance(
@@ -222,31 +226,15 @@ class Trainer:
             else:
                 lr_scheduler.step()
 
-            # if self.min_training_loss is None or training_loss < self.min_training_loss:
-            #     self.min_training_loss = training_loss
-            #     self.min_training_loss_model = copy.deepcopy(self.model)
-            #     self.min_training_loss_model.to(get_cpu_device())
-
-    def save(self, save_dir, save_min_model=False):
+    def save(self, save_dir):
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         model = self.model
-        # if save_min_model:
-        #     if self.min_training_loss_model:
-        #         model = self.min_training_loss_model
-        #     else:
-        #         raise ValueError("no min model to save")
         model.to(get_cpu_device())
         torch.save(model, os.path.join(save_dir, "model.pt"))
 
-    def parameters(self, use_best_model=False):
+    def parameters(self):
         model = self.model
-        # if use_best_model:
-        #     if self.min_training_loss_model:
-        #         model = self.min_training_loss_model
-        #     else:
-        #         raise ValueError("no min model to use")
-
         model.to(get_cpu_device())
         return model.parameters()
 
@@ -255,6 +243,7 @@ class Trainer:
         self.min_training_loss_model = None
         self.training_loss = []
         self.validation_loss = {}
+        self.validation_accuracy = {}
 
     @staticmethod
     def __append_callback(kwargs, name, new_fun):
