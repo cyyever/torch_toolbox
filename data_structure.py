@@ -4,7 +4,6 @@ import os
 import time
 import threading
 import collections
-import gc
 
 import torch
 
@@ -28,8 +27,8 @@ class LargeDict:
         self.lock = threading.RLock()
         self.data = dict()
         self.data_info = dict()
-        self.__LRU_keys = collections.deque()
-        self.__LRU_keys2 = dict()
+        self.__LRU_keys = None
+        self.__create_LRU_keys()
         self.storage_dir = None
         self.permanent = False
 
@@ -57,11 +56,18 @@ class LargeDict:
         large_dict = task
         LRU_keys = collections.OrderedDict()
         while True:
-            LRU_keys_list = collections.deque()
+            LRU_keys_len = large_dict.__get_LRU_key_num()
+            if LRU_keys_len == 0:
+                break
+
+            LRU_keys_list = [None] * LRU_keys_len
+
             with large_dict.lock:
-                LRU_keys_list = large_dict.__LRU_keys
-                large_dict.__LRU_keys = collections.deque()
-            for k in LRU_keys_list:
+                for i in range(LRU_keys_len):
+                    LRU_keys_list[i] = large_dict.__LRU_keys[i]
+                large_dict.__next_LRU_key_index = 0
+            for i in range(LRU_keys_len):
+                k = LRU_keys_list[i]
                 if k in LRU_keys:
                     LRU_keys.move_to_end(k)
                 else:
@@ -94,15 +100,18 @@ class LargeDict:
                     large_dict.data_info[key] = DataInfo.IN_DISK
                     large_dict.data.pop(key)
 
-        LRU_keys_list = collections.deque()
+        LRU_keys_list.clear()
         while LRU_keys:
             key = LRU_keys.popitem(last=False)[0]
             LRU_keys_list.append(key)
 
         continue_flush = False
+        LRU_keys_len = len(LRU_keys_list)
         with large_dict.lock:
             large_dict.in_flush = False
-            large_dict.__LRU_keys = LRU_keys_list + large_dict.__LRU_keys
+            if LRU_keys_len != 0:
+                large_dict.__LRU_keys = LRU_keys_list + large_dict.__LRU_keys
+                large_dict.__next_LRU_key_index += LRU_keys_len
             if large_dict.flush_all_once:
                 if not large_dict.__LRU_keys:
                     large_dict.flush_all_once = False
@@ -347,25 +356,35 @@ class LargeDict:
             self.data_info[key] = to_info
             return True
 
+    def __create_LRU_keys(self):
+        if self.__LRU_keys is None:
+            self.__LRU_keys = [None] * (self.__in_memory_key_number * 2)
+        self.__LRU_key_len = len(self.__LRU_keys)
+        self.__next_LRU_key_index = 0
+
+    def __get_LRU_key_num(self):
+        with self.lock:
+            return self.__next_LRU_key_index
+
     def __update_item_access_time(self, key):
-        gc.disable()
         cur_time = time.time()
-        get_logger().warning("begin append,type is %s", type(self.__LRU_keys))
-        self.__LRU_keys.append(key)
-        get_logger().warning(
-            "end  append %s len %s ",
-            (time.time() - cur_time) * 1000,
-            len(self.__LRU_keys),
-        )
-        cur_time = time.time()
-        if len(self.__LRU_keys) > 0:
+        if self.__next_LRU_key_index < self.__LRU_key_len:
+            self.__LRU_keys[self.__next_LRU_key_index] = key
             get_logger().warning(
-                "end  len  %s ", (time.time() - cur_time) * 1000,
+                "end inplace %s ", (time.time() - cur_time) * 1000,
             )
-        if (
-            not self.in_flush
-            and len(self.__LRU_keys) > self.__get_in_memory_key_number() * 1.5
-        ):
+        else:
+            self.__LRU_key_len += 1
+            self.__LRU_keys.append(key)
+            get_logger().warning(
+                "end  append %s len %s ",
+                (time.time() - cur_time) * 1000,
+                len(self.__LRU_keys),
+            )
+        self.__next_LRU_key_index += 1
+        cur_time = time.time()
+        if (not self.in_flush and self.__next_LRU_key_index >
+                self.__get_in_memory_key_number() * 1.5):
             get_logger().warning(
                 "end check in flush %s ", (time.time() - cur_time) * 1000
             )
@@ -373,4 +392,3 @@ class LargeDict:
             self.flush_thread.add_task(self)
             get_logger().warning("end add_task %s ", (time.time() - cur_time) * 1000)
             self.in_flush = True
-        # gc.enable()
