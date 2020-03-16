@@ -177,10 +177,10 @@ class LargeDict:
         return key in self.data_info
 
     def __getitem__(self, key):
-        cur_time = time.time()
+        # cur_time = time.time()
         result = self.prefetch([key])
         if result:
-            get_logger().error("get use time %s", (time.time() - cur_time) * 1000)
+            # get_logger().debug("get use time %s", (time.time() - cur_time) * 1000)
             return result[0]
 
         while True:
@@ -190,7 +190,7 @@ class LargeDict:
                 DataInfo.IN_MEMORY_NEW_DATA,
             ):
                 get_logger().warning("read key %s from disk", key)
-                get_logger().error("get use time %s", (time.time() - cur_time) * 1000)
+                # get_logger().error("get use time %s", (time.time() - cur_time) * 1000)
                 return self.data[key]
         raise KeyError(key)
 
@@ -198,9 +198,9 @@ class LargeDict:
         self.data[key] = val
         self.__add_item_access_time(key)
         self.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
-        cur_time = time.time()
+        # cur_time = time.time()
         self.__flush()
-        get_logger().error("set use time %s", (time.time() - cur_time) * 1000)
+        # get_logger().error("set use time %s", (time.time() - cur_time) * 1000)
 
     def __delitem__(self, key):
         data_info = self.data_info.pop(key, None)
