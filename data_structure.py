@@ -204,9 +204,9 @@ class LargeDict:
         self.data[key] = val
         self.__add_item_access_time(key)
         self.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
-        # cur_time = time.time()
+        cur_time = time.time()
         self.__flush()
-        # get_logger().error("set use time %s", (time.time() - cur_time) * 1000)
+        get_logger().error("set use time %s", (time.time() - cur_time) * 1000)
 
     def __delitem__(self, key):
         data_info = self.data_info.pop(key, None)
@@ -273,9 +273,11 @@ class LargeDict:
 
     def __flush(self):
         if self.__could_flush():
+            cur_time = time.time()
             items = self.__get_expired_items()
+            get_logger().error("get exp use time %s", (time.time() - cur_time) * 1000)
             self.io_request_queue.add_task((Action.WRITE, items))
-            get_logger().error("do_flush")
+            get_logger().error("task time %s", (time.time() - cur_time) * 1000)
 
     def __process_io_response(self, block=False):
         results = None
