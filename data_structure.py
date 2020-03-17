@@ -4,10 +4,10 @@ import os
 import time
 import queue
 import collections
-
+import multiprocessing
 import torch
 
-from .task_queue import TaskQueue
+from .task_queue import TaskQueue, ProcessTaskQueue
 from .log import get_logger
 
 
@@ -50,13 +50,16 @@ class LargeDict:
             }
             self.permanent = True
 
-        self.io_respose_queue = queue.Queue()
-        self.io_request_queue = TaskQueue(LargeDict.do_io, 1)
+        self.io_respose_queue = multiprocessing.Queue()
+        self.io_request_queue = ProcessTaskQueue(
+            LargeDict.do_io, 1, {"io_respose_queue": self.io_respose_queue}
+        )
         self.flush_all_once = False
 
     @staticmethod
-    def do_io(task):
-        action, response_queue, data = task
+    def do_io(task, task_extra_args):
+        action, data = task
+        response_queue = task_extra_args["io_respose_queue"]
         if action == Action.WRITE:
             results = dict()
             for k, v in data.items():
@@ -150,9 +153,7 @@ class LargeDict:
             io_keys[key] = self.get_key_storage_path(key)
 
         if io_keys:
-            self.io_request_queue.add_task(
-                (Action.READ, self.io_respose_queue, io_keys)
-            )
+            self.io_request_queue.add_task((Action.READ, io_keys))
         return result
 
     def release(self):
@@ -273,8 +274,7 @@ class LargeDict:
     def __flush(self):
         if self.__could_flush():
             items = self.__get_expired_items()
-            self.io_request_queue.add_task(
-                (Action.WRITE, self.io_respose_queue, items))
+            self.io_request_queue.add_task((Action.WRITE, items))
             get_logger().error("do_flush")
 
     def __process_io_response(self, block=False):
