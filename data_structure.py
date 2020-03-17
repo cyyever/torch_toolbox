@@ -58,20 +58,25 @@ class LargeDict:
 
     @staticmethod
     def do_io(task, task_extra_args):
+        get_logger().error("do task")
         action, data = task
         response_queue = task_extra_args["io_respose_queue"]
         if action == Action.WRITE:
             results = dict()
             for k, v in data.items():
-                item_path, data = v
+                item_path, tensor = v
                 result = ActionResult.WRITE_SUCC
                 try:
-                    torch.save(data, item_path)
+                    torch.save(tensor, item_path)
+                    results[k] = (result, None)
+                    get_logger().error("save key %s succ", k)
                 except Exception:
                     get_logger().error("save key %s failed", k)
                     result = ActionResult.WRITE_FAILED
-                results[k] = (result, None)
-            response_queue.put(results)
+                    results[k] = (result, tensor)
+            if result == ActionResult.WRITE_FAILED:
+                response_queue.put(results)
+            get_logger().error("end do task")
             return
         if action == Action.READ:
             results = dict()
@@ -254,10 +259,11 @@ class LargeDict:
             if data_info is None:
                 continue
             if data_info == DataInfo.IN_MEMORY_NEW_DATA:
-                self.data_info[key] = DataInfo.SAVING
+                # self.data_info[key] = DataInfo.SAVING
+                self.data_info[key] = DataInfo.IN_DISK
                 io_items[key] = (
                     self.get_key_storage_path(key),
-                    self.data[key])
+                    self.data.pop(key))
             else:
                 self.data_info[key] = DataInfo.IN_DISK
                 self.data.pop(key)
@@ -270,6 +276,7 @@ class LargeDict:
     def __add_item_access_time(self, key):
         self.__LRU_keys[key] = None
         self.__LRU_keys_cnt += 1
+        get_logger().error("cnt is %s %s", self.__LRU_keys_cnt, len(self.data))
 
     def __flush(self):
         if self.__could_flush():
@@ -277,36 +284,43 @@ class LargeDict:
             items = self.__get_expired_items()
             get_logger().error("get exp use time %s", (time.time() - cur_time) * 1000)
             self.io_request_queue.add_task((Action.WRITE, items))
-            get_logger().error("task time %s", (time.time() - cur_time) * 1000)
+            get_logger().error("task time size %s  %s", len(items), (time.time() - cur_time) * 1000)
 
     def __process_io_response(self, block=False):
-        results = None
-        try:
-            results = self.io_respose_queue.get(block=block)
-        except queue.Empty:
-            return
-        for key, v in results.items():
-            result, data = v
-            data_info = self.data_info.get(key, None)
-            if result in (ActionResult.WRITE_SUCC, ActionResult.WRITE_FAILED):
-                if data_info != DataInfo.SAVING:
-                    continue
-            if result == ActionResult.WRITE_SUCC:
-                self.data_info[key] = DataInfo.IN_DISK
-                self.data.pop(key)
-                continue
-            if result == ActionResult.WRITE_FAILED:
-                self.__add_item_access_time(key)
-                self.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
-                continue
+        while True:
+            try:
+                results = self.io_respose_queue.get(block=block)
+                for key, v in results.items():
+                    result, data = v
+                    data_info = self.data_info.get(key, None)
+                    if result in (
+                            ActionResult.WRITE_SUCC,
+                            ActionResult.WRITE_FAILED):
+                        if data_info != DataInfo.IN_DISK:
+                            continue
+                    if result == ActionResult.WRITE_SUCC:
+                        get_logger().error("write key %s successed", key)
+                        self.data_info[key] = DataInfo.IN_DISK
+                        self.data.pop(key)
+                        continue
+                    if result == ActionResult.WRITE_FAILED:
+                        get_logger().error("write key %s failed", key)
+                        self.__add_item_access_time(key)
+                        self.data_info[key] = DataInfo.IN_MEMORY_NEW_DATA
+                        continue
 
-            if result in (ActionResult.READ_SUCC, ActionResult.READ_FAILED):
-                if data_info != DataInfo.LOADING:
-                    continue
-            if result == ActionResult.READ_SUCC:
-                self.data[key] = data
-                self.__add_item_access_time(key)
-                self.data_info[key] = DataInfo.IN_MEMORY
-                continue
-            if result == ActionResult.READ_FAILED:
-                raise KeyError(key)
+                    if result in (
+                            ActionResult.READ_SUCC,
+                            ActionResult.READ_FAILED):
+                        if data_info != DataInfo.LOADING:
+                            continue
+                    if result == ActionResult.READ_SUCC:
+                        get_logger().error("write key %s successed", key)
+                        self.data[key] = data
+                        self.__add_item_access_time(key)
+                        self.data_info[key] = DataInfo.IN_MEMORY
+                        continue
+                    if result == ActionResult.READ_FAILED:
+                        raise KeyError(key)
+            except queue.Empty:
+                return
