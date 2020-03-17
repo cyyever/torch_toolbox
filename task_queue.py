@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import queue
-import multiprocessing
 import threading
 import traceback
+
+import torch.multiprocessing
+
 from .log import get_logger
 
 
@@ -67,21 +69,34 @@ class TaskQueue(queue.Queue):
             self.task_done()
 
 
+def worker(q, processor_fun, stop_event, task_extra_args):
+    while not stop_event.is_set():
+        task = q.get()
+        if isinstance(task, SentinelTask):
+            break
+        try:
+            processor_fun(task, task_extra_args)
+        except Exception as e:
+            get_logger().error("catch exception:%s", e)
+            get_logger().error("traceback:%s", traceback.format_exc())
+
+
 class ProcessTaskQueue:
     def __init__(self, processor_fun, worker_num=1, task_extra_args=None):
-        self.queue = multiprocessing.Queue()
+        self.ctx = torch.multiprocessing.get_context("spawn")
+        self.queue = self.ctx.Queue()
         self.worker_num = worker_num
         self.processor_fun = processor_fun
         self.processors = []
-        self.stop_event = multiprocessing.Event()
+        self.stop_event = torch.multiprocessing.Event()
         self.task_extra_args = task_extra_args
         self.start()
 
     def start(self):
         self.stop()
         for _ in range(self.worker_num):
-            t = multiprocessing.Process(
-                target=ProcessTaskQueue.__worker,
+            t = self.ctx.Process(
+                target=worker,
                 args=(
                     self.queue,
                     self.processor_fun,
@@ -117,15 +132,3 @@ class ProcessTaskQueue:
 
     def add_task(self, task):
         self.queue.put(task)
-
-    @staticmethod
-    def __worker(q, processor_fun, stop_event, task_extra_args):
-        while not stop_event.is_set():
-            task = q.get()
-            if isinstance(task, SentinelTask):
-                break
-            try:
-                processor_fun(task, task_extra_args)
-            except Exception as e:
-                get_logger().error("catch exception:%s", e)
-                get_logger().error("traceback:%s", traceback.format_exc())
