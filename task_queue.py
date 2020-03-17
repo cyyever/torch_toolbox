@@ -88,7 +88,7 @@ class ProcessTaskQueue:
         self.worker_num = worker_num
         self.processor_fun = processor_fun
         self.processors = []
-        self.stop_event = torch.multiprocessing.Event()
+        self.stop_event = self.ctx.Event()
         self.task_extra_args = task_extra_args
         self.start()
 
