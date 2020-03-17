@@ -135,10 +135,15 @@ class LargeDict:
             if data_info == DataInfo.LOADING:
                 continue
             if key in self.data:
+                if data_info in (
+                        DataInfo.IN_MEMORY,
+                        DataInfo.IN_MEMORY_NEW_DATA):
+                    self.__update_item_access_time(key)
+                else:
+                    self.__add_item_access_time(key)
+
                 if data_info != DataInfo.IN_MEMORY_NEW_DATA:
                     self.data_info[key] = DataInfo.IN_MEMORY
-
-                self.__update_item_access_time(key)
                 result = [self.data[key]]
                 continue
             self.data_info[key] = DataInfo.LOADING
@@ -238,6 +243,7 @@ class LargeDict:
 
     def __get_expired_items(self):
         io_items = dict()
+        self.__LRU_keys_cnt = len(self.__LRU_keys)
         while self.__has_expired_items():
             key = self.__LRU_keys.popitem(last=False)[0]
             self.__LRU_keys_cnt -= 1
