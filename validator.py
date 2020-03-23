@@ -12,7 +12,10 @@ class Validator:
     def __init__(
         self, model, loss_fun, validation_dataset,
     ):
-        self.model = copy.deepcopy(model)
+        try:
+            self.model = copy.deepcopy(model)
+        except RuntimeError:
+            self.model = model
         self.loss_fun = loss_fun
         self.validation_dataset = validation_dataset
 
