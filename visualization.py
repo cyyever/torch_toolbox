@@ -63,3 +63,25 @@ class Window:
             update=update,
             opts=dict(xlabel=x_label, ylabel=y_label, title=self.title),
         )
+
+    def plot_histogram(self, tensor, name=None):
+        if self.win is not None and not self.vis.win_exists(self.win):
+            self.win = None
+
+        self.win = self.vis.histogram(
+            tensor.view(-1), win=self.win, opts=dict(numbins=1024, title=self.title)
+        )
+
+    def plot_scatter(self, tensor, name=None):
+        if self.win is not None and not self.vis.win_exists(self.win):
+            self.win = None
+        update = None
+        if self.win is not None:
+            update = "replace"
+        self.win = self.vis.scatter(
+            tensor,
+            win=self.win,
+            name=name,
+            update=update,
+            opts=dict(
+                title=self.title))

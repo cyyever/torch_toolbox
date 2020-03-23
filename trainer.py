@@ -5,7 +5,11 @@ import torch
 
 from .device import get_cpu_device
 from .device import get_device
-from .util import model_gradients_to_vector, split_list_to_chunks
+from .util import (
+    model_gradients_to_vector,
+    model_parameters_to_vector,
+    split_list_to_chunks,
+)
 from .validator import Validator
 from .log import get_logger
 from .visualization import Window
@@ -60,7 +64,22 @@ class Trainer:
             kwargs, "after_batch_callback", after_batch_callback
         )
 
+        per_layer_weight_distribution = kwargs.get(
+            "per_layer_weight_distribution", False
+        )
+
         def after_epoch_callback(trainer, epoch, learning_rates):
+            nonlocal per_layer_weight_distribution
+            if per_layer_weight_distribution:
+                layer_win = Window.get("parameter distribution")
+
+                layer_win.plot_histogram(
+                    model_parameters_to_vector(
+                        trainer.model))
+                # for index, layer in enumerate(trainer.model.modules()):
+                #     for name, parameters in layer.named_parameters():
+                #         layer_win.plot_histogram(parameters, name=name)
+
             loss_win = Window.get("training & validation loss")
             get_logger(trainer.name).info(
                 "epoch: %s, training loss: %s", epoch, trainer.training_loss[-1],
@@ -136,11 +155,11 @@ class Trainer:
         self.model.to(device)
 
         for epoch in range(self.hyper_parameter.epoches):
-            self.model.train()
             training_loss = 0.0
             cur_learning_rates = [group["lr"]
                                   for group in optimizer.param_groups]
             for batch in training_data_loader:
+                self.model.train()
                 self.model.to(device)
                 optimizer.zero_grad()
                 batch_loss = 0
