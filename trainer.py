@@ -22,9 +22,16 @@ class Trainer:
         self.loss_fun = loss_fun
         self.training_dataset = training_dataset
         self.validation_dataset = None
-        self.hyper_parameter = None
+        self.__hyper_parameter = None
+        self.__reset_hyper_parameter = False
         self.stop_criterion = None
         self.__reset_loss()
+
+    def set_hyper_parameter(self, hyper_parameter):
+        self.__hyper_parameter = hyper_parameter
+        self.__reset_hyper_parameter = True
+    def get_hyper_parameter(self):
+        return self.__hyper_parameter
 
     def train(self, **kwargs):
         def pre_training_callback(trainer, optimizer, lr_scheduler):
@@ -36,7 +43,7 @@ class Trainer:
                 trainer.model,
             )
 
-        kwargs = Trainer.__append_callback(
+        kwargs = Trainer.__prepend_callback(
             kwargs, "pre_training_callback", pre_training_callback
         )
 
@@ -60,25 +67,23 @@ class Trainer:
                     batch_loss,
                 )
 
-        kwargs = Trainer.__append_callback(
+        kwargs = Trainer.__prepend_callback(
             kwargs, "after_batch_callback", after_batch_callback
         )
 
-        per_layer_weight_distribution = kwargs.get(
-            "per_layer_weight_distribution", False
-        )
+        plot_parameter_distribution = kwargs.get(
+            "plot_parameter_distribution", False)
+        plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
 
         def after_epoch_callback(trainer, epoch, learning_rates):
-            nonlocal per_layer_weight_distribution
-            if per_layer_weight_distribution:
+            nonlocal plot_parameter_distribution
+            nonlocal plot_class_accuracy
+            if plot_parameter_distribution:
                 layer_win = Window.get("parameter distribution")
 
                 layer_win.plot_histogram(
                     model_parameters_to_vector(
                         trainer.model))
-                # for index, layer in enumerate(trainer.model.modules()):
-                #     for name, parameters in layer.named_parameters():
-                #         layer_win.plot_histogram(parameters, name=name)
 
             loss_win = Window.get("training & validation loss")
             get_logger(trainer.name).info(
@@ -96,7 +101,7 @@ class Trainer:
             if epoch % validation_epoch_interval == 0:
                 validation_loss, accuracy, class_accuracy = Validator(
                     trainer.model, trainer.loss_fun, trainer.validation_dataset).validate(
-                    trainer.hyper_parameter.batch_size, per_class_accuracy=True)
+                    trainer.__hyper_parameter.batch_size, per_class_accuracy=True)
                 validation_loss = validation_loss.data.item()
                 trainer.validation_loss[epoch] = validation_loss
                 trainer.validation_accuracy[epoch] = accuracy
@@ -113,48 +118,58 @@ class Trainer:
                     epoch, accuracy, "accuracy"
                 )
 
-                for idx, sub_list in enumerate(
-                    split_list_to_chunks(list(class_accuracy.keys()), 2)
-                ):
-                    class_accuracy_win = Window.get(
-                        "class accuracy part " + str(idx))
-                    for k in sub_list:
-                        get_logger(
-                            trainer.name).info(
-                            "epoch: %s, learning_rate: %s, class %s accuracy = %s",
-                            epoch,
-                            learning_rates,
-                            k,
-                            class_accuracy[k],
+                if plot_class_accuracy:
+                    for idx, sub_list in enumerate(
+                        split_list_to_chunks(list(class_accuracy.keys()), 2)
+                    ):
+                        class_accuracy_win = Window.get(
+                            "class accuracy part " + str(idx)
                         )
-                        class_accuracy_win.plot_accuracy(
-                            epoch, class_accuracy[k], "class_" + str(k) + "_accuracy")
+                        for k in sub_list:
+                            get_logger(
+                                trainer.name).info(
+                                "epoch: %s, learning_rate: %s, class %s accuracy = %s",
+                                epoch,
+                                learning_rates,
+                                k,
+                                class_accuracy[k],
+                            )
+                            class_accuracy_win.plot_accuracy(
+                                epoch,
+                                class_accuracy[k],
+                                "class_" + str(k) + "_accuracy",
+                            )
 
-        kwargs = Trainer.__append_callback(
+        kwargs = Trainer.__prepend_callback(
             kwargs, "after_epoch_callback", after_epoch_callback
         )
 
         return self.__train(**kwargs)
 
     def __train(self, **kwargs):
-        optimizer = self.hyper_parameter.get_optimizer(self.model.parameters())
-        lr_scheduler = self.hyper_parameter.get_lr_scheduler(optimizer)
+        optimizer = self.__hyper_parameter.get_optimizer(self.model.parameters())
+        lr_scheduler = self.__hyper_parameter.get_lr_scheduler(optimizer)
         self.__reset_loss()
         training_data_loader = torch.utils.data.DataLoader(
             self.training_dataset,
-            batch_size=self.hyper_parameter.batch_size,
+            batch_size=self.__hyper_parameter.batch_size,
             shuffle=True,
         )
-
-        if "pre_training_callback" in kwargs:
-            kwargs["pre_training_callback"](self, optimizer, lr_scheduler)
 
         training_set_size = len(self.training_dataset)
         batch_index = 0
         device = get_device()
         self.model.to(device)
 
-        for epoch in range(self.hyper_parameter.epoches):
+        self.__reset_hyper_parameter = False
+        for epoch in range(self.__hyper_parameter.epoches):
+            if self.__reset_hyper_parameter:
+                self.__reset_hyper_parameter = False
+                optimizer = self.__hyper_parameter.get_optimizer(
+                    self.model.parameters())
+                lr_scheduler = self.__hyper_parameter.get_lr_scheduler(optimizer)
+                get_logger().warning("use new hyper-parameter")
+
             training_loss = 0.0
             cur_learning_rates = [group["lr"]
                                   for group in optimizer.param_groups]
@@ -282,14 +297,14 @@ class Trainer:
         self.validation_accuracy = {}
 
     @staticmethod
-    def __append_callback(kwargs, name, new_fun):
+    def __prepend_callback(kwargs, name, new_fun):
         old_callback = kwargs.get(name, None)
 
         def new_callback(*args, **kwargs):
+            new_fun(*args, **kwargs)
             nonlocal old_callback
             if old_callback is not None:
                 old_callback(*args, **kwargs)
-            new_fun(*args, **kwargs)
 
         kwargs[name] = new_callback
         return kwargs

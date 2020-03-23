@@ -1,4 +1,3 @@
-import math
 import torch.nn as nn
 import torch.optim as optim
 
@@ -33,7 +32,7 @@ def get_task_configuration(task_name, for_training):
                 lambda optimizer: optim.lr_scheduler.ReduceLROnPlateau(
                     optimizer, verbose=True, factor=0.5, patience=2, threshold=0.5))
 
-            trainer.hyper_parameter = hyper_parameter
+            trainer.set_hyper_parameter(hyper_parameter)
             trainer.validation_dataset = validation_dataset
             return trainer
         validator = Validator(model, loss_fun, validation_dataset)
@@ -62,7 +61,7 @@ def get_task_configuration(task_name, for_training):
                 lambda optimizer: optim.lr_scheduler.ReduceLROnPlateau(
                     optimizer, verbose=True, factor=0.5, patience=5, threshold=1e-2))
 
-            trainer.hyper_parameter = hyper_parameter
+            trainer.set_hyper_parameter(hyper_parameter)
             trainer.validation_dataset = validation_dataset
             return trainer
         validator = Validator(model, loss_fun, validation_dataset)
