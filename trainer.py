@@ -30,6 +30,7 @@ class Trainer:
     def set_hyper_parameter(self, hyper_parameter):
         self.__hyper_parameter = hyper_parameter
         self.__reset_hyper_parameter = True
+
     def get_hyper_parameter(self):
         return self.__hyper_parameter
 
@@ -147,9 +148,6 @@ class Trainer:
         return self.__train(**kwargs)
 
     def __train(self, **kwargs):
-        optimizer = self.__hyper_parameter.get_optimizer(self.model.parameters())
-        lr_scheduler = self.__hyper_parameter.get_lr_scheduler(optimizer)
-        self.__reset_loss()
         training_data_loader = torch.utils.data.DataLoader(
             self.training_dataset,
             batch_size=self.__hyper_parameter.batch_size,
@@ -160,14 +158,22 @@ class Trainer:
         batch_index = 0
         device = get_device()
         self.model.to(device)
-
         self.__reset_hyper_parameter = False
+        self.__reset_loss()
+        optimizer = self.__hyper_parameter.get_optimizer(
+            self.model.parameters())
+        lr_scheduler = self.__hyper_parameter.get_lr_scheduler(optimizer)
+        if "pre_training_callback" in kwargs:
+            kwargs["pre_training_callback"](self, optimizer, lr_scheduler)
+
         for epoch in range(self.__hyper_parameter.epoches):
             if self.__reset_hyper_parameter:
                 self.__reset_hyper_parameter = False
                 optimizer = self.__hyper_parameter.get_optimizer(
-                    self.model.parameters())
-                lr_scheduler = self.__hyper_parameter.get_lr_scheduler(optimizer)
+                    self.model.parameters()
+                )
+                lr_scheduler = self.__hyper_parameter.get_lr_scheduler(
+                    optimizer)
                 get_logger().warning("use new hyper-parameter")
 
             training_loss = 0.0

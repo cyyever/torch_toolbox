@@ -52,7 +52,7 @@ def get_task_configuration(task_name, for_training):
                 lambda params, learning_rate, weight_decay: optim.SGD(
                     params,
                     lr=learning_rate,
-                    # momentum=0.9,
+                    momentum=0.9,
                     weight_decay=(weight_decay / len(training_dataset)),
                 )
             )
