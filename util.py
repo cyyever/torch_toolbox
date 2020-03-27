@@ -27,17 +27,16 @@ def model_gradients_to_vector(model):
 
 
 def get_pruned_parameters(model):
-    if not prune.is_pruned(model):
-        raise RuntimeError("not pruned model")
     parameters = dict()
     for layer in model.modules():
         for name, parameter in layer.named_parameters(recurse=False):
-            if parameter is not None:
-                if name.endswith("_orig"):
-                    tmp_name = name[:-5]
-                    if hasattr(layer, tmp_name + "_mask"):
-                        name = tmp_name
-                parameters[(layer, name)] = parameter
+            if parameter is None:
+                continue
+            if name.endswith("_orig"):
+                tmp_name = name[:-5]
+                if hasattr(layer, tmp_name + "_mask"):
+                    name = tmp_name
+            parameters[(layer, name)] = parameter
     return parameters
 
 
