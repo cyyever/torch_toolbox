@@ -40,6 +40,23 @@ def get_pruned_parameters(model):
     return parameters
 
 
+def get_pruning_mask(model):
+    if not prune.is_pruned(model):
+        raise RuntimeError("not pruned model")
+    masks = []
+    for layer in model.modules():
+        for name, parameter in layer.named_parameters(recurse=False):
+            if parameter is None:
+                continue
+            if name.endswith("_orig"):
+                tmp_name = name[:-5]
+                if hasattr(layer, tmp_name + "_mask"):
+                    name = tmp_name
+            assert hasattr(layer, name + "_mask")
+            masks.append(getattr(layer, name + "_mask"))
+    return nn.utils.parameters_to_vector([mask.reshape(-1) for mask in masks])
+
+
 def get_model_sparsity(model):
     none_zero_parameter_num = 0
     parameter_count = 0
