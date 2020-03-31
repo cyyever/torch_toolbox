@@ -261,6 +261,7 @@ class Trainer:
                         cur_learning_rates,
                         batch_grad=batch_grad,
                         instance_indices=instance_indices,
+                        optimizer=optimizer,
                     )
 
                 batch_index += 1
@@ -279,7 +280,8 @@ class Trainer:
             if isinstance(
                     lr_scheduler,
                     torch.optim.lr_scheduler.ReduceLROnPlateau):
-                lr_scheduler.step(self.training_loss[-1])
+                lr_scheduler.step(
+                    self.training_loss[-1] + self.validation_loss[-1])
             else:
                 lr_scheduler.step()
 
