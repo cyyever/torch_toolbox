@@ -281,7 +281,7 @@ class Trainer:
                     lr_scheduler,
                     torch.optim.lr_scheduler.ReduceLROnPlateau):
                 lr_scheduler.step(
-                    self.training_loss[-1] + self.validation_loss[-1])
+                    self.training_loss[-1] + self.validation_loss[epoch])
             else:
                 lr_scheduler.step()
 
