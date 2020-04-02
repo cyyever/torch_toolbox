@@ -3,16 +3,24 @@ import torch
 
 
 class Window:
-    instances = dict()
+    cur_env = "main"
+    envs = {cur_env: dict()}
+
+    @staticmethod
+    def set_env(env):
+        Window.cur_env = env
+        if Window.cur_env not in Window.envs:
+            Window.envs[Window.cur_env] = dict()
 
     @staticmethod
     def get(title):
-        if title not in Window.instances:
-            instance = Window(title)
-            Window.instances[title] = instance
-        return Window.instances[title]
+        instances = Window.envs.get(Window.cur_env)
+        if title not in instances:
+            instance = Window(title, env=Window.cur_env)
+            instances[title] = instance
+        return instances[title]
 
-    def __init__(self, title, x_label="", y_label="", env="main"):
+    def __init__(self, title, env, x_label="", y_label=""):
         self.vis = visdom.Visdom(env=env)
         self.win = None
         self.title = title
@@ -69,7 +77,7 @@ class Window:
             opts=dict(xlabel=x_label, ylabel=y_label, title=self.title),
         )
 
-    def plot_histogram(self, tensor, name=None):
+    def plot_histogram(self, tensor):
         if self.win is not None and not self.vis.win_exists(self.win):
             self.win = None
 

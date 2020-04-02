@@ -17,7 +17,7 @@ from .visualization import Window
 
 class Trainer:
     def __init__(self, model, loss_fun, training_dataset):
-        self.name = model.__class__.__name__
+        self.name = model.__class__.__name__ + training_dataset.__class__.__name__
         self.model = copy.deepcopy(model)
         self.loss_fun = loss_fun
         self.training_dataset = training_dataset

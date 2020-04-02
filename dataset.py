@@ -87,6 +87,31 @@ def get_class_count(dataset):
     return functools.reduce(count_instance, dataset, dict())
 
 
+def get_mean_and_std(dataset):
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1)
+    mean = None
+    channel = None
+    for x, _ in dataloader:
+        channel = x.shape[1]
+        if mean is None:
+            mean = torch.zeros(channel)
+        for i in range(channel):
+            mean[i] += x[:, i, :, :].mean()
+    mean.div_(len(dataset))
+
+    wh = None
+    std = torch.zeros(channel)
+    for x, _ in dataloader:
+        if wh is None:
+            wh = x.shape[2] * x.shape[3]
+        for i in range(channel):
+            std[i] += torch.sum((x[:, i, :, :] -
+                                 mean[i].data.item()) ** 2) / wh
+
+    std = std.div(len(dataset)).sqrt()
+    return mean, std
+
+
 def get_dataset(name, for_train):
     if name == "MNIST":
         return torchvision.datasets.MNIST(
@@ -101,6 +126,19 @@ def get_dataset(name, for_train):
                 ]
             ),
         )
+    if name == "FashionMNIST":
+        return torchvision.datasets.FashionMNIST(
+            root="./data/FashionMNIST/" + str(for_train),
+            train=for_train,
+            download=True,
+            transform=transforms.Compose(
+                [
+                    transforms.Resize((32, 32)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(mean=[0.2860], std=[0.3530]),
+                ]
+            ),
+        )
     if name == "CIFAR10":
         return torchvision.datasets.CIFAR10(
             root="./data/CIFAR10/" + str(for_train),
@@ -108,13 +146,20 @@ def get_dataset(name, for_train):
             download=True,
             transform=transforms.Compose(
                 [
-                    transforms.RandomCrop(32, padding=4),
+                    transforms.RandomCrop(
+                        32,
+                        padding=4),
                     transforms.RandomHorizontalFlip(),
                     transforms.ToTensor(),
                     transforms.Normalize(
-                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                    ),
-                ]
-            ),
+                        mean=[
+                            0.4914,
+                            0.4822,
+                            0.4465],
+                        std=[
+                            0.2470,
+                            0.2435,
+                            0.2616]),
+                ]),
         )
     raise NotImplementedError(name)
