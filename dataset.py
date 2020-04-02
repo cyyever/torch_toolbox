@@ -62,7 +62,18 @@ def split_dataset_by_class(dataset):
         if label not in class_map:
             class_map[label] = []
         class_map[label].append(index)
+    for label, indices in class_map.items():
+        class_map[label] = torch.utils.data.Subset(dataset, indices)
     return class_map
+
+
+def get_classes(dataset):
+    def count_instance(container, instance):
+        label = instance[1]
+        container.append(label)
+        return container
+
+    return functools.reduce(count_instance, dataset, set())
 
 
 def get_class_count(dataset):
