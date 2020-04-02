@@ -289,7 +289,6 @@ class Trainer:
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         model = self.model
-        model.to(get_cpu_device())
         torch.save(model, os.path.join(save_dir, "model.pt"))
 
     def parameters(self):
