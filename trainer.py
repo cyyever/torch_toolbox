@@ -100,7 +100,7 @@ class Trainer:
             validation_epoch_interval = int(
                 kwargs.get("validation_epoch_interval", 1))
             if epoch % validation_epoch_interval == 0:
-                validation_loss, accuracy, class_accuracy = Validator(
+                validation_loss, accuracy, other_data = Validator(
                     trainer.model, trainer.loss_fun, trainer.validation_dataset).validate(
                     trainer.__hyper_parameter.batch_size, per_class_accuracy=True)
                 validation_loss = validation_loss.data.item()
@@ -120,6 +120,7 @@ class Trainer:
                 )
 
                 if plot_class_accuracy:
+                    class_accuracy = other_data["per_class_accuracy"]
                     for idx, sub_list in enumerate(
                         split_list_to_chunks(list(class_accuracy.keys()), 2)
                     ):

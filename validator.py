@@ -4,7 +4,7 @@ import torch
 from .device import get_device
 from .util import model_gradients_to_vector
 from .hessian_vector_product import hessian_vector_product as _hessian_vector_product
-from .dataset import get_class_count
+from .dataset import get_class_count, DatasetWithIndices
 
 
 class Validator:
@@ -29,11 +29,16 @@ class Validator:
             for k in class_count.keys():
                 class_correct_count[k] = 0
 
+        per_instance_loss = kwargs.get("per_instance_loss", False)
+        validation_dataset = self.validation_dataset
+        if per_instance_loss:
+            validation_dataset = DatasetWithIndices(validation_dataset)
         validation_data_loader = torch.utils.data.DataLoader(
-            self.validation_dataset, batch_size=batch_size
+            validation_dataset, batch_size=batch_size
         )
 
         use_grad = kwargs.get("use_grad", False)
+        instance_validation_loss = dict()
         with torch.set_grad_enabled(use_grad):
             num_correct = 0
             num_examples = 0
@@ -49,7 +54,15 @@ class Validator:
                 targets = batch[1]
                 inputs = inputs.to(device)
                 targets = targets.to(device)
+
                 outputs = self.model(inputs)
+
+                if per_instance_loss:
+                    for i, instance_index in enumerate(batch[2]):
+                        instance_index = instance_index.data.item()
+                        instance_validation_loss[instance_index] = self.loss_fun(
+                            outputs[i], targets[i])
+
                 loss = self.loss_fun(outputs, targets)
                 if use_grad:
                     loss.backward()
@@ -59,7 +72,7 @@ class Validator:
                     or self.loss_fun.reduction == "elementwise_mean"
                 ):
                     batch_loss *= real_batch_size
-                    batch_loss /= len(self.validation_dataset)
+                    batch_loss /= len(validation_dataset)
                 validation_loss += batch_loss
                 correct = torch.eq(torch.max(outputs, dim=1)
                                    [1], targets).view(-1)
@@ -79,7 +92,14 @@ class Validator:
             if per_class_accuracy:
                 for k in class_count.keys():
                     class_count[k] = class_correct_count[k] / class_count[k]
-            return (validation_loss, num_correct / num_examples, class_count)
+            return (
+                validation_loss,
+                num_correct / num_examples,
+                {
+                    "per_class_accuracy": class_count,
+                    "per_instance_loss": instance_validation_loss,
+                },
+            )
 
     def get_gradient(self):
         self.validate(64, use_grad=True)
