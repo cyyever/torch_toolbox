@@ -9,14 +9,14 @@ from .dataset import get_class_count, DatasetWithIndices
 
 class Validator:
     def __init__(
-        self, model, loss_fun, validation_dataset,
+        self, model, loss_fun, dataset,
     ):
         try:
             self.model = copy.deepcopy(model)
         except RuntimeError:
             self.model = model
         self.loss_fun = loss_fun
-        self.validation_dataset = validation_dataset
+        self.dataset = dataset
 
     def validate(self, batch_size, **kwargs):
 
@@ -25,16 +25,16 @@ class Validator:
 
         per_class_accuracy = kwargs.get("per_class_accuracy", False)
         if per_class_accuracy:
-            class_count = get_class_count(self.validation_dataset)
+            class_count = get_class_count(self.dataset)
             for k in class_count.keys():
                 class_correct_count[k] = 0
 
         per_instance_loss = kwargs.get("per_instance_loss", False)
-        validation_dataset = self.validation_dataset
+        dataset = self.dataset
         if per_instance_loss:
-            validation_dataset = DatasetWithIndices(validation_dataset)
+            dataset = DatasetWithIndices(dataset)
         validation_data_loader = torch.utils.data.DataLoader(
-            validation_dataset, batch_size=batch_size
+            dataset, batch_size=batch_size
         )
 
         use_grad = kwargs.get("use_grad", False)
@@ -72,7 +72,7 @@ class Validator:
                     or self.loss_fun.reduction == "elementwise_mean"
                 ):
                     batch_loss *= real_batch_size
-                    batch_loss /= len(validation_dataset)
+                    batch_loss /= len(dataset)
                 validation_loss += batch_loss
                 correct = torch.eq(torch.max(outputs, dim=1)
                                    [1], targets).view(-1)
