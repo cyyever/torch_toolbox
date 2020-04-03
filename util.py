@@ -25,8 +25,6 @@ def model_gradients_to_vector(model):
 
 
 def get_pruned_parameters(model):
-    if not prune.is_pruned(model):
-        raise RuntimeError("not pruned model")
     parameters = dict()
     for layer_index, layer in enumerate(model.modules()):
         for name, parameter in layer.named_parameters(recurse=False):
