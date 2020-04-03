@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import torch.autograd as autograd
 
-from .util import parameters_to_vector
+import torch.nn as nn
 
 
 def get_gradient(model, loss):
-    return parameters_to_vector(autograd.grad(loss, model.parameters()))
+    return nn.utils.parameters_to_vector(
+        [gradient.reshape(-1) for gradient in autograd.grad(loss, model.parameters())]
+    )
