@@ -15,9 +15,7 @@ def parameters_to_vector(parameters):
 
 
 def model_parameters_to_vector(model):
-    return nn.utils.parameters_to_vector(
-        [parameter.reshape(-1) for parameter in model.parameters()]
-    )
+    return parameters_to_vector(model.parameters())
 
 
 def model_gradients_to_vector(model):
@@ -27,34 +25,28 @@ def model_gradients_to_vector(model):
 
 
 def get_pruned_parameters(model):
+    if not prune.is_pruned(model):
+        raise RuntimeError("not pruned model")
     parameters = dict()
-    for layer in model.modules():
+    for layer_index, layer in enumerate(model.modules()):
         for name, parameter in layer.named_parameters(recurse=False):
             if parameter is None:
                 continue
+            mask = None
             if name.endswith("_orig"):
                 tmp_name = name[:-5]
-                if hasattr(layer, tmp_name + "_mask"):
+                mask = getattr(layer, tmp_name + "_mask", None)
+                if mask is not None:
                     name = tmp_name
-            parameters[(layer, name)] = parameter
+            parameters[(layer, name)] = (parameter, mask, layer_index)
     return parameters
 
 
 def get_pruning_mask(model):
     if not prune.is_pruned(model):
         raise RuntimeError("not pruned model")
-    masks = []
-    for layer in model.modules():
-        for name, parameter in layer.named_parameters(recurse=False):
-            if parameter is None:
-                continue
-            if name.endswith("_orig"):
-                tmp_name = name[:-5]
-                if hasattr(layer, tmp_name + "_mask"):
-                    name = tmp_name
-            assert hasattr(layer, name + "_mask")
-            masks.append(getattr(layer, name + "_mask"))
-    return nn.utils.parameters_to_vector([mask.reshape(-1) for mask in masks])
+    return parameters_to_vector(
+        [v[1] for v in get_pruned_parameters(model).values()])
 
 
 def get_model_sparsity(model):
