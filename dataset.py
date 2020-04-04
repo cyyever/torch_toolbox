@@ -1,4 +1,5 @@
 import functools
+import os
 
 import torch
 import torchvision
@@ -112,10 +113,22 @@ def get_mean_and_std(dataset):
     return mean, std
 
 
+__dataset_dir = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
+
+
+def set_dataset_dir(new_dataset_dir):
+    __dataset_dir = new_dataset_dir
+
+
 def get_dataset(name, for_train):
+    root_dir = os.path.join(__dataset_dir, name)
+    if for_train:
+        root_dir = os.path.join(root_dir, "training")
+    else:
+        root_dir = os.path.join(root_dir, "validation")
     if name == "MNIST":
         return torchvision.datasets.MNIST(
-            root="./data/MNIST/" + str(for_train),
+            root=root_dir,
             train=for_train,
             download=True,
             transform=transforms.Compose(
@@ -128,7 +141,7 @@ def get_dataset(name, for_train):
         )
     if name == "FashionMNIST":
         return torchvision.datasets.FashionMNIST(
-            root="./data/FashionMNIST/" + str(for_train),
+            root=root_dir,
             train=for_train,
             download=True,
             transform=transforms.Compose(
@@ -141,7 +154,7 @@ def get_dataset(name, for_train):
         )
     if name == "CIFAR10":
         return torchvision.datasets.CIFAR10(
-            root="./data/CIFAR10/" + str(for_train),
+            root=root_dir,
             train=for_train,
             download=True,
             transform=transforms.Compose(
