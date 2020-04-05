@@ -60,8 +60,7 @@ class Validator:
                 if per_instance_loss:
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
-                        instance_validation_loss[instance_index] = self.loss_fun(
-                            outputs[i], targets[i])
+                        instance_validation_loss[instance_index] = self.loss_fun( outputs[i].unsqueeze(0), targets[i].unsqueeze(0))
 
                 loss = self.loss_fun(outputs, targets)
                 if use_grad:
