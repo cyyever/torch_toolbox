@@ -71,7 +71,7 @@ def split_dataset_by_class(dataset):
 def get_classes(dataset):
     def count_instance(container, instance):
         label = instance[1]
-        container.append(label)
+        container.add(label)
         return container
 
     return functools.reduce(count_instance, dataset, set())
