@@ -1,7 +1,7 @@
 import copy
 import torch
 
-from .device import get_device
+from .device import get_device, get_cpu_device
 from .util import model_gradients_to_vector
 from .hessian_vector_product import hessian_vector_product as _hessian_vector_product
 from .dataset import get_class_count, DatasetWithIndices
@@ -30,15 +30,18 @@ class Validator:
                 class_correct_count[k] = 0
 
         per_instance_loss = kwargs.get("per_instance_loss", False)
+        per_instance_output = kwargs.get("per_instance_output", False)
         dataset = self.dataset
-        if per_instance_loss:
+        if per_instance_loss or per_instance_output:
             dataset = DatasetWithIndices(dataset)
+
         validation_data_loader = torch.utils.data.DataLoader(
             dataset, batch_size=batch_size
         )
 
         use_grad = kwargs.get("use_grad", False)
         instance_validation_loss = dict()
+        instance_output = dict()
         with torch.set_grad_enabled(use_grad):
             num_correct = 0
             num_examples = 0
@@ -60,7 +63,14 @@ class Validator:
                 if per_instance_loss:
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
-                        instance_validation_loss[instance_index] = self.loss_fun( outputs[i].unsqueeze(0), targets[i].unsqueeze(0))
+                        instance_validation_loss[instance_index] = self.loss_fun(
+                            outputs[i].unsqueeze(0), targets[i].unsqueeze(0))
+                if per_instance_output:
+                    for i, instance_index in enumerate(batch[2]):
+                        instance_index = instance_index.data.item()
+                        instance_output[instance_index] = outputs[i].to(
+                            get_cpu_device()
+                        )
 
                 loss = self.loss_fun(outputs, targets)
                 if use_grad:
@@ -97,6 +107,7 @@ class Validator:
                 {
                     "per_class_accuracy": class_count,
                     "per_instance_loss": instance_validation_loss,
+                    "per_instance_output": instance_output,
                 },
             )
 
