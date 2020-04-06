@@ -13,7 +13,7 @@ def get_task_configuration(task_name, for_training):
     validation_dataset = get_dataset(task_name, False)
     if task_name == "MNIST":
         model = LeNet5()
-        loss_fun = nn.CrossEntropyLoss()
+        loss_fun = nn.NLLLoss()
         if for_training:
             trainer = Trainer(model, loss_fun, training_dataset)
             hyper_parameter = HyperParameter(
@@ -40,7 +40,7 @@ def get_task_configuration(task_name, for_training):
 
     if task_name == "FashionMNIST":
         model = LeNet5()
-        loss_fun = nn.CrossEntropyLoss()
+        loss_fun = nn.NLLLoss()
         if for_training:
             trainer = Trainer(model, loss_fun, training_dataset)
             hyper_parameter = HyperParameter(
