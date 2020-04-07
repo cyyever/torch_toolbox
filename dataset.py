@@ -41,6 +41,16 @@ class DatasetMapper:
         return self.dataset.__len__()
 
 
+def dataset_exclude_samples(dataset, excluded_indices):
+    return DatasetFilter(
+        dataset, [
+            lambda index, _: index not in excluded_indices])
+
+
+def dataset_with_indices(dataset):
+    return DatasetMapper(dataset, [lambda index, item: (*item, index)])
+
+
 class DatasetWithIndices(DatasetMapper):
     def __init__(self, dataset):
         super().__init__(dataset, [lambda index, item: (*item, index)])
@@ -151,6 +161,34 @@ def get_dataset(name, for_train):
                     transforms.Normalize(mean=[0.2860], std=[0.3530]),
                 ]
             ),
+        )
+    if name == "STL10":
+        if for_train:
+            split = "train"
+        else:
+            split = "test"
+
+        return torchvision.datasets.STL10(
+            root=root_dir,
+            split=split,
+            download=True,
+            transform=transforms.Compose(
+                [
+                    transforms.RandomCrop(
+                        96,
+                        padding=4),
+                    transforms.RandomHorizontalFlip(),
+                    transforms.ToTensor(),
+                    transforms.Normalize(
+                        mean=[
+                            0.4467,
+                            0.4398,
+                            0.4066],
+                        std=[
+                            0.2603,
+                            0.2566,
+                            0.2713]),
+                ]),
         )
     if name == "CIFAR10":
         return torchvision.datasets.CIFAR10(
