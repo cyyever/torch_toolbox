@@ -5,7 +5,7 @@ from .hyper_parameter import HyperParameter
 from .trainer import Trainer
 from .validator import Validator
 from .dataset import get_dataset
-from .model import LeNet5, densenet_cifar
+from .model import LeNet5, densenet_cifar, stl10
 
 
 def get_task_configuration(task_name, for_training):
@@ -74,6 +74,35 @@ def get_task_configuration(task_name, for_training):
             trainer = Trainer(model, loss_fun, training_dataset)
             hyper_parameter = HyperParameter(
                 epoches=350, batch_size=128, learning_rate=0.1
+            )
+
+            hyper_parameter.set_optimizer_factory(
+                lambda params, learning_rate, weight_decay: optim.SGD(
+                    params,
+                    lr=learning_rate,
+                    momentum=0.9,
+                    weight_decay=(weight_decay / len(training_dataset)),
+                )
+            )
+
+            hyper_parameter.set_lr_scheduler_factory(
+                lambda optimizer: optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer, verbose=True, factor=0.1
+                )
+            )
+
+            trainer.set_hyper_parameter(hyper_parameter)
+            trainer.validation_dataset = validation_dataset
+            return trainer
+        validator = Validator(model, loss_fun, validation_dataset)
+        return validator
+    if task_name == "STL10":
+        model = stl10(3)
+        loss_fun = nn.CrossEntropyLoss()
+        if for_training:
+            trainer = Trainer(model, loss_fun, training_dataset)
+            hyper_parameter = HyperParameter(
+                epoches=350, batch_size=128, learning_rate=1
             )
 
             hyper_parameter.set_optimizer_factory(
