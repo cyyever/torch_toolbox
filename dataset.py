@@ -163,6 +163,7 @@ def get_dataset(name, for_train):
             ),
         )
     if name == "STL10":
+        root_dir = os.path.dirname(root_dir)
         if for_train:
             split = "train"
         else:

@@ -156,6 +156,7 @@ class Trainer:
         )
 
         training_set_size = len(self.training_dataset)
+        get_logger().info("training_set_size is %s", training_set_size)
         batch_index = 0
         device = get_device()
         self.model.to(device)
