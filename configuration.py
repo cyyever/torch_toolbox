@@ -6,7 +6,7 @@ from .hyper_parameter import HyperParameter
 from .trainer import Trainer
 from .validator import Validator
 from .dataset import get_dataset
-from .model import LeNet5, densenet_cifar, stl10
+from .model import LeNet5, densenet_cifar
 
 
 def get_task_configuration(task_name, for_training):
@@ -45,12 +45,13 @@ def get_task_configuration(task_name, for_training):
         if for_training:
             trainer = Trainer(model, loss_fun, training_dataset)
             hyper_parameter = HyperParameter(
-                epoches=50, batch_size=64, learning_rate=0.01
+                epoches=50, batch_size=64, learning_rate=0.001
             )
 
             hyper_parameter.set_optimizer_factory(
                 lambda params, learning_rate, weight_decay: optim.SGD(
                     params,
+                    momentum=0.9,
                     lr=learning_rate,
                     weight_decay=(weight_decay / len(training_dataset)),
                 )
@@ -99,7 +100,6 @@ def get_task_configuration(task_name, for_training):
         return validator
     if task_name == "STL10":
         model = torchvision.models.densenet121(num_classes=10)
-        # model_ft.classifier = nn.Linear(num_ftrs, num_classes)
         loss_fun = nn.CrossEntropyLoss()
         if for_training:
             trainer = Trainer(model, loss_fun, training_dataset)
