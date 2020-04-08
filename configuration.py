@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.optim as optim
+import torchvision
 
 from .hyper_parameter import HyperParameter
 from .trainer import Trainer
@@ -97,12 +98,13 @@ def get_task_configuration(task_name, for_training):
         validator = Validator(model, loss_fun, validation_dataset)
         return validator
     if task_name == "STL10":
-        model = stl10(3)
+        model = torchvision.models.densenet121(num_classes=10)
+        # model_ft.classifier = nn.Linear(num_ftrs, num_classes)
         loss_fun = nn.CrossEntropyLoss()
         if for_training:
             trainer = Trainer(model, loss_fun, training_dataset)
             hyper_parameter = HyperParameter(
-                epoches=350, batch_size=128, learning_rate=1
+                epoches=350, batch_size=32, learning_rate=0.1
             )
 
             hyper_parameter.set_optimizer_factory(
@@ -115,10 +117,8 @@ def get_task_configuration(task_name, for_training):
             )
 
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer: optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, verbose=True, factor=0.1
-                )
-            )
+                lambda optimizer: optim.lr_scheduler.StepLR(
+                    optimizer, step_size=50))
 
             trainer.set_hyper_parameter(hyper_parameter)
             trainer.validation_dataset = validation_dataset
