@@ -36,8 +36,7 @@ class Trainer:
 
     def train(self, **kwargs):
         def pre_training_callback(trainer, optimizer, lr_scheduler):
-            get_logger(
-                trainer.name).info(
+            get_logger().info(
                 "begin training,optimizer is %s ,lr_scheduler is %s, model is %s",
                 optimizer,
                 lr_scheduler,
@@ -59,8 +58,7 @@ class Trainer:
         ):
             if batch_index % (len(trainer.training_dataset) //
                               (10 * batch_size)) == 0:
-                get_logger(
-                    trainer.name).info(
+                get_logger().info(
                     "epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
                     epoch,
                     batch_index,
@@ -87,9 +85,8 @@ class Trainer:
                         trainer.model))
 
             loss_win = Window.get("training & validation loss")
-            get_logger(trainer.name).info(
-                "epoch: %s, training loss: %s", epoch, trainer.training_loss[-1],
-            )
+            get_logger().info("epoch: %s, training loss: %s",
+                              epoch, trainer.training_loss[-1], )
             loss_win.plot_loss(epoch,
                                trainer.training_loss[-1],
                                "training loss")
@@ -106,8 +103,7 @@ class Trainer:
                 validation_loss = validation_loss.data.item()
                 trainer.validation_loss[epoch] = validation_loss
                 trainer.validation_accuracy[epoch] = accuracy
-                get_logger(
-                    trainer.name).info(
+                get_logger().info(
                     "epoch: %s, learning_rate: %s, validation loss: %s, accuracy = %s",
                     epoch,
                     learning_rates,
@@ -128,8 +124,7 @@ class Trainer:
                             "class accuracy part " + str(idx)
                         )
                         for k in sub_list:
-                            get_logger(
-                                trainer.name).info(
+                            get_logger().info(
                                 "epoch: %s, learning_rate: %s, class %s accuracy = %s",
                                 epoch,
                                 learning_rates,

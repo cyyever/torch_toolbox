@@ -10,7 +10,6 @@ def set_logger_file(filename, name="ML_exp"):
 
 
 def get_logger(name="ML_exp"):
-    print(__logger_format)
     logging.basicConfig(format=__logger_format)
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
