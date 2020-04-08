@@ -22,6 +22,7 @@ class Window:
 
     def __init__(self, title, env, x_label="", y_label=""):
         self.vis = visdom.Visdom(env=env)
+        self.env = env
         self.win = None
         self.title = title
         self.x_label = x_label
@@ -98,3 +99,6 @@ class Window:
             update=update,
             opts=dict(
                 title=self.title))
+
+    def save(self):
+        self.vis.save([self.env])
