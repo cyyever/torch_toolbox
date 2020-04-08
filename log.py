@@ -7,7 +7,9 @@ logging.basicConfig(format=__logger_format, level=logging.INFO)
 
 
 def set_logger_file(filename):
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    log_dir = os.path.dirname(filename)
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
     logger = logging.getLogger()
     handler = logging.FileHandler(filename)
     handler.setFormatter(logging.Formatter(__logger_format))
