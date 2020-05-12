@@ -224,6 +224,7 @@ class Trainer:
                                 instance_gradient,
                                 cur_learning_rates,
                                 real_batch_size,
+                                optimizer=optimizer,
                             )
                 else:
                     outputs = self.model(instance_inputs)
