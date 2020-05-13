@@ -4,7 +4,7 @@ import torch
 from .device import get_device, get_cpu_device
 from .util import model_gradients_to_vector
 from .hessian_vector_product import hessian_vector_product as _hessian_vector_product
-from .dataset import get_class_count, DatasetWithIndices
+from .dataset import get_class_count, dataset_with_indices
 
 
 class Validator:
@@ -33,7 +33,7 @@ class Validator:
         per_instance_output = kwargs.get("per_instance_output", False)
         dataset = self.dataset
         if per_instance_loss or per_instance_output:
-            dataset = DatasetWithIndices(dataset)
+            dataset = dataset_with_indices(dataset)
 
         validation_data_loader = torch.utils.data.DataLoader(
             dataset, batch_size=batch_size
@@ -64,7 +64,8 @@ class Validator:
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
                         instance_validation_loss[instance_index] = self.loss_fun(
-                            outputs[i].unsqueeze(0), targets[i].unsqueeze(0))
+                            outputs[i].unsqueeze(0), targets[i].unsqueeze(0)
+                        )
                 if per_instance_output:
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
@@ -83,8 +84,7 @@ class Validator:
                     batch_loss *= real_batch_size
                     batch_loss /= len(dataset)
                 validation_loss += batch_loss
-                correct = torch.eq(torch.max(outputs, dim=1)
-                                   [1], targets).view(-1)
+                correct = torch.eq(torch.max(outputs, dim=1)[1], targets).view(-1)
 
                 if per_class_accuracy:
                     for k in class_count.keys():
@@ -125,10 +125,7 @@ class Validator:
             else:
                 res += _hessian_vector_product(model, batch_loss, v)
 
-        self.validate(
-            64,
-            use_grad=True,
-            after_batch_callback=after_batch_callback)
+        self.validate(64, use_grad=True, after_batch_callback=after_batch_callback)
         if damping != 0:
             res += damping * v
         return res
