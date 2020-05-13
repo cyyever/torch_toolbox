@@ -51,11 +51,6 @@ def dataset_with_indices(dataset):
     return DatasetMapper(dataset, [lambda index, item: (*item, index)])
 
 
-class DatasetWithIndices(DatasetMapper):
-    def __init__(self, dataset):
-        super().__init__(dataset, [lambda index, item: (*item, index)])
-
-
 def split_dataset(dataset):
     return [
         torch.utils.data.Subset(
