@@ -13,6 +13,7 @@ from .util import (
 from .validator import Validator
 from .log import get_logger
 from .visualization import Window
+from .gradient import get_gradient
 
 
 class Trainer:
@@ -55,7 +56,8 @@ class Trainer:
             learning_rates,
             **kwargs
         ):
-            if batch_index % (len(trainer.training_dataset) // (10 * batch_size)) == 0:
+            if batch_index % (len(trainer.training_dataset) //
+                              (10 * batch_size)) == 0:
                 get_logger().info(
                     "epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
                     epoch,
@@ -68,7 +70,8 @@ class Trainer:
             kwargs, "after_batch_callback", after_batch_callback
         )
 
-        plot_parameter_distribution = kwargs.get("plot_parameter_distribution", False)
+        plot_parameter_distribution = kwargs.get(
+            "plot_parameter_distribution", False)
         plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
 
         def after_epoch_callback(trainer, epoch, learning_rates):
@@ -77,23 +80,26 @@ class Trainer:
             if plot_parameter_distribution:
                 layer_win = Window.get("parameter distribution")
 
-                layer_win.plot_histogram(model_parameters_to_vector(trainer.model))
+                layer_win.plot_histogram(
+                    model_parameters_to_vector(
+                        trainer.model))
 
             loss_win = Window.get("training & validation loss")
-            get_logger().info(
-                "epoch: %s, training loss: %s", epoch, trainer.training_loss[-1],
-            )
-            loss_win.plot_loss(epoch, trainer.training_loss[-1], "training loss")
-            Window.get("learning rate").plot_learning_rate(epoch, learning_rates[0])
+            get_logger().info("epoch: %s, training loss: %s",
+                              epoch, trainer.training_loss[-1], )
+            loss_win.plot_loss(epoch,
+                               trainer.training_loss[-1],
+                               "training loss")
+            Window.get("learning rate").plot_learning_rate(
+                epoch, learning_rates[0])
             if trainer.validation_dataset is None:
                 return
-            validation_epoch_interval = int(kwargs.get("validation_epoch_interval", 1))
+            validation_epoch_interval = int(
+                kwargs.get("validation_epoch_interval", 1))
             if epoch % validation_epoch_interval == 0:
                 validation_loss, accuracy, other_data = Validator(
-                    trainer.model, trainer.loss_fun, trainer.validation_dataset
-                ).validate(
-                    trainer.__hyper_parameter.batch_size, per_class_accuracy=True
-                )
+                    trainer.model, trainer.loss_fun, trainer.validation_dataset).validate(
+                    trainer.__hyper_parameter.batch_size, per_class_accuracy=True)
                 validation_loss = validation_loss.data.item()
                 trainer.validation_loss[epoch] = validation_loss
                 trainer.validation_accuracy[epoch] = accuracy
@@ -151,7 +157,8 @@ class Trainer:
         self.model.to(device)
         self.__reset_hyper_parameter = False
         self.__reset_loss()
-        optimizer = self.__hyper_parameter.get_optimizer(self.model.parameters())
+        optimizer = self.__hyper_parameter.get_optimizer(
+            self.model.parameters())
         lr_scheduler = self.__hyper_parameter.get_lr_scheduler(optimizer)
         if "pre_training_callback" in kwargs:
             kwargs["pre_training_callback"](self, optimizer, lr_scheduler)
@@ -162,16 +169,17 @@ class Trainer:
                 optimizer = self.__hyper_parameter.get_optimizer(
                     self.model.parameters()
                 )
-                lr_scheduler = self.__hyper_parameter.get_lr_scheduler(optimizer)
+                lr_scheduler = self.__hyper_parameter.get_lr_scheduler(
+                    optimizer)
                 get_logger().warning("use new hyper-parameter")
 
             training_loss = 0.0
-            cur_learning_rates = [group["lr"] for group in optimizer.param_groups]
+            cur_learning_rates = [group["lr"]
+                                  for group in optimizer.param_groups]
             for batch in training_data_loader:
                 self.model.train()
                 self.model.to(device)
                 optimizer.zero_grad()
-                batch_loss = 0
                 real_batch_size = batch[0].shape[0]
 
                 if "pre_batch_callback" in kwargs:
@@ -179,48 +187,36 @@ class Trainer:
                         self.model, batch, batch_index, cur_learning_rates
                     )
 
-                instance_inputs = batch[0]
-                instance_inputs = instance_inputs.to(device)
-                instance_targets = batch[1]
-                instance_targets = instance_targets.to(device)
+                instance_inputs = batch[0].to(device)
+                instance_targets = batch[1].to(device)
                 instance_indices = None
                 if len(batch) >= 3:
                     instance_indices = [idx.data.item() for idx in batch[2]]
 
                 if "per_instance_gradient_callback" in kwargs:
-                    prev_accumulated_gradient = None
                     for i, instance_index in enumerate(instance_indices):
                         instance_index = instance_indices[i]
                         instance_input = instance_inputs[i]
                         instance_target = instance_targets[i]
                         output = self.model(torch.stack([instance_input]))
-                        loss = self.loss_fun(output, torch.stack([instance_target]))
-                        batch_loss += loss.data.item() / real_batch_size
-                        loss.backward()
-                        cur_accumulated_gradient = model_gradients_to_vector(self.model)
-                        instance_gradient = None
-                        if prev_accumulated_gradient is None:
-                            instance_gradient = cur_accumulated_gradient
-                        else:
-                            instance_gradient = (
-                                cur_accumulated_gradient - prev_accumulated_gradient
-                            )
-                        prev_accumulated_gradient = cur_accumulated_gradient
+                        loss = self.loss_fun(
+                            output, torch.stack(
+                                [instance_target]))
 
-                        if "per_instance_gradient_callback" in kwargs:
-                            kwargs["per_instance_gradient_callback"](
-                                self,
-                                instance_index,
-                                instance_gradient,
-                                cur_learning_rates,
-                                real_batch_size,
-                                optimizer=optimizer,
-                            )
-                else:
-                    outputs = self.model(instance_inputs)
-                    loss = self.loss_fun(outputs, instance_targets)
-                    batch_loss = loss.data.item()
-                    loss.backward()
+                        instance_gradient = get_gradient(self.model, loss)
+                        kwargs["per_instance_gradient_callback"](
+                            self,
+                            instance_index,
+                            instance_gradient,
+                            cur_learning_rates,
+                            real_batch_size,
+                            optimizer=optimizer,
+                        )
+                optimizer.zero_grad()
+                outputs = self.model(instance_inputs)
+                loss = self.loss_fun(outputs, instance_targets)
+                batch_loss = loss.data.item()
+                loss.backward()
 
                 if hasattr(self.loss_fun, "reduction") and (
                     self.loss_fun.reduction == "mean"
@@ -235,7 +231,8 @@ class Trainer:
                     batch_grad = model_gradients_to_vector(self.model)
 
                 optimizer.step()
-                cur_learning_rates = [group["lr"] for group in optimizer.param_groups]
+                cur_learning_rates = [group["lr"]
+                                      for group in optimizer.param_groups]
 
                 if "after_batch_callback" in kwargs:
                     kwargs["after_batch_callback"](
@@ -263,8 +260,11 @@ class Trainer:
                 get_logger().warning("early stop")
                 break
 
-            if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                lr_scheduler.step(self.training_loss[-1] + self.validation_loss[epoch])
+            if isinstance(
+                    lr_scheduler,
+                    torch.optim.lr_scheduler.ReduceLROnPlateau):
+                lr_scheduler.step(
+                    self.training_loss[-1] + self.validation_loss[epoch])
             else:
                 lr_scheduler.step()
 
