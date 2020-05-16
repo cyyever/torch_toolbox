@@ -64,8 +64,7 @@ class Validator:
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
                         instance_validation_loss[instance_index] = self.loss_fun(
-                            outputs[i].unsqueeze(0), targets[i].unsqueeze(0)
-                        )
+                            outputs[i].unsqueeze(0), targets[i].unsqueeze(0))
                 if per_instance_output:
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
@@ -73,9 +72,21 @@ class Validator:
                             get_cpu_device()
                         )
 
+                loss_is_mean = False
+                if hasattr(self.loss_fun, "reduction") and (
+                    self.loss_fun.reduction == "mean"
+                    or self.loss_fun.reduction == "elementwise_mean"
+                ):
+                    loss_is_mean = True
+
                 loss = self.loss_fun(outputs, targets)
                 if use_grad:
-                    loss.backward()
+                    loss2 = None
+                    if loss_is_mean:
+                        loss2 = loss * real_batch_size / len(dataset)
+                    else:
+                        loss2 = loss
+                    loss2.backward()
                 batch_loss = loss.data.item()
                 if hasattr(self.loss_fun, "reduction") and (
                     self.loss_fun.reduction == "mean"
@@ -83,8 +94,10 @@ class Validator:
                 ):
                     batch_loss *= real_batch_size
                     batch_loss /= len(dataset)
+
                 validation_loss += batch_loss
-                correct = torch.eq(torch.max(outputs, dim=1)[1], targets).view(-1)
+                correct = torch.eq(torch.max(outputs, dim=1)
+                                   [1], targets).view(-1)
 
                 if per_class_accuracy:
                     for k in class_count.keys():
@@ -125,7 +138,10 @@ class Validator:
             else:
                 res += _hessian_vector_product(model, batch_loss, v)
 
-        self.validate(64, use_grad=True, after_batch_callback=after_batch_callback)
+        self.validate(
+            64,
+            use_grad=True,
+            after_batch_callback=after_batch_callback)
         if damping != 0:
             res += damping * v
         return res
