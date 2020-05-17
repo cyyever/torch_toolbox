@@ -230,10 +230,6 @@ class Trainer:
                 if kwargs.get("batch_callback_need_grad", False):
                     batch_grad = model_gradients_to_vector(self.model)
 
-                optimizer.step()
-                cur_learning_rates = [group["lr"]
-                                      for group in optimizer.param_groups]
-
                 if "after_batch_callback" in kwargs:
                     kwargs["after_batch_callback"](
                         self,
@@ -246,7 +242,9 @@ class Trainer:
                         instance_indices=instance_indices,
                         optimizer=optimizer,
                     )
-
+                optimizer.step()
+                cur_learning_rates = [group["lr"]
+                                      for group in optimizer.param_groups]
                 batch_index += 1
 
             self.training_loss.append(training_loss)
