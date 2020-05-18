@@ -37,7 +37,8 @@ class Trainer:
     def train(self, **kwargs):
         def pre_training_callback(trainer, optimizer, lr_scheduler):
             get_logger().info(
-                "begin training,optimizer is %s ,lr_scheduler is %s, model is %s",
+                "begin training for %s epochs,optimizer is %s ,lr_scheduler is %s, model is %s",
+                self.__hyper_parameter.epochs,
                 optimizer,
                 lr_scheduler,
                 trainer.model,
@@ -163,7 +164,7 @@ class Trainer:
         if "pre_training_callback" in kwargs:
             kwargs["pre_training_callback"](self, optimizer, lr_scheduler)
 
-        for epoch in range(self.__hyper_parameter.epoches):
+        for epoch in range(self.__hyper_parameter.epochs):
             if self.__reset_hyper_parameter:
                 self.__reset_hyper_parameter = False
                 optimizer = self.__hyper_parameter.get_optimizer(
