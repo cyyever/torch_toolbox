@@ -30,8 +30,8 @@ def get_task_configuration(task_name, for_training):
             )
 
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer: optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, verbose=True, factor=0.5, patience=2, threshold=0.5))
+                lambda optimizer: optim.lr_scheduler.StepLR(
+                    optimizer, step_size=10))
 
             trainer.set_hyper_parameter(hyper_parameter)
             trainer.validation_dataset = validation_dataset
