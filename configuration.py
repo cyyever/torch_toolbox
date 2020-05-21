@@ -48,7 +48,7 @@ def get_task_configuration(task_name, for_training):
         if for_training:
             trainer = Trainer(model, loss_fun, training_dataset)
             hyper_parameter = HyperParameter(
-                epochs=50, batch_size=64, learning_rate=0.001
+                epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
             )
 
             hyper_parameter.set_optimizer_factory(
