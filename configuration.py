@@ -18,20 +18,23 @@ def get_task_configuration(task_name, for_training):
         if for_training:
             trainer = Trainer(model, loss_fun, training_dataset)
             hyper_parameter = HyperParameter(
-                epochs=50, batch_size=64, learning_rate=0.01
+                epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
             )
 
             hyper_parameter.set_optimizer_factory(
                 lambda params, learning_rate, weight_decay: optim.SGD(
                     params,
+                    momentum=0.9,
                     lr=learning_rate,
                     weight_decay=(weight_decay / len(training_dataset)),
                 )
             )
 
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer: optim.lr_scheduler.StepLR(
-                    optimizer, step_size=10))
+                lambda optimizer: optim.lr_scheduler.MultiStepLR(
+                    optimizer, milestones=[5, 55, 555]
+                )
+            )
 
             trainer.set_hyper_parameter(hyper_parameter)
             trainer.validation_dataset = validation_dataset
