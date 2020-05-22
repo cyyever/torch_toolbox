@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
 import torch.nn.utils.prune as prune
+import torchvision
 
 
 def split_list_to_chunks(my_list, chunk_size):
@@ -55,3 +56,6 @@ def get_model_sparsity(model):
         none_zero_parameter_num += torch.sum(getattr(layer, name) != 0)
     sparsity = 100 * float(none_zero_parameter_num) / float(parameter_count)
     return (sparsity, none_zero_parameter_num, parameter_count)
+
+def save_sample(dataset, idx, path):
+    torchvision.utils.save_image(dataset[idx][0],path)
