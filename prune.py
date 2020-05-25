@@ -15,7 +15,11 @@ from .log import get_logger
 
 
 def lottery_ticket_prune(
-    task_name, model_path, pruning_accuracy, pruning_amount, hyper_parameter=None,
+    task_name,
+    model_path,
+    pruning_accuracy,
+    pruning_amount,
+    hyper_parameter=None,
 ):
     Window.set_env(
         "prune_"
@@ -29,7 +33,16 @@ def lottery_ticket_prune(
         trainer.model = torch.load(model_path)
 
     if hyper_parameter is not None:
-        trainer.set_hyper_parameter(copy.deepcopy(hyper_parameter))
+        default_hyper_parameter = trainer.get_hyper_parameter()
+        if hyper_parameter.epochs is not None:
+            default_hyper_parameter.epochs = hyper_parameter.epochs
+        if hyper_parameter.batch_size is not None:
+            default_hyper_parameter.batch_size = hyper_parameter.batch_size
+        if hyper_parameter.learning_rate is not None:
+            default_hyper_parameter.learning_rate = hyper_parameter.learning_rate
+        if hyper_parameter.weight_decay is not None:
+            default_hyper_parameter.weight_decay = hyper_parameter.weight_decay
+        trainer.set_hyper_parameter(default_hyper_parameter)
     get_logger().info("prune model when test accuracy is %s", pruning_accuracy)
     get_logger().info("prune amount is %s", pruning_amount)
 
@@ -37,7 +50,8 @@ def lottery_ticket_prune(
     for k, v in init_parameters.items():
         init_parameters[k] = copy.deepcopy(v)
 
-    parameters_size = sum([len(v[0].view(-1)) for v in init_parameters.values()])
+    parameters_size = sum([len(v[0].view(-1))
+                           for v in init_parameters.values()])
     assert parameters_size == len(model_parameters_to_vector(trainer.model))
     save_dir = os.path.join(
         "models", trainer.model.__class__.__name__ + "_" + task_name, "pruned"
@@ -47,7 +61,8 @@ def lottery_ticket_prune(
         nonlocal init_parameters
         nonlocal save_dir
 
-        parameters = model_parameters_to_vector(trainer.model).detach().clone().cpu()
+        parameters = model_parameters_to_vector(
+            trainer.model).detach().clone().cpu()
 
         abs_parameters = parameters.abs()
         abs_parameters = abs_parameters[abs_parameters.nonzero()]
@@ -113,10 +128,9 @@ def lottery_ticket_prune(
             orig = getattr(layer, name + "_orig")
             pruned_tensor = mask.to(dtype=orig.dtype) * orig
             setattr(layer, name, pruned_tensor)
-        trainer.set_hyper_parameter(copy.deepcopy(init_hyper_parameter))
+        trainer.set_hyper_parameter(copy.deepcopy(hyper_parameter))
         trainer.save(os.path.join(save_dir, str(epoch)))
 
-    trainer.train(
-        plot_parameter_distribution=True, after_epoch_callback=after_epoch_callback
-    )
+    trainer.train(plot_parameter_distribution=True,
+                  after_epoch_callback=after_epoch_callback)
     trainer.save(save_dir)
