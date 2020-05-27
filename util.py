@@ -1,3 +1,4 @@
+import os
 import PIL
 import torch.nn as nn
 import torch
@@ -58,8 +59,10 @@ def get_model_sparsity(model):
     sparsity = 100 * float(none_zero_parameter_num) / float(parameter_count)
     return (sparsity, none_zero_parameter_num, parameter_count)
 
+
 def save_sample(dataset, idx, path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     if isinstance(dataset[idx][0], PIL.Image.Image):
         dataset[idx][0].save(path)
         return
-    torchvision.utils.save_image(dataset[idx][0],path)
+    torchvision.utils.save_image(dataset[idx][0], path)
