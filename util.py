@@ -1,3 +1,4 @@
+import PIL
 import torch.nn as nn
 import torch
 import torch.nn.utils.prune as prune
@@ -58,4 +59,7 @@ def get_model_sparsity(model):
     return (sparsity, none_zero_parameter_num, parameter_count)
 
 def save_sample(dataset, idx, path):
+    if isinstance(dataset[idx][0], PIL.Image.Image):
+        dataset[idx][0].save(path)
+        return
     torchvision.utils.save_image(dataset[idx][0],path)
