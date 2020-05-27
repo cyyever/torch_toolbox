@@ -18,6 +18,9 @@ class Validator:
         self.loss_fun = loss_fun
         self.dataset = dataset
 
+    def set_dataset(self, dataset):
+        self.dataset = dataset
+
     def validate(self, batch_size, **kwargs):
 
         class_count = dict()
@@ -31,9 +34,7 @@ class Validator:
 
         per_instance_loss = kwargs.get("per_instance_loss", False)
         per_instance_output = kwargs.get("per_instance_output", False)
-        dataset = self.dataset
-        if per_instance_loss or per_instance_output:
-            dataset = dataset_with_indices(dataset)
+        dataset = dataset_with_indices(self.dataset)
 
         validation_data_loader = torch.utils.data.DataLoader(
             dataset, batch_size=batch_size
@@ -42,6 +43,8 @@ class Validator:
         use_grad = kwargs.get("use_grad", False)
         instance_validation_loss = dict()
         instance_output = dict()
+        instance_prob = dict()
+        instance_label = dict()
         with torch.set_grad_enabled(use_grad):
             num_correct = 0
             num_examples = 0
@@ -114,6 +117,14 @@ class Validator:
             if per_class_accuracy:
                 for k in class_count.keys():
                     class_count[k] = class_correct_count[k] / class_count[k]
+            if instance_output:
+                for k, v in instance_output.items():
+                    max_prob_index = torch.argmax(v).data.item()
+                    instance_prob[k] = (
+                        max_prob_index,
+                        v[max_prob_index].exp().data.item(),
+                    )
+
             return (
                 validation_loss,
                 num_correct / num_examples,
@@ -121,6 +132,7 @@ class Validator:
                     "per_class_accuracy": class_count,
                     "per_instance_loss": instance_validation_loss,
                     "per_instance_output": instance_output,
+                    "per_instance_prob": instance_prob,
                 },
             )
 
