@@ -69,7 +69,9 @@ def split_dataset_by_class(dataset):
             class_map[label] = []
         class_map[label].append(index)
     for label, indices in class_map.items():
-        class_map[label] = torch.utils.data.Subset(dataset, indices)
+        class_map[label] = dict()
+        class_map[label]["indices"] = indices
+        class_map[label]["dataset"] = torch.utils.data.Subset(dataset, indices)
     return class_map
 
 
