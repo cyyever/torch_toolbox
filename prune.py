@@ -43,6 +43,7 @@ def lottery_ticket_prune(
         if hyper_parameter.weight_decay is not None:
             default_hyper_parameter.weight_decay = hyper_parameter.weight_decay
         trainer.set_hyper_parameter(default_hyper_parameter)
+    init_hyper_parameter = copy.deepcopy(trainer.get_hyper_parameter())
     get_logger().info("prune model when test accuracy is %s", pruning_accuracy)
     get_logger().info("prune amount is %s", pruning_amount)
 
@@ -60,6 +61,7 @@ def lottery_ticket_prune(
     def after_epoch_callback(trainer, epoch, _):
         nonlocal init_parameters
         nonlocal save_dir
+        nonlocal init_hyper_parameter
 
         parameters = model_parameters_to_vector(
             trainer.model).detach().clone().cpu()
@@ -128,7 +130,7 @@ def lottery_ticket_prune(
             orig = getattr(layer, name + "_orig")
             pruned_tensor = mask.to(dtype=orig.dtype) * orig
             setattr(layer, name, pruned_tensor)
-        trainer.set_hyper_parameter(copy.deepcopy(hyper_parameter))
+        trainer.set_hyper_parameter(copy.deepcopy(init_hyper_parameter))
         trainer.save(os.path.join(save_dir, str(epoch)))
 
     trainer.train(plot_parameter_distribution=True,
