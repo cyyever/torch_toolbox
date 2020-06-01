@@ -24,3 +24,21 @@ class HyperParameter:
         return self.optimizer_factory(
             params, self.learning_rate, self.weight_decay, training_dataset
         )
+
+    def __str__(self):
+        s = (
+            "epochs:"
+            + str(self.epochs)
+            + " batch_size:"
+            + str(self.batch_size)
+            + " learning_rate:"
+            + str(self.learning_rate)
+            + " weight_decay:"
+            + str(self.weight_decay)
+        )
+        # if self.lr_scheduler_factory is not None:
+        #     s += str(self.lr_scheduler_factory)
+
+        # if self.optimizer_factory is not None:
+        #     s += str(self.optimizer_factory)
+        return s

@@ -37,8 +37,9 @@ class Trainer:
     def train(self, **kwargs):
         def pre_training_callback(trainer, optimizer, lr_scheduler):
             get_logger().info(
-                "begin training for %s epochs,optimizer is %s ,lr_scheduler is %s, model is %s",
+                "begin training for %s epochs,hyper_parameter is %s,optimizer is %s ,lr_scheduler is %s, model is %s",
                 self.__hyper_parameter.epochs,
+                self.__hyper_parameter,
                 optimizer,
                 lr_scheduler,
                 trainer.model,
