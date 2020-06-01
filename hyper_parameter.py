@@ -20,6 +20,7 @@ class HyperParameter:
     def set_optimizer_factory(self, optimizer_factory):
         self.optimizer_factory = optimizer_factory
 
-    def get_optimizer(self, params):
+    def get_optimizer(self, params, training_dataset):
         return self.optimizer_factory(
-            params, self.learning_rate, self.weight_decay)
+            params, self.learning_rate, self.weight_decay, training_dataset
+        )

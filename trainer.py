@@ -159,7 +159,8 @@ class Trainer:
         self.__reset_hyper_parameter = False
         self.__reset_loss()
         optimizer = self.__hyper_parameter.get_optimizer(
-            self.model.parameters())
+            self.model.parameters(), self.training_dataset
+        )
         lr_scheduler = self.__hyper_parameter.get_lr_scheduler(optimizer)
         if "pre_training_callback" in kwargs:
             kwargs["pre_training_callback"](self, optimizer, lr_scheduler)
@@ -168,7 +169,7 @@ class Trainer:
             if self.__reset_hyper_parameter:
                 self.__reset_hyper_parameter = False
                 optimizer = self.__hyper_parameter.get_optimizer(
-                    self.model.parameters()
+                    self.model.parameters(), self.training_dataset
                 )
                 lr_scheduler = self.__hyper_parameter.get_lr_scheduler(
                     optimizer)
