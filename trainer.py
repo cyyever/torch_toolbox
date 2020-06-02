@@ -1,6 +1,7 @@
 import os
 
 import copy
+import datetime
 import torch
 
 from .device import get_cpu_device
@@ -269,11 +270,17 @@ class Trainer:
             else:
                 lr_scheduler.step()
 
-    def save(self, save_dir):
+    def save(self, save_dir, with_timestamp=False):
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
         model = self.model
-        torch.save(model, os.path.join(save_dir, "model.pt"))
+        name = "model.pt"
+        if with_timestamp:
+            name = "model_{date:%Y_%m_%d_%H_%M_%S}.pt".format(
+                date=datetime.datetime.now()
+            )
+
+        torch.save(model, os.path.join(save_dir, name))
 
     def parameters(self):
         model = self.model
