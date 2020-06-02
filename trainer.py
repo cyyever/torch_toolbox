@@ -18,6 +18,28 @@ from .gradient import get_gradient
 
 
 class Trainer:
+    @staticmethod
+    def repeated_training(number, train_callback):
+        results = dict()
+        for idx in range(number):
+            statistics = train_callback(idx)
+            assert isinstance(statistics, dict)
+            for k, v in statistics.items():
+                tensor = None
+                if isinstance(v, list):
+                    tensor = torch.Tensor(v)
+                elif isinstance(v, dict):
+                    tensor = torch.Tensor([v[k] for k in sorted(v.keys())])
+                else:
+                    raise RuntimeError("unsupported value" + str(v))
+                if k in results:
+                    results[k] += tensor
+                else:
+                    results[k] = tensor
+        for k, v in results.items():
+            results[k] = v / number
+        return results
+
     def __init__(self, model, loss_fun, training_dataset):
         self.model = copy.deepcopy(model)
         self.loss_fun = loss_fun
