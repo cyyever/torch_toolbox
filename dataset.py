@@ -124,6 +124,7 @@ __dataset_dir = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
 
 
 def set_dataset_dir(new_dataset_dir):
+    global __dataset_dir
     __dataset_dir = new_dataset_dir
 
 
