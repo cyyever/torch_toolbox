@@ -1,5 +1,6 @@
 import functools
 import os
+import random
 
 import torch
 import torchvision
@@ -73,6 +74,30 @@ def split_dataset_by_class(dataset):
         class_map[label]["indices"] = indices
         class_map[label]["dataset"] = torch.utils.data.Subset(dataset, indices)
     return class_map
+
+
+def radomize_subset_label(dataset, percentage):
+    class_map = split_dataset_by_class(dataset)
+    labels = set(class_map.keys())
+    for label, v in class_map.items():
+        other_labels = labels - set([label])
+        print(label, other_labels)
+        indices = v["indices"]
+        radomized_subset_size = int(len(v["dataset"]) * percentage)
+        randomized_indices = random.sample(indices, k=radomized_subset_size)
+        randomized_label_map = dict()
+        for index in randomized_indices:
+            randomized_label_map[index] = random.choice(other_labels)
+        print(randomized_label_map)
+    return randomized_label_map
+
+
+def replace_dataset_labels(dataset, label_map):
+    def mapper(index, item):
+        if index in label_map:
+            item[1] = label_map[index]
+
+    return DatasetMapper(dataset, [mapper])
 
 
 def get_classes(dataset):
