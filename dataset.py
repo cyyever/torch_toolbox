@@ -79,12 +79,12 @@ def split_dataset_by_class(dataset):
 def randomize_subset_label(dataset, percentage):
     class_map = split_dataset_by_class(dataset)
     labels = set(class_map.keys())
+    randomized_label_map = dict()
     for label, v in class_map.items():
         other_labels = list(labels - set([label]))
         indices = v["indices"]
         radomized_subset_size = int(len(v["dataset"]) * percentage)
         randomized_indices = random.sample(indices, k=radomized_subset_size)
-        randomized_label_map = dict()
         for index in randomized_indices:
             randomized_label_map[index] = random.choice(other_labels)
     return randomized_label_map
