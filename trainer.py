@@ -179,6 +179,7 @@ class Trainer:
         get_logger().info("training_set_size is %s", training_set_size)
         batch_index = 0
         device = get_device()
+        get_logger().info("use device %s", device)
         self.model.to(device)
         self.__reset_hyper_parameter = False
         self.__reset_loss()
