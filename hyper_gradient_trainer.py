@@ -231,10 +231,19 @@ class HyperGradientTrainer:
         get_logger().info("begin do do_delayed_computation")
         self.do_delayed_computation()
         get_logger().info("end do do_delayed_computation")
+        self.hyper_gradient_matrix.flush_all()
+        self.mom_gradient_matrix.flush_all()
         self.hyper_gradient_matrix.flush_all(True)
         shutil.copytree(
             self.hyper_gradient_matrix.get_storage_dir(),
             self.hyper_gradient_matrix.get_storage_dir() +
+            "_epoch_" +
+            str(epoch),
+        )
+        self.mom_gradient_matrix.flush_all(True)
+        shutil.copytree(
+            self.mom_gradient_matrix.get_storage_dir(),
+            self.mom_gradient_matrix.get_storage_dir() +
             "_epoch_" +
             str(epoch),
         )
