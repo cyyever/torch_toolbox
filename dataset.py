@@ -179,6 +179,7 @@ def get_dataset(name, for_train):
             transform=transforms.Compose(
                 [
                     transforms.Resize((32, 32)),
+                    transforms.RandomHorizontalFlip(),
                     transforms.ToTensor(),
                     transforms.Normalize(mean=[0.2860], std=[0.3530]),
                 ]
