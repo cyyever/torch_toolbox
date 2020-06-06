@@ -44,7 +44,6 @@ class Validator:
         instance_validation_loss = dict()
         instance_output = dict()
         instance_prob = dict()
-        instance_label = dict()
         with torch.set_grad_enabled(use_grad):
             num_correct = 0
             num_examples = 0
@@ -83,18 +82,14 @@ class Validator:
                     loss_is_mean = True
 
                 loss = self.loss_fun(outputs, targets)
+                if loss_is_mean:
+                    batch_loss = loss * real_batch_size / len(dataset)
+                else:
+                    batch_loss = loss
                 if use_grad:
-                    loss2 = None
-                    if loss_is_mean:
-                        loss2 = loss * real_batch_size / len(dataset)
-                    else:
-                        loss2 = loss
-                    loss2.backward()
+                    batch_loss.backward()
                 batch_loss = loss.data.item()
-                if hasattr(self.loss_fun, "reduction") and (
-                    self.loss_fun.reduction == "mean"
-                    or self.loss_fun.reduction == "elementwise_mean"
-                ):
+                if loss_is_mean:
                     batch_loss *= real_batch_size
                     batch_loss /= len(dataset)
 
