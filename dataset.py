@@ -93,6 +93,7 @@ def randomize_subset_label(dataset, percentage):
 def replace_dataset_labels(dataset, label_map):
     def mapper(index, item):
         if index in label_map:
+            # assert label_map[index] != item[1]
             return (item[0], label_map[index])
         return item
 
@@ -237,4 +238,23 @@ def get_dataset(name, for_train):
                             0.2616]),
                 ]),
         )
+    raise NotImplementedError(name)
+
+
+def get_dataset_labels(name):
+    if name == "MNIST":
+        return list(range(10))
+    if name == "FashionMNIST":
+        return [
+            "T-shirt",
+            "Trouser",
+            "Pullover",
+            "Dress",
+            "Coat",
+            "Sandal",
+            "Shirt",
+            "Sneaker",
+            "Bag",
+            "Ankle boot",
+        ]
     raise NotImplementedError(name)
