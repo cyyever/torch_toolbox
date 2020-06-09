@@ -61,15 +61,15 @@ class HyperGradientTrainer:
             after_batch_callback=self.__after_batch_callback,
             after_epoch_callback=self.__after_epoch_callback,
         )
-        get_logger().info("begin do do_delayed_computation")
-        self.do_delayed_computation()
-        get_logger().info("end do do_delayed_computation")
+        get_logger().info("begin do __do_delayed_computation")
+        self.__do_delayed_computation()
+        get_logger().info("end do __do_delayed_computation")
         self.trainer.save(self.save_dir)
         self.hyper_gradient_matrix.flush_all()
         self.hyper_gradient_matrix.release()
         self.mom_gradient_matrix.release()
 
-    def do_delayed_computation(self, index=None):
+    def __do_delayed_computation(self, index=None):
         if index is None:
             unfinished_keys = []
             for k, v in self.delayed_computations.items():
@@ -80,7 +80,7 @@ class HyperGradientTrainer:
             self.mom_gradient_matrix.prefetch(unfinished_keys)
 
             for k in unfinished_keys:
-                self.do_delayed_computation(int(k))
+                self.__do_delayed_computation(int(k))
             return
 
 
@@ -187,7 +187,7 @@ class HyperGradientTrainer:
             )
 
         for instance_index, instance_gradient in self.batch_gradients.items():
-            self.do_delayed_computation(instance_index)
+            self.__do_delayed_computation(instance_index)
             if str(instance_index) in self.hyper_gradient_matrix:
                 old_hyper_gradient = self.hyper_gradient_matrix[str(
                     instance_index)]
@@ -228,9 +228,9 @@ class HyperGradientTrainer:
             max_accuracy = max(list(validation_accuracy.values()))
             if cur_accurary < max_accuracy + 0.01:
                 return
-        get_logger().info("begin do do_delayed_computation")
-        self.do_delayed_computation()
-        get_logger().info("end do do_delayed_computation")
+        get_logger().info("begin do __do_delayed_computation")
+        self.__do_delayed_computation()
+        get_logger().info("end do __do_delayed_computation")
         self.hyper_gradient_matrix.flush_all()
         self.mom_gradient_matrix.flush_all()
         self.hyper_gradient_matrix.flush_all(True)

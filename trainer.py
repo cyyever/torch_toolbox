@@ -19,10 +19,10 @@ from .gradient import get_gradient
 
 class Trainer:
     @staticmethod
-    def repeated_training(number, train_callback):
+    def repeated_training(number, trainer, training_callback):
         results = dict()
         for idx in range(number):
-            statistics = train_callback(idx)
+            statistics = training_callback(idx, trainer)
             assert isinstance(statistics, dict)
             for k, v in statistics.items():
                 tensor = None
@@ -56,6 +56,18 @@ class Trainer:
 
     def get_hyper_parameter(self):
         return self.__hyper_parameter
+
+    def repeated_train(self, repeated_num, save_dir, **kwargs):
+        def training_callback(idx, trainer):
+            trainer.train(**kwargs)
+            trainer.save(save_dir, with_timestamp=True)
+            return {
+                "training_loss": trainer.training_loss,
+                "validation_loss": trainer.validation_loss,
+                "validation_accuracy": trainer.validation_accuracy,
+            }
+
+        Trainer.repeated_training(repeated_num, self, training_callback)
 
     def train(self, **kwargs):
         def pre_training_callback(trainer, optimizer, lr_scheduler):
