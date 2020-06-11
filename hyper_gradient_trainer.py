@@ -11,7 +11,7 @@ from .util import model_parameters_to_vector, get_model_sparsity, get_pruning_ma
 
 
 class HyperGradientTrainer:
-    def __init__(self, trainer, cache_size, save_dir):
+    def __init__(self, trainer, cache_size, save_dir, use_hessian=False):
         self.trainer = trainer
         mask = None
         gradient_shape = None
@@ -49,7 +49,7 @@ class HyperGradientTrainer:
         )
         self.delayed_computations = dict()
         for k in range(len(trainer.training_dataset)):
-            self.delayed_computations[k] = []
+            self.delayed_computations[str(k)] = []
         self.batch_gradients = dict()
 
     def train(self):
@@ -74,44 +74,50 @@ class HyperGradientTrainer:
             unfinished_keys = []
             for k, v in self.delayed_computations.items():
                 if v:
-                    unfinished_keys.append(str(k))
+                    unfinished_keys.append(k)
 
             self.hyper_gradient_matrix.prefetch(unfinished_keys)
             self.mom_gradient_matrix.prefetch(unfinished_keys)
 
             for k in unfinished_keys:
-                self.__do_delayed_computation(int(k))
+                self.__do_delayed_computation(k)
             return
 
+        mom_gradient = None
+        if index in self.mom_gradient_matrix:
+            mom_gradient = self.mom_gradient_matrix[index]
 
-        old_mom_gradient = None
-        if str(index) in self.mom_gradient_matrix:
-            old_mom_gradient = self.mom_gradient_matrix[str(index)]
-        old_hypergradient = None
-        if str(index) in self.hyper_gradient_matrix:
-            old_hypergradient = self.hyper_gradient_matrix[str(index)]
+        hypergradient = None
+        if index in self.hyper_gradient_matrix:
+            hypergradient = self.hyper_gradient_matrix[index]
 
         for coefficents in self.delayed_computations[index]:
-            momentum, weight_decay, learning_rate = coefficents
-            if old_mom_gradient is not None:
-                old_mom_gradient *= momentum
+            momentum, weight_decay, learning_rate, instance_gradient = coefficents
+            if mom_gradient is not None:
+                mom_gradient *= momentum
 
-            if old_hypergradient is not None:
-                if old_mom_gradient is not None:
-                    old_mom_gradient += weight_decay * old_hypergradient
+            if hypergradient is not None:
+                if mom_gradient is not None:
+                    mom_gradient += weight_decay * hypergradient
                 else:
-                    old_mom_gradient = weight_decay * old_hypergradient
-            if old_mom_gradient is not None:
-                if old_hypergradient is not None:
-                    old_hypergradient -= learning_rate * old_mom_gradient
+                    mom_gradient = weight_decay * hypergradient
+
+            if instance_gradient is not None:
+                if mom_gradient is not None:
+                    mom_gradient += instance_gradient
                 else:
-                    old_hypergradient = -learning_rate * old_mom_gradient
+                    mom_gradient = instance_gradient
 
-        if old_mom_gradient is not None:
-            self.mom_gradient_matrix[str(index)] = old_mom_gradient
+            assert mom_gradient is not None
+            if hypergradient is not None:
+                hypergradient -= learning_rate * mom_gradient
+            else:
+                hypergradient = -learning_rate * mom_gradient
 
-        if old_hypergradient is not None:
-            self.hyper_gradient_matrix[str(index)] = old_hypergradient
+        assert mom_gradient is not None
+        assert hypergradient is not None
+        self.mom_gradient_matrix[index] = mom_gradient
+        self.hyper_gradient_matrix[index] = hypergradient
         self.delayed_computations[index] = []
 
     def __create_gradient_matrix(self, cache_size, mask, gradient_shape):
@@ -153,7 +159,7 @@ class HyperGradientTrainer:
         real_batch_size,
         **kwargs,
     ):
-        self.batch_gradients[instance_index] = instance_gradient
+        self.batch_gradients[str(instance_index)] = instance_gradient
 
     def __after_batch_callback(
         self,
@@ -180,43 +186,22 @@ class HyperGradientTrainer:
         weight_decay = trainer.get_hyper_parameter().weight_decay
 
         training_set_size = len(trainer.training_dataset)
-        for idx in set(range(training_set_size)) - \
-                set(self.batch_gradients.keys()):
+        for idx in {str(i) for i in range(training_set_size)} - set(
+            self.batch_gradients.keys()
+        ):
             self.delayed_computations[idx].append(
-                (momentum, weight_decay, cur_learning_rate)
+                (momentum, weight_decay, cur_learning_rate, None)
             )
 
         for instance_index, instance_gradient in self.batch_gradients.items():
+            instance_gradient = (
+                (instance_gradient *
+                 training_set_size /
+                 batch_size).detach().clone())
+            self.delayed_computations[instance_index].append(
+                (momentum, weight_decay, cur_learning_rate, instance_gradient)
+            )
             self.__do_delayed_computation(instance_index)
-            if str(instance_index) in self.hyper_gradient_matrix:
-                old_hyper_gradient = self.hyper_gradient_matrix[str(
-                    instance_index)]
-            else:
-                old_hyper_gradient = None
-
-            if str(instance_index) in self.mom_gradient_matrix:
-                old_mom_gradient = self.mom_gradient_matrix[str(
-                    instance_index)]
-            else:
-                old_mom_gradient = None
-
-            instance_gradient = instance_gradient.detach().clone()
-            instance_gradient = instance_gradient * training_set_size / batch_size
-
-            if old_mom_gradient is not None:
-                instance_gradient += momentum * old_mom_gradient
-            if old_hyper_gradient is not None:
-                instance_gradient += weight_decay * old_hyper_gradient
-            mom_gradient = instance_gradient
-
-            self.mom_gradient_matrix[str(instance_index)] = mom_gradient
-
-            hyper_gradient = -cur_learning_rate * mom_gradient
-
-            if old_hyper_gradient is not None:
-                hyper_gradient += old_hyper_gradient
-
-            self.hyper_gradient_matrix[str(instance_index)] = hyper_gradient
 
     def __after_epoch_callback(self, trainer, epoch, cur_learning_rates):
         if epoch < 10:
