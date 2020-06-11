@@ -43,9 +43,9 @@ class DatasetMapper:
 
 
 def dataset_exclude_samples(dataset, excluded_indices):
-    return DatasetFilter(
-        dataset, [
-            lambda index, _: index not in excluded_indices])
+    return torch.utils.data.Subset(
+        dataset, set(range(len(dataset)) - set(excluded_indices))
+    )
 
 
 def dataset_with_indices(dataset):
@@ -76,16 +76,23 @@ def split_dataset_by_class(dataset):
     return class_map
 
 
-def randomize_subset_label(dataset, percentage):
+def sample_subset(dataset, percentage):
     class_map = split_dataset_by_class(dataset)
-    labels = set(class_map.keys())
-    randomized_label_map = dict()
+    sample_indices = dict()
     for label, v in class_map.items():
-        other_labels = list(labels - set([label]))
-        indices = v["indices"]
-        radomized_subset_size = int(len(v["dataset"]) * percentage)
-        randomized_indices = random.sample(indices, k=radomized_subset_size)
-        for index in randomized_indices:
+        sample_indices[label] = random.sample(
+            v["indices"], k=int(len(v["indices"]) * percentage)
+        )
+    return sample_indices
+
+
+def randomize_subset_label(dataset, percentage):
+    sample_indices = sample_subset(dataset, percentage)
+    labels = sample_indices.keys()
+    randomized_label_map = dict()
+    for label, indices in sample_indices.items():
+        other_labels = list(set(labels) - set([label]))
+        for index in indices:
             randomized_label_map[index] = random.choice(other_labels)
     return randomized_label_map
 
@@ -93,7 +100,7 @@ def randomize_subset_label(dataset, percentage):
 def replace_dataset_labels(dataset, label_map):
     def mapper(index, item):
         if index in label_map:
-            # assert label_map[index] != item[1]
+            assert label_map[index] != item[1]
             return (item[0], label_map[index])
         return item
 
