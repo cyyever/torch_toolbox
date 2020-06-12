@@ -129,11 +129,11 @@ class HyperGradientTrainer:
                 else:
                     mom_gradient = instance_gradient
 
-            assert mom_gradient is not None
-            if hyper_gradient is not None:
-                hyper_gradient -= learning_rate * mom_gradient
-            else:
-                hyper_gradient = -learning_rate * mom_gradient
+            if mom_gradient is not None:
+                if hyper_gradient is not None:
+                    hyper_gradient -= learning_rate * mom_gradient
+                else:
+                    hyper_gradient = -learning_rate * mom_gradient
 
         assert mom_gradient is not None
         assert hyper_gradient is not None
@@ -165,7 +165,6 @@ class HyperGradientTrainer:
         batch_gradient_indices = {i.data.item() for i in batch[2]}
 
         if self.computed_indices is not None:
-            get_logger().info("consider only given indices")
             batch_gradient_indices -= self.computed_indices
 
         self.hyper_gradient_matrix.prefetch(
