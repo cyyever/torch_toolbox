@@ -39,37 +39,42 @@ class HyperGradientTrainer:
         hyper_gradient_matrix_dir = kwargs.get(
             "hyper_gradient_matrix_dir", None)
         if hyper_gradient_matrix_dir is not None:
-            self.hyper_gradient_matrix = self.__create_gradient_matrix(
-                cache_size, mask, gradient_shape, storage_dir=hyper_gradient_matrix_dir)
+            self.hyper_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
+                cache_size, mask, gradient_shape, storage_dir=hyper_gradient_matrix_dir
+            )
             get_logger().info(
                 "use hyper_gradient_matrix_dir:%s", hyper_gradient_matrix_dir
             )
         else:
-            self.hyper_gradient_matrix = self.__create_gradient_matrix(
-                cache_size, mask, gradient_shape
-            )
+            self.hyper_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
+                cache_size, mask, gradient_shape)
             self.hyper_gradient_matrix.set_storage_dir(os.path.join(
                 save_dir, "hyper_gradient_matrix", str(uuid.uuid4()),))
         mom_gradient_matrix_dir = kwargs.get("mom_gradient_matrix_dir", None)
         if mom_gradient_matrix_dir is not None:
-            self.mom_gradient_matrix = self.__create_gradient_matrix(
-                cache_size, mask, gradient_shape, storage_dir=mom_gradient_matrix)
+            self.mom_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
+                cache_size, mask, gradient_shape, storage_dir=mom_gradient_matrix_dir
+            )
             get_logger().info(
                 "use mom_gradient_matrix_dir :%s", mom_gradient_matrix_dir
             )
         else:
-            self.mom_gradient_matrix = self.__create_gradient_matrix(
-                cache_size, mask, gradient_shape
-            )
+            self.mom_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
+                cache_size, mask, gradient_shape)
             self.mom_gradient_matrix.set_storage_dir(os.path.join(
                 save_dir, "mom_gradient_matrix", str(uuid.uuid4()),))
         self.delayed_computations = dict()
         for k in range(len(trainer.training_dataset)):
             self.delayed_computations[str(k)] = []
         self.batch_gradients = dict()
+        self.computed_indices = None
 
-    def train(self):
+    def train(self, computed_indices=None):
         get_logger().info("begin train")
+
+        self.computed_indices = computed_indices
+        if self.computed_indices is not None:
+            self.computed_indices = set(self.computed_indices)
 
         self.trainer.train(
             pre_batch_callback=self.__pre_batch_callback,
@@ -136,34 +141,37 @@ class HyperGradientTrainer:
         self.hyper_gradient_matrix[index] = hyper_gradient
         self.delayed_computations[index] = []
 
-    def __create_gradient_matrix(self, cache_size, mask, gradient_shape):
+    @staticmethod
+    def __create_gradient_matrix(
+            cache_size,
+            mask,
+            gradient_shape,
+            storage_dir=""):
         m = None
         if mask is not None:
             m = cyy_pytorch_cpp.data_structure.SyncedSparseTensorDict(
-                mask, gradient_shape
+                mask, gradient_shape, storage_dir
             )
         else:
-            m = cyy_pytorch_cpp.data_structure.SyncedTensorDict()
+            m = cyy_pytorch_cpp.data_structure.SyncedTensorDict(storage_dir)
         m.set_permanent_storage()
         m.set_in_memory_number(cache_size)
         m.set_fetch_thread_number(10)
         m.enable_debug_logging(False)
         return m
 
-    def __pre_batch_callback(
-            self,
-            model,
-            batch,
-            batch_index,
-            cur_learning_rates):
+    def __pre_batch_callback(self, model, batch, batch_index):
         get_logger().debug("batch %s", batch_index)
-        batch_gradient_indices = batch[2]
+        batch_gradient_indices = {i.data.item() for i in batch[2]}
+
+        if self.computed_indices is not None:
+            get_logger().info("consider only given indices")
+            batch_gradient_indices -= self.computed_indices
+
         self.hyper_gradient_matrix.prefetch(
-            [str(i.data.item()) for i in batch_gradient_indices]
-        )
+            [str(i) for i in batch_gradient_indices])
         self.mom_gradient_matrix.prefetch(
-            [str(i.data.item()) for i in batch_gradient_indices]
-        )
+            [str(i) for i in batch_gradient_indices])
         self.batch_gradients.clear()
 
     def __per_instance_gradient_callback(
@@ -175,7 +183,8 @@ class HyperGradientTrainer:
         real_batch_size,
         **kwargs,
     ):
-        self.batch_gradients[str(instance_index)] = instance_gradient
+        if self.computed_indices is None or instance_index in self.computed_indices:
+            self.batch_gradients[str(instance_index)] = instance_gradient
 
     def __after_batch_callback(
         self,
@@ -202,9 +211,17 @@ class HyperGradientTrainer:
         weight_decay = trainer.get_hyper_parameter().weight_decay
 
         training_set_size = len(trainer.training_dataset)
-        for idx in {str(i) for i in range(training_set_size)} - set(
-            self.batch_gradients.keys()
-        ):
+
+        out_of_batch_indices = None
+        if self.computed_indices is None:
+            out_of_batch_indices = {str(i) for i in range(
+                training_set_size)} - set(self.batch_gradients.keys())
+        else:
+            out_of_batch_indices = {str(i) for i in self.computed_indices} - set(
+                self.batch_gradients.keys()
+            )
+
+        for idx in out_of_batch_indices:
             self.delayed_computations[idx].append(
                 (momentum, weight_decay, cur_learning_rate, None)
             )
@@ -222,7 +239,7 @@ class HyperGradientTrainer:
     def __after_epoch_callback(self, trainer, epoch, cur_learning_rates):
         if epoch < 10:
             return
-        elif epoch > 10:
+        if epoch > 10:
             cur_accurary = trainer.validation_accuracy[epoch]
             validation_accuracy = copy.deepcopy(trainer.validation_accuracy)
             validation_accuracy.pop(epoch)
