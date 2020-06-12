@@ -247,7 +247,6 @@ class Trainer:
                             self,
                             instance_index,
                             instance_gradient,
-                            cur_learning_rates,
                             real_batch_size,
                             optimizer=optimizer,
                         )
