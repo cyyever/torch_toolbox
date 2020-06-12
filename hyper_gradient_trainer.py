@@ -11,7 +11,7 @@ from .util import model_parameters_to_vector, get_model_sparsity, get_pruning_ma
 
 
 class HyperGradientTrainer:
-    def __init__(self, trainer, cache_size, save_dir, use_hessian=False):
+    def __init__(self, trainer, cache_size, save_dir, **kwargs):
         self.trainer = trainer
         mask = None
         gradient_shape = None
@@ -34,19 +34,35 @@ class HyperGradientTrainer:
         else:
             get_logger().info("use unpruned model")
 
-        self.hyper_gradient_matrix = self.__create_gradient_matrix(
-            cache_size, mask, gradient_shape
-        )
         self.save_dir = save_dir
-        self.hyper_gradient_matrix.set_storage_dir(
-            os.path.join(save_dir, "hyper_gradient_matrix", str(uuid.uuid4()),)
-        )
-        self.mom_gradient_matrix = self.__create_gradient_matrix(
-            cache_size, mask, gradient_shape
-        )
-        self.mom_gradient_matrix.set_storage_dir(
-            os.path.join(save_dir, "mom_gradient_matrix", str(uuid.uuid4()),)
-        )
+
+        hyper_gradient_matrix_dir = kwargs.get(
+            "hyper_gradient_matrix_dir", None)
+        if hyper_gradient_matrix_dir is not None:
+            self.hyper_gradient_matrix = self.__create_gradient_matrix(
+                cache_size, mask, gradient_shape, storage_dir=hyper_gradient_matrix_dir)
+            get_logger().info(
+                "use hyper_gradient_matrix_dir:%s", hyper_gradient_matrix_dir
+            )
+        else:
+            self.hyper_gradient_matrix = self.__create_gradient_matrix(
+                cache_size, mask, gradient_shape
+            )
+            self.hyper_gradient_matrix.set_storage_dir(os.path.join(
+                save_dir, "hyper_gradient_matrix", str(uuid.uuid4()),))
+        mom_gradient_matrix_dir = kwargs.get("mom_gradient_matrix_dir", None)
+        if mom_gradient_matrix_dir is not None:
+            self.mom_gradient_matrix = self.__create_gradient_matrix(
+                cache_size, mask, gradient_shape, storage_dir=mom_gradient_matrix)
+            get_logger().info(
+                "use mom_gradient_matrix_dir :%s", mom_gradient_matrix_dir
+            )
+        else:
+            self.mom_gradient_matrix = self.__create_gradient_matrix(
+                cache_size, mask, gradient_shape
+            )
+            self.mom_gradient_matrix.set_storage_dir(os.path.join(
+                save_dir, "mom_gradient_matrix", str(uuid.uuid4()),))
         self.delayed_computations = dict()
         for k in range(len(trainer.training_dataset)):
             self.delayed_computations[str(k)] = []
@@ -87,20 +103,20 @@ class HyperGradientTrainer:
         if index in self.mom_gradient_matrix:
             mom_gradient = self.mom_gradient_matrix[index]
 
-        hypergradient = None
+        hyper_gradient = None
         if index in self.hyper_gradient_matrix:
-            hypergradient = self.hyper_gradient_matrix[index]
+            hyper_gradient = self.hyper_gradient_matrix[index]
 
         for coefficents in self.delayed_computations[index]:
             momentum, weight_decay, learning_rate, instance_gradient = coefficents
             if mom_gradient is not None:
                 mom_gradient *= momentum
 
-            if hypergradient is not None:
+            if hyper_gradient is not None:
                 if mom_gradient is not None:
-                    mom_gradient += weight_decay * hypergradient
+                    mom_gradient += weight_decay * hyper_gradient
                 else:
-                    mom_gradient = weight_decay * hypergradient
+                    mom_gradient = weight_decay * hyper_gradient
 
             if instance_gradient is not None:
                 if mom_gradient is not None:
@@ -109,15 +125,15 @@ class HyperGradientTrainer:
                     mom_gradient = instance_gradient
 
             assert mom_gradient is not None
-            if hypergradient is not None:
-                hypergradient -= learning_rate * mom_gradient
+            if hyper_gradient is not None:
+                hyper_gradient -= learning_rate * mom_gradient
             else:
-                hypergradient = -learning_rate * mom_gradient
+                hyper_gradient = -learning_rate * mom_gradient
 
         assert mom_gradient is not None
-        assert hypergradient is not None
+        assert hyper_gradient is not None
         self.mom_gradient_matrix[index] = mom_gradient
-        self.hyper_gradient_matrix[index] = hypergradient
+        self.hyper_gradient_matrix[index] = hyper_gradient
         self.delayed_computations[index] = []
 
     def __create_gradient_matrix(self, cache_size, mask, gradient_shape):
