@@ -8,6 +8,7 @@ import cyy_pytorch_cpp
 
 from .log import get_logger
 from .util import model_parameters_to_vector, get_model_sparsity, get_pruning_mask
+from .device import get_device
 
 
 class HyperGradientTrainer:
@@ -68,13 +69,17 @@ class HyperGradientTrainer:
             self.delayed_computations[str(k)] = []
         self.batch_gradients = dict()
         self.computed_indices = None
+        self.use_hessian = kwargs.get("use_hessian", False)
+        self.hvp_function = None
 
     def train(self, computed_indices=None):
         get_logger().info("begin train")
 
-        self.computed_indices = computed_indices
-        if self.computed_indices is not None:
-            self.computed_indices = set(self.computed_indices)
+        if computed_indices is not None:
+            self.computed_indices = set(computed_indices)
+        else:
+            self.computed_indices = set(
+                range(len(self.trainer.training_dataset)))
 
         self.trainer.train(
             pre_batch_callback=self.__pre_batch_callback,
@@ -112,16 +117,26 @@ class HyperGradientTrainer:
         if index in self.hyper_gradient_matrix:
             hyper_gradient = self.hyper_gradient_matrix[index]
 
-        for coefficents in self.delayed_computations[index]:
-            momentum, weight_decay, learning_rate, instance_gradient = coefficents
+        for arguments in self.delayed_computations[index]:
+            (
+                momentum,
+                weight_decay,
+                learning_rate,
+                instance_gradient,
+                hvp_function,
+            ) = arguments
             if mom_gradient is not None:
                 mom_gradient *= momentum
 
             if hyper_gradient is not None:
+                res = weight_decay * hyper_gradient
+                if hvp_function is not None:
+                    res += hvp_function(hyper_gradient)
+
                 if mom_gradient is not None:
-                    mom_gradient += weight_decay * hyper_gradient
+                    mom_gradient += res
                 else:
-                    mom_gradient = weight_decay * hyper_gradient
+                    mom_gradient = res
 
             if instance_gradient is not None:
                 if mom_gradient is not None:
@@ -160,12 +175,11 @@ class HyperGradientTrainer:
         m.enable_debug_logging(False)
         return m
 
-    def __pre_batch_callback(self, model, batch, batch_index):
+    def __pre_batch_callback(self, trainer, batch, batch_index):
         get_logger().debug("batch %s", batch_index)
         batch_gradient_indices = {i.data.item() for i in batch[2]}
 
-        if self.computed_indices is not None:
-            batch_gradient_indices -= self.computed_indices
+        batch_gradient_indices &= self.computed_indices
 
         self.hyper_gradient_matrix.prefetch(
             [str(i) for i in batch_gradient_indices])
@@ -173,15 +187,31 @@ class HyperGradientTrainer:
             [str(i) for i in batch_gradient_indices])
         self.batch_gradients.clear()
 
+        if self.use_hessian:
+            cur_batch_model = copy.deepcopy(trainer.model)
+            cur_batch_model.detach()
+            cur_batch_model.zero_grad()
+            cur_batch_model.train()
+            cur_batch_model.to(get_device())
+            inputs = batch[0].to(get_device())
+            targets = batch[1].to(get_device())
+            loss_fun = trainer.loss_fun
+
+            def hvp_function(v):
+                nonlocal cur_batch_model
+                nonlocal inputs
+                nonlocal targets
+                nonlocal loss_fun
+                return torch.autograd.functional.jvp(
+                    lambda x: loss_fun(cur_batch_model(x), targets), inputs, v
+                )
+
+            self.hvp_function = hvp_function
+
     def __per_instance_gradient_callback(
-        self,
-        trainer,
-        instance_index,
-        instance_gradient,
-        real_batch_size,
-        **kwargs,
+        self, trainer, instance_index, instance_gradient, **kwargs,
     ):
-        if self.computed_indices is None or instance_index in self.computed_indices:
+        if instance_index in self.computed_indices:
             self.batch_gradients[str(instance_index)] = instance_gradient
 
     def __after_batch_callback(
@@ -210,29 +240,26 @@ class HyperGradientTrainer:
 
         training_set_size = len(trainer.training_dataset)
 
-        out_of_batch_indices = None
-        if self.computed_indices is None:
-            out_of_batch_indices = {str(i) for i in range(
-                training_set_size)} - set(self.batch_gradients.keys())
-        else:
-            out_of_batch_indices = {str(i) for i in self.computed_indices} - set(
-                self.batch_gradients.keys()
-            )
-
-        for idx in out_of_batch_indices:
-            self.delayed_computations[idx].append(
-                (momentum, weight_decay, cur_learning_rate, None)
-            )
-
-        for instance_index, instance_gradient in self.batch_gradients.items():
-            instance_gradient = (
-                (instance_gradient *
-                 training_set_size /
-                 batch_size).detach().clone())
-            self.delayed_computations[instance_index].append(
-                (momentum, weight_decay, cur_learning_rate, instance_gradient)
-            )
-            self.__do_delayed_computation(instance_index)
+        for idx in self.computed_indices:
+            idx = str(idx)
+            if idx in self.batch_gradients:
+                instance_gradient = (
+                    (self.batch_gradients[idx] *
+                     training_set_size /
+                     batch_size) .detach() .clone())
+                self.delayed_computations[idx].append(
+                    (
+                        momentum,
+                        weight_decay,
+                        cur_learning_rate,
+                        instance_gradient,
+                        self.hvp_function,
+                    )
+                )
+                self.__do_delayed_computation(idx)
+            else:
+                self.delayed_computations[idx].append(
+                    (momentum, weight_decay, cur_learning_rate, None, self.hvp_function))
 
     def __after_epoch_callback(self, trainer, epoch, cur_learning_rates):
         if epoch < 10:
