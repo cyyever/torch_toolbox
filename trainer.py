@@ -223,7 +223,7 @@ class Trainer:
 
                 if "pre_batch_callback" in kwargs:
                     kwargs["pre_batch_callback"](
-                        self.model, batch, batch_index, cur_learning_rates
+                        self.model, batch, batch_index
                     )
 
                 instance_inputs = batch[0].to(device)
