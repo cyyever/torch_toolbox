@@ -222,9 +222,7 @@ class Trainer:
                 real_batch_size = batch[0].shape[0]
 
                 if "pre_batch_callback" in kwargs:
-                    kwargs["pre_batch_callback"](
-                        self, batch, batch_index
-                    )
+                    kwargs["pre_batch_callback"](self, batch, batch_index)
 
                 instance_inputs = batch[0].to(device)
                 instance_targets = batch[1].to(device)
@@ -263,9 +261,6 @@ class Trainer:
                     batch_loss /= training_set_size
 
                 training_loss += batch_loss
-                batch_grad = None
-                if kwargs.get("batch_callback_need_grad", False):
-                    batch_grad = model_gradients_to_vector(self.model)
 
                 if "after_batch_callback" in kwargs:
                     kwargs["after_batch_callback"](
@@ -275,7 +270,6 @@ class Trainer:
                         real_batch_size,
                         batch_loss,
                         cur_learning_rates,
-                        batch_grad=batch_grad,
                         instance_indices=instance_indices,
                         optimizer=optimizer,
                     )
