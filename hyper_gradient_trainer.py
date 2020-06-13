@@ -9,6 +9,7 @@ import cyy_pytorch_cpp
 from .log import get_logger
 from .util import model_parameters_to_vector, get_model_sparsity, get_pruning_mask
 from .device import get_device
+from .hessian_vector_product import get_hessian_vector_product_func
 
 
 class HyperGradientTrainer:
@@ -188,25 +189,9 @@ class HyperGradientTrainer:
         self.batch_gradients.clear()
 
         if self.use_hessian:
-            cur_batch_model = copy.deepcopy(trainer.model)
-            cur_batch_model.detach()
-            cur_batch_model.zero_grad()
-            cur_batch_model.train()
-            cur_batch_model.to(get_device())
-            inputs = batch[0].to(get_device())
-            targets = batch[1].to(get_device())
-            loss_fun = trainer.loss_fun
-
-            def hvp_function(v):
-                nonlocal cur_batch_model
-                nonlocal inputs
-                nonlocal targets
-                nonlocal loss_fun
-                return torch.autograd.functional.jvp(
-                    lambda x: loss_fun(cur_batch_model(x), targets), inputs, v
-                )
-
-            self.hvp_function = hvp_function
+            self.hvp_function = get_hessian_vector_product_func(
+                trainer.model, batch, trainer.loss_fun, True
+            )
 
     def __per_instance_gradient_callback(
         self, trainer, instance_index, instance_gradient, **kwargs,
