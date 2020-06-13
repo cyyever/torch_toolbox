@@ -64,11 +64,9 @@ class HyperGradientTrainer:
                 cache_size, mask, gradient_shape)
             self.mom_gradient_matrix.set_storage_dir(os.path.join(
                 save_dir, "mom_gradient_matrix", str(uuid.uuid4()),))
-        self.delayed_computations = dict()
-        for k in range(len(trainer.training_dataset)):
-            self.delayed_computations[str(k)] = []
         self.batch_gradients = dict()
         self.computed_indices = None
+        self.delayed_computations = dict()
         self.use_hessian = kwargs.get("use_hessian", False)
         self.hvp_function = None
 
@@ -80,6 +78,10 @@ class HyperGradientTrainer:
         else:
             self.computed_indices = set(
                 range(len(self.trainer.training_dataset)))
+
+        self.delayed_computations = dict()
+        for k in self.computed_indices:
+            self.delayed_computations[str(k)] = []
 
         self.trainer.train(
             pre_batch_callback=self.__pre_batch_callback,
