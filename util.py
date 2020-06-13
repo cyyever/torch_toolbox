@@ -22,9 +22,8 @@ def model_parameters_to_vector(model):
 
 
 def model_gradients_to_vector(model):
-    return nn.utils.parameters_to_vector(
-        [parameter.grad.reshape(-1) for parameter in model.parameters()]
-    )
+    return parameters_to_vector(
+        [parameter.grad for parameter in model.parameters()])
 
 
 def get_pruned_parameters(model):

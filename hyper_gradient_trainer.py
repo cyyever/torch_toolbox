@@ -8,7 +8,6 @@ import cyy_pytorch_cpp
 
 from .log import get_logger
 from .util import model_parameters_to_vector, get_model_sparsity, get_pruning_mask
-from .device import get_device
 from .hessian_vector_product import get_hessian_vector_product_func
 
 
