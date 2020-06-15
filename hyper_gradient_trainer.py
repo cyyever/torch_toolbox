@@ -167,10 +167,11 @@ class HyperGradientTrainer:
         m = None
         if mask is not None:
             m = cyy_pytorch_cpp.data_structure.SyncedSparseTensorDict(
-                mask, gradient_shape, storage_dir
+                mask=mask, tensor_shape=gradient_shape, storage_dir=storage_dir
             )
         else:
-            m = cyy_pytorch_cpp.data_structure.SyncedTensorDict(storage_dir)
+            m = cyy_pytorch_cpp.data_structure.SyncedTensorDict(
+                storage_dir=storage_dir)
         m.set_permanent_storage()
         m.set_in_memory_number(cache_size)
         m.set_fetch_thread_number(10)
