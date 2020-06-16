@@ -93,8 +93,8 @@ class Trainer:
             learning_rates,
             **kwargs
         ):
-            if batch_index % (len(trainer.training_dataset) //
-                              (10 * batch_size)) == 0:
+            ten_batches = len(trainer.training_dataset) // (10 * batch_size)
+            if ten_batches == 0 or batch_index % ten_batches == 0:
                 get_logger().info(
                     "epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
                     epoch,
