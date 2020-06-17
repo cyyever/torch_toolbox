@@ -77,7 +77,11 @@ class Window:
             win=self.win,
             name=name,
             update=update,
-            opts=dict(xlabel=x_label, ylabel=y_label, title=self.title),
+            opts=dict(
+                xlabel=x_label,
+                ylabel=y_label,
+                title=self.title,
+                showlegend=True),
         )
 
     def plot_histogram(self, tensor):
