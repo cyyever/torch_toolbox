@@ -32,14 +32,16 @@ class Window:
         self.__plot_line(
             torch.LongTensor([epoch]),
             torch.Tensor([learning_rate]),
-            "Epoch",
-            "Learning Rate",
-            None,
+            x_label="Epoch",
+            y_label="Learning Rate",
         )
 
     def plot_scalar_by_epoch(self, epoch, scalar, name=None):
         self.__plot_line(
-            torch.LongTensor([epoch]), torch.Tensor([scalar]), "Epoch", name,
+            torch.LongTensor([epoch]),
+            torch.Tensor([scalar]),
+            x_label="Epoch",
+            name=name,
         )
 
     def plot_loss(self, epoch, loss, name=None):
