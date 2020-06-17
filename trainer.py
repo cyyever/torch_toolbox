@@ -202,7 +202,7 @@ class Trainer:
         if "pre_training_callback" in kwargs:
             kwargs["pre_training_callback"](self, optimizer, lr_scheduler)
 
-        for epoch in range(self.__hyper_parameter.epochs):
+        for epoch in range(1, self.__hyper_parameter.epochs + 1):
             if self.__reset_hyper_parameter:
                 self.__reset_hyper_parameter = False
                 optimizer = self.__hyper_parameter.get_optimizer(
