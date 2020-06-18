@@ -43,14 +43,16 @@ class HyperGradientTrainer:
             self.hyper_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
                 cache_size, mask, gradient_shape, storage_dir=hyper_gradient_matrix_dir
             )
-            get_logger().info(
-                "use hyper_gradient_matrix_dir:%s", hyper_gradient_matrix_dir
-            )
         else:
             self.hyper_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
                 cache_size, mask, gradient_shape)
             self.hyper_gradient_matrix.set_storage_dir(os.path.join(
                 save_dir, "hyper_gradient_matrix", str(uuid.uuid4()),))
+        get_logger().info(
+            "use hyper_gradient_matrix_dir:%s",
+            self.hyper_gradient_matrix.get_storage_dir(),
+        )
+
         mom_gradient_matrix_dir = kwargs.get("mom_gradient_matrix_dir", None)
         if mom_gradient_matrix_dir is not None:
             self.mom_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
@@ -64,6 +66,10 @@ class HyperGradientTrainer:
                 cache_size, mask, gradient_shape)
             self.mom_gradient_matrix.set_storage_dir(os.path.join(
                 save_dir, "mom_gradient_matrix", str(uuid.uuid4()),))
+        get_logger().info(
+            "use mom_gradient_matrix_dir:%s",
+            self.mom_gradient_matrix.get_storage_dir(),
+        )
         self.batch_gradients = dict()
         self.computed_indices = None
         self.delayed_computations = dict()
@@ -75,6 +81,9 @@ class HyperGradientTrainer:
 
         if computed_indices is not None:
             self.computed_indices = set(computed_indices)
+            get_logger().info(
+                "compute hyper_gradient for %s samples", len(computed_indices)
+            )
         else:
             self.computed_indices = set(
                 range(len(self.trainer.training_dataset)))
