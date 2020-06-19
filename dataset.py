@@ -264,4 +264,17 @@ def get_dataset_labels(name):
             "Bag",
             "Ankle boot",
         ]
+    if name == "CIFAR10":
+        return [
+            "airplane",
+            "automobile",
+            "bird",
+            "cat",
+            "deer",
+            "dog",
+            "frog",
+            "horse",
+            "ship",
+            "truck",
+        ]
     raise NotImplementedError(name)
