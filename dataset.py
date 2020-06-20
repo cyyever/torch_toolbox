@@ -6,6 +6,8 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 
+from .log import get_logger
+
 
 class DatasetFilter:
     def __init__(self, dataset, filters):
@@ -80,9 +82,11 @@ def sample_subset(dataset, percentage):
     class_map = split_dataset_by_class(dataset)
     sample_indices = dict()
     for label, v in class_map.items():
-        sample_indices[label] = random.sample(
-            v["indices"], k=int(len(v["indices"]) * percentage)
-        )
+        sample_size = int(len(v["indices"]) * percentage)
+        if sample_size == 0:
+            get_logger().warning("percentage is too small, use sample size 1")
+            sample_size = 1
+        sample_indices[label] = random.sample(v["indices"], k=sample_size)
     return sample_indices
 
 
