@@ -81,20 +81,19 @@ class HyperGradientTrainer:
 
         if computed_indices is not None:
             self.computed_indices = set(computed_indices)
-            get_logger().info(
-                "compute hyper_gradient for %s samples", len(computed_indices)
-            )
         else:
-            self.computed_indices = set(
-                range(len(self.trainer.training_dataset)))
+            self.computed_indices = None
 
         self.delayed_computations = dict()
-        for k in self.computed_indices:
+        for k in self.__get_real_computed_indices():
             self.delayed_computations[str(k)] = []
 
         self.trainer.train(
             pre_batch_callback=self.__pre_batch_callback,
-            per_instance_gradient_callback=self.__per_instance_gradient_callback,
+            per_instance_gradient_callback=(
+                self.__per_instance_gradient_callback,
+                self.computed_indices,
+            ),
             after_batch_callback=self.__after_batch_callback,
             after_epoch_callback=self.__after_epoch_callback,
         )
@@ -190,7 +189,8 @@ class HyperGradientTrainer:
         get_logger().debug("batch %s", batch_index)
         batch_gradient_indices = {i.data.item() for i in batch[2]}
 
-        batch_gradient_indices &= self.computed_indices
+        if self.computed_indices is not None:
+            batch_gradient_indices &= self.computed_indices
 
         self.hyper_gradient_matrix.prefetch(
             [str(i) for i in batch_gradient_indices])
@@ -206,8 +206,13 @@ class HyperGradientTrainer:
     def __per_instance_gradient_callback(
         self, trainer, instance_index, instance_gradient, **kwargs,
     ):
-        if instance_index in self.computed_indices:
-            self.batch_gradients[str(instance_index)] = instance_gradient
+        assert instance_index in self.__get_real_computed_indices()
+        self.batch_gradients[str(instance_index)] = instance_gradient
+
+    def __get_real_computed_indices(self):
+        if self.computed_indices is not None:
+            return self.computed_indices
+        return range(len(self.trainer.training_dataset))
 
     def __after_batch_callback(
         self,
@@ -235,7 +240,7 @@ class HyperGradientTrainer:
 
         training_set_size = len(trainer.training_dataset)
 
-        for idx in self.computed_indices:
+        for idx in self.__get_real_computed_indices():
             idx = str(idx)
             if idx in self.batch_gradients:
                 instance_gradient = (
