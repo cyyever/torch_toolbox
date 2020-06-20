@@ -4,15 +4,15 @@ import copy
 import datetime
 import torch
 
+from cyy_naive_lib.log import get_logger
+
 from .device import get_cpu_device
 from .device import get_device
 from .util import (
-    model_gradients_to_vector,
     model_parameters_to_vector,
     split_list_to_chunks,
 )
 from .validator import Validator
-from .log import get_logger
 from .visualization import Window
 from .gradient import get_gradient
 
@@ -231,8 +231,15 @@ class Trainer:
                     instance_indices = [idx.data.item() for idx in batch[2]]
 
                 if "per_instance_gradient_callback" in kwargs:
+                    per_instance_gradient_callback, computed_indices = kwargs[
+                        "per_instance_gradient_callback"
+                    ]
                     for i, instance_index in enumerate(instance_indices):
-                        instance_index = instance_indices[i]
+                        if (
+                            computed_indices is not None
+                            and instance_index not in computed_indices
+                        ):
+                            continue
                         instance_input = instance_inputs[i]
                         instance_target = instance_targets[i]
                         output = self.model(torch.stack([instance_input]))
@@ -241,7 +248,7 @@ class Trainer:
                                 [instance_target]))
 
                         instance_gradient = get_gradient(self.model, loss)
-                        kwargs["per_instance_gradient_callback"](
+                        per_instance_gradient_callback(
                             self,
                             instance_index,
                             instance_gradient,

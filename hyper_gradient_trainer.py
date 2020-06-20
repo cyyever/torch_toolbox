@@ -5,8 +5,8 @@ import shutil
 import torch
 import torch.nn.utils.prune as prune
 import cyy_pytorch_cpp
+from cyy_naive_lib.log import get_logger
 
-from .log import get_logger
 from .util import model_parameters_to_vector, get_model_sparsity, get_pruning_mask
 from .hessian_vector_product import get_hessian_vector_product_func
 

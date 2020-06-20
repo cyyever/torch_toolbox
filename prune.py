@@ -11,7 +11,7 @@ from .util import (
     get_model_sparsity,
 )
 from .configuration import get_task_configuration
-from .log import get_logger
+from cyy_naive_lib.log import get_logger
 
 
 def lottery_ticket_prune(
