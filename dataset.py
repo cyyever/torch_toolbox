@@ -6,7 +6,7 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 
-from .log import get_logger
+from cyy_naive_lib.log import get_logger
 
 
 class DatasetFilter:
