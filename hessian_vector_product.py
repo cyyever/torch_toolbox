@@ -8,21 +8,6 @@ from .device import get_device
 from .util import parameters_to_vector
 
 
-def hessian_vector_product(model, loss, v, damping=0):
-    model.zero_grad()
-    grad = parameters_to_vector(
-        autograd.grad(loss, model.parameters(), create_graph=True)
-    )
-    grad = grad.to(get_device())
-    product = grad @ v
-    res = parameters_to_vector(
-        autograd.grad(product, model.parameters(), retain_graph=True)
-    )
-    if damping != 0:
-        res += damping * v
-    return res
-
-
 def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
     cur_model = copy.deepcopy(model)
     cur_model.zero_grad()
@@ -36,12 +21,6 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
     inputs = batch[0].to(device)
     targets = batch[1].to(device)
 
-    # def del_attr(obj, names):
-    #     if len(names) == 1:
-    #         delattr(obj, names[0])
-    #     else:
-    #         del_attr(getattr(obj, names[0]), names[1:])
-
     # get all parameters and names
     names = []
     params = []
@@ -53,8 +32,6 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
 
     parameter_vector = parameters_to_vector(params)
 
-    # for name in names:
-    #     del_attr(cur_model, name.split("."))
 
     inputs = batch[0].to(device)
     targets = batch[1].to(device)
