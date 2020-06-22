@@ -6,15 +6,14 @@ import torch
 
 from cyy_naive_lib.log import get_logger
 
-from .device import get_cpu_device
-from .device import get_device
-from .util import (
+from device import get_cpu_device, get_device
+from util import (
     model_parameters_to_vector,
     split_list_to_chunks,
 )
-from .validator import Validator
-from .visualization import Window
-from .gradient import get_gradient
+from validator import Validator
+from visualization import Window
+from gradient import get_gradient
 
 
 class Trainer:

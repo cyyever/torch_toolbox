@@ -1,41 +1,15 @@
 #!/usr/bin/env python3
 
 import copy
+import torch
 import numpy as np
 import torch.autograd as autograd
 
-from .device import get_device
-from .util import parameters_to_vector
+from device import get_device
+from util import parameters_to_vector, model_parameters_to_vector
 
 
 def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
-    cur_model = copy.deepcopy(model)
-    cur_model.zero_grad()
-    if for_train:
-        cur_model.train()
-    else:
-        cur_model.eval()
-
-    device = get_device()
-    cur_model.to(device)
-    inputs = batch[0].to(device)
-    targets = batch[1].to(device)
-
-    # get all parameters and names
-    names = []
-    params = []
-    param_shapes = []
-    for name, param in cur_model.named_parameters():
-        names.append(name)
-        params.append(param.detach().requires_grad_())
-        param_shapes.append(param.shape)
-
-    parameter_vector = parameters_to_vector(params)
-
-
-    inputs = batch[0].to(device)
-    targets = batch[1].to(device)
-
     def set_attr(obj, names, val):
         if len(names) == 1:
             delattr(obj, names[0])
@@ -43,23 +17,125 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
         else:
             set_attr(getattr(obj, names[0]), names[1:], val)
 
-    def f(x):
-        nonlocal inputs
-        nonlocal targets
-        nonlocal loss_fun, names, params, cur_model, param_shapes
+    model_snapshot = copy.deepcopy(model)
 
+    # get all parameters and names
+    names = []
+    params = []
+    param_shapes = []
+    for name, param in model_snapshot.named_parameters():
+        names.append(name)
+        params.append(param.detach())
+        param_shapes.append(param.shape)
+
+    device = get_device()
+    inputs = batch[0].to(device)
+    targets = batch[1].to(device)
+    parameter_snapshot = parameters_to_vector(params).to(device)
+
+    # model_snapshots = dict()
+    parameter_snapshots = list()
+    model_snapshots = list()
+
+    def load_model_parameters(model, parameters):
+        nonlocal device, names, param_shapes
         bias = 0
         for name, shape in zip(names, param_shapes):
             param_element_num = np.prod(shape)
-            param = x.narrow(0, bias, param_element_num).view(*shape)
-            set_attr(cur_model, name.split("."), param)
+            param = (
+                parameters.narrow(
+                    0, bias, param_element_num).view(
+                    *shape).to(device))
+            set_attr(model, name.split("."), param)
             bias += param_element_num
+        assert bias == len(parameters)
 
-        assert bias == len(parameter_vector)
-        return loss_fun(cur_model(inputs), targets)
+    def f(*args):
+        nonlocal inputs, targets, device, loss_fun, for_train, load_model_parameters, model_snapshots
+        loss = None
+        for i, arg in enumerate(args):
+            cur_model_snapshot = model_snapshots[i]
+            load_model_parameters(cur_model_snapshot, arg)
+            cur_model_snapshot.zero_grad()
+
+            if for_train:
+                cur_model_snapshot.train()
+            else:
+                cur_model_snapshot.eval()
+            cur_model_snapshot.to(device)
+            if loss is None:
+                loss = loss_fun(cur_model_snapshot(inputs), targets)
+            else:
+                loss += loss_fun(cur_model_snapshot(inputs), targets)
+        return loss
 
     def vhp_func(v):
-        nonlocal f, parameter_vector
-        return autograd.functional.vhp(f, parameter_vector, v, strict=True)[1]
+        nonlocal f, model_snapshots
+
+        vector_num = 1
+        vectors = v
+        if isinstance(v, list):
+            vector_num = len(v)
+            vectors = tuple(v)
+        elif isinstance(v, tuple):
+            vector_num = len(v)
+            vectors = v
+
+        while len(parameter_snapshots) < vector_num:
+            parameter_snapshots.append(
+                copy.deepcopy(parameter_snapshot).requires_grad_()
+            )
+
+        while len(model_snapshots) < vector_num:
+            model_snapshots.append(copy.deepcopy(model_snapshot))
+        assert len(model_snapshots) >= vector_num
+        assert len(parameter_snapshots) >= vector_num
+
+        return autograd.functional.vhp(
+            f, tuple(parameter_snapshots[:vector_num]), vectors, strict=True
+        )[1]
 
     return vhp_func
+
+
+if __name__ == "__main__":
+    from configuration import get_task_configuration
+    from cyy_naive_lib.time_counter import TimeCounter
+
+    trainer = get_task_configuration("MNIST", True)
+    training_data_loader = torch.utils.data.DataLoader(
+        trainer.training_dataset, batch_size=16, shuffle=True,
+    )
+    parameter_vector = model_parameters_to_vector(trainer.model)
+    v = torch.ones(parameter_vector.shape)
+    v = v.to(get_device())
+    for batch in training_data_loader:
+        hvp_function = get_hessian_vector_product_func(
+            trainer.model, batch, trainer.loss_fun, True
+        )
+        with TimeCounter() as c:
+            a = hvp_function([v, 2 * v])
+            print("one use time ", c.elapsed_milliseconds())
+            print(a)
+            c.reset_start_time()
+            a = hvp_function([v, v])
+            print("one use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v, v])
+            print("two use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 3)
+            print("3 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 4)
+            print("4 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 4)
+            print("4 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 10)
+            print("10 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 10)
+            print("10 use time ", c.elapsed_milliseconds())
+        break

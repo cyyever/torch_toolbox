@@ -1,10 +1,9 @@
 import copy
 import torch
 
-from .device import get_device, get_cpu_device
-from .util import model_gradients_to_vector
-from .hessian_vector_product import hessian_vector_product as _hessian_vector_product
-from .dataset import get_class_count, dataset_with_indices
+from device import get_device, get_cpu_device
+from util import model_gradients_to_vector
+from dataset import get_class_count, dataset_with_indices
 
 
 class Validator:
@@ -134,21 +133,3 @@ class Validator:
     def get_gradient(self):
         self.validate(64, use_grad=True)
         return model_gradients_to_vector(self.model)
-
-    def hessian_vector_product(self, v, damping=0):
-        res = None
-
-        def after_batch_callback(model, batch_loss):
-            nonlocal res
-            if res is None:
-                res = _hessian_vector_product(model, batch_loss, v)
-            else:
-                res += _hessian_vector_product(model, batch_loss, v)
-
-        self.validate(
-            64,
-            use_grad=True,
-            after_batch_callback=after_batch_callback)
-        if damping != 0:
-            res += damping * v
-        return res
