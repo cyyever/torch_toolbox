@@ -91,9 +91,12 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
         assert len(model_snapshots) >= vector_num
         assert len(parameter_snapshots) >= vector_num
 
-        return autograd.functional.vhp(
+        products = autograd.functional.vhp(
             f, tuple(parameter_snapshots[:vector_num]), vectors, strict=True
         )[1]
+        if vector_num == 1:
+            return products[0]
+        return products
 
     return vhp_func
 
