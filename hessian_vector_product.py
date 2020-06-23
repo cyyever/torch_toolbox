@@ -9,6 +9,14 @@ from device import get_device
 from util import parameters_to_vector, model_parameters_to_vector
 
 
+__cached_model_snapshots = dict()
+
+
+def clear_cached_model_snapshots():
+    global __cached_model_snapshots
+    __cached_model_snapshots = dict()
+
+
 def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
     def set_attr(obj, names, val):
         if len(names) == 1:
@@ -33,9 +41,7 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
     targets = batch[1].to(device)
     parameter_snapshot = parameters_to_vector(params).to(device)
 
-    # model_snapshots = dict()
     parameter_snapshots = list()
-    model_snapshots = list()
 
     def load_model_parameters(model, parameters):
         nonlocal device, names, param_shapes
@@ -51,7 +57,10 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
         assert bias == len(parameters)
 
     def f(*args):
-        nonlocal inputs, targets, device, loss_fun, for_train, load_model_parameters, model_snapshots
+        nonlocal inputs, targets, device, loss_fun, for_train, load_model_parameters
+        global __cached_model_snapshots
+
+        model_snapshots = __cached_model_snapshots[model_snapshot.__class__.__name__]
         loss = None
         for i, arg in enumerate(args):
             cur_model_snapshot = model_snapshots[i]
@@ -70,21 +79,30 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
         return loss
 
     def vhp_func(v):
-        nonlocal f, model_snapshots
+        nonlocal f
+        global __cached_model_snapshots
 
         vector_num = 1
         vectors = v
+        v_is_tensor = False
         if isinstance(v, list):
             vector_num = len(v)
             vectors = tuple(v)
         elif isinstance(v, tuple):
             vector_num = len(v)
             vectors = v
+        else:
+            v_is_tensor = True
 
         while len(parameter_snapshots) < vector_num:
             parameter_snapshots.append(
                 copy.deepcopy(parameter_snapshot).requires_grad_()
             )
+
+        model_class = model_snapshot.__class__.__name__
+        if model_class not in __cached_model_snapshots:
+            __cached_model_snapshots[model_class] = list()
+        model_snapshots = __cached_model_snapshots[model_class]
 
         while len(model_snapshots) < vector_num:
             model_snapshots.append(copy.deepcopy(model_snapshot))
@@ -94,7 +112,7 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
         products = autograd.functional.vhp(
             f, tuple(parameter_snapshots[:vector_num]), vectors, strict=True
         )[1]
-        if vector_num == 1:
+        if v_is_tensor:
             return products[0]
         return products
 
