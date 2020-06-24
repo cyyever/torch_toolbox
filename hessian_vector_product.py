@@ -159,4 +159,10 @@ if __name__ == "__main__":
             c.reset_start_time()
             a = hvp_function([v] * 10)
             print("10 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 100)
+            print("100 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 100)
+            print("100 use time ", c.elapsed_milliseconds())
         break
