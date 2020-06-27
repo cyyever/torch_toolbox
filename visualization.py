@@ -36,21 +36,20 @@ class Window:
             y_label="Learning Rate",
         )
 
-    def plot_scalar_by_epoch(self, epoch, scalar, name=None):
+    def plot_scalar_by_epoch(self, epoch, scalar, y_label, name=None):
         self.__plot_line(
             torch.LongTensor([epoch]),
             torch.Tensor([scalar]),
             x_label="Epoch",
+            y_label=y_label,
             name=name,
         )
 
     def plot_loss(self, epoch, loss, name=None):
-        self.y_label = "Loss"
-        return self.plot_scalar_by_epoch(epoch, loss, name)
+        return self.plot_scalar_by_epoch(epoch, loss, "Loss", name)
 
     def plot_accuracy(self, epoch, accuracy, name=None):
-        self.y_label = "Accuracy"
-        return self.plot_scalar_by_epoch(epoch, accuracy, name)
+        return self.plot_scalar_by_epoch(epoch, accuracy, "Accuracy", name)
 
     def __plot_line(self, x, y, x_label=None, y_label=None, name=None):
         if self.win is not None and not self.vis.win_exists(self.win):
