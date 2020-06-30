@@ -21,6 +21,26 @@ def model_parameters_to_vector(model):
     return parameters_to_vector(model.parameters())
 
 
+def get_model_parameter_dict(model):
+    parameter_dict = dict()
+    for name, param in model.named_parameters():
+        parameter_dict[name] = param.detach().clone()
+    return parameter_dict
+
+
+def __set_model_attr(obj, names, value):
+    if len(names) == 1:
+        delattr(obj, names[0])
+        setattr(obj, names[0], value)
+    else:
+        __set_model_attr(getattr(obj, names[0]), names[1:], value)
+
+
+def load_model_parameters(model, parameter_dict):
+    for key, value in parameter_dict.items():
+        __set_model_attr(model, key.split("."), value)
+
+
 def model_gradients_to_vector(model):
     return parameters_to_vector(
         [parameter.grad for parameter in model.parameters()])
