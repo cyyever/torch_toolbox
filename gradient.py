@@ -68,3 +68,16 @@ def get_per_sample_gradient(model, loss_fun, batch, for_train):
             loss += loss_fun(used_model(inputs[i]), targets[i])
     loss.backward()
     return [model_parameters_to_vector(m) for m in used_models]
+
+if __name__ == "__main__":
+    import torch
+    from configuration import get_task_configuration
+    from cyy_naive_lib.time_counter import TimeCounter
+
+    trainer = get_task_configuration("MNIST", True)
+    training_data_loader = torch.utils.data.DataLoader(
+        trainer.training_dataset, batch_size=16, shuffle=True,
+    )
+    for batch in training_data_loader:
+        with TimeCounter() as c:
+            get_per_sample_gradient(trainer.model,trainer.loss_fun,batch,True)
