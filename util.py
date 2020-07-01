@@ -31,7 +31,7 @@ def get_model_parameter_dict(model):
 def __set_model_attr(obj, names, value):
     if len(names) == 1:
         delattr(obj, names[0])
-        setattr(obj, names[0], value)
+        obj.register_parameter( names[0], nn.Parameter( value))
     else:
         __set_model_attr(getattr(obj, names[0]), names[1:], value)
 
