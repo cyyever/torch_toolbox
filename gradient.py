@@ -27,17 +27,17 @@ def clear_cached_model_snapshots():
     __cached_model_snapshots = dict()
 
 
-def get_per_sample_gradient(model, loss_fun, batch, for_train):
-    assert batch
-    assert loss_fun.reduction == "mean"
+def get_per_sample_gradient(model, loss_fun, inputs, targets, for_train):
+    assert inputs
+    assert targets
+    assert len(inputs) == len(targets)
+    assert loss_fun.reduction == "mean" or loss_fun.reduction == "elementwise_mean"
 
     # get all parameters and names
     parameter_dict = get_model_parameter_dict(model)
 
     device = get_device()
-    inputs = batch[0].to(device)
-    targets = batch[1].to(device)
-    batch_size = batch[0].shape[0]
+    batch_size = len(inputs)
 
     model_class = model.__class__.__name__
     if model_class not in __cached_model_snapshots:
@@ -62,12 +62,15 @@ def get_per_sample_gradient(model, loss_fun, batch, for_train):
         else:
             used_model.eval()
         used_model.to(device)
+        sample_input = torch.stack([inputs[i]])
+        sample_target = torch.stack([targets[i]])
         if loss is None:
-            loss = loss_fun(used_model(inputs[i]), targets[i])
+            loss = loss_fun(used_model(sample_input), sample_target)
         else:
-            loss += loss_fun(used_model(inputs[i]), targets[i])
+            loss += loss_fun(used_model(sample_input), sample_target)
     loss.backward()
     return [model_parameters_to_vector(m) for m in used_models]
+
 
 if __name__ == "__main__":
     import torch
@@ -80,4 +83,5 @@ if __name__ == "__main__":
     )
     for batch in training_data_loader:
         with TimeCounter() as c:
-            get_per_sample_gradient(trainer.model,trainer.loss_fun,batch,True)
+            get_per_sample_gradient(
+                trainer.model, trainer.loss_fun, batch, True)
