@@ -4,6 +4,7 @@ import copy
 import numpy as np
 import torch
 import torch.autograd as autograd
+import threading
 
 from device import get_device
 from util import (
@@ -12,10 +13,6 @@ from util import (
     set_model_attr,
     del_model_attr,
 )
-
-
-__cached_model_snapshots = dict()
-__cached_parameter_vectors = dict()
 
 
 class ModelSnapshot:

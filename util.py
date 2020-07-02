@@ -30,13 +30,19 @@ def get_model_parameter_dict(model):
 
 def set_model_attr(obj, names, value, as_parameter=True):
     if len(names) == 1:
-        delattr(obj, names[0])
         if as_parameter:
             obj.register_parameter(names[0], nn.Parameter(value))
         else:
             setattr(obj, names[0], value)
     else:
         set_model_attr(getattr(obj, names[0]), names[1:], value, as_parameter)
+
+
+def del_model_attr(obj, names):
+    if len(names) == 1:
+        delattr(obj, names[0])
+    else:
+        del_model_attr(getattr(obj, names[0]), names[1:])
 
 
 def load_model_parameters(model, parameter_dict):
