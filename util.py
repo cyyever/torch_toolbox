@@ -28,17 +28,20 @@ def get_model_parameter_dict(model):
     return parameter_dict
 
 
-def __set_model_attr(obj, names, value):
+def set_model_attr(obj, names, value, as_parameter=True):
     if len(names) == 1:
         delattr(obj, names[0])
-        obj.register_parameter( names[0], nn.Parameter( value))
+        if as_parameter:
+            obj.register_parameter(names[0], nn.Parameter(value))
+        else:
+            setattr(obj, names[0], value)
     else:
-        __set_model_attr(getattr(obj, names[0]), names[1:], value)
+        set_model_attr(getattr(obj, names[0]), names[1:], value, as_parameter)
 
 
 def load_model_parameters(model, parameter_dict):
     for key, value in parameter_dict.items():
-        __set_model_attr(model, key.split("."), value)
+        set_model_attr(model, key.split("."), value)
 
 
 def model_gradients_to_vector(model):
