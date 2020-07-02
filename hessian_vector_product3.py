@@ -79,10 +79,13 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
     devices = get_cuda_devices()
     inputs_dict = dict()
     targets_dict = dict()
+    parameter_dict = dict()
 
     for idx, device in enumerate(devices):
         inputs_dict[idx] = copy.deepcopy(batch[0]).to(device)
         targets_dict[idx] = copy.deepcopy(batch[1]).to(device)
+        parameter_dict[idx] = copy.deepcopy(parameter_snapshot).to(device)
+
 
     def get_f(device, inputs, targets):
         def f(*args):
@@ -92,19 +95,14 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
             model_snapshots = ModelSnapshot.get(model_class, device)
             assert len(model_snapshots) >= len(args)
             loss = None
-            inputs = inputs.to(device)
-            targets = targets.to(device)
             for i, arg in enumerate(args):
                 cur_model_snapshot = model_snapshots[i]
                 load_model_parameters(
                     cur_model_snapshot, arg, param_shape_dict, device)
-                cur_model_snapshot.zero_grad()
-
                 if for_train:
                     cur_model_snapshot.train()
                 else:
                     cur_model_snapshot.eval()
-                cur_model_snapshot.to(device)
                 if loss is None:
                     loss = loss_fun(cur_model_snapshot(inputs), targets)
                 else:
@@ -131,16 +129,14 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
         total_products = dict()
         product_lock = threading.Lock()
         for idx, vector_chunk in enumerate(vector_chunks):
-
             def thread_func(idx, thread_device, vector_chunk):
                 nonlocal parameter_snapshot
                 for index, vector in enumerate(vector_chunk):
                     vector_chunk[index] = vector.to(thread_device)
                 vector_chunk = tuple(vector_chunk)
-
                 products = autograd.functional.vhp(
                     get_f(thread_device, inputs_dict[idx], targets_dict[idx]),
-                    tuple([parameter_snapshot] * len(vector_chunk)),
+                    tuple([parameter_dict[idx]] * len(vector_chunk)),
                     vector_chunk,
                     strict=True,
                 )[1]
@@ -154,7 +150,7 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
             products += total_products[idx]
         if v_is_tensor:
             return products[0]
-        return products
+        return [p.to(devices[0]) for p in products]
 
     return vhp_func
 
@@ -169,7 +165,6 @@ if __name__ == "__main__":
     )
     parameter_vector = model_parameters_to_vector(trainer.model)
     v = torch.ones(parameter_vector.shape)
-    print(v)
     for batch in training_data_loader:
         hvp_function = get_hessian_vector_product_func(
             trainer.model, batch, trainer.loss_fun, True
@@ -182,28 +177,28 @@ if __name__ == "__main__":
             a = hvp_function([v, 2 * v])
             print("two use time ", c.elapsed_milliseconds())
             print(a)
-            # c.reset_start_time()
-            # a = hvp_function([v, v])
-            # print("two use time ", c.elapsed_milliseconds())
-            # c.reset_start_time()
-            # a = hvp_function([v] * 3)
-            # print("3 use time ", c.elapsed_milliseconds())
-            # c.reset_start_time()
-            # a = hvp_function([v] * 4)
-            # print("4 use time ", c.elapsed_milliseconds())
-            # c.reset_start_time()
-            # a = hvp_function([v] * 4)
-            # print("4 use time ", c.elapsed_milliseconds())
-            # c.reset_start_time()
-            # a = hvp_function([v] * 10)
-            # print("10 use time ", c.elapsed_milliseconds())
-            # c.reset_start_time()
-            # a = hvp_function([v] * 10)
-            # print("10 use time ", c.elapsed_milliseconds())
-            # c.reset_start_time()
-            # a = hvp_function([v] * 100)
-            # print("100 use time ", c.elapsed_milliseconds())
-            # c.reset_start_time()
-            # a = hvp_function([v] * 100)
-            # print("100 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v, v])
+            print("two use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 3)
+            print("3 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 4)
+            print("4 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 4)
+            print("4 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 10)
+            print("10 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 10)
+            print("10 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 100)
+            print("100 use time ", c.elapsed_milliseconds())
+            c.reset_start_time()
+            a = hvp_function([v] * 100)
+            print("100 use time ", c.elapsed_milliseconds())
         break
