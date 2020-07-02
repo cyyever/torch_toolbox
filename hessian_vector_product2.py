@@ -1,48 +1,45 @@
 #!/usr/bin/env python3
 
 import copy
-import torch
 import numpy as np
+import torch
 import torch.autograd as autograd
 
 from device import get_device
-from util import parameters_to_vector, model_parameters_to_vector, set_model_attr
+from util import (
+    parameters_to_vector,
+    model_parameters_to_vector,
+    set_model_attr,
+    del_model_attr,
+)
 
 
 __cached_model_snapshots = dict()
 __cached_parameter_vectors = dict()
 
 
-def clear_cached_model_snapshots():
-    global __cached_model_snapshots
-    __cached_model_snapshots = dict()
+class ModelSnapshot:
+    data = dict()
 
+    @staticmethod
+    def clear(model_class):
+        ModelSnapshot.data.pop(model_class, None)
 
-def get_model_snapshots(model_class, device):
-    global __cached_model_snapshots
-    device_str = str(device)
-    if model_class not in __cached_model_snapshots:
-        __cached_model_snapshots[model_class] = dict()
-    if device_str not in __cached_model_snapshots[model_class]:
-        __cached_model_snapshots[model_class][device_str] = []
-    return __cached_model_snapshots[model_class][device_str]
+    @staticmethod
+    def get(model_class, device):
+        device_str = str(device)
+        if model_class not in ModelSnapshot.data:
+            ModelSnapshot.data[model_class] = dict()
+        if device_str not in ModelSnapshot.data[model_class]:
+            ModelSnapshot.data[model_class][device_str] = []
+        return ModelSnapshot.data[model_class][device_str]
 
-
-def add_model_snapshots(model, device, new_number):
-
-    global __cached_model_snapshots
-    device_str = str(device)
-    model_class = model.__class__.__name__
-    model_snapshots = get_model_snapshots(model_class, device)
-    if len(model_snapshots)< new_number:
-    if model_class not in __cached_model_snapshots:
-        __cached_model_snapshots[model_class] = dict()
-    if device_str not in __cached_model_snapshots[model_class]:
-            parameter_snapshots.append(
-                copy.deepcopy(parameter_snapshot).to(device).requires_grad_()
-            )
-        __cached_model_snapshots[model_class][device_str] = []
-    return __cached_model_snapshots[model_class][device_str]
+    @staticmethod
+    def resize(model, device, new_number):
+        model_class = model.__class__.__name__
+        snapshots = ModelSnapshot.get(model_class, device)
+        while len(snapshots) < new_number:
+            snapshots.append(copy.deepcopy(model))
 
 
 def load_model_parameters(model, parameters, param_shape_dict, device):
@@ -58,19 +55,22 @@ def load_model_parameters(model, parameters, param_shape_dict, device):
 
 
 def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
-
-    model_snapshot = copy.deepcopy(model)
-
     # get all parameters and names
     params = []
     param_shape_dict = dict()
+    model_snapshot = copy.deepcopy(model)
+
     for name, param in model_snapshot.named_parameters():
         params.append(param.detach())
         param_shape_dict[name] = param.shape
-    model_class = model.__class__.__name__
 
-    device = torch.device("cuda:2")
-    device2 = torch.device("cuda:2")
+    for name in param_shape_dict:
+        del_model_attr(model_snapshot, name.split("."))
+
+    # device = torch.device("cuda:2")
+    # device2 = torch.device("cuda:2")
+    device = torch.device("cpu")
+    device2 = torch.device("cpu")
     assert device == device2
     # device = get_device()
     inputs = batch[0].to(device)
@@ -78,9 +78,11 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
     parameter_snapshot = parameters_to_vector(params)
 
     def f(*args):
-        nonlocal inputs, targets, device, loss_fun, for_train, param_shape_dict, model_class
-
-        model_snapshots = get_model_snapshots(model_class, device)
+        nonlocal inputs, targets, device, loss_fun, for_train, param_shape_dict, model_snapshot
+        model_class = model_snapshot.__class__.__name__
+        ModelSnapshot.resize(model_snapshot, device, len(args))
+        model_snapshots = ModelSnapshot.get(model_class, device)
+        assert len(model_snapshots) >= len(args)
         loss = None
         for i, arg in enumerate(args):
             cur_model_snapshot = model_snapshots[i]
@@ -118,21 +120,8 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
             vectors[index] = vector.to(device)
         vectors = tuple(vectors)
 
-        parameter_snapshots = list()
-        while len(parameter_snapshots) < vector_num:
-            parameter_snapshots.append(
-                copy.deepcopy(parameter_snapshot).to(device).requires_grad_()
-            )
-
-        model_snapshots = get_model_snapshots(model_class, device)
-
-        while len(model_snapshots) < vector_num:
-            model_snapshots.append(copy.deepcopy(model_snapshot))
-        assert len(model_snapshots) >= vector_num
-        assert len(parameter_snapshots) >= vector_num
-
         products = autograd.functional.vhp(
-            f, tuple(parameter_snapshots[:vector_num]), vectors, strict=True
+            f, tuple([parameter_snapshot] * vector_num), vectors, strict=True
         )[1]
         if v_is_tensor:
             return products[0]
