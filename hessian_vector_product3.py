@@ -156,8 +156,11 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
 
 
 if __name__ == "__main__":
+    import cProfile, pstats, io
+    from pstats import SortKey
     from configuration import get_task_configuration
     from cyy_naive_lib.time_counter import TimeCounter
+    pr = cProfile.Profile()
 
     trainer = get_task_configuration("MNIST", True)
     training_data_loader = torch.utils.data.DataLoader(
@@ -170,6 +173,7 @@ if __name__ == "__main__":
             trainer.model, batch, trainer.loss_fun, True
         )
         with TimeCounter() as c:
+            pr.enable()
             a = hvp_function(v)
             print("one use time ", c.elapsed_milliseconds())
             print(a)
@@ -201,4 +205,10 @@ if __name__ == "__main__":
             c.reset_start_time()
             a = hvp_function([v] * 100)
             print("100 use time ", c.elapsed_milliseconds())
+            pr.disable()
+            s = io.StringIO()
+            sortby = SortKey.CUMULATIVE
+            ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+            ps.print_stats()
+            print(s.getvalue())
         break
