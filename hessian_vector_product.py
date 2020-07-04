@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.autograd as autograd
 
-from cyy_naive_lib.thread_pool import ThreadPool
+from cyy_naive_lib.task_queue import TaskQueue
 
 from device import get_cuda_devices
 from util import (
@@ -18,7 +18,7 @@ from util import (
 )
 
 
-device_threads = ThreadPool()
+device_task_queue = None
 
 
 class ModelSnapshot:
@@ -86,7 +86,6 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
         targets_dict[idx] = copy.deepcopy(batch[1]).to(device)
         parameter_dict[idx] = copy.deepcopy(parameter_snapshot).to(device)
 
-
     def get_f(device, inputs, targets):
         def f(*args):
             nonlocal inputs, targets, loss_fun, for_train, param_shape_dict, model_snapshot, device
@@ -112,6 +111,7 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
         return f
 
     def vhp_func(v):
+        global device_task_queue
         v_is_tensor = False
         if isinstance(v, list):
             vectors = v
@@ -126,28 +126,37 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
         )
         assert len(vector_chunks) <= len(devices)
 
+        def thread_func(task):
+            idx, thread_device, vector_chunk, total_products, product_lock = task
+            for index, vector in enumerate(vector_chunk):
+                vector_chunk[index] = vector.to(thread_device)
+            vector_chunk = tuple(vector_chunk)
+            products = autograd.functional.vhp(
+                get_f(thread_device, inputs_dict[idx], targets_dict[idx]),
+                tuple([parameter_dict[idx]] * len(vector_chunk)),
+                vector_chunk,
+                strict=True,
+            )[1]
+            with product_lock:
+                total_products[idx] = products
+
+        if device_task_queue is None:
+            device_task_queue = TaskQueue(
+                processor=thread_func, worker_num=len(devices)
+            )
+            device_task_queue.start()
         total_products = dict()
         product_lock = threading.Lock()
         for idx, vector_chunk in enumerate(vector_chunks):
-            def thread_func(idx, thread_device, vector_chunk):
-                nonlocal parameter_snapshot
-                for index, vector in enumerate(vector_chunk):
-                    vector_chunk[index] = vector.to(thread_device)
-                vector_chunk = tuple(vector_chunk)
-                products = autograd.functional.vhp(
-                    get_f(thread_device, inputs_dict[idx], targets_dict[idx]),
-                    tuple([parameter_dict[idx]] * len(vector_chunk)),
-                    vector_chunk,
-                    strict=True,
-                )[1]
-                with product_lock:
-                    total_products[idx] = products
+            device_task_queue.add_task(
+                (idx, devices[idx], vector_chunk, total_products, product_lock)
+            )
 
-            device_threads.exec(thread_func, idx, devices[idx], vector_chunk)
-        device_threads.stop()
+        device_task_queue.join()
         products = []
         for idx in sorted(total_products.keys()):
             products += total_products[idx]
+        assert len(products) == len(vectors)
         if v_is_tensor:
             return products[0]
         return [p.to(devices[0]) for p in products]
@@ -156,10 +165,13 @@ def get_hessian_vector_product_func(model, batch, loss_fun, for_train):
 
 
 if __name__ == "__main__":
-    import cProfile, pstats, io
+    import cProfile
+    import pstats
+    import io
     from pstats import SortKey
     from configuration import get_task_configuration
     from cyy_naive_lib.time_counter import TimeCounter
+
     pr = cProfile.Profile()
 
     trainer = get_task_configuration("MNIST", True)
@@ -199,9 +211,10 @@ if __name__ == "__main__":
             c.reset_start_time()
             a = hvp_function([v] * 10)
             print("10 use time ", c.elapsed_milliseconds())
-            c.reset_start_time()
-            a = hvp_function([v] * 100)
-            print("100 use time ", c.elapsed_milliseconds())
+            while True:
+                c.reset_start_time()
+                a = hvp_function([v] * 100)
+                print("100 use time ", c.elapsed_milliseconds())
             c.reset_start_time()
             a = hvp_function([v] * 100)
             print("100 use time ", c.elapsed_milliseconds())
