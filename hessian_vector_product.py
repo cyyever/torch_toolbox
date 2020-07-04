@@ -198,7 +198,6 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
 if __name__ == "__main__":
     import cProfile
     import pstats
-    import io
     from pstats import SortKey
     from configuration import get_task_configuration
     from cyy_naive_lib.time_counter import TimeCounter
