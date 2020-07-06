@@ -184,18 +184,20 @@ def get_dataset(name, for_train):
             ),
         )
     if name == "FashionMNIST":
+        transform = [
+            transforms.Resize((32, 32)),
+        ]
+        if for_train:
+            transform.append(transforms.RandomHorizontalFlip())
+        transform += [
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.2860], std=[0.3530]),
+        ]
         return torchvision.datasets.FashionMNIST(
             root=root_dir,
             train=for_train,
             download=True,
-            transform=transforms.Compose(
-                [
-                    transforms.Resize((32, 32)),
-                    transforms.RandomHorizontalFlip(),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=[0.2860], std=[0.3530]),
-                ]
-            ),
+            transform=transforms.Compose(transform),
         )
     if name == "STL10":
         root_dir = os.path.dirname(root_dir)
@@ -204,50 +206,44 @@ def get_dataset(name, for_train):
         else:
             split = "test"
 
+        transform = []
+        if for_train:
+            transform += [
+                transforms.RandomCrop(96, padding=4),
+                transforms.RandomHorizontalFlip(),
+            ]
+        transform += [
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[0.4467, 0.4398, 0.4066], std=[0.2603, 0.2566, 0.2713]
+            ),
+        ]
         return torchvision.datasets.STL10(
             root=root_dir,
             split=split,
             download=True,
-            transform=transforms.Compose(
-                [
-                    transforms.RandomCrop(
-                        96,
-                        padding=4),
-                    transforms.RandomHorizontalFlip(),
-                    transforms.ToTensor(),
-                    transforms.Normalize(
-                        mean=[
-                            0.4467,
-                            0.4398,
-                            0.4066],
-                        std=[
-                            0.2603,
-                            0.2566,
-                            0.2713]),
-                ]),
+            transform=transforms.Compose(transform),
         )
     if name == "CIFAR10":
+        transform = []
+
+        if for_train:
+            transform += [
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+            ]
+
+        transform += [
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616]
+            ),
+        ]
         return torchvision.datasets.CIFAR10(
             root=root_dir,
             train=for_train,
             download=True,
-            transform=transforms.Compose(
-                [
-                    transforms.RandomCrop(
-                        32,
-                        padding=4),
-                    transforms.RandomHorizontalFlip(),
-                    transforms.ToTensor(),
-                    transforms.Normalize(
-                        mean=[
-                            0.4914,
-                            0.4822,
-                            0.4465],
-                        std=[
-                            0.2470,
-                            0.2435,
-                            0.2616]),
-                ]),
+            transform=transforms.Compose(transform),
         )
     raise NotImplementedError(name)
 
