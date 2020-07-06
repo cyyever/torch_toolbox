@@ -181,12 +181,12 @@ class HyperGradientTrainer:
             m = cyy_pytorch_cpp.data_structure.SyncedTensorDict(storage_dir)
         m.set_permanent_storage()
         m.set_in_memory_number(cache_size)
+        get_logger().info("gradient matrix use cache size %s", cache_size)
         m.set_fetch_thread_number(10)
         m.enable_debug_logging(False)
         return m
 
     def __pre_batch_callback(self, trainer, batch, batch_index):
-        get_logger().debug("batch %s", batch_index)
         batch_gradient_indices = {i.data.item() for i in batch[2]}
 
         if self.computed_indices is not None:
