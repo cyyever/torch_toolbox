@@ -40,11 +40,11 @@ class HyperGradientTrainer:
         hyper_gradient_matrix_dir = kwargs.get(
             "hyper_gradient_matrix_dir", None)
         if hyper_gradient_matrix_dir is not None:
-            self.hyper_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
+            self.hyper_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
                 cache_size, mask, gradient_shape, storage_dir=hyper_gradient_matrix_dir
             )
         else:
-            self.hyper_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
+            self.hyper_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
                 cache_size, mask, gradient_shape)
             self.hyper_gradient_matrix.set_storage_dir(os.path.join(
                 save_dir, "hyper_gradient_matrix", str(uuid.uuid4()),))
@@ -55,14 +55,14 @@ class HyperGradientTrainer:
 
         mom_gradient_matrix_dir = kwargs.get("mom_gradient_matrix_dir", None)
         if mom_gradient_matrix_dir is not None:
-            self.mom_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
+            self.mom_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
                 cache_size, mask, gradient_shape, storage_dir=mom_gradient_matrix_dir
             )
             get_logger().info(
                 "use mom_gradient_matrix_dir :%s", mom_gradient_matrix_dir
             )
         else:
-            self.mom_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
+            self.mom_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
                 cache_size, mask, gradient_shape)
             self.mom_gradient_matrix.set_storage_dir(os.path.join(
                 save_dir, "mom_gradient_matrix", str(uuid.uuid4()),))
@@ -167,7 +167,7 @@ class HyperGradientTrainer:
         self.delayed_computations[index] = []
 
     @staticmethod
-    def __create_gradient_matrix(
+    def create_gradient_matrix(
             cache_size,
             mask,
             gradient_shape,
@@ -200,7 +200,7 @@ class HyperGradientTrainer:
 
         if self.use_hessian:
             self.hvp_function = get_hessian_vector_product_func(
-                trainer.model, batch, trainer.loss_fun, True
+                trainer.model, batch, trainer.loss_fun
             )
 
     def __per_instance_gradient_callback(

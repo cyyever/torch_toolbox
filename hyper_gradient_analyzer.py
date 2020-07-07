@@ -11,8 +11,7 @@ from .hyper_gradient_trainer import HyperGradientTrainer
 
 
 class HyperGradientAnalyzer:
-    def __init__(self, training_dataset, validator, hyper_gradient_dir):
-        self.training_dataset = training_dataset
+    def __init__(self, validator, hyper_gradient_dir):
         self.validator = validator
         self.cache_size = 1024
         self.hyper_gradient_matrix = self.__load_hyper_gradients(
@@ -50,6 +49,6 @@ class HyperGradientAnalyzer:
             gradient_shape = parameters.shape
             mask = get_pruning_mask(model)
             assert len(mask) == len(parameters)
-        return HyperGradientTrainer.__create_gradient_matrix(
+        return HyperGradientTrainer.create_gradient_matrix(
             cache_size, mask, gradient_shape, hyper_gradient_dir
         )
