@@ -21,19 +21,23 @@ class hyper_gradientAnalyzer:
             **kwargs):
         self.training_dataset = training_dataset
         self.validator = validator
-        self.hyper_gradient_matrix = None
+        self.hyper_gradient_matrix = self.__load_hyper_gradients(
+            hyper_gradient_dir)
+        self.contributions = None
+
+    def get_contributions(self):
+        pass
 
     def __load_hyper_gradients(self, hyper_gradient_dir):
         model = self.validator.model
+        mask = None
+        gradient_shape = None
         if prune.is_pruned(model):
             get_logger().info("use pruned model")
             parameters = model_parameters_to_vector(model)
             gradient_shape = parameters.shape
             mask = get_pruning_mask(model)
             assert len(mask) == len(parameters)
-            self.hyper_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
-                100, mask, gradient_shape, hyper_gradient_dir)
-        else:
-            get_logger().info("use unpruned model")
-            self.hyper_gradient_matrix = HyperGradientTrainer.__create_gradient_matrix(
-                100, None, None, hyper_gradient_dir)
+        return HyperGradientTrainer.__create_gradient_matrix(
+            100, mask, gradient_shape, hyper_gradient_dir
+        )
