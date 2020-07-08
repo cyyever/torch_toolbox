@@ -6,7 +6,7 @@ from cyy_naive_lib.log import get_logger
 from .util import (
     model_parameters_to_vector,
     get_pruning_mask,
-    split_chunks,
+    split_list_to_chunks,
 )
 from .device import get_device
 from .hyper_gradient_trainer import HyperGradientTrainer
@@ -26,7 +26,7 @@ class HyperGradientAnalyzer:
             training_set_size = len(self.hyper_gradient_matrix)
         contribution_dict = dict()
         validation_gradient = self.validator.get_gradient()
-        for chunk in split_chunks(
+        for chunk in split_list_to_chunks(
                 self.hyper_gradient_matrix.keys(),
                 self.cache_size):
             self.hyper_gradient_matrix.prefetch(chunk)
@@ -66,7 +66,7 @@ class HyperGradientAnalyzer:
         contribution_dict = dict()
         for k, indices in validation_subset_dict.items():
             subset = torch.utils.data.Subset(self.validator.dataset, indices)
-            assert len(subset) = len(indices)
+            assert len(subset) == len(indices)
             tmp_validator.set_dataset(subset)
             sub_validator_gradient = tmp_validator.get_gradient() * len(indices)
             for k2, gradient_sum in hyper_gradient_sum_dict.items():
