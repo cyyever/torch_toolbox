@@ -44,10 +44,16 @@ class DatasetMapper:
         return self.dataset.__len__()
 
 
-def dataset_exclude_samples(dataset, excluded_indices):
-    return torch.utils.data.Subset(
-        dataset, set(range(len(dataset)) - set(excluded_indices))
-    )
+def sub_dataset(dataset, indices):
+    r"""
+    Subset of a dataset at specified indices in order.
+    """
+    indices = sorted(set(indices))
+    return torch.utils.data.Subset(dataset, indices)
+
+
+def complement_dataset(dataset, indices):
+    return sub_dataset(dataset, set(range(len(dataset)) - set(indices)))
 
 
 def dataset_with_indices(dataset):
