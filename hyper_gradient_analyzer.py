@@ -1,5 +1,4 @@
 import copy
-import torch
 import torch.nn.utils.prune as prune
 from cyy_naive_lib.log import get_logger
 
@@ -8,6 +7,7 @@ from .util import (
     get_pruning_mask,
     split_list_to_chunks,
 )
+from .dataset import sub_dataset
 from .device import get_device
 from .hyper_gradient_trainer import HyperGradientTrainer
 
@@ -27,8 +27,8 @@ class HyperGradientAnalyzer:
         contribution_dict = dict()
         validation_gradient = self.validator.get_gradient()
         for chunk in split_list_to_chunks(
-                self.hyper_gradient_matrix.keys(),
-                self.cache_size):
+            self.hyper_gradient_matrix.keys(), self.cache_size
+        ):
             self.hyper_gradient_matrix.prefetch(chunk)
             for instance_index in chunk:
                 hyper_gradient = self.hyper_gradient_matrix[instance_index].to(
@@ -65,7 +65,7 @@ class HyperGradientAnalyzer:
         tmp_validator = copy.deepcopy(self.validator)
         contribution_dict = dict()
         for k, indices in validation_subset_dict.items():
-            subset = torch.utils.data.Subset(self.validator.dataset, indices)
+            subset = sub_dataset(self.validator.dataset, indices)
             assert len(subset) == len(indices)
             tmp_validator.set_dataset(subset)
             sub_validator_gradient = tmp_validator.get_gradient() * len(indices)
