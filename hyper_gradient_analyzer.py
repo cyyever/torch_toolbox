@@ -14,7 +14,9 @@ from .hyper_gradient_trainer import HyperGradientTrainer
 
 class HyperGradientAnalyzer:
     def __init__(self, validator, hyper_gradient_dir):
+        assert validator.loss_fun.reduction in ("mean", "elementwise_mean")
         self.validator = validator
+
         self.cache_size = 1024
         self.hyper_gradient_matrix = self.__load_hyper_gradients(
             hyper_gradient_dir, self.cache_size
