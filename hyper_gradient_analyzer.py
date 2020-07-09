@@ -1,4 +1,5 @@
 import copy
+import tempfile
 
 from .util import split_list_to_chunks
 from .dataset import sub_dataset
@@ -46,6 +47,7 @@ class HyperGradientAnalyzer:
         hyper_gradient_sum_dict = HyperGradientTrainer.create_gradient_matrix(
             self.cache_size, self.validator.model
         )
+        hyper_gradient_sum_dict.set_storage_dir(tempfile.gettempdir())
 
         for k, indices in training_subset_dict.items():
             chunk = [str(index) for index in indices]
