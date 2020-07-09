@@ -1,12 +1,6 @@
 import copy
-import torch.nn.utils.prune as prune
-from cyy_naive_lib.log import get_logger
 
-from .util import (
-    model_parameters_to_vector,
-    get_pruning_mask,
-    split_list_to_chunks,
-)
+from .util import split_list_to_chunks
 from .dataset import sub_dataset
 from .device import get_device
 from .hyper_gradient_trainer import HyperGradientTrainer
@@ -18,9 +12,8 @@ class HyperGradientAnalyzer:
         self.validator = validator
 
         self.cache_size = 1024
-        self.hyper_gradient_matrix = self.__load_hyper_gradients(
-            hyper_gradient_dir, self.cache_size
-        )
+        self.hyper_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
+            self.cache_size, self.validator.model, hyper_gradient_dir)
         self.contributions = None
 
     def get_contributions(self, training_set_size=None):
@@ -50,7 +43,10 @@ class HyperGradientAnalyzer:
             training_set_size=None):
         if training_set_size is None:
             training_set_size = len(self.hyper_gradient_matrix)
-        hyper_gradient_sum_dict = dict()
+        hyper_gradient_sum_dict = HyperGradientTrainer.create_gradient_matrix(
+            self.cache_size, self.validator.model
+        )
+
         for k, indices in training_subset_dict.items():
             chunk = [str(index) for index in indices]
             self.hyper_gradient_matrix.prefetch(chunk)
@@ -71,24 +67,11 @@ class HyperGradientAnalyzer:
             assert len(subset) == len(indices)
             tmp_validator.set_dataset(subset)
             sub_validator_gradient = tmp_validator.get_gradient() * len(indices)
-            for k2, gradient_sum in hyper_gradient_sum_dict.items():
+            for k2 in hyper_gradient_sum_dict.keys():
+                gradient_sum = hyper_gradient_sum_dict[k2]
                 if k2 not in contribution_dict:
                     contribution_dict[k2] = dict()
                 contribution_dict[k2][k] = (
                     -(sub_validator_gradient @ gradient_sum) / training_set_size
                 ).data.item()
         return contribution_dict
-
-    def __load_hyper_gradients(self, hyper_gradient_dir, cache_size):
-        model = self.validator.model
-        mask = None
-        gradient_shape = None
-        if prune.is_pruned(model):
-            get_logger().info("use pruned model")
-            parameters = model_parameters_to_vector(model)
-            gradient_shape = parameters.shape
-            mask = get_pruning_mask(model)
-            assert len(mask) == len(parameters)
-        return HyperGradientTrainer.create_gradient_matrix(
-            cache_size, mask, gradient_shape, hyper_gradient_dir
-        )
