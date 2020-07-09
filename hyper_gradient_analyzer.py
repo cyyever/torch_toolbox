@@ -72,7 +72,9 @@ class HyperGradientAnalyzer:
             tmp_validator.set_dataset(subset)
             sub_validator_gradient = tmp_validator.get_gradient() * len(indices)
             for k2, gradient_sum in hyper_gradient_sum_dict.items():
-                contribution_dict[(k2, k)] = (
+                if k2 not in contribution_dict:
+                    contribution_dict[k2] = dict()
+                contribution_dict[k2][k] = (
                     -(sub_validator_gradient @ gradient_sum) / training_set_size
                 ).data.item()
         return contribution_dict
