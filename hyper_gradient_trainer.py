@@ -7,45 +7,23 @@ import torch.nn.utils.prune as prune
 import cyy_pytorch_cpp
 from cyy_naive_lib.log import get_logger
 
-from .util import model_parameters_to_vector, get_model_sparsity, get_pruning_mask
+from .util import model_parameters_to_vector, get_pruning_mask
 from .hessian_vector_product import get_hessian_vector_product_func
 
 
 class HyperGradientTrainer:
     def __init__(self, trainer, cache_size, save_dir, **kwargs):
         self.trainer = trainer
-        mask = None
-        gradient_shape = None
-        if prune.is_pruned(trainer.model):
-            get_logger().info("use pruned model")
-            sparsity, none_zero_parameter_num, parameter_count = get_model_sparsity(
-                trainer.model)
-            get_logger().info("model sparsity is %s%%", sparsity)
-            get_logger().info(
-                "none_zero_parameter_num %s parameter_count %s",
-                none_zero_parameter_num,
-                parameter_count,
-            )
-
-            parameters = model_parameters_to_vector(trainer.model)
-            gradient_shape = parameters.shape
-
-            mask = get_pruning_mask(trainer.model)
-            assert len(mask) == len(parameters)
-        else:
-            get_logger().info("use unpruned model")
-
         self.save_dir = save_dir
 
         hyper_gradient_matrix_dir = kwargs.get(
             "hyper_gradient_matrix_dir", None)
         if hyper_gradient_matrix_dir is not None:
             self.hyper_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
-                cache_size, mask, gradient_shape, storage_dir=hyper_gradient_matrix_dir
-            )
+                cache_size, trainer.model, storage_dir=hyper_gradient_matrix_dir)
         else:
             self.hyper_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
-                cache_size, mask, gradient_shape)
+                cache_size, trainer.model)
             self.hyper_gradient_matrix.set_storage_dir(os.path.join(
                 save_dir, "hyper_gradient_matrix", str(uuid.uuid4()),))
         get_logger().info(
@@ -56,14 +34,13 @@ class HyperGradientTrainer:
         mom_gradient_matrix_dir = kwargs.get("mom_gradient_matrix_dir", None)
         if mom_gradient_matrix_dir is not None:
             self.mom_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
-                cache_size, mask, gradient_shape, storage_dir=mom_gradient_matrix_dir
-            )
+                cache_size, trainer.model, storage_dir=mom_gradient_matrix_dir)
             get_logger().info(
                 "use mom_gradient_matrix_dir :%s", mom_gradient_matrix_dir
             )
         else:
             self.mom_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
-                cache_size, mask, gradient_shape)
+                cache_size, trainer.model)
             self.mom_gradient_matrix.set_storage_dir(os.path.join(
                 save_dir, "mom_gradient_matrix", str(uuid.uuid4()),))
         get_logger().info(
@@ -168,10 +145,17 @@ class HyperGradientTrainer:
 
     @staticmethod
     def create_gradient_matrix(
-            cache_size,
-            mask,
-            gradient_shape,
-            storage_dir=""):
+        cache_size, model, storage_dir="",
+    ):
+
+        mask = None
+        gradient_shape = None
+        if prune.is_pruned(model):
+            get_logger().info("use pruned model")
+            parameters = model_parameters_to_vector(model)
+            gradient_shape = parameters.shape
+            mask = get_pruning_mask(model)
+            assert len(mask) == len(parameters)
         m = None
         if mask is not None:
             m = cyy_pytorch_cpp.data_structure.SyncedSparseTensorDict(
