@@ -61,7 +61,7 @@ class HyperGradientAnalyzer:
                     hyper_gradient_sum = hyper_gradient
                 else:
                     hyper_gradient_sum += hyper_gradient
-                hyper_gradient_sum_dict[k] = hyper_gradient_sum
+                hyper_gradient_sum_dict[str(k)] = hyper_gradient_sum
         tmp_validator = copy.deepcopy(self.validator)
         contribution_dict = dict()
         for k, indices in validation_subset_dict.items():
@@ -71,6 +71,7 @@ class HyperGradientAnalyzer:
             sub_validator_gradient = tmp_validator.get_gradient() * len(indices)
             for k2 in hyper_gradient_sum_dict.keys():
                 gradient_sum = hyper_gradient_sum_dict[k2]
+                k2=int(k2)
                 if k2 not in contribution_dict:
                     contribution_dict[k2] = dict()
                 contribution_dict[k2][k] = (
