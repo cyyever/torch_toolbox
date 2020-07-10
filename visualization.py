@@ -36,7 +36,10 @@ class Window:
             y_label="Learning Rate",
         )
 
-    def plot_scalar_by_epoch(self, epoch, scalar, y_label, name=None):
+    def plot_scalar_by_epoch(self, epoch, scalar, y_label=None, name=None):
+        if y_label is None:
+            y_label = self.y_label
+
         self.__plot_line(
             torch.LongTensor([epoch]),
             torch.Tensor([scalar]),
