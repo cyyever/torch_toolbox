@@ -1,5 +1,4 @@
 import os
-
 import copy
 import datetime
 import torch
@@ -12,7 +11,7 @@ from util import (
     split_list_to_chunks,
 )
 from validator import Validator
-from visualization import Window
+from visualization import EpochWindow, Window
 from gradient import get_gradient
 
 
@@ -114,19 +113,19 @@ class Trainer:
             nonlocal plot_parameter_distribution
             nonlocal plot_class_accuracy
             if plot_parameter_distribution:
-                layer_win = Window.get("parameter distribution")
+                layer_win = Window("parameter distribution")
 
                 layer_win.plot_histogram(
                     model_parameters_to_vector(
                         trainer.model))
 
-            loss_win = Window.get("training & validation loss")
+            loss_win = EpochWindow("training & validation loss")
             get_logger().info("epoch: %s, training loss: %s",
                               epoch, trainer.training_loss[-1], )
             loss_win.plot_loss(epoch,
                                trainer.training_loss[-1],
                                "training loss")
-            Window.get("learning rate").plot_learning_rate(
+            EpochWindow("learning rate").plot_learning_rate(
                 epoch, learning_rates[0])
             if trainer.validation_dataset is None:
                 return
@@ -147,7 +146,7 @@ class Trainer:
                     accuracy,
                 )
                 loss_win.plot_loss(epoch, validation_loss, "validation loss")
-                Window.get("validation accuracy").plot_accuracy(
+                EpochWindow("validation accuracy").plot_accuracy(
                     epoch, accuracy, "accuracy"
                 )
 
@@ -156,7 +155,7 @@ class Trainer:
                     for idx, sub_list in enumerate(
                         split_list_to_chunks(list(class_accuracy.keys()), 2)
                     ):
-                        class_accuracy_win = Window.get(
+                        class_accuracy_win = EpochWindow(
                             "class accuracy part " + str(idx)
                         )
                         for k in sub_list:

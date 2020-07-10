@@ -4,39 +4,29 @@ import torch
 
 class Window:
     cur_env = "main"
-    # envs = {cur_env: dict()}
+    envs: dict = {cur_env: dict()}
 
     @staticmethod
     def set_env(env):
         Window.cur_env = env
+
+    @staticmethod
+    def add_window(win):
+        if win.env not in Window.envs:
+            Window.envs[win.env] = dict()
+        Window.envs[win.env][win.title] = win
 
     def __init__(self, title, env=None, x_label="", y_label=""):
         if env is None:
             env = Window.cur_env
         self.vis = visdom.Visdom(env=env)
         self.env = env
-        self.win = None
         self.title = title
+        self.win = None
+        if env in Window.envs:
+            self.win = Window.envs[env].get(title, None)
         self.x_label = x_label
         self.y_label = y_label
-
-    # def plot_scalar_by_epoch(self, epoch, scalar, y_label=None, name=None):
-    #     if y_label is None:
-    #         y_label = self.y_label
-
-    #     self.__plot_line(
-    #         torch.LongTensor([epoch]),
-    #         torch.Tensor([scalar]),
-    #         x_label="Epoch",
-    #         y_label=y_label,
-    #         name=name,
-    #     )
-
-    # def plot_loss(self, epoch, loss, name=None):
-    #     return self.plot_scalar_by_epoch(epoch, loss, "Loss", name)
-
-    # def plot_accuracy(self, epoch, accuracy, name=None):
-    #     return self.plot_scalar_by_epoch(epoch, accuracy, "Accuracy", name)
 
     def __plot_line(self, x, y, x_label=None, y_label=None, name=None):
         if self.win is not None and not self.vis.win_exists(self.win):
@@ -69,6 +59,7 @@ class Window:
                 title=self.title,
                 showlegend=True),
         )
+        Window.add_window(self)
 
     def plot_histogram(self, tensor):
         if self.win is not None and not self.vis.win_exists(self.win):
@@ -91,6 +82,7 @@ class Window:
             update=update,
             opts=dict(
                 title=self.title))
+        Window.add_window(self)
 
     def save(self):
         self.vis.save([self.env])
