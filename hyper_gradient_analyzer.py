@@ -1,7 +1,8 @@
 import copy
 import tempfile
 
-from .util import split_list_to_chunks
+from cyy_naive_lib.list_op import split_list_to_chunks
+
 from .dataset import sub_dataset
 from .device import get_device
 from .hyper_gradient_trainer import HyperGradientTrainer

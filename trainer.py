@@ -4,12 +4,10 @@ import datetime
 import torch
 
 from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.list_op import split_list_to_chunks
 
 from device import get_cpu_device, get_device
-from util import (
-    model_parameters_to_vector,
-    split_list_to_chunks,
-)
+from util import model_parameters_to_vector
 from validator import Validator
 from visualization import EpochWindow, Window
 from gradient import get_gradient
