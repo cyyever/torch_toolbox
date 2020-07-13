@@ -12,7 +12,7 @@ class Window:
 
     @staticmethod
     def save_envs():
-        visdom.Visdom(env=Window.cur_env).save(Window.envs.keys())
+        visdom.Visdom(env=Window.cur_env).save(list(Window.envs.keys()))
 
     @staticmethod
     def add_window(win):
