@@ -6,7 +6,8 @@ from hyper_parameter import HyperParameter
 from trainer import Trainer
 from validator import Validator
 from dataset import get_dataset
-from model import LeNet5, densenet_cifar
+from network.lenet import LeNet5
+from network.densenet import densenet_cifar
 
 
 def get_task_configuration(task_name, for_training):

@@ -7,6 +7,7 @@ import torch
 import torch.autograd as autograd
 
 from cyy_naive_lib.task_queue import TaskQueue
+from cyy_naive_lib.list_op import split_list_to_chunks
 
 from device import get_cuda_devices
 from util import (
@@ -14,7 +15,6 @@ from util import (
     model_parameters_to_vector,
     set_model_attr,
     del_model_attr,
-    split_list_to_chunks,
 )
 
 
