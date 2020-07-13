@@ -1,5 +1,5 @@
-import visdom
 import torch
+import visdom
 
 
 class Window:
@@ -9,6 +9,10 @@ class Window:
     @staticmethod
     def set_env(env):
         Window.cur_env = env
+
+    @staticmethod
+    def save_envs():
+        visdom.Visdom(env=Window.cur_env).save(Window.envs.keys())
 
     @staticmethod
     def add_window(win):
