@@ -28,7 +28,7 @@ class Window:
         self.x_label = x_label
         self.y_label = y_label
 
-    def __plot_line(self, x, y, x_label=None, y_label=None, name=None):
+    def plot_line(self, x, y, x_label=None, y_label=None, name=None):
         if self.win is not None and not self.vis.win_exists(self.win):
             self.win = None
 
@@ -105,7 +105,7 @@ class EpochWindow(Window):
         if y_label is None:
             y_label = self.y_label
 
-        super().__plot_line(
+        super().plot_line(
             torch.LongTensor([epoch]),
             torch.Tensor([scalar]),
             y_label=y_label,
