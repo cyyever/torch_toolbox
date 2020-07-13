@@ -18,7 +18,7 @@ class Window:
     def add_window(win):
         if win.env not in Window.envs:
             Window.envs[win.env] = dict()
-        Window.envs[win.env][win.title] = win
+        Window.envs[win.env][win.title] = win.win
 
     def __init__(self, title, env=None, x_label="", y_label=""):
         if env is None:
