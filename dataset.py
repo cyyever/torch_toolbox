@@ -1,6 +1,7 @@
 import functools
 import os
 import random
+import PIL
 
 import torch
 import torchvision
@@ -108,7 +109,7 @@ def randomize_subset_label(dataset, percentage):
     return randomized_label_map
 
 
-def replace_dataset_labels(dataset, label_map):
+def replace_dataset_labels(dataset, label_map: dict):
     assert label_map
 
     def mapper(index, item):
@@ -130,14 +131,18 @@ def get_classes(dataset):
 
 
 def get_class_count(dataset):
-    def count_instance(container, instance):
-        label = instance[1]
-        if isinstance(label, torch.Tensor):
-            label = label.data.item()
-        container[label] = container.get(label, 0) + 1
-        return container
+    res = dict()
+    for k, v in split_dataset_by_class(dataset).items():
+        res[k] = len(v["indices"])
+    return res
 
-    return functools.reduce(count_instance, dataset, dict())
+
+def save_sample(dataset, idx, path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    if isinstance(dataset[idx][0], PIL.Image.Image):
+        dataset[idx][0].save(path)
+        return
+    torchvision.utils.save_image(dataset[idx][0], path)
 
 
 def get_mean_and_std(dataset):
