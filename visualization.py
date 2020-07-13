@@ -105,7 +105,7 @@ class EpochWindow(Window):
         if y_label is None:
             y_label = self.y_label
 
-        self.__plot_line(
+        super().__plot_line(
             torch.LongTensor([epoch]),
             torch.Tensor([scalar]),
             y_label=y_label,
