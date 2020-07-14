@@ -4,22 +4,20 @@ import datetime
 import copy
 import torch
 
-from .visualization import Window
-from .util import (
-    model_parameters_to_vector,
-    get_pruned_parameters,
-    get_model_sparsity,
-)
-from .configuration import get_task_configuration
 from cyy_naive_lib.log import get_logger
+
+from .visualization import Window, EpochWindow
+from .model_util import ModelUtil
+from .configuration import get_task_configuration
 
 
 def lottery_ticket_prune(
     task_name,
-    model_path,
     pruning_accuracy,
     pruning_amount,
+    model_path=None,
     hyper_parameter=None,
+    save_dir=None,
 ):
     Window.set_env(
         "prune_"
@@ -47,64 +45,44 @@ def lottery_ticket_prune(
     get_logger().info("prune model when test accuracy is %s", pruning_accuracy)
     get_logger().info("prune amount is %s", pruning_amount)
 
-    init_parameters = get_pruned_parameters(trainer.model)
+    model_util = ModelUtil(trainer.model)
+    init_parameters = model_util.get_pruned_parameters()
     for k, v in init_parameters.items():
         init_parameters[k] = copy.deepcopy(v)
 
-    parameters_size = sum([len(v[0].view(-1))
-                           for v in init_parameters.values()])
-    assert parameters_size == len(model_parameters_to_vector(trainer.model))
-    save_dir = os.path.join(
-        "models", trainer.model.__class__.__name__ + "_" + task_name, "pruned"
-    )
+    if save_dir is None:
+        save_dir = os.path.join(
+            "models",
+            trainer.model.__class__.__name__ +
+            "_" +
+            task_name,
+            "pruned")
 
     def after_epoch_callback(trainer, epoch, _):
         nonlocal init_parameters
         nonlocal save_dir
         nonlocal init_hyper_parameter
+        nonlocal model_util
 
-        parameters = model_parameters_to_vector(
-            trainer.model).detach().clone().cpu()
+        parameters = model_util.get_parameter_list().detach().clone().cpu()
 
         abs_parameters = parameters.abs()
         abs_parameters = abs_parameters[abs_parameters.nonzero()]
-        win = Window.get("abs parameter statistics")
+        win = EpochWindow("abs parameter statistics")
         win.y_label = "statistics"
-        win.plot_scalar_by_epoch(epoch, abs_parameters.mean(), "mean value")
-        win.plot_scalar_by_epoch(epoch, abs_parameters.max(), "max value")
-        win.plot_scalar_by_epoch(epoch, abs_parameters.min(), "min value")
-        win = Window.get("abs parameter variance")
+        win.plot_scalar(epoch, abs_parameters.mean(), "mean value")
+        win.plot_scalar(epoch, abs_parameters.max(), "max value")
+        win.plot_scalar(epoch, abs_parameters.min(), "min value")
+        win = EpochWindow("abs parameter variance")
         win.y_label = "variance"
-        win.plot_scalar_by_epoch(epoch, abs_parameters.var())
-
-        # win = Window.get("parameter and layer")
-        # win.x_label = "parameter"
-        # win.y_label = "layer"
-        # data = None
-        # pruned_parameters = get_pruned_parameters(trainer.model)
-        # for v in pruned_parameters.values():
-        #     parameter, mask, layer_index = v
-        #     masked_parameter = parameter.view(-1)
-        #     if mask is not None:
-        #         masked_parameter = parameter.masked_select(mask).view(-1)
-
-        #     res = torch.stack(
-        #         (masked_parameter,
-        #          torch.full_like(
-        #              masked_parameter,
-        #              layer_index)))
-        #     if data is None:
-        #         data = res
-        #     else:
-        #         data = torch.cat((data, res), dim=1)
-        # win.plot_scatter(data.t())
+        win.plot_scalar(epoch, abs_parameters.var())
 
         if trainer.validation_accuracy[epoch] < pruning_accuracy:
             return
 
         pruned_parameters = init_parameters.keys()
 
-        sparsity, _, __ = get_model_sparsity(trainer.model)
+        sparsity, _, __ = model_util.get_sparsity()
         get_logger().info("before prune sparsity is %s%%", sparsity)
 
         torch.nn.utils.prune.global_unstructured(
@@ -113,7 +91,7 @@ def lottery_ticket_prune(
             amount=pruning_amount,
         )
 
-        sparsity, _, __ = get_model_sparsity(trainer.model)
+        sparsity, _, __ = model_util.get_sparsity()
         get_logger().info("after prune sparsity is %s%%", sparsity)
 
         for k, v in init_parameters.items():

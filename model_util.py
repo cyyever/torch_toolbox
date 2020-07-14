@@ -28,7 +28,7 @@ class ModelUtil:
         components = name.split(".")
         for i, component in enumerate(components):
             if i + 1 != len(components):
-                model = model[component]
+                model = getattr(model, component)
             else:
                 if as_parameter:
                     model.register_parameter(component, nn.Parameter(value))
@@ -40,7 +40,7 @@ class ModelUtil:
         components = name.split(".")
         for i, component in enumerate(components):
             if i + 1 != len(components):
-                model = model[component]
+                model = getattr(model, component)
             else:
                 delattr(model, component)
 
@@ -72,7 +72,7 @@ class ModelUtil:
             [v[1] for v in self.get_pruned_parameters().values()]
         )
 
-    def get_model_sparsity(self):
+    def get_sparsity(self):
         none_zero_parameter_num = 0
         parameter_count = 0
         for layer, name in self.get_pruned_parameters():
