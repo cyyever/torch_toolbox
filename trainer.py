@@ -54,7 +54,8 @@ class Trainer:
         return self.__hyper_parameter
 
     def repeated_train(self, repeated_num, save_dir, **kwargs):
-        def training_callback(idx, trainer):
+        def training_callback(_, trainer):
+            nonlocal save_dir, kwargs
             trainer.train(**kwargs)
             trainer.save(save_dir, with_timestamp=True)
             return {

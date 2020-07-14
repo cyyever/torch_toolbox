@@ -28,7 +28,7 @@ class Validator:
         per_class_accuracy = kwargs.get("per_class_accuracy", False)
         if per_class_accuracy:
             class_count = get_class_count(self.dataset)
-            for k in class_count.keys():
+            for k in class_count:
                 class_correct_count[k] = 0
 
         per_instance_loss = kwargs.get("per_instance_loss", False)
@@ -97,7 +97,7 @@ class Validator:
                                    [1], targets).view(-1)
 
                 if per_class_accuracy:
-                    for k in class_count.keys():
+                    for k in class_count:
                         class_correct_count[k] += torch.sum(
                             correct[targets == k]
                         ).item()
@@ -109,7 +109,7 @@ class Validator:
                     after_batch_callback(self.model, batch_loss)
 
             if per_class_accuracy:
-                for k in class_count.keys():
+                for k in class_count:
                     class_count[k] = class_correct_count[k] / class_count[k]
             if instance_output:
                 for k, v in instance_output.items():
