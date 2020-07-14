@@ -1,5 +1,5 @@
-import visdom
 import torch
+import visdom
 
 
 class Window:
@@ -11,10 +11,14 @@ class Window:
         Window.cur_env = env
 
     @staticmethod
+    def save_envs():
+        visdom.Visdom(env=Window.cur_env).save(list(Window.envs.keys()))
+
+    @staticmethod
     def add_window(win):
         if win.env not in Window.envs:
             Window.envs[win.env] = dict()
-        Window.envs[win.env][win.title] = win
+        Window.envs[win.env][win.title] = win.win
 
     def __init__(self, title, env=None, x_label="", y_label=""):
         if env is None:
