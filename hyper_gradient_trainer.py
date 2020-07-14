@@ -4,10 +4,10 @@ import os
 import shutil
 import torch
 import torch.nn.utils.prune as prune
-import cyy_pytorch_cpp
 from cyy_naive_lib.log import get_logger
+import cyy_pytorch_cpp
 
-from .util import model_parameters_to_vector, get_pruning_mask
+from model_util import ModelUtil
 from .hessian_vector_product import get_hessian_vector_product_func
 
 
@@ -152,9 +152,10 @@ class HyperGradientTrainer:
         gradient_shape = None
         if prune.is_pruned(model):
             get_logger().info("use pruned model")
-            parameters = model_parameters_to_vector(model)
+            model_util = ModelUtil(model)
+            parameters = model_util.get_parameter_list()
             gradient_shape = parameters.shape
-            mask = get_pruning_mask(model)
+            mask = model_util.get_pruning_mask()
             assert len(mask) == len(parameters)
         m = None
         if mask is not None:
