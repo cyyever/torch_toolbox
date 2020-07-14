@@ -23,7 +23,7 @@ class ModelUtil:
             parameter_dict[name] = param.detach().clone()
         return parameter_dict
 
-    def set_model_attr(self, name: str, value, as_parameter=True):
+    def set_attr(self, name: str, value, as_parameter=True):
         model = self.model
         components = name.split(".")
         for i, component in enumerate(components):
@@ -35,7 +35,7 @@ class ModelUtil:
                 else:
                     setattr(model, component, value)
 
-    def del_model_attr(self, name: str):
+    def del_attr(self, name: str):
         model = self.model
         components = name.split(".")
         for i, component in enumerate(components):
