@@ -10,12 +10,8 @@ from cyy_naive_lib.task_queue import TaskQueue
 from cyy_naive_lib.list_op import split_list_to_chunks
 
 from device import get_cuda_devices
-from util import (
-    parameters_to_vector,
-    model_parameters_to_vector,
-    set_model_attr,
-    del_model_attr,
-)
+from util import parameters_to_vector
+from model_util import ModelUtil
 
 
 class ModelSnapshot:
@@ -52,7 +48,7 @@ def load_model_parameters(model, parameters, param_shape_dict, device):
         param = parameters.narrow(
             0, bias, param_element_num).view(
             *shape).to(device)
-        set_model_attr(model, name.split("."), param, as_parameter=False)
+        ModelUtil(model).set_attr(name, param, as_parameter=False)
         bias += param_element_num
     assert bias == len(parameters)
 
@@ -131,7 +127,7 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
         param_shape_dict[name] = param.shape
 
     for name in param_shape_dict:
-        del_model_attr(model_snapshot, name.split("."))
+        ModelUtil(model_snapshot).del_attr(name)
 
     parameter_snapshot = parameters_to_vector(params)
 
@@ -196,17 +192,15 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
 
 
 if __name__ == "__main__":
-    import cProfile
-    import pstats
-    from pstats import SortKey
     from configuration import get_task_configuration
     from cyy_naive_lib.time_counter import TimeCounter
+    from cyy_naive_lib.profiling import Profile
 
     trainer = get_task_configuration("MNIST", True)
     training_data_loader = torch.utils.data.DataLoader(
         trainer.training_dataset, batch_size=16, shuffle=True,
     )
-    parameter_vector = model_parameters_to_vector(trainer.model)
+    parameter_vector = ModelUtil(trainer.model).get_parameter_list()
     v = torch.ones(parameter_vector.shape)
     for batch in training_data_loader:
         hvp_function = get_hessian_vector_product_func(
@@ -250,9 +244,8 @@ if __name__ == "__main__":
             c.reset_start_time()
             a = hvp_function([v] * 100)
             print("100 use time ", c.elapsed_milliseconds())
-            with cProfile.Profile() as pr:
+            with Profile():
                 c.reset_start_time()
                 a = hvp_function([v] * 100)
                 print("100 use time ", c.elapsed_milliseconds())
-            pstats.Stats(pr).sort_stats(SortKey.CUMULATIVE).print_stats()
         break
