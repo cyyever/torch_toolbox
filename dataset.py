@@ -62,11 +62,11 @@ def dataset_with_indices(dataset):
 
 
 def split_dataset(dataset):
-    return [
+    return (
         torch.utils.data.Subset(
             dataset,
             [index]) for index in range(
-            len(dataset))]
+            len(dataset)))
 
 
 def split_dataset_by_class(dataset):
