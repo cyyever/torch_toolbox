@@ -7,7 +7,7 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.list_op import split_list_to_chunks
 
 from device import get_cpu_device, get_device
-from util import model_parameters_to_vector
+from model_util import ModelUtil
 from validator import Validator
 from visualization import EpochWindow, Window
 from gradient import get_gradient
@@ -115,8 +115,7 @@ class Trainer:
                 layer_win = Window("parameter distribution")
 
                 layer_win.plot_histogram(
-                    model_parameters_to_vector(
-                        trainer.model))
+                    ModelUtil(trainer.model).get_parameter_list())
 
             loss_win = EpochWindow("training & validation loss")
             get_logger().info("epoch: %s, training loss: %s",
