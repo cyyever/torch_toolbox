@@ -8,8 +8,8 @@ from model_util import ModelUtil
 from util import (
     parameters_to_vector,
     # model_gradients_to_vector,
-    get_model_parameter_dict,
-    load_model_parameters,
+    # get_model_parameter_dict,
+    # load_model_parameters,
 )
 
 # from cyy_naive_lib.time_counter import TimeCounter
