@@ -5,6 +5,8 @@ import shutil
 import torch
 import torch.nn.utils.prune as prune
 from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.time_counter import TimeCounter
+from cyy_naive_lib.list_op import split_list_to_chunks
 import cyy_pytorch_cpp
 
 from model_util import ModelUtil
@@ -84,6 +86,86 @@ class HyperGradientTrainer:
         self.hyper_gradient_matrix.release()
         self.mom_gradient_matrix.release()
 
+    def __do_delayed_computation_with_hessian(self):
+        for chunk in split_list_to_chunks(
+            [str(idx) for idx in sorted(list(self.__get_real_computed_indices()))], 100
+        ):
+            counter = TimeCounter()
+            self.hyper_gradient_matrix.prefetch(chunk)
+            self.mom_gradient_matrix.prefetch(chunk)
+            hyper_gradients = list()
+            hyper_gradient_indices = list()
+            hessian_vector_product_dict = dict()
+            for index in chunk:
+                if index in self.hyper_gradient_matrix:
+                    hyper_gradients.append(self.hyper_gradient_matrix[index])
+                    hyper_gradient_indices.append(index)
+            if hyper_gradients:
+                counter2 = TimeCounter()
+                hessian_vector_products = self.hvp_function(hyper_gradients)
+                get_logger().info(
+                    "hvp chunk size %s use time %s ms",
+                    len(hyper_gradients),
+                    counter2.elapsed_milliseconds(),
+                )
+
+                assert len(hyper_gradients) == len(hessian_vector_products)
+                for idx, hessian_vector_product in zip(
+                    hyper_gradient_indices, hessian_vector_products
+                ):
+                    hessian_vector_product_dict[idx] = hessian_vector_product
+
+            for index in chunk:
+                assert len(self.delayed_computations[index]) == 1
+                (
+                    momentum,
+                    weight_decay,
+                    learning_rate,
+                    instance_gradient,
+                ) = self.delayed_computations[index][0]
+
+                hyper_gradient = None
+                if index in self.hyper_gradient_matrix:
+                    hyper_gradient = self.hyper_gradient_matrix[index]
+
+                mom_gradient = None
+                if index in self.mom_gradient_matrix:
+                    mom_gradient = self.mom_gradient_matrix[index]
+
+                if mom_gradient is not None:
+                    mom_gradient *= momentum
+
+                if hyper_gradient is not None:
+                    res = weight_decay * hyper_gradient
+                    res += hessian_vector_product_dict[index]
+                    if mom_gradient is not None:
+                        mom_gradient += res
+                    else:
+                        mom_gradient = res
+
+                if instance_gradient is not None:
+                    if mom_gradient is not None:
+                        mom_gradient += instance_gradient
+                    else:
+                        mom_gradient = instance_gradient
+
+                if mom_gradient is not None:
+                    if hyper_gradient is not None:
+                        hyper_gradient -= learning_rate * mom_gradient
+                    else:
+                        hyper_gradient = -learning_rate * mom_gradient
+
+                if mom_gradient is not None:
+                    self.mom_gradient_matrix[index] = mom_gradient
+                if hyper_gradient is not None:
+                    self.hyper_gradient_matrix[index] = hyper_gradient
+                self.delayed_computations[index] = []
+            get_logger().info(
+                "__do_delayed_computation_with_hessian chunk size %s use time %s ms",
+                len(chunk),
+                counter.elapsed_milliseconds(),
+            )
+
     def __do_delayed_computation(self, index=None):
         if index is None:
             unfinished_keys = []
@@ -107,21 +189,12 @@ class HyperGradientTrainer:
             hyper_gradient = self.hyper_gradient_matrix[index]
 
         for arguments in self.delayed_computations[index]:
-            (
-                momentum,
-                weight_decay,
-                learning_rate,
-                instance_gradient,
-                hvp_function,
-            ) = arguments
+            (momentum, weight_decay, learning_rate, instance_gradient,) = arguments
             if mom_gradient is not None:
                 mom_gradient *= momentum
 
             if hyper_gradient is not None:
                 res = weight_decay * hyper_gradient
-                if hvp_function is not None:
-                    res += hvp_function(hyper_gradient)
-
                 if mom_gradient is not None:
                     mom_gradient += res
                 else:
@@ -141,9 +214,9 @@ class HyperGradientTrainer:
 
         assert mom_gradient is not None
         assert hyper_gradient is not None
+        self.delayed_computations[index] = []
         self.mom_gradient_matrix[index] = mom_gradient
         self.hyper_gradient_matrix[index] = hyper_gradient
-        self.delayed_computations[index] = []
 
     @staticmethod
     def create_gradient_matrix(
@@ -235,18 +308,18 @@ class HyperGradientTrainer:
                      training_set_size /
                      batch_size) .detach() .clone())
                 self.delayed_computations[idx].append(
-                    (
-                        momentum,
-                        weight_decay,
-                        cur_learning_rate,
-                        instance_gradient,
-                        self.hvp_function,
-                    )
-                )
-                self.__do_delayed_computation(idx)
+                    (momentum, weight_decay, cur_learning_rate, instance_gradient,))
             else:
                 self.delayed_computations[idx].append(
-                    (momentum, weight_decay, cur_learning_rate, None, self.hvp_function))
+                    (momentum, weight_decay, cur_learning_rate, None)
+                )
+        if self.use_hessian:
+            self.__do_delayed_computation_with_hessian()
+        else:
+            for idx in self.__get_real_computed_indices():
+                idx = str(idx)
+                if idx in self.batch_gradients:
+                    self.__do_delayed_computation(idx)
 
     def __after_epoch_callback(self, trainer, epoch, cur_learning_rates):
         if epoch < 10:

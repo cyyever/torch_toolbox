@@ -15,7 +15,7 @@ from model_util import ModelUtil
 
 
 class ModelSnapshot:
-    data = dict()
+    data: dict = dict()
     lock = threading.Lock()
 
     @staticmethod
@@ -151,9 +151,11 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
             v_is_tensor = True
             vectors = [v]
 
-        vector_chunks = list(split_list_to_chunks(
-            vectors, (len(vectors) + len(devices) - 1) // len(devices)
-        ))
+        vector_chunks = list(
+            split_list_to_chunks(
+                vectors, (len(vectors) + len(devices) - 1) // len(devices)
+            )
+        )
         assert len(vector_chunks) <= len(devices)
 
         device_task_queue = TaskQueue(
