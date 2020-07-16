@@ -51,6 +51,8 @@ class HyperGradientTrainer:
         self.computed_indices = None
         self.delayed_computations = dict()
         self.use_hessian = kwargs.get("use_hessian", False)
+        if self.use_hessian:
+            get_logger().info("use hessian to compute hyper-gradients")
         self.hvp_function = None
 
     def train(self, computed_indices=None):
