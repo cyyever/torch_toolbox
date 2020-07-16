@@ -2,7 +2,7 @@ import copy
 import torch
 
 from device import get_device, get_cpu_device
-from util import model_gradients_to_vector
+from model_util import ModelUtil
 from dataset import get_class_count, dataset_with_indices
 
 
@@ -132,4 +132,4 @@ class Validator:
 
     def get_gradient(self):
         self.validate(64, use_grad=True)
-        return model_gradients_to_vector(self.model)
+        return ModelUtil(self.model).get_gradient_list()
