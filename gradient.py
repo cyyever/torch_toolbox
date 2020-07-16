@@ -7,7 +7,7 @@ from device import get_device
 from model_util import ModelUtil
 from util import (
     parameters_to_vector,
-    model_gradients_to_vector,
+    # model_gradients_to_vector,
     get_model_parameter_dict,
     load_model_parameters,
 )
