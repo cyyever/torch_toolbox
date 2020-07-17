@@ -3,6 +3,7 @@ import os
 import datetime
 import copy
 import torch
+import torch.nn.utils.prune
 
 from cyy_naive_lib.log import get_logger
 
@@ -46,7 +47,7 @@ def lottery_ticket_prune(
     get_logger().info("prune amount is %s", pruning_amount)
 
     model_util = ModelUtil(trainer.model)
-    init_parameters = model_util.get_pruned_parameters()
+    init_parameters = model_util.get_pruned_parameter_dict()
     for k, v in init_parameters.items():
         init_parameters[k] = copy.deepcopy(v)
 
