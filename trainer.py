@@ -10,7 +10,6 @@ from device import get_cpu_device, get_device
 from model_util import ModelUtil
 from validator import Validator
 from visualization import EpochWindow, Window
-from gradient import get_gradient
 
 
 class Trainer:
@@ -198,7 +197,6 @@ class Trainer:
         if "pre_training_callback" in kwargs:
             kwargs["pre_training_callback"](self, optimizer, lr_scheduler)
 
-        model_pruned = prune.is_pruned(self.model)
         for epoch in range(1, self.__hyper_parameter.epochs + 1):
             if self.__reset_hyper_parameter:
                 self.__reset_hyper_parameter = False
@@ -244,7 +242,9 @@ class Trainer:
                             output, torch.stack(
                                 [instance_target]))
 
-                        instance_gradient = get_gradient(self.model, loss)
+                        instance_gradient = ModelUtil(
+                            self.model
+                        ).get_gradient_list_by_loss(loss)
                         per_instance_gradient_callback(
                             self,
                             instance_index,
