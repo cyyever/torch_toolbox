@@ -50,15 +50,18 @@ class ModelUtil:
             self.set_attr(key, value)
 
     def get_pruned_parameters(self):
+        assert prune.is_pruned(self.model)
         res = list()
         for layer in self.model.modules():
             for name, parameter in layer.named_parameters(recurse=False):
                 if parameter is None:
                     continue
-                assert name.endswith("_orig")
-                real_name = name[:-5]
+                real_name = name
+                if name.endswith("_orig"):
+                    real_name = name[:-5]
                 mask = getattr(layer, real_name + "_mask", None)
-                assert mask
+                if mask is None:
+                    mask = torch.ones_like(parameter)
                 res.append(
                     (layer,
                      real_name,
@@ -88,20 +91,17 @@ class ModelUtil:
     def merge_and_remove_pruning_mask(self):
         if not prune.is_pruned(self.model):
             return
-        for layer in self.model.modules():
-            for name, parameter in layer.named_parameters(recurse=False):
-                if parameter is None:
-                    continue
-                assert name.endswith("_orig")
-                real_name = name[:-5]
-                mask = getattr(layer, real_name + "_mask")
-                orig = getattr(layer, real_name + "_orig")
-                delattr(layer, real_name + "_orig")
-                delattr(layer, real_name + "_mask")
-                delattr(layer, real_name)
-                layer.register_parameter(
-                    real_name, torch.nn.Parameter(mask * orig),
-                )
+        for a in self.get_pruned_parameters():
+            layer = a[0]
+            real_name = a[1]
+            mask = getattr(layer, real_name + "_mask")
+            orig = getattr(layer, real_name + "_orig")
+            delattr(layer, real_name + "_orig")
+            delattr(layer, real_name + "_mask")
+            delattr(layer, real_name)
+            layer.register_parameter(
+                real_name, torch.nn.Parameter(mask * orig),
+            )
 
     def get_sparsity(self):
         none_zero_parameter_num = 0
