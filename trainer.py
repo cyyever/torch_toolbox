@@ -198,6 +198,7 @@ class Trainer:
         if "pre_training_callback" in kwargs:
             kwargs["pre_training_callback"](self, optimizer, lr_scheduler)
 
+        model_pruned = prune.is_pruned(self.model)
         for epoch in range(1, self.__hyper_parameter.epochs + 1):
             if self.__reset_hyper_parameter:
                 self.__reset_hyper_parameter = False
@@ -277,8 +278,6 @@ class Trainer:
                         optimizer=optimizer,
                     )
                 optimizer.step()
-                cur_learning_rates = [group["lr"]
-                                      for group in optimizer.param_groups]
                 batch_index += 1
 
             self.training_loss.append(training_loss)
