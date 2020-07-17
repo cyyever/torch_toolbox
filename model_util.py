@@ -19,7 +19,7 @@ class ModelUtil:
         return util.parameters_to_vector(self.__get_parameter_seq())
 
     def get_gradient_list(self):
-        if self.is_pruned():
+        if self.__is_pruned():
             for layer in self.model.modules():
                 for name, parameter in layer.named_parameters(recurse=False):
                     if not name.endswith("_orig"):
@@ -75,7 +75,7 @@ class ModelUtil:
 
     def get_original_parameters(self):
         res = dict()
-        if self.is_pruned():
+        if self.__is_pruned():
             for (layer, name, parameter, _) in self.__get_pruned_parameters():
                 res[(layer, name)] = parameter
             return res
@@ -87,7 +87,7 @@ class ModelUtil:
         return res
 
     def get_pruning_mask_list(self):
-        assert self.is_pruned()
+        assert self.__is_pruned()
         res = dict()
         for name, parameter in self.model.named_parameters():
             if name.endswith("_orig"):
@@ -118,7 +118,7 @@ class ModelUtil:
         return self.is_pruned
 
     def __get_pruned_parameters(self):
-        assert self.is_pruned()
+        assert self.__is_pruned()
         res = list()
         for layer in self.model.modules():
             for name, parameter in layer.named_parameters(recurse=False):
@@ -141,7 +141,7 @@ class ModelUtil:
     def __get_parameter_seq(self):
         res = dict()
         for name, parameter in self.model.named_parameters():
-            if self.is_pruned() and name.endswith("_orig"):
+            if self.__is_pruned() and name.endswith("_orig"):
                 res[name[:-5]] = parameter
                 continue
             res[name] = parameter
