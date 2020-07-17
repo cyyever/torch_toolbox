@@ -1,6 +1,5 @@
 import copy
 import torch
-import torch.autograd as autograd
 import torch.nn as nn
 import torch.nn.utils.prune as prune
 
@@ -16,7 +15,7 @@ class ModelUtil:
         self.is_pruned = None
 
     def get_parameter_list(self):
-        return util.parameters_to_vector(self.__get_parameter_seq())
+        return util.cat_tensors_to_vector(self.__get_parameter_seq())
 
     def get_gradient_list(self):
         if self.__is_pruned():
@@ -31,7 +30,7 @@ class ModelUtil:
                     assert mask is not None
                     assert getattr(layer, real_name).grad is None
                     parameter.grad = parameter.grad * mask
-        return util.parameters_to_vector(
+        return util.cat_tensors_to_vector(
             (parameter.grad for parameter in self.__get_parameter_seq())
         )
 
@@ -95,7 +94,7 @@ class ModelUtil:
                 res[real_name] = self.get_attr(real_name + "_mask")
                 continue
             res[name] = torch.ones_like(parameter)
-        return util.parameters_to_vector(dict_value_by_order(res))
+        return util.cat_tensors_to_vector(dict_value_by_order(res))
 
     def get_sparsity(self):
         none_zero_parameter_num = 0
