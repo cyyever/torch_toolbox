@@ -1,6 +1,6 @@
+import copy
 import torch
 import torch.nn as nn
-import torch.nn.utils.prune as prune
 
 import util
 
@@ -46,11 +46,11 @@ class ModelUtil:
 
     def load_parameters(self, parameters: dict):
         for key, value in parameters.items():
-            self.set_model_attr(key, value)
+            self.set_attr(key, value)
 
     def get_pruned_parameters(self):
-        res = dict()
-        for layer_index, layer in enumerate(self.model.modules()):
+        res = list()
+        for layer in self.model.modules():
             for name, parameter in layer.named_parameters(recurse=False):
                 if parameter is None:
                     continue
@@ -60,20 +60,26 @@ class ModelUtil:
                     mask = getattr(layer, tmp_name + "_mask", None)
                     if mask is not None:
                         name = tmp_name
-                res[(layer, name)] = (parameter, mask, layer_index)
+                res.append(
+                    (layer, name, copy.deepcopy(parameter), copy.deepcopy(mask)))
+        return res
+
+    def get_pruned_parameter_dict(self):
+        res = dict()
+        for (layer, name, parameter, mask) in self.get_pruned_parameters():
+            res[(layer, name)] = (parameter, mask)
         return res
 
     def get_pruning_mask(self):
-        if not prune.is_pruned(self.model):
+        pruned_parameters = self.get_pruned_parameters()
+        if not pruned_parameters:
             raise RuntimeError("not pruned")
-        return util.parameters_to_vector(
-            [v[1] for v in self.get_pruned_parameters().values()]
-        )
+        return util.parameters_to_vector((v[3] for v in pruned_parameters))
 
     def get_sparsity(self):
         none_zero_parameter_num = 0
         parameter_count = 0
-        for layer, name in self.get_pruned_parameters():
+        for layer, name in self.get_pruned_parameter_dict():
             parameter_count += len(getattr(layer, name).view(-1))
             none_zero_parameter_num += torch.sum(getattr(layer, name) != 0)
         sparsity = 100 * float(none_zero_parameter_num) / \

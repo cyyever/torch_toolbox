@@ -326,7 +326,7 @@ class HyperGradientTrainer:
             cur_accurary = trainer.validation_accuracy[epoch]
             validation_accuracy = copy.deepcopy(trainer.validation_accuracy)
             validation_accuracy.pop(epoch)
-            max_accuracy = max(list(validation_accuracy.values()))
+            max_accuracy = max(validation_accuracy.values())
             if cur_accurary < max_accuracy + 0.01:
                 return
         get_logger().info("begin do __do_delayed_computation")
