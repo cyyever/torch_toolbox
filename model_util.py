@@ -86,7 +86,8 @@ class ModelUtil:
         return util.parameters_to_vector((v[3] for v in pruned_parameters))
 
     def merge_and_remove_pruning_mask(self):
-        assert prune.is_pruned(self.model)
+        if not prune.is_pruned(self.model):
+            return
         for layer in self.model.modules():
             for name, parameter in layer.named_parameters(recurse=False):
                 if parameter is None:
