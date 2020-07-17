@@ -302,17 +302,15 @@ class HyperGradientTrainer:
 
         for idx in self.__get_real_computed_indices():
             idx = str(idx)
+            instance_gradient = None
             if idx in self.batch_gradients:
                 instance_gradient = (
                     (self.batch_gradients[idx] *
                      training_set_size /
                      batch_size) .detach() .clone())
-                self.delayed_computations[idx].append(
-                    (momentum, weight_decay, cur_learning_rate, instance_gradient,))
-            else:
-                self.delayed_computations[idx].append(
-                    (momentum, weight_decay, cur_learning_rate, None)
-                )
+            self.delayed_computations[idx].append(
+                (momentum, weight_decay, cur_learning_rate, instance_gradient)
+            )
         if self.use_hessian:
             self.__do_delayed_computation_with_hessian()
         else:
