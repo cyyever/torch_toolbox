@@ -97,18 +97,11 @@ def lottery_ticket_prune(
 
         for k, parameter in init_parameters.items():
             layer, name = k
+            if not hasattr(layer, name + "_orig"):
+                continue
+            delattr(layer, name)
             orig = getattr(layer, name + "_orig")
             orig.data = copy.deepcopy(parameter).data
-            # delattr(layer, name + "_orig")
-            # layer.register_parameter(
-            #     name + "_orig",
-            #     torch.nn.Parameter(copy.deepcopy(parameter).to(orig_device)),
-            # )
-
-            # mask = getattr(layer, name + "_mask")
-            # orig = getattr(layer, name + "_orig")
-            # pruned_tensor = mask.to(dtype=orig.dtype) * orig
-            # setattr(layer, name, pruned_tensor)
         trainer.set_hyper_parameter(copy.deepcopy(init_hyper_parameter))
         trainer.save(os.path.join(save_dir, str(epoch)))
 
