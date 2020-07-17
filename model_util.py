@@ -49,8 +49,6 @@ class ModelUtil:
             self.set_model_attr(key, value)
 
     def get_pruned_parameters(self):
-        if not prune.is_pruned(self.model):
-            raise RuntimeError("not pruned")
         res = dict()
         for layer_index, layer in enumerate(self.model.modules()):
             for name, parameter in layer.named_parameters(recurse=False):
