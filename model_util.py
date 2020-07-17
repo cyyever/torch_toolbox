@@ -94,14 +94,7 @@ class ModelUtil:
         for a in self.get_pruned_parameters():
             layer = a[0]
             real_name = a[1]
-            mask = getattr(layer, real_name + "_mask")
-            orig = getattr(layer, real_name + "_orig")
-            delattr(layer, real_name + "_orig")
-            delattr(layer, real_name + "_mask")
-            delattr(layer, real_name)
-            layer.register_parameter(
-                real_name, torch.nn.Parameter(mask * orig),
-            )
+            prune.remove(layer, real_name)
 
     def get_sparsity(self):
         none_zero_parameter_num = 0
