@@ -1,6 +1,7 @@
 import copy
 import torch
 import torch.nn as nn
+import torch.nn.utils.prune as prune
 
 import util
 
@@ -54,20 +55,28 @@ class ModelUtil:
             for name, parameter in layer.named_parameters(recurse=False):
                 if parameter is None:
                     continue
-                mask = None
-                if name.endswith("_orig"):
-                    tmp_name = name[:-5]
-                    mask = getattr(layer, tmp_name + "_mask", None)
-                    if mask is not None:
-                        name = tmp_name
+                assert name.endswith("_orig")
+                real_name = name[:-5]
+                mask = getattr(layer, real_name + "_mask", None)
+                assert mask
                 res.append(
-                    (layer, name, copy.deepcopy(parameter), copy.deepcopy(mask)))
+                    (layer,
+                     real_name,
+                     copy.deepcopy(parameter),
+                        copy.deepcopy(mask)))
         return res
 
-    def get_pruned_parameter_dict(self):
+    def get_original_parameters(self):
         res = dict()
-        for (layer, name, parameter, mask) in self.get_pruned_parameters():
-            res[(layer, name)] = (parameter, mask)
+        if prune.is_pruned(self.model):
+            for (layer, name, parameter, _) in self.get_pruned_parameters():
+                res[(layer, name)] = parameter
+            return res
+        for layer in self.model.modules():
+            for name, parameter in layer.named_parameters(recurse=False):
+                if parameter is None:
+                    continue
+                res[(layer, name)] = copy.deepcopy(parameter)
         return res
 
     def get_pruning_mask(self):
@@ -76,12 +85,20 @@ class ModelUtil:
             raise RuntimeError("not pruned")
         return util.parameters_to_vector((v[3] for v in pruned_parameters))
 
+    def merge_and_remove_pruning_mask(self):
+        pass
+
     def get_sparsity(self):
         none_zero_parameter_num = 0
         parameter_count = 0
-        for layer, name in self.get_pruned_parameter_dict():
-            parameter_count += len(getattr(layer, name).view(-1))
-            none_zero_parameter_num += torch.sum(getattr(layer, name) != 0)
+        for layer in self.model.modules():
+            for name, _ in layer.named_parameters(recurse=False):
+                if name.endswith("_orig"):
+                    name = name[:-5]
+                parameter_count += len(getattr(layer, name).view(-1))
+                none_zero_parameter_num += torch.sum(getattr(layer, name) != 0)
+        print(none_zero_parameter_num, parameter_count)
+
         sparsity = 100 * float(none_zero_parameter_num) / \
             float(parameter_count)
         return (sparsity, none_zero_parameter_num, parameter_count)

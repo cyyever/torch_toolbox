@@ -47,7 +47,7 @@ def lottery_ticket_prune(
     get_logger().info("prune amount is %s", pruning_amount)
 
     model_util = ModelUtil(trainer.model)
-    init_parameters = model_util.get_pruned_parameter_dict()
+    init_parameters = model_util.get_original_parameters()
     for k, v in init_parameters.items():
         init_parameters[k] = copy.deepcopy(v)
 
@@ -95,9 +95,8 @@ def lottery_ticket_prune(
         sparsity, _, __ = model_util.get_sparsity()
         get_logger().info("after prune sparsity is %s%%", sparsity)
 
-        for k, v in init_parameters.items():
+        for k, parameter in init_parameters.items():
             layer, name = k
-            parameter = v[0]
             orig_device = getattr(layer, name + "_orig").device
             delattr(layer, name + "_orig")
             layer.register_parameter(
