@@ -10,7 +10,7 @@ from cyy_naive_lib.task_queue import TaskQueue
 from cyy_naive_lib.list_op import split_list_to_chunks
 
 from device import get_cuda_devices
-from util import parameters_to_vector
+from util import cat_tensors_to_vector
 from model_util import ModelUtil
 
 
@@ -129,7 +129,7 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
     for name in param_shape_dict:
         ModelUtil(model_snapshot).del_attr(name)
 
-    parameter_snapshot = parameters_to_vector(params)
+    parameter_snapshot = cat_tensors_to_vector(params)
 
     devices = get_cuda_devices()
     inputs_dict = dict()

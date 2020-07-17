@@ -230,7 +230,7 @@ class HyperGradientTrainer:
             model_util = ModelUtil(model)
             parameters = model_util.get_parameter_list()
             gradient_shape = parameters.shape
-            mask = model_util.get_pruning_mask()
+            mask = model_util.get_pruning_mask_list()
             assert len(mask) == len(parameters)
         m = None
         if mask is not None:

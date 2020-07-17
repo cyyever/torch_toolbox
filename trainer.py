@@ -235,6 +235,7 @@ class Trainer:
                             and instance_index not in computed_indices
                         ):
                             continue
+                        optimizer.zero_grad()
                         instance_input = instance_inputs[i]
                         instance_target = instance_targets[i]
                         output = self.model(torch.stack([instance_input]))
@@ -243,8 +244,7 @@ class Trainer:
                                 [instance_target]))
 
                         instance_gradient = ModelUtil(
-                            self.model
-                        ).get_gradient_list_by_loss(loss)
+                            self.model).get_gradient_list()
                         per_instance_gradient_callback(
                             self,
                             instance_index,
