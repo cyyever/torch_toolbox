@@ -86,7 +86,21 @@ class ModelUtil:
         return util.parameters_to_vector((v[3] for v in pruned_parameters))
 
     def merge_and_remove_pruning_mask(self):
-        pass
+        assert prune.is_pruned(self.model)
+        for layer in self.model.modules():
+            for name, parameter in layer.named_parameters(recurse=False):
+                if parameter is None:
+                    continue
+                assert name.endswith("_orig")
+                real_name = name[:-5]
+                mask = getattr(layer, real_name + "_mask")
+                orig = getattr(layer, real_name + "_orig")
+                delattr(layer, real_name + "_orig")
+                delattr(layer, real_name + "_mask")
+                delattr(layer, real_name)
+                layer.register_parameter(
+                    real_name, torch.nn.Parameter(mask * orig),
+                )
 
     def get_sparsity(self):
         none_zero_parameter_num = 0
