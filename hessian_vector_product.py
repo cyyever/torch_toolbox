@@ -16,15 +16,12 @@ from model_util import ModelUtil
 
 class ModelSnapshot:
     data: dict = dict()
+    prototypes: dict = dict()
     lock = threading.Lock()
 
     @staticmethod
-    def clear(model_class):
-        with ModelSnapshot.lock:
-            ModelSnapshot.data.pop(model_class, None)
-
-    @staticmethod
-    def get(model_class, device):
+    def get(model, device):
+        model_class = model.__class__.__name__
         device_str = str(device)
         with ModelSnapshot.lock:
             if model_class not in ModelSnapshot.data:
@@ -34,11 +31,22 @@ class ModelSnapshot:
             return ModelSnapshot.data[model_class][device_str]
 
     @staticmethod
-    def resize(model, device, new_number):
+    def get_prototype(model):
         model_class = model.__class__.__name__
-        snapshots = ModelSnapshot.get(model_class, device)
+        with ModelSnapshot.lock:
+            if model_class not in ModelSnapshot.prototypes:
+                ModelSnapshot.prototypes[model_class] = copy.deepcopy(model)
+            return ModelSnapshot.prototypes[model_class]
+
+    @staticmethod
+    def resize_and_get(model, device, new_number):
+        snapshots = ModelSnapshot.get(model, device)
+        if len(snapshots) >= new_number:
+            return snapshots
+        prototype = ModelSnapshot.get_prototype(model)
         while len(snapshots) < new_number:
-            snapshots.append(copy.deepcopy(model))
+            snapshots.append(copy.deepcopy(prototype))
+        return snapshots
 
 
 def load_model_parameters(model, parameters, param_shape_dict, device):
@@ -62,9 +70,9 @@ def __get_f(
         param_shape_dict):
     def f(*args):
         nonlocal inputs, targets, loss_fun, param_shape_dict, model_snapshot, device
-        model_class = model_snapshot.__class__.__name__
-        ModelSnapshot.resize(model_snapshot, device, len(args))
-        model_snapshots = ModelSnapshot.get(model_class, device)
+        model_snapshots = ModelSnapshot.resize_and_get(
+            model_snapshot, device, len(args)
+        )
         assert len(model_snapshots) >= len(args)
         loss = None
         for i, arg in enumerate(args):
@@ -120,18 +128,15 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
     # get all parameters and names
     params = []
     param_shape_dict = dict()
-    model_snapshot = copy.deepcopy(model)
+    devices = get_cuda_devices()
+    model_snapshot = ModelSnapshot.resize_and_get(model, devices[0], 1)[0]
 
-    for name, param in model_snapshot.named_parameters():
-        params.append(param.detach())
+    for name, param in model.named_parameters():
+        params.append(copy.deepcopy(param).detach())
         param_shape_dict[name] = param.shape
-
-    for name in param_shape_dict:
-        ModelUtil(model_snapshot).del_attr(name)
 
     parameter_snapshot = cat_tensors_to_vector(params)
 
-    devices = get_cuda_devices()
     inputs_dict = dict()
     targets_dict = dict()
     parameter_dict = dict()
@@ -226,11 +231,9 @@ if __name__ == "__main__":
             print("two use time ", c.elapsed_milliseconds())
             print(a)
             c.reset_start_time()
-            a = hvp_function([v, v])
-            print("two use time ", c.elapsed_milliseconds())
-            c.reset_start_time()
-            a = hvp_function([v] * 3)
+            a = hvp_function([v, 2 * v, 3 * v])
             print("3 use time ", c.elapsed_milliseconds())
+            print(a)
             c.reset_start_time()
             a = hvp_function([v] * 4)
             print("4 use time ", c.elapsed_milliseconds())
@@ -246,8 +249,8 @@ if __name__ == "__main__":
             c.reset_start_time()
             a = hvp_function([v] * 100)
             print("100 use time ", c.elapsed_milliseconds())
-            with Profile():
-                c.reset_start_time()
-                a = hvp_function([v] * 100)
-                print("100 use time ", c.elapsed_milliseconds())
+            # with Profile():
+            #     c.reset_start_time()
+            #     a = hvp_function([v] * 100)
+            #     print("100 use time ", c.elapsed_milliseconds())
         break
