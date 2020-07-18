@@ -28,7 +28,6 @@ class ModelUtil:
                     real_name = name[:-5]
                     mask = getattr(layer, real_name + "_mask", None)
                     assert mask is not None
-                    assert getattr(layer, real_name).grad is None
                     parameter.grad = parameter.grad * mask
         return util.cat_tensors_to_vector(
             (parameter.grad for parameter in self.__get_parameter_seq())
