@@ -99,7 +99,6 @@ def lottery_ticket_prune(
             layer, name = k
             if not hasattr(layer, name + "_orig"):
                 continue
-            delattr(layer, name)
             orig = getattr(layer, name + "_orig")
             orig.data = copy.deepcopy(parameter).data
         trainer.set_hyper_parameter(copy.deepcopy(init_hyper_parameter))
