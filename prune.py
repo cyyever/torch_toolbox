@@ -7,7 +7,7 @@ import torch.nn.utils.prune
 
 from cyy_naive_lib.log import get_logger
 
-from .visualization import Window, EpochWindow
+from .visualization import EpochWindow
 from .model_util import ModelUtil
 from .configuration import get_task_configuration
 
@@ -20,7 +20,7 @@ def lottery_ticket_prune(
     hyper_parameter=None,
     save_dir=None,
 ):
-    Window.set_env(
+    visualization_env = (
         "prune_"
         + task_name
         + "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
@@ -69,12 +69,12 @@ def lottery_ticket_prune(
 
         abs_parameters = parameters.abs()
         abs_parameters = abs_parameters[abs_parameters.nonzero()]
-        win = EpochWindow("abs parameter statistics")
+        win = EpochWindow("abs parameter statistics", env=visualization_env)
         win.y_label = "statistics"
         win.plot_scalar(epoch, abs_parameters.mean(), "mean value")
         win.plot_scalar(epoch, abs_parameters.max(), "max value")
         win.plot_scalar(epoch, abs_parameters.min(), "min value")
-        win = EpochWindow("abs parameter variance")
+        win = EpochWindow("abs parameter variance", env=visualization_env)
         win.y_label = "variance"
         win.plot_scalar(epoch, abs_parameters.var())
 
