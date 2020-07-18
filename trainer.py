@@ -242,6 +242,7 @@ class Trainer:
                         loss = self.loss_fun(
                             output, torch.stack(
                                 [instance_target]))
+                        loss.backward()
 
                         instance_gradient = ModelUtil(
                             self.model).get_gradient_list()
