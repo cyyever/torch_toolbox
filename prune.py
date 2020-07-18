@@ -30,6 +30,10 @@ def lottery_ticket_prune(
     if model_path is not None:
         get_logger().info("use model %s", model_path)
         trainer.model = torch.load(model_path)
+    model_util = ModelUtil(trainer.model)
+    if model_path is not None:
+        sparsity, _, __ = model_util.get_sparsity()
+        get_logger().info("loaded model sparsity is %s%%", sparsity)
 
     if hyper_parameter is not None:
         default_hyper_parameter = trainer.get_hyper_parameter()
@@ -46,7 +50,6 @@ def lottery_ticket_prune(
     get_logger().info("prune model when test accuracy is %s", pruning_accuracy)
     get_logger().info("prune amount is %s", pruning_amount)
 
-    model_util = ModelUtil(trainer.model)
     init_parameters = model_util.get_original_parameters()
     for k, v in init_parameters.items():
         init_parameters[k] = copy.deepcopy(v)
