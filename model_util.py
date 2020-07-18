@@ -12,13 +12,13 @@ import util
 class ModelUtil:
     def __init__(self, model: torch.nn.Module):
         self.model = model
-        self.is_pruned = None
+        self.__is_pruned = None
 
     def get_parameter_list(self):
         return util.cat_tensors_to_vector(self.__get_parameter_seq())
 
     def get_gradient_list(self):
-        if self.__is_pruned():
+        if self.is_pruned:
             for layer in self.model.modules():
                 for name, parameter in layer.named_parameters(recurse=False):
                     if not name.endswith("_orig"):
@@ -74,7 +74,7 @@ class ModelUtil:
 
     def get_original_parameters(self):
         res = dict()
-        if self.__is_pruned():
+        if self.is_pruned:
             for (layer, name, parameter, _) in self.__get_pruned_parameters():
                 res[(layer, name)] = parameter
             return res
@@ -86,7 +86,7 @@ class ModelUtil:
         return res
 
     def get_pruning_mask_list(self):
-        assert self.__is_pruned()
+        assert self.is_pruned
         res = dict()
         for name, parameter in self.model.named_parameters():
             if name.endswith("_orig"):
@@ -111,13 +111,14 @@ class ModelUtil:
             float(parameter_count)
         return (sparsity, none_zero_parameter_num, parameter_count)
 
-    def __is_pruned(self):
-        if self.is_pruned is None:
-            self.is_pruned = prune.is_pruned(self.model)
-        return self.is_pruned
+    @property
+    def is_pruned(self):
+        if self.__is_pruned is None:
+            self.__is_pruned = prune.is_pruned(self.model)
+        return self.__is_pruned
 
     def __get_pruned_parameters(self):
-        assert self.__is_pruned()
+        assert self.is_pruned
         res = list()
         for layer in self.model.modules():
             for name, parameter in layer.named_parameters(recurse=False):
@@ -140,7 +141,7 @@ class ModelUtil:
     def __get_parameter_seq(self):
         res = dict()
         for name, parameter in self.model.named_parameters():
-            if self.__is_pruned() and name.endswith("_orig"):
+            if self.is_pruned and name.endswith("_orig"):
                 res[name[:-5]] = parameter
                 continue
             res[name] = parameter

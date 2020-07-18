@@ -3,38 +3,28 @@ import visdom
 
 
 class Window:
-    cur_env = "main"
-    envs: dict = {cur_env: dict()}
-
-    @staticmethod
-    def set_env(env):
-        Window.cur_env = env
+    __envs: dict = dict()
+    __sessions: dict = {}
 
     @staticmethod
     def save_envs():
-        visdom.Visdom(env=Window.cur_env).save(list(Window.envs.keys()))
+        visdom.Visdom().save(list(Window.__envs.keys()))
 
-    @staticmethod
-    def add_window(win):
-        if win.env not in Window.envs:
-            Window.envs[win.env] = dict()
-        Window.envs[win.env][win.title] = win.win
+    def __init__(self, title, env="main", x_label="", y_label=""):
+        if env not in Window.__sessions:
+            Window.__sessions[env] = visdom.Visdom(env=env)
 
-    def __init__(self, title, env=None, x_label="", y_label=""):
-        if env is None:
-            env = Window.cur_env
-        self.vis = visdom.Visdom(env=env)
-        self.env = env
+        self.vis = Window.__sessions[env]
         self.title = title
         self.win = None
-        if env in Window.envs:
-            self.win = Window.envs[env].get(title, None)
+        if env in Window.__envs:
+            self.win = Window.__envs[env].get(title, None)
         self.x_label = x_label
         self.y_label = y_label
 
     def plot_line(self, x, y, x_label=None, y_label=None, name=None):
-        if self.win is not None and not self.vis.win_exists(self.win):
-            self.win = None
+        # if self.win is not None and not self.vis.win_exists(self.win):
+        #     self.win = None
 
         if x_label is None:
             x_label = self.x_label
@@ -63,19 +53,19 @@ class Window:
                 title=self.title,
                 showlegend=True),
         )
-        Window.add_window(self)
+        self._add_window()
 
     def plot_histogram(self, tensor):
-        if self.win is not None and not self.vis.win_exists(self.win):
-            self.win = None
+        # if self.win is not None and not self.vis.win_exists(self.win):
+        #     self.win = None
 
         self.win = self.vis.histogram(
             tensor.view(-1), win=self.win, opts=dict(numbins=1024, title=self.title)
         )
 
     def plot_scatter(self, tensor, name=None):
-        if self.win is not None and not self.vis.win_exists(self.win):
-            self.win = None
+        # if self.win is not None and not self.vis.win_exists(self.win):
+        #     self.win = None
         update = None
         if self.win is not None:
             update = "replace"
@@ -86,14 +76,19 @@ class Window:
             update=update,
             opts=dict(
                 title=self.title))
-        Window.add_window(self)
+        self._add_window()
 
     def save(self):
-        self.vis.save([self.env])
+        self.vis.save([self.vis.env])
+
+    def _add_window(self):
+        if self.vis.env not in Window.__envs:
+            Window.__envs[self.vis.env] = dict()
+        Window.__envs[self.vis.env][self.title] = self.win
 
 
 class EpochWindow(Window):
-    def __init__(self, title, env=None, y_label=""):
+    def __init__(self, title, env="main", y_label=""):
         super().__init__(title, env=env, x_label="Epoch", y_label=y_label)
 
     def plot_learning_rate(self, epoch, learning_rate):
