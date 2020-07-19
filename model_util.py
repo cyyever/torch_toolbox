@@ -86,6 +86,15 @@ class ModelUtil:
                 res[(layer, name)] = copy.deepcopy(parameter)
         return res
 
+    def merge_and_remove_masks(self):
+        assert self.is_pruned
+        for layer in self.model.modules():
+            for name, _ in layer.named_parameters(recurse=False):
+                if not name.endswith("_orig"):
+                    continue
+                real_name = name[:-5]
+                prune.remove(layer, real_name)
+
     def get_pruning_mask_list(self):
         assert self.is_pruned
         res = dict()
