@@ -6,9 +6,8 @@ from device import get_cuda_devices
 
 class CUDATaskQueue(TaskQueue):
     def __init__(self, processor):
-        cuda_devices = get_cuda_devices()
-        super().__init__(self, processor, len(cuda_devices))
-        self.cuda_devices = cuda_devices
+        self.cuda_devices = get_cuda_devices()
+        super().__init__(processor, len(self.cuda_devices))
 
     def _get_extra_task_arguments(self, worker_id):
         return [self.cuda_devices[worker_id]]
