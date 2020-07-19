@@ -20,19 +20,20 @@ class LeNet5(nn.Module):
     F7 - 10 (Output)
     """
 
-    def __init__(self):
+    def __init__(self, input_channels=1):
         super(LeNet5, self).__init__()
 
+        self.input_channels = input_channels
         self.convnet = nn.Sequential(
             collections.OrderedDict(
                 [
-                    ("c1", nn.Conv2d(1, 6, kernel_size=(5, 5))),
+                    ("c1", nn.Conv2d(self.input_channels, 6, kernel_size=5)),
                     ("relu1", nn.ReLU()),
-                    ("s2", nn.MaxPool2d(kernel_size=(2, 2), stride=2)),
-                    ("c3", nn.Conv2d(6, 16, kernel_size=(5, 5))),
+                    ("s2", nn.MaxPool2d(kernel_size=2, stride=2)),
+                    ("c3", nn.Conv2d(6, 16, kernel_size=5)),
                     ("relu3", nn.ReLU()),
-                    ("s4", nn.MaxPool2d(kernel_size=(2, 2), stride=2)),
-                    ("c5", nn.Conv2d(16, 120, kernel_size=(5, 5))),
+                    ("s4", nn.MaxPool2d(kernel_size=2, stride=2)),
+                    ("c5", nn.Conv2d(16, 120, kernel_size=5)),
                     ("relu5", nn.ReLU()),
                 ]
             )
