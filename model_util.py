@@ -88,12 +88,16 @@ class ModelUtil:
 
     def merge_and_remove_masks(self):
         assert self.is_pruned
+        removed_items = []
         for layer in self.model.modules():
             for name, _ in layer.named_parameters(recurse=False):
                 if not name.endswith("_orig"):
                     continue
                 real_name = name[:-5]
-                prune.remove(layer, real_name)
+                removed_items.append((layer, real_name))
+
+        for layer, name in removed_items:
+            prune.remove(layer, name)
 
     def get_pruning_mask_list(self):
         assert self.is_pruned
