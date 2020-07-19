@@ -79,6 +79,7 @@ def __get_f(
             cur_model_snapshot = model_snapshots[i]
             load_model_parameters(
                 cur_model_snapshot, arg, param_shape_dict, device)
+            cur_model_snapshot.to(device)
             if loss is None:
                 loss = loss_fun(cur_model_snapshot(inputs), targets)
             else:
