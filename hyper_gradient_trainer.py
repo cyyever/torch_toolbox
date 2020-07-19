@@ -226,8 +226,10 @@ class HyperGradientTrainer:
         mask = None
         gradient_shape = None
         if prune.is_pruned(model):
-            get_logger().info("use pruned model")
             model_util = ModelUtil(model)
+            get_logger().info(
+                "use pruned model, sparsity is %s", model_util.get_sparsity()[0]
+            )
             parameters = model_util.get_parameter_list()
             gradient_shape = parameters.shape
             mask = model_util.get_pruning_mask_list()
