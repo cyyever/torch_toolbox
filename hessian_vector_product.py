@@ -130,6 +130,11 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
     params = []
     param_shape_dict = dict()
     devices = get_cuda_devices()
+
+    if ModelUtil(model).is_pruned:
+        model = copy.deepcopy(model)
+        ModelUtil(model).merge_and_remove_masks()
+
     model_snapshot = ModelSnapshot.resize_and_get(model, devices[0], 1)[0]
 
     for name, param in model.named_parameters():
