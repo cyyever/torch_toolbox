@@ -5,12 +5,22 @@ import visdom
 class Window:
     __envs: dict = dict()
     __sessions: dict = {}
+    __cur_env = None
+
+    @staticmethod
+    def set_cur_env(env):
+        Window.__cur_env = env
 
     @staticmethod
     def save_envs():
         visdom.Visdom().save(list(Window.__envs.keys()))
 
-    def __init__(self, title, env="main", x_label="", y_label=""):
+    def __init__(self, title, env=None, x_label="", y_label=""):
+        if env is None:
+            if Window.__cur_env is not None:
+                env = Window.__cur_env
+            else:
+                env = "main"
         if env not in Window.__sessions:
             Window.__sessions[env] = visdom.Visdom(env=env)
 
@@ -88,7 +98,7 @@ class Window:
 
 
 class EpochWindow(Window):
-    def __init__(self, title, env="main", y_label=""):
+    def __init__(self, title, env=None, y_label=""):
         super().__init__(title, env=env, x_label="Epoch", y_label=y_label)
 
     def plot_learning_rate(self, epoch, learning_rate):
