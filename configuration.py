@@ -19,12 +19,17 @@ def choose_loss_function(model):
     raise NotImplementedError()
 
 
+def get_task_dataset_name(name):
+    if name.startswith("CIFAR10_"):
+        return "CIFAR10"
+    return name
+
+
 def get_task_configuration(task_name, for_training):
     model = None
     loss_fun = None
     hyper_parameter = None
     momentum = 0.9
-    dataset_name = task_name
     if task_name == "MNIST":
         model = LeNet5()
         if for_training:
@@ -67,7 +72,6 @@ def get_task_configuration(task_name, for_training):
             #     lambda optimizer: optim.lr_scheduler.StepLR(
             #         optimizer, step_size=10))
     elif task_name == "CIFAR10_LENET":
-        dataset_name = "CIFAR10"
         model = LeNet5(input_channels=3)
         if for_training:
             hyper_parameter = HyperParameter(
@@ -94,21 +98,21 @@ def get_task_configuration(task_name, for_training):
     else:
         raise NotImplementedError(task_name)
 
-    if hyper_parameter.optimizer_factory is None:
-        hyper_parameter.set_optimizer_factory(
-            lambda params, learning_rate, weight_decay, dataset: optim.SGD(
-                params,
-                momentum=momentum,
-                lr=learning_rate,
-                weight_decay=(weight_decay / len(dataset)),
-            )
-        )
-
+    dataset_name = get_task_dataset_name(task_name)
     validation_dataset = get_dataset(dataset_name, False)
 
     if loss_fun is None:
         loss_fun = choose_loss_function(model)
     if for_training:
+        if hyper_parameter.optimizer_factory is None:
+            hyper_parameter.set_optimizer_factory(
+                lambda params, learning_rate, weight_decay, dataset: optim.SGD(
+                    params,
+                    momentum=momentum,
+                    lr=learning_rate,
+                    weight_decay=(weight_decay / len(dataset)),
+                )
+            )
         training_dataset = get_dataset(dataset_name, True)
         trainer = Trainer(model, loss_fun, training_dataset)
         trainer.set_hyper_parameter(hyper_parameter)
