@@ -3,7 +3,6 @@
 import threading
 import copy
 import numpy as np
-import torch
 import torch.autograd as autograd
 
 from cyy_naive_lib.task_queue import TaskQueue
@@ -202,61 +201,3 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
         return [p.to(devices[0]) for p in products]
 
     return vhp_func
-
-
-if __name__ == "__main__":
-    from configuration import get_task_configuration
-    from cyy_naive_lib.time_counter import TimeCounter
-    from cyy_naive_lib.profiling import Profile
-
-    trainer = get_task_configuration("MNIST", True)
-    training_data_loader = torch.utils.data.DataLoader(
-        trainer.training_dataset, batch_size=16, shuffle=True,
-    )
-    parameter_vector = ModelUtil(trainer.model).get_parameter_list()
-    v = torch.ones(parameter_vector.shape)
-    for batch in training_data_loader:
-        hvp_function = get_hessian_vector_product_func(
-            trainer.model, batch, trainer.loss_fun
-        )
-        a = hvp_function([v, 2 * v])
-        print(a)
-        trainer = get_task_configuration("MNIST", True)
-        hvp_function = get_hessian_vector_product_func(
-            trainer.model, batch, trainer.loss_fun
-        )
-        a = hvp_function([v, 2 * v])
-        print(a)
-
-        with TimeCounter() as c:
-            a = hvp_function(v)
-            print("one use time ", c.elapsed_milliseconds())
-            print(a)
-            c.reset_start_time()
-            a = hvp_function([v, 2 * v])
-            print("two use time ", c.elapsed_milliseconds())
-            print(a)
-            c.reset_start_time()
-            a = hvp_function([v, 2 * v, 3 * v])
-            print("3 use time ", c.elapsed_milliseconds())
-            print(a)
-            c.reset_start_time()
-            a = hvp_function([v] * 4)
-            print("4 use time ", c.elapsed_milliseconds())
-            c.reset_start_time()
-            a = hvp_function([v] * 4)
-            print("4 use time ", c.elapsed_milliseconds())
-            c.reset_start_time()
-            a = hvp_function([v] * 10)
-            print("10 use time ", c.elapsed_milliseconds())
-            c.reset_start_time()
-            a = hvp_function([v] * 10)
-            print("10 use time ", c.elapsed_milliseconds())
-            c.reset_start_time()
-            a = hvp_function([v] * 100)
-            print("100 use time ", c.elapsed_milliseconds())
-            # with Profile():
-            #     c.reset_start_time()
-            #     a = hvp_function([v] * 100)
-            #     print("100 use time ", c.elapsed_milliseconds())
-        break
