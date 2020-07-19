@@ -103,7 +103,7 @@ def lottery_ticket_prune(
             if not hasattr(layer, name + "_orig"):
                 continue
             orig = getattr(layer, name + "_orig")
-            orig.data = copy.deepcopy(parameter).data
+            orig.data = copy.deepcopy(parameter).to(orig.device).data
         trainer.set_hyper_parameter(copy.deepcopy(init_hyper_parameter))
         trainer.save(os.path.join(save_dir, str(epoch)))
 
