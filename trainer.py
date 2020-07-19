@@ -63,7 +63,7 @@ class Trainer:
                 "validation_accuracy": trainer.validation_accuracy,
             }
 
-        Trainer.repeated_training(repeated_num, self, training_callback)
+        return Trainer.repeated_training(repeated_num, self, training_callback)
 
     def train(self, **kwargs):
         def pre_training_callback(trainer, optimizer, lr_scheduler):
