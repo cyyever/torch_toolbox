@@ -5,12 +5,12 @@ import copy
 import numpy as np
 import torch.autograd as autograd
 
-from cyy_naive_lib.task_queue import TaskQueue
 from cyy_naive_lib.list_op import split_list_to_chunks
 
 from device import get_cuda_devices
 from util import cat_tensors_to_vector
 from model_util import ModelUtil
+from cuda_task_queue import CUDATaskQueue
 
 
 class ModelSnapshot:
@@ -88,10 +88,9 @@ def __get_f(
     return f
 
 
-def __thread_func(task):
+def __thread_func(task, thread_device):
     (
         idx,
-        thread_device,
         vector_chunk,
         total_products,
         product_lock,
@@ -168,9 +167,7 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
         )
         assert len(vector_chunks) <= len(devices)
 
-        device_task_queue = TaskQueue(
-            processor=__thread_func,
-            worker_num=len(devices))
+        device_task_queue = CUDATaskQueue(processor=__thread_func)
         device_task_queue.start()
         total_products = dict()
         product_lock = threading.Lock()
@@ -178,7 +175,6 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
             device_task_queue.add_task(
                 (
                     idx,
-                    devices[idx],
                     vector_chunk,
                     total_products,
                     product_lock,
