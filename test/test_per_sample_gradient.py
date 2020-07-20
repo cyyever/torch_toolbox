@@ -10,6 +10,8 @@ trainer = get_task_configuration("MNIST", True)
 training_data_loader = torch.utils.data.DataLoader(
     trainer.training_dataset, batch_size=64, shuffle=True,
 )
+
+cnt = 0
 for batch in training_data_loader:
     with TimeCounter() as c:
         get_per_sample_gradient(
@@ -17,3 +19,6 @@ for batch in training_data_loader:
             trainer.loss_fun,
             batch[0],
             batch[1])
+    cnt += 1
+    if cnt > 3:
+        break
