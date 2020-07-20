@@ -96,13 +96,16 @@ def __thread_func(task, thread_device):
         product_lock,
         loss_fun,
         model_snapshot,
-        parameter_vector,
-        inputs,
-        targets,
+        parameter_dict,
+        input_dict,
+        target_dict,
         param_shape_dict,
     ) = task
     for index, vector in enumerate(vector_chunk):
         vector_chunk[index] = vector.to(thread_device)
+    inputs = input_dict.get(str(thread_device))
+    targets = target_dict.get(str(thread_device))
+    parameter_vector = parameter_dict.get(str(thread_device))
     vector_chunk = tuple(vector_chunk)
     products = autograd.functional.vhp(
         __get_f(
@@ -145,10 +148,11 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
     targets_dict = dict()
     parameter_dict = dict()
 
-    for idx, device in enumerate(devices):
-        inputs_dict[idx] = copy.deepcopy(batch[0]).to(device)
-        targets_dict[idx] = copy.deepcopy(batch[1]).to(device)
-        parameter_dict[idx] = copy.deepcopy(parameter_snapshot).to(device)
+    for device in devices:
+        inputs_dict[str(device)] = copy.deepcopy(batch[0]).to(device)
+        targets_dict[str(device)] = copy.deepcopy(batch[1]).to(device)
+        parameter_dict[str(device)] = copy.deepcopy(
+            parameter_snapshot).to(device)
 
     def vhp_func(v):
         v_is_tensor = False
@@ -180,9 +184,9 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
                     product_lock,
                     loss_fun,
                     model_snapshot,
-                    parameter_dict[idx],
-                    inputs_dict[idx],
-                    targets_dict[idx],
+                    parameter_dict,
+                    inputs_dict,
+                    targets_dict,
                     param_shape_dict,
                 )
             )
