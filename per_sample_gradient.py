@@ -42,6 +42,7 @@ def __thread_func(task, device):
             loss += loss_fun(new_model(sample_input), sample_target)
     loss.backward()
     gradient_lists = []
+    assert len(models) == len(input_chunk)
     for model in models:
         gradient_lists.append(ModelUtil(model).get_gradient_list())
 
