@@ -26,9 +26,7 @@ def __thread_func(task, device):
     new_model = copy.deepcopy(model)
     new_model.to(device)
     gradient_lists = []
-    for index, (sample_input, sample_target) in enumerate(
-        zip(input_chunk, target_chunk)
-    ):
+    for (sample_input, sample_target) in zip(input_chunk, target_chunk):
         new_model.zero_grad()
         sample_input = torch.stack([sample_input]).to(device)
         sample_target = torch.stack([sample_target]).to(device)
@@ -36,7 +34,8 @@ def __thread_func(task, device):
         loss.backward()
         gradient_lists.append(ModelUtil(new_model).get_gradient_list())
     assert len(gradient_lists) == len(input_chunk)
-    gradient_dict[idx] = gradient_lists
+    with gradient_lock:
+        gradient_dict[idx] = gradient_lists
 
 
 def get_per_sample_gradient(model, loss_fun, inputs, targets):
