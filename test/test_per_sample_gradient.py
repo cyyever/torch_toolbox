@@ -24,8 +24,8 @@ def test_get_per_sample_gradient():
             gradients = get_per_sample_gradient(
                 trainer.model, trainer.loss_fun, batch[0], batch[1]
             )
-            # if cnt == 0:
-            #     print("per_sample_gradient result", gradients)
+            if cnt == 0:
+                print("per_sample_gradient result", gradients)
 
         with TimeCounter():
             instance_inputs = batch[0].to(device)
@@ -38,18 +38,31 @@ def test_get_per_sample_gradient():
                 loss = trainer.loss_fun(output, torch.stack([instance_target]))
                 loss.backward()
                 gradient = ModelUtil(trainer.model).get_gradient_list()
-                # if cnt == 0:
-                #     print("per_sample_gradient single gradient", gradient)
+                if cnt == 0:
+                    print("per_sample_gradient single gradient", gradient)
 
         cnt += 1
         if cnt > 3:
             break
 
-    # with Profile():
-    #     for batch in training_data_loader:
-    #         get_per_sample_gradient(
-    #             trainer.model,
-    #             trainer.loss_fun,
-    #             batch[0],
-    #             batch[1])
-    #         break
+    with Profile():
+        for batch in training_data_loader:
+            get_per_sample_gradient(
+                trainer.model,
+                trainer.loss_fun,
+                batch[0],
+                batch[1])
+            break
+    with Profile():
+        for batch in training_data_loader:
+            instance_inputs = batch[0].to(device)
+            instance_targets = batch[1].to(device)
+            for (instance_input, instance_target) in zip(
+                instance_inputs, instance_targets
+            ):
+                trainer.model.zero_grad()
+                output = trainer.model(torch.stack([instance_input]))
+                loss = trainer.loss_fun(output, torch.stack([instance_target]))
+                loss.backward()
+                gradient = ModelUtil(trainer.model).get_gradient_list()
+            break
