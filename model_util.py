@@ -119,7 +119,6 @@ class ModelUtil:
                     name = name[:-5]
                 parameter_count += len(getattr(layer, name).view(-1))
                 none_zero_parameter_num += torch.sum(getattr(layer, name) != 0)
-        print(none_zero_parameter_num, parameter_count)
 
         sparsity = 100 * float(none_zero_parameter_num) / \
             float(parameter_count)
