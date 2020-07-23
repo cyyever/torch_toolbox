@@ -50,7 +50,7 @@ def lottery_ticket_prune(
     get_logger().info("prune model when test accuracy is %s", pruning_accuracy)
     get_logger().info("prune amount is %s", pruning_amount)
 
-    init_parameters = model_util.get_original_parameters()
+    init_parameters = model_util.get_original_parameters_for_pruning()
     for k, v in init_parameters.items():
         init_parameters[k] = copy.deepcopy(v)
 

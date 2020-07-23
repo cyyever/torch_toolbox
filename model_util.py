@@ -46,12 +46,6 @@ class ModelUtil:
                         delattr(layer, real_name)
         return copy.deepcopy(self.model)
 
-    def get_parameter_dict(self):
-        parameter_dict = dict()
-        for name, param in self.model.named_parameters():
-            parameter_dict[name] = param.detach().clone()
-        return parameter_dict
-
     def set_attr(self, name: str, value, as_parameter=True):
         model = self.model
         components = name.split(".")
@@ -82,21 +76,17 @@ class ModelUtil:
             else:
                 delattr(model, component)
 
-    def load_parameters(self, parameters: dict):
-        for key, value in parameters.items():
-            self.set_attr(key, value)
-
-    def get_original_parameters(self):
+    def get_original_parameters_for_pruning(self):
         res = dict()
-        if self.is_pruned:
-            for (layer, name, parameter, _) in self.__get_pruned_parameters():
-                res[(layer, name)] = parameter
-            return res
         for layer in self.model.modules():
             for name, parameter in layer.named_parameters(recurse=False):
-                if parameter is None:
-                    continue
-                res[(layer, name)] = copy.deepcopy(parameter)
+                real_name = name
+                if name.endswith("_orig"):
+                    real_name = name[:-5]
+                    assert hasattr(layer, real_name + "_mask")
+                else:
+                    assert not hasattr(layer, real_name + "_mask")
+                res[(layer, real_name)] = copy.deepcopy(parameter)
         return res
 
     def merge_and_remove_masks(self):
@@ -124,15 +114,9 @@ class ModelUtil:
         return util.cat_tensors_to_vector(dict_value_by_order(res))
 
     def get_sparsity(self):
-        none_zero_parameter_num = 0
-        parameter_count = 0
-        for layer in self.model.modules():
-            for name, _ in layer.named_parameters(recurse=False):
-                if name.endswith("_orig"):
-                    name = name[:-5]
-                parameter_count += len(getattr(layer, name).view(-1))
-                none_zero_parameter_num += torch.sum(getattr(layer, name) != 0)
-
+        parameter_list = self.get_parameter_list()
+        parameter_count = len(parameter_list)
+        none_zero_parameter_num = torch.sum(parameter_list != 0)
         sparsity = 100 * float(none_zero_parameter_num) / \
             float(parameter_count)
         return (sparsity, none_zero_parameter_num, parameter_count)
@@ -142,27 +126,6 @@ class ModelUtil:
         if self.__is_pruned is None:
             self.__is_pruned = prune.is_pruned(self.model)
         return self.__is_pruned
-
-    def __get_pruned_parameters(self):
-        assert self.is_pruned
-        res = list()
-        for layer in self.model.modules():
-            for name, parameter in layer.named_parameters(recurse=False):
-                real_name = name
-                mask = None
-                if name.endswith("_orig"):
-                    real_name = name[:-5]
-                    mask = getattr(layer, real_name + "_mask", None)
-                    assert mask is not None
-                else:
-                    assert not hasattr(layer, real_name + "_mask")
-                    mask = torch.ones_like(parameter)
-                res.append(
-                    (layer,
-                     real_name,
-                     copy.deepcopy(parameter),
-                        copy.deepcopy(mask)))
-        return res
 
     def __get_parameter_seq(self):
         res = dict()
