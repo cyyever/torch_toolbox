@@ -178,14 +178,8 @@ def set_dataset_dir(new_dataset_dir):
     __dataset_dir = new_dataset_dir
 
 
-
-
 def get_dataset(name, for_train):
     root_dir = os.path.join(__dataset_dir, name)
-    if for_train:
-        root_dir = os.path.join(root_dir, "training")
-    else:
-        root_dir = os.path.join(root_dir, "validation")
     if name == "MNIST":
         return torchvision.datasets.MNIST(
             root=root_dir,
