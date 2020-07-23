@@ -104,6 +104,10 @@ def lottery_ticket_prune(
                 continue
             orig = getattr(layer, name + "_orig")
             orig.data = copy.deepcopy(parameter).to(orig.device).data
+            mask = getattr(layer, name + "_mask")
+            pruned_tensor = mask.to(dtype=orig.dtype) * orig
+            setattr(layer, name, pruned_tensor)
+
         trainer.set_hyper_parameter(copy.deepcopy(init_hyper_parameter))
         trainer.save(os.path.join(save_dir, str(epoch)))
 
