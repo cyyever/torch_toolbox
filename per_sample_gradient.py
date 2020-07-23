@@ -12,7 +12,7 @@ from process_task_queue import CUDAProcessTaskQueue
 
 
 def __thread_func(task, args):
-    (index, input_chunk, target_chunk, loss_fun, model,) = task
+    (index, input_chunk, target_chunk, loss_fun, model, master_device) = task
 
     loss = None
     new_model = copy.deepcopy(model)
@@ -25,7 +25,9 @@ def __thread_func(task, args):
         sample_target = torch.stack([sample_target]).to(device)
         loss = loss_fun(new_model(sample_input), sample_target)
         loss.backward()
-        gradient_lists.append(ModelUtil(new_model).get_gradient_list())
+        gradient_lists.append(
+            ModelUtil(new_model).get_gradient_list().to(master_device)
+        )
     assert len(gradient_lists) == len(input_chunk)
     return (index, gradient_lists)
 
@@ -54,6 +56,7 @@ def get_per_sample_gradient(model, loss_fun, inputs, targets):
     model.share_memory()
 
     devices = get_cuda_devices()
+    master_device = devices[0]
 
     input_chunks = list(
         split_list_to_chunks(
@@ -76,7 +79,8 @@ def get_per_sample_gradient(model, loss_fun, inputs, targets):
     for idx, (input_chunk, target_chunk) in enumerate(
             zip(input_chunks, target_chunks)):
         device_task_queue.add_task(
-            (idx, input_chunk, target_chunk, loss_fun, model,))
+            (idx, input_chunk, target_chunk, loss_fun, model, master_device)
+        )
 
     gradient_dict = dict()
     for _ in range(len(input_chunks)):
