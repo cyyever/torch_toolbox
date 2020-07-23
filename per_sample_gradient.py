@@ -47,7 +47,7 @@ def get_per_sample_gradient(model, loss_fun, inputs, targets):
     assert loss_fun.reduction == "mean" or loss_fun.reduction == "elementwise_mean"
     assert len(inputs) == len(targets)
 
-    model = copy.deepcopy(model)
+    model = ModelUtil(model).deepcopy()
     if ModelUtil(model).is_pruned:
         ModelUtil(model).merge_and_remove_masks()
     model.zero_grad()

@@ -33,6 +33,19 @@ class ModelUtil:
             (parameter.grad for parameter in self.__get_parameter_seq())
         )
 
+    def deepcopy(self):
+        if self.is_pruned:
+            for layer in self.model.modules():
+                for name, _ in layer.named_parameters(recurse=False):
+                    if not name.endswith("_orig"):
+                        assert not hasattr(layer, name + "_mask")
+                        continue
+                    real_name = name[:-5]
+                    assert hasattr(layer, real_name + "_mask")
+                    if hasattr(layer, real_name):
+                        delattr(layer, real_name)
+        return copy.deepcopy(self.model)
+
     def get_parameter_dict(self):
         parameter_dict = dict()
         for name, param in self.model.named_parameters():
