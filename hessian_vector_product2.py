@@ -89,7 +89,7 @@ def __get_f(
     return f
 
 
-def __thread_func(task, thread_device):
+def __thread_func(task,args):
     (
         idx,
         vector_chunk,
@@ -100,6 +100,7 @@ def __thread_func(task, thread_device):
         target_dict,
         param_shape_dict,
     ) = task
+    thread_device=args[0]
     for index, vector in enumerate(vector_chunk):
         vector_chunk[index] = vector.to(thread_device)
     inputs = input_dict.get(str(thread_device))
