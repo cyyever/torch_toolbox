@@ -31,8 +31,8 @@ class Validator:
             for k in class_count:
                 class_correct_count[k] = 0
 
-        per_instance_loss = kwargs.get("per_instance_loss", False)
-        per_instance_output = kwargs.get("per_instance_output", False)
+        per_sample_loss = kwargs.get("per_sample_loss", False)
+        per_sample_output = kwargs.get("per_sample_output", False)
         dataset = dataset_with_indices(self.dataset)
 
         validation_data_loader = torch.utils.data.DataLoader(
@@ -61,12 +61,12 @@ class Validator:
 
                 outputs = self.model(inputs)
 
-                if per_instance_loss:
+                if per_sample_loss:
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
                         instance_validation_loss[instance_index] = self.loss_fun(
                             outputs[i].unsqueeze(0), targets[i].unsqueeze(0))
-                if per_instance_output:
+                if per_sample_output:
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
                         instance_output[instance_index] = outputs[i].to(
@@ -124,9 +124,9 @@ class Validator:
                 num_correct / num_examples,
                 {
                     "per_class_accuracy": class_count,
-                    "per_instance_loss": instance_validation_loss,
-                    "per_instance_output": instance_output,
-                    "per_instance_prob": instance_prob,
+                    "per_sample_loss": instance_validation_loss,
+                    "per_sample_output": instance_output,
+                    "per_sample_prob": instance_prob,
                 },
             )
 

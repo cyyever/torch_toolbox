@@ -71,8 +71,8 @@ class HyperGradientTrainer:
 
         self.trainer.train(
             pre_batch_callback=self.__pre_batch_callback,
-            per_instance_gradient_callback=(
-                self.__per_instance_gradient_callback,
+            per_sample_gradient_callback=(
+                self.__per_sample_gradient_callback,
                 self.computed_indices,
             ),
             after_batch_callback=self.__after_batch_callback,
@@ -265,7 +265,7 @@ class HyperGradientTrainer:
                 trainer.model, batch, trainer.loss_fun
             )
 
-    def __per_instance_gradient_callback(
+    def __per_sample_gradient_callback(
         self, trainer, instance_index, instance_gradient, **kwargs,
     ):
         assert instance_index in self.__get_real_computed_indices()
