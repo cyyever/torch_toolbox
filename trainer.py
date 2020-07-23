@@ -74,7 +74,7 @@ class Trainer:
                 self.__hyper_parameter,
                 optimizer,
                 lr_scheduler,
-                trainer.model,
+                trainer.model.__class__.__name__,
             )
 
         kwargs = Trainer.__prepend_callback(
