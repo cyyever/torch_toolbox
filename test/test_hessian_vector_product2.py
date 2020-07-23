@@ -2,10 +2,10 @@ import torch
 from cyy_naive_lib.time_counter import TimeCounter
 
 from configuration import get_task_configuration
-from hessian_vector_product import get_hessian_vector_product_func
+from hessian_vector_product2 import get_hessian_vector_product_func2
 from model_util import ModelUtil
 
-# from cyy_naive_lib.profiling import Profile
+from cyy_naive_lib.profiling import Profile
 
 
 def test_hessian_vector_product():
@@ -16,13 +16,13 @@ def test_hessian_vector_product():
     parameter_vector = ModelUtil(trainer.model).get_parameter_list()
     v = torch.ones(parameter_vector.shape)
     for batch in training_data_loader:
-        hvp_function = get_hessian_vector_product_func(
+        hvp_function = get_hessian_vector_product_func2(
             trainer.model, batch, trainer.loss_fun
         )
         a = hvp_function([v, 2 * v])
         print(a)
         trainer = get_task_configuration("MNIST", True)
-        hvp_function = get_hessian_vector_product_func(
+        hvp_function = get_hessian_vector_product_func2(
             trainer.model, batch, trainer.loss_fun
         )
         a = hvp_function([v, 2 * v])
@@ -61,8 +61,8 @@ def test_hessian_vector_product():
             c.reset_start_time()
             a = hvp_function([v] * 100)
             print("100 use time ", c.elapsed_milliseconds())
-            # with Profile():
-            #     c.reset_start_time()
-            #     a = hvp_function([v] * 100)
-            #     print("100 use time ", c.elapsed_milliseconds())
+            with Profile():
+                c.reset_start_time()
+                a = hvp_function([v] * 100)
+                print("100 use time ", c.elapsed_milliseconds())
         break
