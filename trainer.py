@@ -5,6 +5,7 @@ import torch
 
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.list_op import split_list_to_chunks
+from cyy_naive_lib.time_counter import TimeCounter
 
 from device import get_cpu_device, get_device
 from model_util import ModelUtil
@@ -250,20 +251,27 @@ class Trainer:
                         sample_gradient_targets.append(instance_target)
                         sample_gradient_indices.append(instance_index)
                     if sample_gradient_indices:
-                        gradient_list = get_per_sample_gradient(
-                            self.model,
-                            self.loss_fun,
-                            sample_gradient_inputs,
-                            sample_gradient_targets,
-                        )
-                        assert len(gradient_list) == len(
-                            sample_gradient_indices)
-                        for (sample_gradient, index) in zip(
-                            gradient_list, sample_gradient_indices
-                        ):
-                            per_sample_gradient_callback(
-                                self, index, sample_gradient, optimizer=optimizer, )
-                        del gradient_list
+                        with TimeCounter(with_block_logging=False) as t:
+                            gradient_list = get_per_sample_gradient(
+                                self.model,
+                                self.loss_fun,
+                                sample_gradient_inputs,
+                                sample_gradient_targets,
+                            )
+                            get_logger().info(
+                                "get per_sample_gradient use %s time for %s",
+                                t.elapsed_milliseconds(),
+                                len(sample_gradient_inputs),
+                            )
+
+                            assert len(gradient_list) == len(
+                                sample_gradient_indices)
+                            for (sample_gradient, index) in zip(
+                                gradient_list, sample_gradient_indices
+                            ):
+                                per_sample_gradient_callback(
+                                    self, index, sample_gradient, optimizer=optimizer, )
+                            del gradient_list
                 optimizer.zero_grad()
                 outputs = self.model(instance_inputs)
                 loss = self.loss_fun(outputs, instance_targets)
