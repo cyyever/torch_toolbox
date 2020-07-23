@@ -101,12 +101,15 @@ def lottery_ticket_prune(
         for k, parameter in init_parameters.items():
             layer, name = k
             if not hasattr(layer, name + "_orig"):
+                orig = getattr(layer, name)
+                orig.data = copy.deepcopy(parameter).to(orig.device).data
                 continue
             orig = getattr(layer, name + "_orig")
             orig.data = copy.deepcopy(parameter).to(orig.device).data
-            # mask = getattr(layer, name + "_mask")
-            # pruned_tensor = mask.to(dtype=orig.dtype) * orig
-            # setattr(layer, name, pruned_tensor)
+            mask = getattr(layer, name + "_mask")
+            pruned_tensor = mask.to(dtype=orig.dtype) * orig
+            delattr(layer, name)
+            setattr(layer, name, pruned_tensor)
 
         trainer.set_hyper_parameter(copy.deepcopy(init_hyper_parameter))
         trainer.save(os.path.join(save_dir, str(epoch)))
