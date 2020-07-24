@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import threading
+import atexit
 import copy
 import numpy as np
 import torch.autograd as autograd
@@ -10,7 +11,7 @@ from cyy_naive_lib.list_op import split_list_to_chunks
 from device import get_cuda_devices
 from util import cat_tensors_to_vector
 from model_util import ModelUtil
-from cuda_task_queue import CUDATaskQueue
+from process_task_queue import CUDAProcessTaskQueue
 
 
 class ModelSnapshot:
@@ -88,12 +89,10 @@ def __get_f(
     return f
 
 
-def __thread_func(task, thread_device):
+def __thread_func(task, args):
     (
         idx,
         vector_chunk,
-        total_products,
-        product_lock,
         loss_fun,
         model_snapshot,
         parameter_dict,
@@ -101,6 +100,7 @@ def __thread_func(task, thread_device):
         target_dict,
         param_shape_dict,
     ) = task
+    thread_device = args[0]
     for index, vector in enumerate(vector_chunk):
         vector_chunk[index] = vector.to(thread_device)
     inputs = input_dict.get(str(thread_device))
@@ -122,8 +122,19 @@ def __thread_func(task, thread_device):
         vector_chunk,
         strict=True,
     )[1]
-    with product_lock:
-        total_products[idx] = products
+    return (idx, products)
+
+
+device_task_queue = None
+
+
+def __exit_handler():
+    global device_task_queue
+    if device_task_queue is not None:
+        device_task_queue.force_stop()
+
+
+atexit.register(__exit_handler)
 
 
 def get_hessian_vector_product_func(model, batch, loss_fun):
@@ -132,9 +143,11 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
     param_shape_dict = dict()
     devices = get_cuda_devices()
 
+    model = ModelUtil(model).deepcopy()
     if ModelUtil(model).is_pruned:
-        model = copy.deepcopy(model)
         ModelUtil(model).merge_and_remove_masks()
+    model.zero_grad()
+    model.share_memory()
 
     model_snapshot = ModelSnapshot.resize_and_get(model, devices[0], 1)[0]
 
@@ -155,6 +168,7 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
             parameter_snapshot).to(device)
 
     def vhp_func(v):
+        global device_task_queue
         v_is_tensor = False
         if isinstance(v, list):
             vectors = v
@@ -171,17 +185,14 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
         )
         assert len(vector_chunks) <= len(devices)
 
-        device_task_queue = CUDATaskQueue(processor=__thread_func)
+        if device_task_queue is None:
+            device_task_queue = CUDAProcessTaskQueue(__thread_func)
         device_task_queue.start()
-        total_products = dict()
-        product_lock = threading.Lock()
         for idx, vector_chunk in enumerate(vector_chunks):
             device_task_queue.add_task(
                 (
                     idx,
                     vector_chunk,
-                    total_products,
-                    product_lock,
                     loss_fun,
                     model_snapshot,
                     parameter_dict,
@@ -191,7 +202,11 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
                 )
             )
 
-        device_task_queue.stop()
+        total_products = dict()
+        for _ in range(len(vector_chunks)):
+            idx, gradient_list = device_task_queue.get_result()
+            total_products[idx] = gradient_list
+
         products = []
         for idx in sorted(total_products.keys()):
             products += total_products[idx]
