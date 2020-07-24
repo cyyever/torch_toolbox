@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import threading
 import atexit
 import copy
 import numpy as np
@@ -17,26 +16,23 @@ from process_task_queue import CUDAProcessTaskQueue
 class ModelSnapshot:
     data: dict = dict()
     prototypes: dict = dict()
-    lock = threading.Lock()
 
     @staticmethod
     def get(model, device):
         model_class = model.__class__.__name__
         device_str = str(device)
-        with ModelSnapshot.lock:
-            if model_class not in ModelSnapshot.data:
-                ModelSnapshot.data[model_class] = dict()
-            if device_str not in ModelSnapshot.data[model_class]:
-                ModelSnapshot.data[model_class][device_str] = []
-            return ModelSnapshot.data[model_class][device_str]
+        if model_class not in ModelSnapshot.data:
+            ModelSnapshot.data[model_class] = dict()
+        if device_str not in ModelSnapshot.data[model_class]:
+            ModelSnapshot.data[model_class][device_str] = []
+        return ModelSnapshot.data[model_class][device_str]
 
     @staticmethod
     def get_prototype(model):
         model_class = model.__class__.__name__
-        with ModelSnapshot.lock:
-            if model_class not in ModelSnapshot.prototypes:
-                ModelSnapshot.prototypes[model_class] = copy.deepcopy(model)
-            return ModelSnapshot.prototypes[model_class]
+        if model_class not in ModelSnapshot.prototypes:
+            ModelSnapshot.prototypes[model_class] = copy.deepcopy(model)
+        return ModelSnapshot.prototypes[model_class]
 
     @staticmethod
     def resize_and_get(model, device, new_number):
@@ -89,7 +85,7 @@ def __get_f(
     return f
 
 
-def __thread_func(task, args):
+def processor_fun(task, args):
     (
         idx,
         vector_chunk,
@@ -100,16 +96,16 @@ def __thread_func(task, args):
         target_dict,
         param_shape_dict,
     ) = task
-    thread_device = args[0]
+    worker_device = args[0]
     for index, vector in enumerate(vector_chunk):
-        vector_chunk[index] = vector.to(thread_device)
-    inputs = input_dict.get(str(thread_device))
-    targets = target_dict.get(str(thread_device))
-    parameter_vector = parameter_dict.get(str(thread_device))
+        vector_chunk[index] = vector.to(worker_device)
+    inputs = input_dict.get(str(worker_device))
+    targets = target_dict.get(str(worker_device))
+    parameter_vector = parameter_dict.get(str(worker_device))
     vector_chunk = tuple(vector_chunk)
     products = autograd.functional.vhp(
         __get_f(
-            thread_device,
+            worker_device,
             inputs,
             targets,
             loss_fun,
@@ -125,13 +121,13 @@ def __thread_func(task, args):
     return (idx, products)
 
 
-device_task_queue = None
+task_queue = None
 
 
 def __exit_handler():
-    global device_task_queue
-    if device_task_queue is not None:
-        device_task_queue.force_stop()
+    global task_queue
+    if task_queue is not None:
+        task_queue.force_stop()
 
 
 atexit.register(__exit_handler)
@@ -168,7 +164,7 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
             parameter_snapshot).to(device)
 
     def vhp_func(v):
-        global device_task_queue
+        global task_queue
         v_is_tensor = False
         if isinstance(v, list):
             vectors = v
@@ -185,11 +181,11 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
         )
         assert len(vector_chunks) <= len(devices)
 
-        if device_task_queue is None:
-            device_task_queue = CUDAProcessTaskQueue(__thread_func)
-        device_task_queue.start()
+        if task_queue is None:
+            task_queue = CUDAProcessTaskQueue(processor_fun)
+        task_queue.start()
         for idx, vector_chunk in enumerate(vector_chunks):
-            device_task_queue.add_task(
+            task_queue.add_task(
                 (
                     idx,
                     vector_chunk,
@@ -204,7 +200,7 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
 
         total_products = dict()
         for _ in range(len(vector_chunks)):
-            idx, gradient_list = device_task_queue.get_result()
+            idx, gradient_list = task_queue.get_result()
             total_products[idx] = gradient_list
 
         products = []
