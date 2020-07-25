@@ -20,8 +20,10 @@ class Validator:
     def set_dataset(self, dataset):
         self.dataset = dataset
 
-    def validate(self, batch_size, **kwargs):
+    def load_model(self, model_path):
+        self.model = torch.load(model_path, map_location=get_device())
 
+    def validate(self, batch_size, **kwargs):
         class_count = dict()
         class_correct_count = dict()
 
