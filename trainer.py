@@ -6,7 +6,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.list_op import split_list_to_chunks
 
-from device import get_cpu_device, get_device
+from device import get_device
 from model_util import ModelUtil
 from validator import Validator
 from per_sample_gradient import get_per_sample_gradient
@@ -313,6 +313,9 @@ class Trainer:
             else:
                 lr_scheduler.step()
 
+    def load_model(self, model_path):
+        self.model = torch.load(model_path, map_location=get_device())
+
     def save(self, save_dir, with_timestamp=False):
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
@@ -324,11 +327,6 @@ class Trainer:
             )
 
         torch.save(model, os.path.join(save_dir, name))
-
-    def parameters(self):
-        model = self.model
-        model.to(get_cpu_device())
-        return model.parameters()
 
     def __reset_loss(self):
         self.min_training_loss = None
