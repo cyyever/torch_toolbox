@@ -16,7 +16,6 @@ class HyperGradientAnalyzer:
         self.cache_size = 1024
         self.hyper_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
             self.cache_size, self.validator.model, hyper_gradient_dir)
-        self.contributions = None
 
     def get_contributions(self, training_set_size=None):
         if training_set_size is None:
