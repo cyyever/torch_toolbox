@@ -53,6 +53,10 @@ def sub_dataset(dataset, indices):
     return torch.utils.data.Subset(dataset, indices)
 
 
+def sample_dataset(dataset, index):
+    return torch.utils.data.Subset(dataset, [index])
+
+
 def complement_dataset(dataset, indices):
     return sub_dataset(dataset, set(range(len(dataset)) - set(indices)))
 
