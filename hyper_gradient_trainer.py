@@ -244,7 +244,6 @@ class HyperGradientTrainer:
         m.set_permanent_storage()
         m.set_in_memory_number(cache_size)
         get_logger().info("gradient matrix use cache size %s", cache_size)
-        m.set_fetch_thread_number(10)
         m.enable_debug_logging(False)
         return m
 
