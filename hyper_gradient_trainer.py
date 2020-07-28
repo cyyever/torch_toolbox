@@ -173,11 +173,11 @@ class HyperGradientTrainer:
                 if v:
                     unfinished_keys.append(k)
 
-            self.hyper_gradient_matrix.prefetch(unfinished_keys)
-            self.mom_gradient_matrix.prefetch(unfinished_keys)
-
-            for k in unfinished_keys:
-                self.__do_delayed_computation(k)
+            for chunk in split_list_to_chunks(unfinished_keys, 100):
+                self.hyper_gradient_matrix.prefetch(chunk)
+                self.mom_gradient_matrix.prefetch(chunk)
+                for k in chunk:
+                    self.__do_delayed_computation(k)
             return
 
         mom_gradient = None
@@ -228,8 +228,8 @@ class HyperGradientTrainer:
         if prune.is_pruned(model):
             model_util = ModelUtil(model)
             get_logger().info(
-                "use pruned model, sparsity is %s", model_util.get_sparsity()[0]
-            )
+                "use pruned model, sparsity is %s",
+                model_util.get_sparsity()[0])
             parameters = model_util.get_parameter_list()
             gradient_shape = parameters.shape
             mask = model_util.get_pruning_mask_list()
