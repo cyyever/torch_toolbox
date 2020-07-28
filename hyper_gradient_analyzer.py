@@ -23,7 +23,7 @@ class HyperGradientAnalyzer:
         contribution_dict = dict()
         validation_gradient = self.validator.get_gradient()
         for chunk in split_list_to_chunks(
-            self.hyper_gradient_matrix.keys(), self.cache_size
+            self.hyper_gradient_matrix.keys(), self.cache_size // 3
         ):
             self.hyper_gradient_matrix.prefetch(chunk)
             for instance_index in chunk:
