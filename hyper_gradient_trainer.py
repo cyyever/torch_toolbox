@@ -244,7 +244,7 @@ class HyperGradientTrainer:
         m.set_permanent_storage()
         m.set_in_memory_number(cache_size)
         get_logger().info("gradient matrix use cache size %s", cache_size)
-        m.enable_debug_logging(False)
+        m.set_logging(False)
         return m
 
     def __pre_batch_callback(self, trainer, batch, batch_index):
