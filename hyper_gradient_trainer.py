@@ -168,6 +168,15 @@ class HyperGradientTrainer:
 
     def __do_delayed_computation(self, index=None):
         if index is None:
+            fast_keys = self.hyper_gradient_matrix.in_memory_keys()
+            get_logger().info(
+                "begin do __do_delayed_computation from fast keys %s",
+                len(fast_keys))
+            for k in fast_keys:
+                if k in self.delayed_computations and self.delayed_computations[k]:
+                    self.__do_delayed_computation(k)
+            get_logger().info("end do __do_delayed_computation from fast keys")
+
             unfinished_keys = []
             for k, v in self.delayed_computations.items():
                 if v:
