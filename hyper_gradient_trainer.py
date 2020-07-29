@@ -82,6 +82,7 @@ class HyperGradientTrainer:
         self.__do_delayed_computation()
         get_logger().info("end do __do_delayed_computation")
         self.trainer.save(self.save_dir)
+        self.trainer.save(self.hyper_gradient_matrix.get_storage_dir())
         self.hyper_gradient_matrix.flush_all()
         self.hyper_gradient_matrix.release()
         self.mom_gradient_matrix.release()
