@@ -230,7 +230,7 @@ class HyperGradientTrainer:
 
     @staticmethod
     def create_gradient_matrix(
-        cache_size, model, storage_dir="",
+        cache_size, model, storage_dir="", concat_momentum=False,
     ):
 
         mask = None
@@ -246,6 +246,9 @@ class HyperGradientTrainer:
             assert len(mask) == len(parameters)
         m = None
         if mask is not None:
+            if concat_momentum:
+                mask = torch.cat((mask, mask))
+                gradient_shape[1] *= 2
             m = cyy_pytorch_cpp.data_structure.SyncedSparseTensorDict(
                 mask, gradient_shape, storage_dir
             )
