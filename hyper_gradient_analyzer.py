@@ -50,18 +50,19 @@ class HyperGradientAnalyzer:
         hyper_gradient_sum_dict.set_storage_dir(tempfile.gettempdir())
 
         for k, indices in training_subset_dict.items():
-            chunk = [str(index) for index in indices]
-            self.hyper_gradient_matrix.prefetch(chunk)
+            indice_str_list = [str(index) for index in indices]
             hyper_gradient_sum = None
-            for instance_index in chunk:
-                hyper_gradient = self.hyper_gradient_matrix[instance_index].to(
-                    get_device()
-                )
-                if hyper_gradient_sum is None:
-                    hyper_gradient_sum = hyper_gradient
-                else:
-                    hyper_gradient_sum += hyper_gradient
-                hyper_gradient_sum_dict[str(k)] = hyper_gradient_sum
+            for chunk in split_list_to_chunks(
+                    indice_str_list, self.cache_size // 3):
+                self.hyper_gradient_matrix.prefetch(chunk)
+                for instance_index in chunk:
+                    hyper_gradient = self.hyper_gradient_matrix[instance_index].to(
+                        get_device())
+                    if hyper_gradient_sum is None:
+                        hyper_gradient_sum = hyper_gradient
+                    else:
+                        hyper_gradient_sum += hyper_gradient
+            hyper_gradient_sum_dict[str(k)] = hyper_gradient_sum
         tmp_validator = copy.deepcopy(self.validator)
         contribution_dict = dict()
         for k, indices in validation_subset_dict.items():
