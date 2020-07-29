@@ -331,15 +331,17 @@ class HyperGradientTrainer:
                     self.__do_delayed_computation(idx)
 
     def __after_epoch_callback(self, trainer, epoch, cur_learning_rates):
-        if epoch < 10:
+        total_epochs = trainer.get_hyper_parameter().epochs
+        if epoch == total_epochs:
             return
-        if epoch > 10:
-            cur_accurary = trainer.validation_accuracy[epoch]
-            validation_accuracy = copy.deepcopy(trainer.validation_accuracy)
-            validation_accuracy.pop(epoch)
-            max_accuracy = max(validation_accuracy.values())
-            if cur_accurary < max_accuracy + 0.01:
-                return
+        if epoch % 10 != 0:
+            return
+        cur_accurary = trainer.validation_accuracy[epoch]
+        validation_accuracy = copy.deepcopy(trainer.validation_accuracy)
+        validation_accuracy.pop(epoch)
+        max_accuracy = max(validation_accuracy.values())
+        if cur_accurary < max_accuracy + 0.01:
+            return
         get_logger().info("begin do __do_delayed_computation")
         self.__do_delayed_computation()
         get_logger().info("end do __do_delayed_computation")
