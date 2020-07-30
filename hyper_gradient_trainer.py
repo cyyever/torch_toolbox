@@ -64,6 +64,7 @@ class HyperGradientTrainer:
         get_logger().info("begin train")
 
         if computed_indices is not None:
+            get_logger().info("only compute %s indices", len(computed_indices))
             self.computed_indices = set(computed_indices)
         else:
             self.computed_indices = None
