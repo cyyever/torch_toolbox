@@ -264,7 +264,6 @@ class Trainer:
                         ):
                             per_sample_gradient_callback(
                                 self, index, sample_gradient, optimizer=optimizer, )
-                        del gradient_list
                 optimizer.zero_grad()
                 outputs = self.model(instance_inputs)
                 loss = self.loss_fun(outputs, instance_targets)
