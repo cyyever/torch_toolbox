@@ -10,7 +10,6 @@ import cyy_pytorch_cpp
 
 from model_util import ModelUtil
 from .hessian_vector_product import get_hessian_vector_product_func
-from .trainer import Trainer
 
 
 class HyperGradientTrainer:
@@ -114,23 +113,20 @@ class HyperGradientTrainer:
         else:
             self.delayed_approximation_computations = None
 
-        kwargs = Trainer.__prepend_callback(
-            kwargs, "pre_batch_callbacks", self.__pre_batch_callback
-        )
-        kwargs = Trainer.__prepend_callback(
-            kwargs, "after_batch_callbacks", self.__after_batch_callback
-        )
-
-        kwargs = Trainer.__prepend_callback(
-            kwargs, "after_epoch_callbacks", self.__after_epoch_callback
-        )
+        def after_epoch_callback(trainer, epoch, cur_learning_rates):
+            nonlocal kwargs
+            self.__after_epoch_callback(trainer, epoch, cur_learning_rates)
+            for callback in kwargs.get("after_batch_callbacks", []):
+                callback(self, epoch)
 
         self.trainer.train(
             per_sample_gradient_callback=(
                 self.__per_sample_gradient_callback,
                 self.computed_indices,
             ),
-            **kwargs,
+            pre_batch_callbacks=[self.__pre_batch_callback],
+            after_batch_callbacks=[self.__after_batch_callback],
+            after_epoch_callbacks=[after_epoch_callback],
         )
         if self.use_approx:
             self.__save_hyper_gradients(
