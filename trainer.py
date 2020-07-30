@@ -36,15 +36,18 @@ class Trainer:
             results[k] = v / number
         return results
 
-    def __init__(self, model, loss_fun, training_dataset):
+    def __init__(self, model, loss_fun, training_dataset, hyper_parameter):
         self.model = copy.deepcopy(model)
         self.loss_fun = loss_fun
         self.training_dataset = training_dataset
-        self.validation_dataset = None
-        self.__hyper_parameter = None
+        self.__hyper_parameter = hyper_parameter
         self.__reset_hyper_parameter = False
         self.stop_criterion = None
         self.__reset_loss()
+        self.validation_dataset = None
+
+    def get_validator(self):
+        return Validator(self.model, self.loss_fun, self.validation_dataset)
 
     def set_hyper_parameter(self, hyper_parameter):
         self.__hyper_parameter = hyper_parameter
@@ -130,9 +133,13 @@ class Trainer:
             validation_epoch_interval = int(
                 kwargs.get("validation_epoch_interval", 1))
             if epoch % validation_epoch_interval == 0:
-                validation_loss, accuracy, other_data = Validator(
-                    trainer.model, trainer.loss_fun, trainer.validation_dataset).validate(
-                    trainer.__hyper_parameter.batch_size, per_class_accuracy=True)
+                (
+                    validation_loss,
+                    accuracy,
+                    other_data,
+                ) = trainer.get_validator().validate(
+                    trainer.__hyper_parameter.batch_size, per_class_accuracy=True
+                )
                 validation_loss = validation_loss.data.item()
                 trainer.validation_loss[epoch] = validation_loss
                 trainer.validation_accuracy[epoch] = accuracy
