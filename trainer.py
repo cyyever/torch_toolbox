@@ -78,7 +78,7 @@ class Trainer:
             )
 
         kwargs = Trainer.__prepend_callback(
-            kwargs, "pre_training_callback", pre_training_callback
+            kwargs, "pre_training_callbacks", pre_training_callback
         )
 
         def after_batch_callback(
@@ -101,7 +101,7 @@ class Trainer:
                 )
 
         kwargs = Trainer.__prepend_callback(
-            kwargs, "after_batch_callback", after_batch_callback
+            kwargs, "after_batch_callbacks", after_batch_callback
         )
 
         plot_parameter_distribution = kwargs.get(
@@ -171,9 +171,8 @@ class Trainer:
                             )
 
         kwargs = Trainer.__prepend_callback(
-            kwargs, "after_epoch_callback", after_epoch_callback
+            kwargs, "after_epoch_callbacks", after_epoch_callback
         )
-
         return self.__train(**kwargs)
 
     def __train(self, **kwargs):
@@ -195,8 +194,8 @@ class Trainer:
             self.model.parameters(), self.training_dataset
         )
         lr_scheduler = self.__hyper_parameter.get_lr_scheduler(optimizer)
-        if "pre_training_callback" in kwargs:
-            kwargs["pre_training_callback"](self, optimizer, lr_scheduler)
+        for callback in kwargs.get("pre_training_callbacks", []):
+            callback(self, optimizer, lr_scheduler)
 
         for epoch in range(1, self.__hyper_parameter.epochs + 1):
             if self.__reset_hyper_parameter:
@@ -217,8 +216,8 @@ class Trainer:
                 optimizer.zero_grad()
                 real_batch_size = batch[0].shape[0]
 
-                if "pre_batch_callback" in kwargs:
-                    kwargs["pre_batch_callback"](self, batch, batch_index)
+                for callback in kwargs.get("pre_batch_callbacks", []):
+                    callback(self, batch, batch_index)
 
                 instance_inputs = batch[0].to(device)
                 instance_targets = batch[1].to(device)
@@ -279,8 +278,8 @@ class Trainer:
 
                 training_loss += batch_loss
 
-                if "after_batch_callback" in kwargs:
-                    kwargs["after_batch_callback"](
+                for callback in kwargs.get("after_batch_callbacks", []):
+                    callback(
                         self,
                         epoch,
                         batch_index,
@@ -294,9 +293,8 @@ class Trainer:
                 batch_index += 1
 
             self.training_loss.append(training_loss)
-
-            if "after_epoch_callback" in kwargs:
-                kwargs["after_epoch_callback"](self, epoch, cur_learning_rates)
+            for callback in kwargs.get("after_epoch_callbacks", []):
+                callback(self, epoch, cur_learning_rates)
 
             if self.stop_criterion is not None and self.stop_criterion(
                 self, epoch, cur_learning_rates
@@ -336,13 +334,7 @@ class Trainer:
 
     @staticmethod
     def __prepend_callback(kwargs, name, new_fun):
-        old_callback = kwargs.get(name, None)
-
-        def new_callback(*args, **kwargs):
-            new_fun(*args, **kwargs)
-            nonlocal old_callback
-            if old_callback is not None:
-                old_callback(*args, **kwargs)
-
-        kwargs[name] = new_callback
+        callbacks = kwargs.get(name, [])
+        callbacks.insert(0, new_fun)
+        kwargs[name] = callbacks
         return kwargs
