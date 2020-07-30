@@ -27,7 +27,7 @@ class HyperGradientTrainer:
         if self.use_hessian:
             get_logger().info("use hessian to compute hyper-gradients")
             hessian_hyper_gradient_and_momentum_dir = kwargs.get(
-                "hessian_hyper_gradient_and_momentum_dir", ""
+                "hessian_hyper_gradient_and_momentum_dir", None
             )
             self.hessian_hyper_gradient_mom_dict = HyperGradientTrainer.create_gradient_matrix(
                 cache_size,
@@ -66,7 +66,7 @@ class HyperGradientTrainer:
             self.use_approx = not self.use_hessian
         if self.use_approx:
             approx_hyper_gradient_and_momentum_dir = kwargs.get(
-                "approx_hyper_gradient_and_momentum_dir", ""
+                "approx_hyper_gradient_and_momentum_dir", None
             )
             self.approx_hyper_gradient_mom_dict = HyperGradientTrainer.create_gradient_matrix(
                 cache_size,
@@ -286,9 +286,11 @@ class HyperGradientTrainer:
 
     @staticmethod
     def create_gradient_matrix(
-        cache_size, model, storage_dir="", concat_momentum=False,
+        cache_size, model, storage_dir=None, concat_momentum=False,
     ):
 
+        if not storage_dir:
+            storage_dir = ""
         mask = None
         gradient_shape = None
         if prune.is_pruned(model):
