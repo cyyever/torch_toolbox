@@ -114,8 +114,7 @@ def get_task_configuration(task_name, for_training):
                 )
             )
         training_dataset = get_dataset(dataset_name, True)
-        trainer = Trainer(model, loss_fun, training_dataset)
-        trainer.set_hyper_parameter(hyper_parameter)
+        trainer = Trainer(model, loss_fun, training_dataset, hyper_parameter)
         trainer.validation_dataset = validation_dataset
         return trainer
     validator = Validator(model, loss_fun, validation_dataset)
