@@ -114,13 +114,13 @@ class HyperGradientTrainer:
             self.delayed_approximation_computations = None
 
         self.trainer.train(
-            pre_batch_callback=self.__pre_batch_callback,
+            pre_batch_callbacks=[self.__pre_batch_callback],
             per_sample_gradient_callback=(
                 self.__per_sample_gradient_callback,
                 self.computed_indices,
             ),
-            after_batch_callback=self.__after_batch_callback,
-            after_epoch_callback=self.__after_epoch_callback,
+            after_batch_callbacks=[self.__after_batch_callback],
+            after_epoch_callbacks=[self.__after_epoch_callback],
         )
         if self.use_approx:
             self.__save_hyper_gradients(
@@ -152,7 +152,7 @@ class HyperGradientTrainer:
             for index in chunk:
                 if index in self.hessian_hyper_gradient_mom_dict:
                     hyper_gradients.append(
-                        self.__get_hyper_gradient(
+                        self.get_hyper_gradient(
                             index, False))
                     hyper_gradient_indices.append(index)
             if hyper_gradients:
@@ -419,7 +419,7 @@ class HyperGradientTrainer:
                 (hyper_gradient, mom_gradient)
             )
 
-    def __get_hyper_gradient(self, index, use_approxmation):
+    def get_hyper_gradient(self, index, use_approxmation):
         return self.__get_hyper_gradient_and_momentum(
             index, use_approxmation)[0]
 
@@ -441,7 +441,7 @@ class HyperGradientTrainer:
         for chunk in split_list_to_chunks(hyper_gradient_mom_dict.keys(), 100):
             hyper_gradient_mom_dict.prefetch(chunk)
             for index in chunk:
-                hyper_gradient = self.__get_hyper_gradient(
+                hyper_gradient = self.get_hyper_gradient(
                     index, use_approxmation)
                 hyper_gradient_dict[index] = hyper_gradient
         self.trainer.save(hyper_gradient_dir)
