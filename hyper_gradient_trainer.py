@@ -18,28 +18,47 @@ class HyperGradientTrainer:
         self.cache_size = cache_size
         self.save_dir = save_dir
 
-        hyper_gradient_mon_dir = kwargs.get(
-            "hyper_gradient_and_momentum_dir", None)
-        if hyper_gradient_mon_dir is not None:
-            self.hyper_gradient_mon_dict = HyperGradientTrainer.create_gradient_matrix(
-                cache_size, trainer.model, storage_dir=hyper_gradient_mon_dir)
-        else:
-            self.hyper_gradient_mon_dict = HyperGradientTrainer.create_gradient_matrix(
-                cache_size, trainer.model)
-            self.hyper_gradient_mon_dict.set_storage_dir(os.path.join(
-                save_dir, "hyper_gradient_and_momentum_dir", str(uuid.uuid4()), ))
-        get_logger().info(
-            "use hyper_gradient_mon_dir:%s",
-            self.hyper_gradient_mon_dict.get_storage_dir(),
-        )
-
         self.batch_gradients = dict()
         self.computed_indices = None
-        self.delayed_computations = dict()
+        self.hessian_computation_arguments = None
+        self.delayed_approximation_computations = None
+
         self.use_hessian = kwargs.get("use_hessian", False)
         if self.use_hessian:
             get_logger().info("use hessian to compute hyper-gradients")
+            hessian_hyper_gradient_mon_dir = kwargs.get(
+                "hessian_hyper_gradient_and_momentum_dir", ""
+            )
+            self.hessian_hyper_gradient_mon_dict = HyperGradientTrainer.create_gradient_matrix(
+                cache_size, trainer.model, storage_dir=hessian_hyper_gradient_mon_dir)
+            if not hessian_hyper_gradient_mon_dir:
+                self.hessian_hyper_gradient_mon_dict.set_storage_dir(os.path.join(
+                    save_dir, "hyper_gradient_and_momentum_dir", str(uuid.uuid4()), ))
+            get_logger().info(
+                "use hessian_hyper_gradient_mon_dir:%s",
+                self.hessian_hyper_gradient_mon_dict.get_storage_dir(),
+            )
+        else:
+            self.hessian_hyper_gradient_mon_dict = None
         self.hvp_function = None
+
+        self.use_approx = kwargs.get("use_approximation", None)
+        if self.use_approx is None:
+            self.use_approx = not self.use_hessian
+        if self.use_approx:
+            hyper_gradient_mon_dir = kwargs.get(
+                "hyper_gradient_and_momentum_dir", "")
+            self.approx_hyper_gradient_mon_dict = HyperGradientTrainer.create_gradient_matrix(
+                cache_size, trainer.model, storage_dir=hyper_gradient_mon_dir)
+            if not hyper_gradient_mon_dir:
+                self.approx_hyper_gradient_mon_dict.set_storage_dir(os.path.join(
+                    save_dir, "hyper_gradient_and_momentum_dir", str(uuid.uuid4()), ))
+            get_logger().info(
+                "use hyper_gradient_mon_dir:%s",
+                self.approx_hyper_gradient_mon_dict.get_storage_dir(),
+            )
+        else:
+            self.approx_hyper_gradient_mon_dict = None
 
     def train(self, computed_indices=None):
         get_logger().info("begin train")
@@ -49,9 +68,12 @@ class HyperGradientTrainer:
         else:
             self.computed_indices = None
 
-        self.delayed_computations = dict()
-        for k in self.__get_real_computed_indices():
-            self.delayed_computations[str(k)] = []
+        if self.use_approx:
+            self.delayed_approximation_computations = dict()
+            for k in self.__get_computed_indices():
+                self.delayed_approximation_computations[str(k)] = []
+        else:
+            self.delayed_approximation_computations = None
 
         self.trainer.train(
             pre_batch_callback=self.__pre_batch_callback,
@@ -62,26 +84,38 @@ class HyperGradientTrainer:
             after_batch_callback=self.__after_batch_callback,
             after_epoch_callback=self.__after_epoch_callback,
         )
-        self.__save_hyper_gradients(
-            os.path.join(
-                self.save_dir, "hyper_gradient_dir", str(
-                    uuid.uuid4())))
+        if self.use_approx:
+            self.__save_hyper_gradients(
+                os.path.join(
+                    self.save_dir, "approximation_hyper_gradient_dir", str(
+                        uuid.uuid4())), use_approxmation=True, )
+        if self.use_hessian:
+            self.__save_hyper_gradients(
+                os.path.join(
+                    self.save_dir, "hessian_hyper_gradient_dir", str(
+                        uuid.uuid4())), use_approxmation=False, )
         self.trainer.save(self.save_dir)
-        self.hyper_gradient_mon_dict.clear()
-        self.hyper_gradient_mon_dict = None
+        if self.use_approx:
+            self.approx_hyper_gradient_mon_dict.clear()
+            self.approx_hyper_gradient_mon_dict = None
+        if self.use_hessian:
+            self.hessian_hyper_gradient_mon_dict.clear()
+            self.hessian_hyper_gradient_mon_dict = None
 
-    def __do_delayed_computation_with_hessian(self):
+    def __do_computation_with_hessian(self):
         for chunk in split_list_to_chunks(
-            [str(idx) for idx in sorted(list(self.__get_real_computed_indices()))], 100
+            [str(idx) for idx in sorted(list(self.__get_computed_indices()))], 100
         ):
             counter = TimeCounter()
-            self.hyper_gradient_mon_dict.prefetch(chunk)
+            self.hessian_hyper_gradient_mon_dict.prefetch(chunk)
             hyper_gradients = list()
             hyper_gradient_indices = list()
             hessian_vector_product_dict = dict()
             for index in chunk:
-                if index in self.hyper_gradient_mon_dict:
-                    hyper_gradients.append(self.__get_hyper_gradient(index))
+                if index in self.hessian_hyper_gradient_mon_dict:
+                    hyper_gradients.append(
+                        self.__get_hyper_gradient(
+                            index, False))
                     hyper_gradient_indices.append(index)
             if hyper_gradients:
                 counter2 = TimeCounter()
@@ -99,21 +133,20 @@ class HyperGradientTrainer:
                     hessian_vector_product_dict[idx] = hessian_vector_product
 
             for index in chunk:
-                assert len(self.delayed_computations[index]) == 1
                 (
                     momentum,
                     weight_decay,
                     learning_rate,
                     instance_gradient,
-                ) = self.delayed_computations[index][0]
+                ) = self.hessian_computation_arguments[index]
 
                 hyper_gradient = None
                 mom_gradient = None
-                if index in self.hyper_gradient_mon_dict:
+                if index in self.hessian_hyper_gradient_mon_dict:
                     (
                         hyper_gradient,
                         mom_gradient,
-                    ) = self.__get_hyper_gradient_and_momentum(index)
+                    ) = self.__get_hyper_gradient_and_momentum(index, False)
 
                 if mom_gradient is not None:
                     mom_gradient *= momentum
@@ -138,45 +171,51 @@ class HyperGradientTrainer:
                     else:
                         hyper_gradient = -learning_rate * mom_gradient
 
-                self.__set_hyper_gradient_and_momentum(
-                    index, hyper_gradient, mom_gradient
-                )
-                self.delayed_computations[index] = []
+                assert (
+                    hyper_gradient is not None and mom_gradient is not None) or (
+                    hyper_gradient is None and mom_gradient is None)
+                if hyper_gradient is not None:
+                    self.__set_hyper_gradient_and_momentum(
+                        index, hyper_gradient, mom_gradient, use_approxmation=False)
+                self.hessian_computation_arguments[index] = None
             get_logger().info(
-                "__do_delayed_computation_with_hessian chunk size %s use time %s ms",
+                "__do_computation_with_hessian chunk size %s use time %s ms",
                 len(chunk),
                 counter.elapsed_milliseconds(),
             )
 
     def __do_delayed_computation(self, index=None):
         if index is None:
-            fast_keys = self.hyper_gradient_mon_dict.in_memory_keys()
+            fast_keys = self.approx_hyper_gradient_mon_dict.in_memory_keys()
             get_logger().info(
                 "begin do __do_delayed_computation from fast keys %s",
                 len(fast_keys))
             for k in fast_keys:
-                if k in self.delayed_computations and self.delayed_computations[k]:
+                if (
+                    k in self.delayed_approximation_computations
+                    and self.delayed_approximation_computations[k]
+                ):
                     self.__do_delayed_computation(k)
             get_logger().info("end do __do_delayed_computation from fast keys")
 
             unfinished_keys = []
-            for k, v in self.delayed_computations.items():
+            for k, v in self.delayed_approximation_computations.items():
                 if v:
                     unfinished_keys.append(k)
 
             for chunk in split_list_to_chunks(unfinished_keys, 100):
-                self.hyper_gradient_mon_dict.prefetch(chunk)
+                self.approx_hyper_gradient_mon_dict.prefetch(chunk)
                 for k in chunk:
                     self.__do_delayed_computation(k)
             return
 
         hyper_gradient = None
         mom_gradient = None
-        if index in self.hyper_gradient_mon_dict:
+        if index in self.approx_hyper_gradient_mon_dict:
             hyper_gradient, mom_gradient = self.__get_hyper_gradient_and_momentum(
-                index)
+                index, True)
 
-        for arguments in self.delayed_computations[index]:
+        for arguments in self.delayed_approximation_computations[index]:
             (momentum, weight_decay, learning_rate, instance_gradient) = arguments
             if mom_gradient is not None:
                 mom_gradient *= momentum
@@ -202,9 +241,10 @@ class HyperGradientTrainer:
 
         assert hyper_gradient is not None
         assert mom_gradient is not None
-        self.delayed_computations[index] = []
+        self.delayed_approximation_computations[index] = []
         self.__set_hyper_gradient_and_momentum(
-            index, hyper_gradient, mom_gradient)
+            index, hyper_gradient, mom_gradient, use_approxmation=True
+        )
 
     @staticmethod
     def create_gradient_matrix(
@@ -243,23 +283,28 @@ class HyperGradientTrainer:
 
         if self.computed_indices is not None:
             batch_gradient_indices &= self.computed_indices
-
-        self.hyper_gradient_mon_dict.prefetch(
-            [str(i) for i in batch_gradient_indices])
         self.batch_gradients.clear()
+
+        if self.use_approx:
+            self.approx_hyper_gradient_mon_dict.prefetch(
+                [str(i) for i in batch_gradient_indices]
+            )
 
         if self.use_hessian:
             self.hvp_function = get_hessian_vector_product_func(
                 trainer.model, batch, trainer.loss_fun
             )
+            self.hessian_computation_arguments = dict()
+        else:
+            self.hessian_computation_arguments = None
 
     def __per_sample_gradient_callback(
         self, trainer, instance_index, instance_gradient, **kwargs,
     ):
-        assert instance_index in self.__get_real_computed_indices()
+        assert instance_index in self.__get_computed_indices()
         self.batch_gradients[str(instance_index)] = instance_gradient
 
-    def __get_real_computed_indices(self):
+    def __get_computed_indices(self):
         if self.computed_indices is not None:
             return self.computed_indices
         return range(len(self.trainer.training_dataset))
@@ -290,7 +335,7 @@ class HyperGradientTrainer:
 
         training_set_size = len(trainer.training_dataset)
 
-        for idx in self.__get_real_computed_indices():
+        for idx in self.__get_computed_indices():
             idx = str(idx)
             instance_gradient = None
             if idx in self.batch_gradients:
@@ -298,43 +343,68 @@ class HyperGradientTrainer:
                     (self.batch_gradients[idx] *
                      training_set_size /
                      batch_size) .detach() .clone())
-            self.delayed_computations[idx].append(
-                (momentum, weight_decay, cur_learning_rate, instance_gradient)
-            )
+            if self.use_hessian:
+                self.hessian_computation_arguments[idx] = (
+                    momentum,
+                    weight_decay,
+                    cur_learning_rate,
+                    instance_gradient,
+                )
+            if self.use_approx:
+                self.delayed_approximation_computations[idx].append(
+                    (momentum, weight_decay, cur_learning_rate, instance_gradient))
         if self.use_hessian:
-            self.__do_delayed_computation_with_hessian()
-        else:
-            for idx in self.__get_real_computed_indices():
+            self.__do_computation_with_hessian()
+        if self.use_approx:
+            for idx in self.__get_computed_indices():
                 idx = str(idx)
                 if idx in self.batch_gradients:
                     self.__do_delayed_computation(idx)
 
-    def __get_hyper_gradient_and_momentum(self, index):
-        tmp = self.hyper_gradient_mon_dict[index]
+    def __get_hyper_gradient_and_momentum(self, index, use_approxmation):
+        tmp = None
+        if use_approxmation:
+            tmp = self.approx_hyper_gradient_mon_dict[index]
+        else:
+            tmp = self.hessian_hyper_gradient_mon_dict[index]
         return torch.split(tmp, tmp.shape[0] // 2)
 
     def __set_hyper_gradient_and_momentum(
-            self, index, hyper_gradient, mom_gradient):
-        self.hyper_gradient_mon_dict[index] = torch.cat(
-            (hyper_gradient, mom_gradient))
+        self, index, hyper_gradient, mom_gradient, use_approxmation
+    ):
+        if use_approxmation:
+            self.approx_hyper_gradient_mon_dict[index] = torch.cat(
+                (hyper_gradient, mom_gradient)
+            )
+        else:
+            self.hessian_hyper_gradient_mon_dict[index] = torch.cat(
+                (hyper_gradient, mom_gradient)
+            )
 
-    def __get_hyper_gradient(self, index):
-        return torch.split(self.hyper_gradient_mon_dict[index], 2)[0]
+    def __get_hyper_gradient(self, index, use_approxmation):
+        return self.__get_hyper_gradient_and_momentum(
+            index, use_approxmation)[0]
 
-    def __save_hyper_gradients(self, hyper_gradient_dir):
-        get_logger().info("begin do __do_delayed_computation")
-        self.__do_delayed_computation()
-        get_logger().info("end do __do_delayed_computation")
+    def __save_hyper_gradients(self, hyper_gradient_dir, use_approxmation):
+        if use_approxmation:
+            get_logger().info("begin do __do_delayed_computation")
+            self.__do_delayed_computation()
+            get_logger().info("end do __do_delayed_computation")
         hyper_gradient_dict = HyperGradientTrainer.create_gradient_matrix(
             self.cache_size, self.trainer.model
         )
         hyper_gradient_dict.set_storage_dir(hyper_gradient_dir)
-        for chunk in split_list_to_chunks(
-                self.hyper_gradient_mon_dict.keys(), 100):
-            self.hyper_gradient_mon_dict.prefetch(chunk)
+
+        hyper_gradient_mon_dict = (
+            self.approx_hyper_gradient_mon_dict
+            if use_approxmation
+            else self.hessian_hyper_gradient_mon_dict
+        )
+        for chunk in split_list_to_chunks(hyper_gradient_mon_dict.keys(), 100):
+            hyper_gradient_mon_dict.prefetch(chunk)
             for index in chunk:
-                hyper_gradient = self.__get_hyper_gradient_and_momentum(index)[
-                    0]
+                hyper_gradient = self.__get_hyper_gradient(
+                    index, use_approxmation)
                 hyper_gradient_dict[index] = hyper_gradient
         self.trainer.save(hyper_gradient_dir)
         hyper_gradient_dict.flush_all(True)
@@ -353,8 +423,17 @@ class HyperGradientTrainer:
         max_accuracy = max(validation_accuracy.values())
         if cur_accurary < max_accuracy + 0.01:
             return
-        self.__save_hyper_gradients(
-            self.hyper_gradient_mon_dict.get_storage_dir() +
-            "_epoch_" +
-            str(epoch),
-        )
+        if self.use_approx:
+            self.__save_hyper_gradients(
+                self.approx_hyper_gradient_mon_dict.get_storage_dir()
+                + "_epoch_"
+                + str(epoch),
+                use_approxmation=True,
+            )
+        if self.use_hessian:
+            self.__save_hyper_gradients(
+                self.hessian_hyper_gradient_mon_dict.get_storage_dir()
+                + "_epoch_"
+                + str(epoch),
+                use_approxmation=False,
+            )
