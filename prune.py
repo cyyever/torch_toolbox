@@ -115,5 +115,5 @@ def lottery_ticket_prune(
         trainer.save(os.path.join(save_dir, str(epoch)))
 
     trainer.train(plot_parameter_distribution=True,
-                  after_epoch_callback=after_epoch_callback)
+                  after_epoch_callbacks=[after_epoch_callback])
     trainer.save(save_dir)
