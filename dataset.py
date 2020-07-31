@@ -1,5 +1,6 @@
-import functools
 import os
+import functools
+from typing import Iterable
 import random
 import PIL
 
@@ -45,7 +46,7 @@ class DatasetMapper:
         return self.dataset.__len__()
 
 
-def sub_dataset(dataset, indices):
+def sub_dataset(dataset, indices: Iterable):
     r"""
     Subset of a dataset at specified indices in order.
     """

@@ -1,6 +1,5 @@
 import os
 import copy
-import datetime
 import torch
 
 from cyy_naive_lib.log import get_logger
