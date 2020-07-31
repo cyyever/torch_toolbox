@@ -320,17 +320,10 @@ class Trainer:
     def load_model(self, model_path):
         self.model = torch.load(model_path, map_location=get_device())
 
-    def save(self, save_dir, with_timestamp=False):
+    def save(self, save_dir, name="model.pt"):
         if not os.path.isdir(save_dir):
             os.makedirs(save_dir)
-        model = self.model
-        name = "model.pt"
-        if with_timestamp:
-            name = "model_{date:%Y_%m_%d_%H_%M_%S}.pt".format(
-                date=datetime.datetime.now()
-            )
-
-        torch.save(model, os.path.join(save_dir, name))
+        torch.save(self.model, os.path.join(save_dir, name))
 
     def __reset_loss(self):
         self.min_training_loss = None
