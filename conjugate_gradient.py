@@ -14,10 +14,14 @@ def conjugate_gradient_general(
     b,
     max_iteration=None,
         epsilon=0.0001):
+    r"""
+    Implements Conjugate Gradient illustrated by
+    An Introduction to the Conjugate Gradient Method Without the Agonizing Pain
+    """
     x = torch.ones(b.shape)
     x = x.to(get_device())
     if max_iteration is None:
-        max_iteration = b.shape[0] * 2
+        max_iteration = 100
     r = b - A_product_func(x)
     d = r
     new_delta = r @ r
