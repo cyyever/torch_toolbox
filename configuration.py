@@ -38,8 +38,8 @@ def get_task_configuration(task_name, for_training):
             )
 
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer: optim.lr_scheduler.MultiStepLR(
-                    optimizer, milestones=[5, 55, 555]
+                lambda optimizer: optim.lr_scheduler.CosineAnnealingLR(
+                    optimizer, T_max=hyper_parameter.epochs * 2
                 )
             )
 
