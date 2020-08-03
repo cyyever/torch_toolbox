@@ -97,15 +97,12 @@ class HyperGradientTrainer:
         else:
             self.approx_hyper_gradient_mom_dict = None
 
-    def train(self, computed_indices=None, **kwargs):
+    def set_computed_indices(self, computed_indices):
+        get_logger().info("only compute %s indices", len(computed_indices))
+        self.computed_indices = set(computed_indices)
+
+    def train(self, **kwargs):
         get_logger().info("begin train")
-
-        if computed_indices is not None:
-            get_logger().info("only compute %s indices", len(computed_indices))
-            self.computed_indices = set(computed_indices)
-        else:
-            self.computed_indices = None
-
         if self.use_approximation:
             self.delayed_approximation_computations = dict()
             for k in self.__get_computed_indices():
