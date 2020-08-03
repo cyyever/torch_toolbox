@@ -1,4 +1,5 @@
 import os
+import datetime
 import copy
 import torch
 
@@ -69,6 +70,11 @@ class Trainer:
         return Trainer.repeated_training(repeated_num, self, training_callback)
 
     def train(self, **kwargs):
+        Window.set_cur_env(
+            "training_"
+            + "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
+        )
+
         def pre_training_callback(trainer, optimizer, lr_scheduler):
             get_logger().info(
                 "begin training for %s epochs,hyper_parameter is %s,optimizer is %s ,lr_scheduler is %s, model is %s",
