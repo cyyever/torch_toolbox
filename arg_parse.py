@@ -67,7 +67,7 @@ def create_trainer_from_args(args):
             trainer.training_dataset, args.training_dataset_percentage
         )
         sample_indices = sum(subset_dict.values(), [])
-        trainer.trainint_dataset = sub_dataset(
+        trainer.training_dataset = sub_dataset(
             trainer.training_dataset, sample_indices)
         os.makedirs(args.save_dir, exist_ok=True)
         with open(
