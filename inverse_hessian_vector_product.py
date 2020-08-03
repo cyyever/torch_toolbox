@@ -29,7 +29,10 @@ def stochastic_inverse_hessian_vector_product(
                 return cur_product
 
 
-def CG_inverse_hessian_vector_product(
-        model, dataset, loss_fun, v, max_iteration=None):
-    hvp_function = get_hessian_vector_product_func(model, dataset, loss_fun)
-    conjugate_gradient_general(hvp_function, v, max_iteration)
+def conjugate_gradient_inverse_hessian_vector_product(
+    model, dataset, loss_fun, v, max_iteration=None
+):
+    data_loader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset))
+    for batch in data_loader:
+        hvp_function = get_hessian_vector_product_func(model, batch, loss_fun)
+        return conjugate_gradient_general(hvp_function, v, max_iteration)
