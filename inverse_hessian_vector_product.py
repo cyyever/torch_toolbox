@@ -56,7 +56,7 @@ def stochastic_inverse_hessian_vector_product(
                 cur_product = next_product
                 iteration += 1
                 if diff <= epsilon or iteration >= max_iteration:
-                    product_list.append(cur_product * scale)
+                    product_list.append(cur_product / scale)
                     looping = False
                     break
     get_logger().debug("product_list is %s", product_list)
