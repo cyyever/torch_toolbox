@@ -21,7 +21,7 @@ def conjugate_gradient_general(
     x = torch.ones(b.shape)
     x = x.to(get_device())
     if max_iteration is None:
-        max_iteration = 100
+        max_iteration = b.shape[0]
     r = b - A_product_func(x)
     d = r
     new_delta = r @ r
