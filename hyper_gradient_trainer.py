@@ -110,6 +110,12 @@ class HyperGradientTrainer:
         else:
             self.delayed_approximation_computations = None
 
+        def pre_training_callback(trainer, optimizer, lr_scheduler):
+            model_util = ModelUtil(trainer.model)
+            get_logger().info(
+                "begin training for %s parameters", len(
+                    model_util.get_parameter_list()))
+
         def after_epoch_callback(trainer, epoch, cur_learning_rates):
             nonlocal kwargs
             self.__after_epoch_callback(trainer, epoch, cur_learning_rates)
@@ -117,6 +123,7 @@ class HyperGradientTrainer:
                 callback(self, epoch)
 
         self.trainer.train(
+            pre_training_callbacks=[pre_training_callback],
             per_sample_gradient_callback=(
                 self.__per_sample_gradient_callback,
                 self.computed_indices,
