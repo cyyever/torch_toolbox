@@ -4,7 +4,7 @@ import torch.optim as optim
 from hyper_parameter import HyperParameter
 from trainer import Trainer
 from validator import Validator
-from dataset import get_dataset
+from dataset import get_dataset, DatasetType
 from models.lenet import LeNet5
 from models.densenet2 import densenet_cifar
 
@@ -83,7 +83,6 @@ def get_task_configuration(task_name, for_training):
         raise NotImplementedError(task_name)
 
     dataset_name = get_task_dataset_name(task_name)
-    validation_dataset = get_dataset(dataset_name, False)
 
     if loss_fun is None:
         loss_fun = choose_loss_function(model)
@@ -97,9 +96,10 @@ def get_task_configuration(task_name, for_training):
                     weight_decay=(weight_decay / len(dataset)),
                 )
             )
-        training_dataset = get_dataset(dataset_name, True)
+        training_dataset = get_dataset(dataset_name, DatasetType.Training)
         trainer = Trainer(model, loss_fun, training_dataset, hyper_parameter)
-        trainer.validation_dataset = validation_dataset
+        trainer.validation_dataset = get_dataset(
+            dataset_name, DatasetType.Validation)
         return trainer
-    validator = Validator(model, loss_fun, validation_dataset)
-    return validator
+    test_dataset = get_dataset(dataset_name, DatasetType.Test)
+    return Validator(model, loss_fun, test_dataset)
