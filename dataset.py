@@ -77,14 +77,8 @@ def split_dataset(dataset):
 
 def split_dataset_by_class(dataset):
     class_map = {}
-    iterator = None
-    # if hasattr(dataset, "targets"):
-    #     iterator = enumerate(dataset.targets)
-    # elif hasattr(dataset, "indices"):
-    #     iterator = enumerate(dataset.indices)
-    # else:
-    iterator = enumerate(dataset)
-    for index, label in iterator:
+    for index, item in enumerate(dataset):
+        label = item[1]
         if isinstance(label, torch.Tensor):
             label = label.data.item()
         if label not in class_map:
@@ -248,7 +242,7 @@ def get_dataset(name, dataset_type: DatasetType):
             download=True,
             transform=transforms.Compose(transform),
         )
-        split_training_dataset_ratio = 4 / 5
+        split_training_dataset_ratio = 5 / 6
     elif name == "CIFAR10":
         transform = []
 
