@@ -225,7 +225,7 @@ def get_dataset(name, dataset_type: DatasetType):
                 ]
             ),
         )
-        split_training_dataset_ratio = 4 / 5
+        split_training_dataset_ratio = 5 / 6
     elif name == "FashionMNIST":
         transform = [
             transforms.Resize((32, 32)),
