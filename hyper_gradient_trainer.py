@@ -136,12 +136,12 @@ class HyperGradientTrainer:
             self.__save_hyper_gradients(
                 os.path.join(
                     self.save_dir, "approximation_hyper_gradient_dir", str(
-                        uuid.uuid4())), use_approxmation=True, )
+                        uuid.uuid4())), use_approximation=True, )
         if self.use_hessian:
             self.__save_hyper_gradients(
                 os.path.join(
                     self.save_dir, "hessian_hyper_gradient_dir", str(
-                        uuid.uuid4())), use_approxmation=False, )
+                        uuid.uuid4())), use_approximation=False, )
         self.trainer.save(self.save_dir)
         if self.use_approximation:
             self.approx_hyper_gradient_mom_dict.clear()
@@ -162,8 +162,8 @@ class HyperGradientTrainer:
             for index in chunk:
                 if index in self.hessian_hyper_gradient_mom_dict:
                     hyper_gradients.append(
-                        self.get_hyper_gradient(
-                            index, False))
+                        self.get_hyper_gradient(index, use_approximation=False)
+                    )
                     hyper_gradient_indices.append(index)
             if hyper_gradients:
                 counter2 = TimeCounter()
@@ -194,7 +194,9 @@ class HyperGradientTrainer:
                     (
                         hyper_gradient,
                         mom_gradient,
-                    ) = self.__get_hyper_gradient_and_momentum(index, False)
+                    ) = self.__get_hyper_gradient_and_momentum(
+                        index, use_approximation=False
+                    )
 
                 if mom_gradient is not None:
                     mom_gradient *= momentum
@@ -224,7 +226,7 @@ class HyperGradientTrainer:
                     hyper_gradient is None and mom_gradient is None)
                 if hyper_gradient is not None:
                     self.__set_hyper_gradient_and_momentum(
-                        index, hyper_gradient, mom_gradient, use_approxmation=False)
+                        index, hyper_gradient, mom_gradient, use_approximation=False)
                 self.hessian_computation_arguments[index] = None
             get_logger().info(
                 "__do_computation_with_hessian chunk size %s use time %s ms",
@@ -262,7 +264,7 @@ class HyperGradientTrainer:
         mom_gradient = None
         if index in self.approx_hyper_gradient_mom_dict:
             hyper_gradient, mom_gradient = self.__get_hyper_gradient_and_momentum(
-                index, True)
+                index, use_approximation=True)
 
         for arguments in self.delayed_approximation_computations[index]:
             (momentum, weight_decay, learning_rate, instance_gradient) = arguments
@@ -292,7 +294,7 @@ class HyperGradientTrainer:
         assert mom_gradient is not None
         self.delayed_approximation_computations[index] = []
         self.__set_hyper_gradient_and_momentum(
-            index, hyper_gradient, mom_gradient, use_approxmation=True
+            index, hyper_gradient, mom_gradient, use_approximation=True
         )
 
     @staticmethod
@@ -412,18 +414,18 @@ class HyperGradientTrainer:
                 if idx in self.batch_gradients:
                     self.do_delayed_computation(idx)
 
-    def __get_hyper_gradient_and_momentum(self, index, use_approxmation):
+    def __get_hyper_gradient_and_momentum(self, index, use_approximation):
         tmp = None
-        if use_approxmation:
+        if use_approximation:
             tmp = self.approx_hyper_gradient_mom_dict[index]
         else:
             tmp = self.hessian_hyper_gradient_mom_dict[index]
         return torch.split(tmp, tmp.shape[0] // 2)
 
     def __set_hyper_gradient_and_momentum(
-        self, index, hyper_gradient, mom_gradient, use_approxmation
+        self, index, hyper_gradient, mom_gradient, use_approximation
     ):
-        if use_approxmation:
+        if use_approximation:
             self.approx_hyper_gradient_mom_dict[index] = torch.cat(
                 (hyper_gradient, mom_gradient)
             )
@@ -432,12 +434,12 @@ class HyperGradientTrainer:
                 (hyper_gradient, mom_gradient)
             )
 
-    def get_hyper_gradient(self, index, use_approxmation):
+    def get_hyper_gradient(self, index, use_approximation):
         return self.__get_hyper_gradient_and_momentum(
-            index, use_approxmation)[0]
+            index, use_approximation)[0]
 
-    def __save_hyper_gradients(self, hyper_gradient_dir, use_approxmation):
-        if use_approxmation:
+    def __save_hyper_gradients(self, hyper_gradient_dir, use_approximation):
+        if use_approximation:
             get_logger().info("begin do do_delayed_computation")
             self.do_delayed_computation()
             get_logger().info("end do do_delayed_computation")
@@ -448,14 +450,14 @@ class HyperGradientTrainer:
 
         hyper_gradient_mom_dict = (
             self.approx_hyper_gradient_mom_dict
-            if use_approxmation
+            if use_approximation
             else self.hessian_hyper_gradient_mom_dict
         )
         for chunk in split_list_to_chunks(hyper_gradient_mom_dict.keys(), 100):
             hyper_gradient_mom_dict.prefetch(chunk)
             for index in chunk:
                 hyper_gradient = self.get_hyper_gradient(
-                    index, use_approxmation)
+                    index, use_approximation)
                 hyper_gradient_dict[index] = hyper_gradient
         self.trainer.save(hyper_gradient_dir)
         hyper_gradient_dict.flush_all(True)
@@ -479,12 +481,12 @@ class HyperGradientTrainer:
                 self.approx_hyper_gradient_mom_dict.get_storage_dir()
                 + "_epoch_"
                 + str(epoch),
-                use_approxmation=True,
+                use_approximation=True,
             )
         if self.use_hessian:
             self.__save_hyper_gradients(
                 self.hessian_hyper_gradient_mom_dict.get_storage_dir()
                 + "_epoch_"
                 + str(epoch),
-                use_approxmation=False,
+                use_approximation=False,
             )
