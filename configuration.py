@@ -86,6 +86,7 @@ def get_task_configuration(task_name, for_training):
 
     if loss_fun is None:
         loss_fun = choose_loss_function(model)
+    test_dataset = get_dataset(dataset_name, DatasetType.Test)
     if for_training:
         if hyper_parameter.optimizer_factory is None:
             hyper_parameter.set_optimizer_factory(
@@ -100,6 +101,6 @@ def get_task_configuration(task_name, for_training):
         trainer = Trainer(model, loss_fun, training_dataset, hyper_parameter)
         trainer.validation_dataset = get_dataset(
             dataset_name, DatasetType.Validation)
+        trainer.test_dataset = test_dataset
         return trainer
-    test_dataset = get_dataset(dataset_name, DatasetType.Test)
     return Validator(model, loss_fun, test_dataset)

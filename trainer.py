@@ -45,8 +45,11 @@ class Trainer:
         self.stop_criterion = None
         self.__reset_loss()
         self.validation_dataset = None
+        self.test_dataset = None
 
-    def get_validator(self):
+    def get_validator(self, use_test_data=True):
+        if use_test_data:
+            return Validator(self.model, self.loss_fun, self.test_dataset)
         return Validator(self.model, self.loss_fun, self.validation_dataset)
 
     def set_hyper_parameter(self, hyper_parameter):
@@ -116,7 +119,7 @@ class Trainer:
             "plot_parameter_distribution", False)
         plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
 
-        def after_epoch_callback(trainer, epoch, learning_rates):
+        def plot_loss_after_epoch(trainer, epoch, learning_rates):
             nonlocal plot_parameter_distribution
             nonlocal plot_class_accuracy
             if plot_parameter_distribution:
@@ -125,24 +128,25 @@ class Trainer:
                 layer_win.plot_histogram(
                     ModelUtil(trainer.model).get_parameter_list())
 
+            EpochWindow("learning rate").plot_learning_rate(
+                epoch, learning_rates[0])
+
             loss_win = EpochWindow("training & validation loss")
             get_logger().info("epoch: %s, training loss: %s",
                               epoch, trainer.training_loss[-1], )
             loss_win.plot_loss(epoch,
                                trainer.training_loss[-1],
                                "training loss")
-            EpochWindow("learning rate").plot_learning_rate(
-                epoch, learning_rates[0])
-            if trainer.validation_dataset is None:
-                return
+
             validation_epoch_interval = int(
                 kwargs.get("validation_epoch_interval", 1))
-            if epoch % validation_epoch_interval == 0:
-                (
-                    validation_loss,
-                    accuracy,
-                    other_data,
-                ) = trainer.get_validator().validate(
+            if (
+                trainer.validation_dataset is not None
+                and epoch % validation_epoch_interval == 0
+            ):
+                (validation_loss, accuracy, other_data,) = trainer.get_validator(
+                    use_test_data=False
+                ).validate(
                     trainer.__hyper_parameter.batch_size, per_class_accuracy=True
                 )
                 validation_loss = validation_loss.data.item()
@@ -182,8 +186,26 @@ class Trainer:
                                 "class_" + str(k) + "_accuracy",
                             )
 
+            if (
+                trainer.test_dataset is not None
+                and epoch == trainer.get_hyper_parameter().epochs
+            ):
+                (test_loss, accuracy, other_data,) = trainer.get_validator(
+                    use_test_data=True
+                ).validate(
+                    trainer.__hyper_parameter.batch_size, per_class_accuracy=False
+                )
+                test_loss = test_loss.data.item()
+                get_logger().info(
+                    "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
+                    epoch,
+                    learning_rates,
+                    test_loss,
+                    accuracy,
+                )
+
         kwargs = Trainer.__prepend_callback(
-            kwargs, "after_epoch_callbacks", after_epoch_callback
+            kwargs, "after_epoch_callbacks", plot_loss_after_epoch
         )
         return self.__train(**kwargs)
 
