@@ -77,7 +77,14 @@ def split_dataset(dataset):
 
 def split_dataset_by_class(dataset):
     class_map = {}
-    for index, label in enumerate(dataset.targets):
+    iterator = None
+    # if hasattr(dataset, "targets"):
+    #     iterator = enumerate(dataset.targets)
+    # elif hasattr(dataset, "indices"):
+    #     iterator = enumerate(dataset.indices)
+    # else:
+    iterator = enumerate(dataset)
+    for index, label in iterator:
         if isinstance(label, torch.Tensor):
             label = label.data.item()
         if label not in class_map:
