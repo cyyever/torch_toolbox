@@ -40,12 +40,13 @@ class Trainer:
         self.model = copy.deepcopy(model)
         self.loss_fun = loss_fun
         self.training_dataset = training_dataset
-        self.__hyper_parameter = hyper_parameter
-        self.__reset_hyper_parameter = False
         self.stop_criterion = None
-        self.__reset_loss()
         self.validation_dataset = None
         self.test_dataset = None
+        self.__hyper_parameter = hyper_parameter
+        self.__reset_hyper_parameter = False
+        self.__visdom_env = None
+        self.__reset_loss()
 
     def get_validator(self, use_test_data=True):
         if use_test_data:
@@ -73,9 +74,8 @@ class Trainer:
         return Trainer.repeated_training(repeated_num, self, training_callback)
 
     def train(self, **kwargs):
-        Window.set_cur_env(
-            "training_"
-            + "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
+        self.__visdom_env = "training_" + "{date:%Y-%m-%d_%H:%M:%S}".format(
+            date=datetime.datetime.now()
         )
 
         def pre_training_callback(trainer, optimizer, lr_scheduler):
@@ -123,15 +123,22 @@ class Trainer:
             nonlocal plot_parameter_distribution
             nonlocal plot_class_accuracy
             if plot_parameter_distribution:
-                layer_win = Window("parameter distribution")
+                layer_win = Window(
+                    "parameter distribution",
+                    env=trainer.__visdom_env)
 
                 layer_win.plot_histogram(
                     ModelUtil(trainer.model).get_parameter_list())
 
-            EpochWindow("learning rate").plot_learning_rate(
-                epoch, learning_rates[0])
+            EpochWindow(
+                "learning rate",
+                env=trainer.__visdom_env).plot_learning_rate(
+                epoch,
+                learning_rates[0])
 
-            loss_win = EpochWindow("training & validation loss")
+            loss_win = EpochWindow(
+                "training & validation loss", env=trainer.__visdom_env
+            )
             get_logger().info("epoch: %s, training loss: %s",
                               epoch, trainer.training_loss[-1], )
             loss_win.plot_loss(epoch,
@@ -160,9 +167,9 @@ class Trainer:
                     accuracy,
                 )
                 loss_win.plot_loss(epoch, validation_loss, "validation loss")
-                EpochWindow("validation accuracy").plot_accuracy(
-                    epoch, accuracy, "accuracy"
-                )
+                EpochWindow(
+                    "validation accuracy", env=trainer.__visdom_env
+                ).plot_accuracy(epoch, accuracy, "accuracy")
 
                 if plot_class_accuracy:
                     class_accuracy = other_data["per_class_accuracy"]
@@ -170,8 +177,7 @@ class Trainer:
                         split_list_to_chunks(list(class_accuracy.keys()), 2)
                     ):
                         class_accuracy_win = EpochWindow(
-                            "class accuracy part " + str(idx)
-                        )
+                            "class accuracy part " + str(idx), env=trainer.__visdom_env)
                         for k in sub_list:
                             get_logger().info(
                                 "epoch: %s, learning_rate: %s, class %s accuracy = %s",
