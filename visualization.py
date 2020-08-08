@@ -5,11 +5,11 @@ import visdom
 class Window:
     __envs: dict = dict()
     __sessions: dict = {}
-    __cur_env = None
+    # __cur_env = None
 
-    @staticmethod
-    def set_cur_env(env):
-        Window.__cur_env = env
+    # @staticmethod
+    # def set_cur_env(env):
+    #     Window.__cur_env = env
 
     @staticmethod
     def save_envs():
@@ -17,10 +17,10 @@ class Window:
 
     def __init__(self, title, env=None, x_label="", y_label=""):
         if env is None:
-            if Window.__cur_env is not None:
-                env = Window.__cur_env
-            else:
-                env = "main"
+            # if Window.__cur_env is not None:
+            #     env = Window.__cur_env
+            # else:
+            env = "main"
         if env not in Window.__sessions:
             Window.__sessions[env] = visdom.Visdom(env=env)
 
@@ -73,19 +73,20 @@ class Window:
             tensor.view(-1), win=self.win, opts=dict(numbins=1024, title=self.title)
         )
 
-    def plot_scatter(self, tensor, name=None):
+    def plot_scatter(self, x, y=None, name=None):
         # if self.win is not None and not self.vis.win_exists(self.win):
         #     self.win = None
         update = None
         if self.win is not None:
             update = "replace"
         self.win = self.vis.scatter(
-            tensor,
+            X=x,
+            Y=y,
             win=self.win,
             name=name,
             update=update,
-            opts=dict(
-                title=self.title))
+            opts=dict(title=self.title, showlegend=True),
+        )
         self._add_window()
 
     def save(self):
