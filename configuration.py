@@ -24,7 +24,7 @@ def get_task_dataset_name(name):
     return name
 
 
-def get_task_configuration(task_name, for_training):
+def get_task_configuration(task_name: str, for_training: bool):
     model = None
     loss_fun = None
     hyper_parameter = None
