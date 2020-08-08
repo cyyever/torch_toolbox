@@ -212,6 +212,7 @@ class Trainer:
                     test_loss,
                     accuracy,
                 )
+                Window.save_envs()
 
         kwargs = Trainer.__prepend_callback(
             kwargs, "after_epoch_callbacks", plot_loss_after_epoch

@@ -29,31 +29,28 @@ def get_task_configuration(task_name: str, for_training: bool):
     loss_fun = None
     hyper_parameter = None
     momentum = 0.9
-    if task_name == "MNIST":
+    if task_name in ("MNIST", "FashionMNIST"):
         model = LeNet5()
         if for_training:
             hyper_parameter = HyperParameter(
                 epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
             )
-
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer: optim.lr_scheduler.CosineAnnealingLR(
-                    optimizer, T_max=hyper_parameter.epochs * 2
-                )
-            )
+                lambda optimizer, hyper_parameter: optim.lr_scheduler.CosineAnnealingLR(
+                    optimizer, T_max=hyper_parameter.epochs))
 
-    elif task_name == "FashionMNIST":
-        model = LeNet5()
-        if for_training:
-            hyper_parameter = HyperParameter(
-                epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
-            )
+    # elif task_name == "FashionMNIST":
+    #     model = LeNet5()
+    #     if for_training:
+    #         hyper_parameter = HyperParameter(
+    #             epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
+    #         )
 
-            hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer: optim.lr_scheduler.CosineAnnealingLR(
-                    optimizer, T_max=hyper_parameter.epochs * 2
-                )
-            )
+    #         hyper_parameter.set_lr_scheduler_factory(
+    #             lambda hyper_parameter: optim.lr_scheduler.CosineAnnealingLR(
+    #                 hyper_parameter.optimizer, T_max=hyper_parameter.epochs * 2
+    #             )
+    #         )
 
     elif task_name == "CIFAR10":
         model = densenet_cifar()
@@ -63,19 +60,7 @@ def get_task_configuration(task_name: str, for_training: bool):
             )
 
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer: optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, verbose=True, factor=0.1
-                )
-            )
-    elif task_name == "CIFAR10_LENET":
-        model = LeNet5(input_channels=3)
-        if for_training:
-            hyper_parameter = HyperParameter(
-                epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
-            )
-
-            hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer: optim.lr_scheduler.ReduceLROnPlateau(
+                lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
                     optimizer, verbose=True, factor=0.1
                 )
             )
