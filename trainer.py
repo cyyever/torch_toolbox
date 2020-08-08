@@ -42,10 +42,10 @@ class Trainer:
         self.training_dataset = training_dataset
         self.__hyper_parameter = hyper_parameter
         self.__reset_hyper_parameter = False
-        self.stop_criterion = None
         self.__reset_loss()
         self.validation_dataset = None
         self.test_dataset = None
+        self.stop_criterion = None
 
     def get_validator(self, use_test_data=True):
         if use_test_data:
@@ -186,9 +186,10 @@ class Trainer:
                                 "class_" + str(k) + "_accuracy",
                             )
 
-            if (
-                trainer.test_dataset is not None
-                and epoch == trainer.get_hyper_parameter().epochs
+            test_epoch_interval = int(kwargs.get("test_epoch_interval", 5))
+            if trainer.test_dataset is not None and (
+                epoch % test_epoch_interval == 0
+                or epoch == trainer.get_hyper_parameter().epochs
             ):
                 (test_loss, accuracy, other_data,) = trainer.get_validator(
                     use_test_data=True
@@ -196,6 +197,8 @@ class Trainer:
                     trainer.__hyper_parameter.batch_size, per_class_accuracy=False
                 )
                 test_loss = test_loss.data.item()
+                trainer.test_loss[epoch] = test_loss
+                trainer.test_accuracy[epoch] = accuracy
                 get_logger().info(
                     "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
                     epoch,
@@ -358,6 +361,8 @@ class Trainer:
         self.training_loss = []
         self.validation_loss = {}
         self.validation_accuracy = {}
+        self.test_loss = {}
+        self.test_accuracy = {}
 
     @staticmethod
     def __prepend_callback(kwargs, name, new_fun):
