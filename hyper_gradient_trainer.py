@@ -256,7 +256,7 @@ class HyperGradientTrainer:
             for chunk in split_list_to_chunks(unfinished_keys, 100):
                 self.approx_hyper_gradient_mom_dict.prefetch(chunk)
                 for k in chunk:
-                    print("do delayed_approximation_computations for %s", k)
+                    get_logger().info("do delayed_approximation_computations for %s", k)
                     self.do_delayed_computation(k)
             return
 
