@@ -36,21 +36,26 @@ def get_task_configuration(task_name: str, for_training: bool):
                 epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
             )
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer, hyper_parameter: optim.lr_scheduler.CosineAnnealingLR(
-                    optimizer, T_max=hyper_parameter.epochs))
+                lambda optimizer, _: optim.lr_scheduler.MultiStepLR(
+                    optimizer, milestones=[5, 55, 555]
+                )
+            )
 
-    # elif task_name == "FashionMNIST":
-    #     model = LeNet5()
-    #     if for_training:
-    #         hyper_parameter = HyperParameter(
-    #             epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
-    #         )
+            # hyper_parameter.set_lr_scheduler_factory(
+            #     lambda optimizer, hyper_parameter: optim.lr_scheduler.CosineAnnealingLR(
+            #         optimizer, T_max=hyper_parameter.epochs))
 
-    #         hyper_parameter.set_lr_scheduler_factory(
-    #             lambda hyper_parameter: optim.lr_scheduler.CosineAnnealingLR(
-    #                 hyper_parameter.optimizer, T_max=hyper_parameter.epochs * 2
-    #             )
-    #         )
+    elif task_name == "FashionMNIST":
+        model = LeNet5()
+        if for_training:
+            hyper_parameter = HyperParameter(
+                epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
+            )
+            hyper_parameter.set_lr_scheduler_factory(
+                lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer, verbose=True, factor=0.5, patience=2
+                )
+            )
 
     elif task_name == "CIFAR10":
         model = densenet_cifar()
