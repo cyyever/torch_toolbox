@@ -1,28 +1,39 @@
+import copy
+import typing
 from inverse_hessian_vector_product import (
     stochastic_inverse_hessian_vector_product,
     # conjugate_gradient_inverse_hessian_vector_product,
 )
 from dataset import sub_dataset
-from validator import Validator
 
 
 def compute_classic_influence_function(
         trainer,
-        sample_index,
+        validator,
+        sample_indices: typing.Sequence,
         dampling_term=0,
         scale=1):
-    sample_dataset = sub_dataset(trainer.training_dataset, [sample_index])
-    validator = Validator(trainer.model, trainer.loss_fun, sample_dataset)
-    sample_gradient = validator.get_gradient()
-
-    return stochastic_inverse_hessian_vector_product(
-        trainer.model,
-        trainer.training_dataset,
-        trainer.loss_fun,
-        -sample_gradient,
-        repeated_num=5,
-        max_iteration=10000,
-        batch_size=trainer.get_hyper_parameter().batch_size,
-        dampling_term=dampling_term,
-        scale=scale,
+    test_gradient = validator.get_gradient()
+    training_dataset_size = len(trainer.training_dataset)
+    product = (
+        stochastic_inverse_hessian_vector_product(
+            trainer.model,
+            trainer.training_dataset,
+            trainer.loss_fun,
+            test_gradient,
+            repeated_num=5,
+            max_iteration=10000,
+            batch_size=trainer.get_hyper_parameter().batch_size,
+            dampling_term=dampling_term,
+            scale=scale,
+        )
+        / training_dataset_size
     )
+    contributions = dict()
+    for sample_index in sample_indices:
+        sample_dataset = sub_dataset(trainer.training_dataset, [sample_index])
+        sample_validator = copy.deepcopy(validator)
+        sample_validator.set_dataset(sample_dataset)
+        sample_gradient = sample_validator.get_gradient()
+        contributions[sample_index] = (product @ sample_gradient).data.item()
+    return contributions
