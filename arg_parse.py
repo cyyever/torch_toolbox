@@ -117,3 +117,10 @@ def create_hyper_gradient_trainer_from_args(args):
             json.dump(sample_indices, f)
         hyper_gradient_trainer.set_computed_indices(sample_indices)
     return hyper_gradient_trainer
+
+
+def create_validator_from_args(args):
+    validator = get_task_configuration(args.task_name, False)
+    if args.model_path is not None:
+        validator.load_model(args.model_path)
+    return validator
