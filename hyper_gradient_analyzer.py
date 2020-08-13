@@ -66,7 +66,7 @@ class HyperGradientAnalyzer:
             subset = sub_dataset(self.validator.dataset, indices)
             assert len(subset) == len(indices)
             tmp_validator.set_dataset(subset)
-            sub_validator_gradient = tmp_validator.get_gradient() * len(indices)
+            sub_validator_gradient = tmp_validator.get_gradient() * len(subset)
             for k2 in hyper_gradient_sum_dict.keys():
                 gradient_sum = hyper_gradient_sum_dict[k2]
                 k2 = int(k2)
