@@ -21,7 +21,7 @@ class HyperGradientAnalyzer:
         if training_set_size is None:
             training_set_size = len(self.hyper_gradient_matrix)
         contribution_dict = dict()
-        validation_gradient = self.validator.get_gradient()
+        test_gradient = self.validator.get_gradient()
         for chunk in split_list_to_chunks(
             self.hyper_gradient_matrix.keys(), self.cache_size // 3
         ):
@@ -31,17 +31,14 @@ class HyperGradientAnalyzer:
                     get_device()
                 )
                 contribution_dict[int(instance_index)] = (
-                    -(validation_gradient @ hyper_gradient).data.item()
-                    / training_set_size
+                    -(test_gradient @ hyper_gradient).data.item() / training_set_size
                 )
         assert len(contribution_dict) == training_set_size
         return contribution_dict
 
     def get_subset_contributions(
-            self,
-            training_subset_dict,
-            validation_subset_dict,
-            training_set_size=None):
+        self, training_subset_dict, test_subset_dict, training_set_size=None
+    ):
         if training_set_size is None:
             training_set_size = len(self.hyper_gradient_matrix)
         hyper_gradient_sum_dict = HyperGradientTrainer.create_gradient_matrix(
@@ -65,7 +62,7 @@ class HyperGradientAnalyzer:
             hyper_gradient_sum_dict[str(k)] = hyper_gradient_sum
         tmp_validator = copy.deepcopy(self.validator)
         contribution_dict = dict()
-        for k, indices in validation_subset_dict.items():
+        for k, indices in test_subset_dict.items():
             subset = sub_dataset(self.validator.dataset, indices)
             assert len(subset) == len(indices)
             tmp_validator.set_dataset(subset)
