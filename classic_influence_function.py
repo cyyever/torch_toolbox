@@ -8,13 +8,17 @@ from dataset import sub_dataset
 
 
 def compute_classic_influence_function(
-        trainer,
-        validator,
-        sample_indices: typing.Sequence,
-        dampling_term=0,
-        scale=1):
+    trainer,
+    validator,
+    sample_indices: typing.Sequence,
+    batch_size=None,
+    dampling_term=0,
+    scale=1,
+):
     test_gradient = validator.get_gradient()
     training_dataset_size = len(trainer.training_dataset)
+    if batch_size is None:
+        batch_size = trainer.get_hyper_parameter().batch_size
     product = (
         stochastic_inverse_hessian_vector_product(
             trainer.model,
@@ -23,7 +27,7 @@ def compute_classic_influence_function(
             test_gradient,
             repeated_num=5,
             max_iteration=10000,
-            batch_size=trainer.get_hyper_parameter().batch_size,
+            batch_size=batch_size,
             dampling_term=dampling_term,
             scale=scale,
         )
