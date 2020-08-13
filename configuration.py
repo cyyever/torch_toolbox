@@ -29,7 +29,7 @@ def get_task_configuration(task_name: str, for_training: bool):
     loss_fun = None
     hyper_parameter = None
     momentum = 0.9
-    if task_name in ("MNIST", "FashionMNIST"):
+    if task_name == "MNIST":
         model = LeNet5()
         if for_training:
             hyper_parameter = HyperParameter(
