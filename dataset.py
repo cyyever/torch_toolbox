@@ -136,7 +136,9 @@ def replace_dataset_labels(dataset, label_map: dict):
     def mapper(index, item):
         if index in label_map:
             assert label_map[index] != item[1]
-            return (item[0], label_map[index])
+            item = list(item)
+            item[1] = label_map[index]
+            return tuple(item)
         return item
 
     return DatasetMapper(dataset, [mapper])
