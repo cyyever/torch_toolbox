@@ -10,7 +10,7 @@ from tools.configuration import get_task_configuration
 from tools.hyper_gradient_trainer import HyperGradientTrainer
 
 
-def get_parsed_args():
+def get_arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--task_name", type=str)
     parser.add_argument("--epochs", type=int, default=None)
@@ -40,6 +40,12 @@ def get_parsed_args():
     )
     parser.add_argument("--repeated_num", type=int, default=None)
     parser.add_argument("--save_dir", type=str, default=None)
+    return parser
+
+
+def get_parsed_args(parser=None):
+    if parser is None:
+        parser = get_arg_parser()
     args = parser.parse_args()
     if args.save_dir is None:
         args.save_dir = os.path.join("models", args.task_name)
