@@ -1,7 +1,8 @@
 import copy
 import torch
+import torch.nn as nn
 
-from device import get_device, get_cpu_device
+from device import get_device
 from model_util import ModelUtil
 from dataset import get_class_count, dataset_with_indices
 
@@ -35,6 +36,9 @@ class Validator:
 
         per_sample_loss = kwargs.get("per_sample_loss", False)
         per_sample_output = kwargs.get("per_sample_output", False)
+        per_sample_prob = kwargs.get("per_sample_prob", False)
+        if per_sample_prob:
+            per_sample_output = True
         dataset = dataset_with_indices(self.dataset)
 
         validation_data_loader = torch.utils.data.DataLoader(
@@ -71,9 +75,7 @@ class Validator:
                 if per_sample_output:
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
-                        instance_output[instance_index] = outputs[i].to(
-                            get_cpu_device()
-                        )
+                        instance_output[instance_index] = outputs[i]
 
                 loss_is_mean = False
                 if hasattr(self.loss_fun, "reduction") and (
@@ -113,13 +115,13 @@ class Validator:
             if per_class_accuracy:
                 for k in class_count:
                     class_count[k] = class_correct_count[k] / class_count[k]
-            if instance_output:
+            if per_sample_prob:
+                last_layer = list(self.model.modules())[-1]
+                assert isinstance(last_layer, nn.LogSoftmax)
                 for k, v in instance_output.items():
                     max_prob_index = torch.argmax(v).data.item()
                     instance_prob[k] = (
-                        max_prob_index,
-                        v[max_prob_index].exp().data.item(),
-                    )
+                        max_prob_index, v[max_prob_index].data().item())
 
             return (
                 validation_loss,
