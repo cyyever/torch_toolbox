@@ -416,6 +416,7 @@ class HyperGradientTrainer:
                 idx = str(idx)
                 if idx in self.batch_gradients:
                     self.do_delayed_computation(idx)
+        self.batch_gradients.clear()
 
     def __get_hyper_gradient_and_momentum(self, index, use_approximation):
         tmp = None
