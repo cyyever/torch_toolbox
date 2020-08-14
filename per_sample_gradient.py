@@ -11,7 +11,7 @@ from model_util import ModelUtil
 from process_task_queue import CUDAProcessTaskQueue
 
 
-def __thread_func(task, args):
+def __worker_fun(task, args):
     (index, input_chunk, target_chunk, loss_fun, model, master_device) = task
 
     loss = None
@@ -32,20 +32,20 @@ def __thread_func(task, args):
     return (index, gradient_lists)
 
 
-device_task_queue = None
+__task_queue = None
 
 
 def __exit_handler():
-    global device_task_queue
-    if device_task_queue is not None:
-        device_task_queue.force_stop()
+    global __task_queue
+    if __task_queue is not None:
+        __task_queue.force_stop()
 
 
 atexit.register(__exit_handler)
 
 
 def get_per_sample_gradient(model, loss_fun, inputs, targets):
-    global device_task_queue
+    global __task_queue
     assert loss_fun.reduction == "mean" or loss_fun.reduction == "elementwise_mean"
     assert len(inputs) == len(targets)
 
@@ -73,18 +73,18 @@ def get_per_sample_gradient(model, loss_fun, inputs, targets):
              len(devices) -
              1) //
             len(devices)))
-    if device_task_queue is None:
-        device_task_queue = CUDAProcessTaskQueue(__thread_func)
-    device_task_queue.start()
+    if __task_queue is None:
+        __task_queue = CUDAProcessTaskQueue(__worker_fun)
+    __task_queue.start()
     for idx, (input_chunk, target_chunk) in enumerate(
             zip(input_chunks, target_chunks)):
-        device_task_queue.add_task(
+        __task_queue.add_task(
             (idx, input_chunk, target_chunk, loss_fun, model, master_device)
         )
 
     gradient_dict = dict()
     for _ in range(len(input_chunks)):
-        idx, gradient_list = device_task_queue.get_result()
+        idx, gradient_list = __task_queue.get_result()
         gradient_dict[idx] = gradient_list
 
     gradient_lists = []
