@@ -152,7 +152,8 @@ class HyperGradientTrainer:
 
     def __do_computation_with_hessian(self):
         for chunk in split_list_to_chunks(
-            [str(idx) for idx in sorted(list(self.__get_computed_indices()))], 100
+            [str(idx) for idx in sorted(list(self.__get_computed_indices()))],
+            self.cache_size // 2,
         ):
             counter = TimeCounter()
             self.hessian_hyper_gradient_mom_dict.prefetch(chunk)
@@ -247,13 +248,15 @@ class HyperGradientTrainer:
                 ):
                     self.do_delayed_computation(k)
             get_logger().info("end do do_delayed_computation from fast keys")
+            self.approx_hyper_gradient_mom_dict.flush_all(wait=False)
 
             unfinished_keys = []
             for k, v in self.delayed_approximation_computations.items():
                 if v:
                     unfinished_keys.append(k)
 
-            for chunk in split_list_to_chunks(unfinished_keys, 100):
+            for chunk in split_list_to_chunks(
+                    unfinished_keys, self.cache_size // 2):
                 self.approx_hyper_gradient_mom_dict.prefetch(chunk)
                 for k in chunk:
                     get_logger().info("do delayed_approximation_computations for %s", k)
@@ -453,7 +456,9 @@ class HyperGradientTrainer:
             if use_approximation
             else self.hessian_hyper_gradient_mom_dict
         )
-        for chunk in split_list_to_chunks(hyper_gradient_mom_dict.keys(), 100):
+        for chunk in split_list_to_chunks(
+            hyper_gradient_mom_dict.keys(), self.cache_size // 2
+        ):
             hyper_gradient_mom_dict.prefetch(chunk)
             for index in chunk:
                 hyper_gradient = self.get_hyper_gradient(
