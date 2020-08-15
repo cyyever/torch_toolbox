@@ -117,11 +117,23 @@ class Validator:
                     class_count[k] = class_correct_count[k] / class_count[k]
             if per_sample_prob:
                 last_layer = list(self.model.modules())[-1]
-                assert isinstance(last_layer, nn.LogSoftmax)
-                for k, v in instance_output.items():
-                    max_prob_index = torch.argmax(v).data.item()
-                    instance_prob[k] = (
-                        max_prob_index, v[max_prob_index].data().item())
+                if isinstance(last_layer, nn.LogSoftmax):
+                    for k, v in instance_output.items():
+                        max_prob_index = torch.argmax(v).data.item()
+                        instance_prob[k] = (
+                            max_prob_index,
+                            v[max_prob_index].data().item(),
+                        )
+                elif isinstance(last_layer, nn.Linear):
+                    for k, v in instance_output.items():
+                        prob_v = nn.Softmax(v)
+                        max_prob_index = torch.argmax(prob_v).data.item()
+                        instance_prob[k] = (
+                            max_prob_index,
+                            prob_v[max_prob_index].data().item(),
+                        )
+                else:
+                    raise RuntimeError("unsupported layer", type(last_layer))
 
             return (
                 validation_loss,
