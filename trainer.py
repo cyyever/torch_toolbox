@@ -358,8 +358,7 @@ class Trainer:
         self.model = torch.load(model_path, map_location=get_device())
 
     def save(self, save_dir, model_name="model.pt"):
-        if not os.path.isdir(save_dir):
-            os.makedirs(save_dir)
+        os.makedirs(save_dir, exist_ok=True)
         torch.save(self.model, os.path.join(save_dir, model_name))
 
     def __reset_loss(self):

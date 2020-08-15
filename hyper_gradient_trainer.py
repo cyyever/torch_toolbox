@@ -46,12 +46,13 @@ class HyperGradientTrainer:
                 if os.path.isfile(
                     os.path.join(
                         hessian_hyper_gradient_and_momentum_dir,
+                        "model",
                         "model.pt")):
                     self.trainer.load_model(
                         os.path.join(
-                            hessian_hyper_gradient_and_momentum_dir, "model.pt"
-                        )
-                    )
+                            hessian_hyper_gradient_and_momentum_dir,
+                            "model",
+                            "model.pt"))
 
             get_logger().info(
                 "use hessian_hyper_gradient_mom_dir:%s",
@@ -85,10 +86,12 @@ class HyperGradientTrainer:
                 if os.path.isfile(
                     os.path.join(
                         approx_hyper_gradient_and_momentum_dir,
+                        "model",
                         "model.pt")):
                     self.trainer.load_model(
                         os.path.join(
                             approx_hyper_gradient_and_momentum_dir,
+                            "model",
                             "model.pt"))
             get_logger().info(
                 "use hyper_gradient_mom_dir:%s",
@@ -465,7 +468,7 @@ class HyperGradientTrainer:
                 hyper_gradient = self.get_hyper_gradient(
                     index, use_approximation)
                 hyper_gradient_dict[index] = hyper_gradient
-        self.trainer.save(hyper_gradient_dir)
+        self.trainer.save(os.path.join(hyper_gradient_dir, "model"))
         hyper_gradient_dict.flush_all(True)
         hyper_gradient_dict.release()
         hyper_gradient_dict = None
