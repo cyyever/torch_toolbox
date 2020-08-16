@@ -29,10 +29,10 @@ class Window:
             self.win = Window.__envs[env].get(title, None)
         self.x_label = x_label
         self.y_label = y_label
-        self.opts = dict()
+        self.opts = dict(ytick=True)
         self.showlegend = showlegend
 
-    def set_opt(self, k, v):
+    def set_opt(self, k: str, v):
         self.opts[k] = v
 
     def plot_line(self, x, y, x_label=None, y_label=None, name=None):
