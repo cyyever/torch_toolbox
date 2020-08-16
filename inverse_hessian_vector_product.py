@@ -41,6 +41,7 @@ def stochastic_inverse_hessian_vector_product(
         diff = None
         iteration = 0
 
+        epoch = 1
         looping = True
         while looping:
             for batch in data_loader:
@@ -56,11 +57,15 @@ def stochastic_inverse_hessian_vector_product(
                 get_logger().debug("diff is %s", diff)
                 cur_product = next_product
                 iteration += 1
-                if diff <= epsilon or iteration >= max_iteration:
+                if (diff <= epsilon or iteration >=
+                        max_iteration) and epoch > 1:
                     product_list.append(cur_product / scale)
                     looping = False
                     break
-    get_logger().debug("product_list is %s", product_list)
+            epoch += 1
+            get_logger().debug(
+                "stochastic_inverse_hessian_vector_product epoch is %s", epoch
+            )
     return sum(product_list) / len(product_list)
 
 
