@@ -10,13 +10,7 @@ class Window:
     def save_envs():
         visdom.Visdom().save(list(Window.__envs.keys()))
 
-    def __init__(
-            self,
-            title,
-            env=None,
-            x_label="",
-            y_label="",
-            showlegend=True):
+    def __init__(self, title, env=None, x_label="", y_label=""):
         if env is None:
             env = "main"
         if env not in Window.__sessions:
@@ -30,7 +24,7 @@ class Window:
         self.x_label = x_label
         self.y_label = y_label
         self.extra_opts = dict(ytick=True)
-        self.showlegend = showlegend
+        self.showlegend = True
 
     def set_opt(self, k: str, v):
         self.extra_opts[k] = v
@@ -41,7 +35,6 @@ class Window:
         return opts
 
     def plot_line(self, x, y, x_label=None, y_label=None, name=None):
-
         if x_label is None:
             x_label = self.x_label
 
@@ -92,8 +85,8 @@ class Window:
 
 
 class EpochWindow(Window):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, title, env=None, y_label=""):
+        super().__init__(title, env=env, x_label="Epoch", y_label=y_label)
 
     def plot_learning_rate(self, epoch, learning_rate):
         self.plot_scalar(epoch, learning_rate, y_label="Learning Rate")
