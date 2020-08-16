@@ -5,11 +5,6 @@ import visdom
 class Window:
     __envs: dict = dict()
     __sessions: dict = {}
-    # __cur_env = None
-
-    # @staticmethod
-    # def set_cur_env(env):
-    #     Window.__cur_env = env
 
     @staticmethod
     def save_envs():
@@ -17,9 +12,6 @@ class Window:
 
     def __init__(self, title, env=None, x_label="", y_label=""):
         if env is None:
-            # if Window.__cur_env is not None:
-            #     env = Window.__cur_env
-            # else:
             env = "main"
         if env not in Window.__sessions:
             Window.__sessions[env] = visdom.Visdom(env=env)
@@ -31,10 +23,9 @@ class Window:
             self.win = Window.__envs[env].get(title, None)
         self.x_label = x_label
         self.y_label = y_label
+        self.showlegend = True
 
     def plot_line(self, x, y, x_label=None, y_label=None, name=None):
-        # if self.win is not None and not self.vis.win_exists(self.win):
-        #     self.win = None
 
         if x_label is None:
             x_label = self.x_label
@@ -61,21 +52,17 @@ class Window:
                 xlabel=x_label,
                 ylabel=y_label,
                 title=self.title,
-                showlegend=True),
+                showlegend=self.showlegend,
+            ),
         )
         self._add_window()
 
     def plot_histogram(self, tensor):
-        # if self.win is not None and not self.vis.win_exists(self.win):
-        #     self.win = None
-
         self.win = self.vis.histogram(
             tensor.view(-1), win=self.win, opts=dict(numbins=1024, title=self.title)
         )
 
     def plot_scatter(self, x, y=None, name=None):
-        # if self.win is not None and not self.vis.win_exists(self.win):
-        #     self.win = None
         update = None
         if self.win is not None:
             update = "replace"
@@ -85,7 +72,7 @@ class Window:
             win=self.win,
             name=name,
             update=update,
-            opts=dict(title=self.title, showlegend=True),
+            opts=dict(title=self.title, showlegend=self.showlegend),
         )
         self._add_window()
 
