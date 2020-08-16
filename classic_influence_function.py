@@ -14,6 +14,7 @@ def compute_classic_influence_function(
     batch_size=None,
     dampling_term=0,
     scale=1,
+    epsilon=0.0001,
 ):
     test_gradient = validator.get_gradient()
     training_dataset_size = len(trainer.training_dataset)
@@ -30,6 +31,7 @@ def compute_classic_influence_function(
             batch_size=batch_size,
             dampling_term=dampling_term,
             scale=scale,
+            epsilon=epsilon
         )
         / training_dataset_size
     )
