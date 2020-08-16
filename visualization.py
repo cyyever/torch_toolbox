@@ -29,11 +29,16 @@ class Window:
             self.win = Window.__envs[env].get(title, None)
         self.x_label = x_label
         self.y_label = y_label
-        self.opts = dict(ytick=True)
+        self.extra_opts = dict(ytick=True)
         self.showlegend = showlegend
 
     def set_opt(self, k: str, v):
-        self.opts[k] = v
+        self.extra_opts[k] = v
+
+    def get_opts(self):
+        opts = dict(title=self.title, showlegend=self.showlegend)
+        opts.update(self.extra_opts)
+        return opts
 
     def plot_line(self, x, y, x_label=None, y_label=None, name=None):
 
@@ -52,30 +57,17 @@ class Window:
         if name is None:
             name = y_label
 
+        opts = dict(xlabel=x_label, ylabel=y_label,)
+        opts.update(self.get_opts())
         self.win = self.vis.line(
-            Y=y,
-            X=x,
-            win=self.win,
-            name=name,
-            update=update,
-            opts=(
-                dict(
-                    xlabel=x_label,
-                    ylabel=y_label,
-                    title=self.title,
-                    showlegend=self.showlegend,
-                )
-                | self.opts
-            ),
+            Y=y, X=x, win=self.win, name=name, update=update, opts=opts,
         )
         self._add_window()
 
     def plot_histogram(self, tensor):
-        self.win = self.vis.histogram(
-            tensor.view(-1),
-            win=self.win,
-            opts=(dict(numbins=1024, title=self.title) | self.opts),
-        )
+        opts = dict(numbins=1024)
+        opts.update(self.get_opts())
+        self.win = self.vis.histogram(tensor.view(-1), win=self.win, opts=opts)
 
     def plot_scatter(self, x, y=None, name=None):
         update = None
@@ -87,11 +79,7 @@ class Window:
             win=self.win,
             name=name,
             update=update,
-            opts=(
-                dict(
-                    title=self.title,
-                    showlegend=self.showlegend) | self.opts),
-        )
+            opts=self.get_opts())
         self._add_window()
 
     def save(self):
