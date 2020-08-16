@@ -29,7 +29,11 @@ class Window:
             self.win = Window.__envs[env].get(title, None)
         self.x_label = x_label
         self.y_label = y_label
+        self.opts = dict()
         self.showlegend = showlegend
+
+    def set_opt(self, k, v):
+        self.opts[k] = v
 
     def plot_line(self, x, y, x_label=None, y_label=None, name=None):
 
@@ -54,18 +58,23 @@ class Window:
             win=self.win,
             name=name,
             update=update,
-            opts=dict(
-                xlabel=x_label,
-                ylabel=y_label,
-                title=self.title,
-                showlegend=self.showlegend,
+            opts=(
+                dict(
+                    xlabel=x_label,
+                    ylabel=y_label,
+                    title=self.title,
+                    showlegend=self.showlegend,
+                )
+                | self.opts
             ),
         )
         self._add_window()
 
     def plot_histogram(self, tensor):
         self.win = self.vis.histogram(
-            tensor.view(-1), win=self.win, opts=dict(numbins=1024, title=self.title)
+            tensor.view(-1),
+            win=self.win,
+            opts=(dict(numbins=1024, title=self.title) | self.opts),
         )
 
     def plot_scatter(self, x, y=None, name=None):
@@ -78,7 +87,10 @@ class Window:
             win=self.win,
             name=name,
             update=update,
-            opts=dict(title=self.title, showlegend=self.showlegend),
+            opts=(
+                dict(
+                    title=self.title,
+                    showlegend=self.showlegend) | self.opts),
         )
         self._add_window()
 
