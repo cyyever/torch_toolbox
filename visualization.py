@@ -10,7 +10,13 @@ class Window:
     def save_envs():
         visdom.Visdom().save(list(Window.__envs.keys()))
 
-    def __init__(self, title, env=None, x_label="", y_label=""):
+    def __init__(
+            self,
+            title,
+            env=None,
+            x_label="",
+            y_label="",
+            showlegend=True):
         if env is None:
             env = "main"
         if env not in Window.__sessions:
@@ -23,7 +29,7 @@ class Window:
             self.win = Window.__envs[env].get(title, None)
         self.x_label = x_label
         self.y_label = y_label
-        self.showlegend = True
+        self.showlegend = showlegend
 
     def plot_line(self, x, y, x_label=None, y_label=None, name=None):
 
