@@ -92,8 +92,8 @@ class Window:
 
 
 class EpochWindow(Window):
-    def __init__(self, title, env=None, y_label=""):
-        super().__init__(title, env=env, x_label="Epoch", y_label=y_label)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def plot_learning_rate(self, epoch, learning_rate):
         self.plot_scalar(epoch, learning_rate, y_label="Learning Rate")
