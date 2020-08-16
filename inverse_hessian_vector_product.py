@@ -36,7 +36,7 @@ def stochastic_inverse_hessian_vector_product(
         dataset, batch_size=batch_size, shuffle=True,
     )
     product_list = []
-    for _ in range(repeated_num):
+    for cur_repeated_id in range(repeated_num):
         cur_product = v
         diff = None
         iteration = 0
@@ -54,7 +54,7 @@ def stochastic_inverse_hessian_vector_product(
                     - hvp_function(cur_product).to(get_device()) / scale
                 )
                 diff = torch.dist(cur_product, next_product)
-                get_logger().debug("diff is %s", diff)
+                get_logger().debug("diff is %s, cur repeated sequence %s, iteration is %s, max_iteration is %s", diff,cur_repeated_id,iteration,max_iteration)
                 cur_product = next_product
                 iteration += 1
                 if (diff <= epsilon or iteration >=
