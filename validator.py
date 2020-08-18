@@ -119,10 +119,11 @@ class Validator:
                 last_layer = list(self.model.modules())[-1]
                 if isinstance(last_layer, nn.LogSoftmax):
                     for k, v in instance_output.items():
-                        max_prob_index = torch.argmax(v).data.item()
+                        probs = torch.exp(v)
+                        max_prob_index = torch.argmax(probs).data.item()
                         instance_prob[k] = (
                             max_prob_index,
-                            v[max_prob_index].data.item(),
+                            probs[max_prob_index].data.item(),
                         )
                 elif isinstance(last_layer, nn.Linear):
                     for k, v in instance_output.items():
