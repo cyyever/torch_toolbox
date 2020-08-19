@@ -6,7 +6,7 @@ from trainer import Trainer
 from validator import Validator
 from dataset import get_dataset, DatasetType
 from models.lenet import LeNet5
-from models.densenet2 import densenet_cifar
+from models.densenet2 import densenet_CIFAR10, densenet_MNIST
 
 
 def choose_loss_function(model):
@@ -21,6 +21,8 @@ def choose_loss_function(model):
 def get_task_dataset_name(name):
     if name.startswith("CIFAR10_"):
         return "CIFAR10"
+    if name.startswith("MNIST_"):
+        return "MNIST"
     return name
 
 
@@ -58,12 +60,23 @@ def get_task_configuration(task_name: str, for_training: bool):
             )
 
     elif task_name == "CIFAR10":
-        model = densenet_cifar()
+        model = densenet_CIFAR10()
         if for_training:
             hyper_parameter = HyperParameter(
                 epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
             )
 
+            hyper_parameter.set_lr_scheduler_factory(
+                lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer, verbose=True, factor=0.1
+                )
+            )
+    elif task_name == "MNIST_densnet":
+        model = densenet_MNIST()
+        if for_training:
+            hyper_parameter = HyperParameter(
+                epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
+            )
             hyper_parameter.set_lr_scheduler_factory(
                 lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
                     optimizer, verbose=True, factor=0.1
