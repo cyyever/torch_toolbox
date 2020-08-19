@@ -1,4 +1,5 @@
 import uuid
+import shutil
 import copy
 import os
 import torch
@@ -135,22 +136,24 @@ class HyperGradientTrainer:
             after_batch_callbacks=[self.__after_batch_callback],
             after_epoch_callbacks=[after_epoch_callback],
         )
+        self.trainer.save(self.save_dir)
         if self.use_approximation:
             self.__save_hyper_gradients(
                 os.path.join(
                     self.save_dir, "approximation_hyper_gradient_dir", str(
                         uuid.uuid4())), use_approximation=True, )
+            self.approx_hyper_gradient_mom_dict.release()
+            shutil.rmtree(
+                self.approx_hyper_gradient_mom_dict.get_storage_dir())
+            self.approx_hyper_gradient_mom_dict = None
         if self.use_hessian:
             self.__save_hyper_gradients(
                 os.path.join(
                     self.save_dir, "hessian_hyper_gradient_dir", str(
                         uuid.uuid4())), use_approximation=False, )
-        self.trainer.save(self.save_dir)
-        if self.use_approximation:
-            self.approx_hyper_gradient_mom_dict.clear()
-            self.approx_hyper_gradient_mom_dict = None
-        if self.use_hessian:
-            self.hessian_hyper_gradient_mom_dict.clear()
+            self.hessian_hyper_gradient_mom_dict.release()
+            shutil.rmtree(
+                self.hessian_hyper_gradient_mom_dict.get_storage_dir())
             self.hessian_hyper_gradient_mom_dict = None
 
     def __do_computation_with_hessian(self):
