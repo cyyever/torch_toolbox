@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import uuid
 import os
 import copy
 import json
@@ -49,6 +50,11 @@ def get_parsed_args(parser=None):
     args = parser.parse_args()
     if args.save_dir is None:
         args.save_dir = os.path.join("models", args.task_name)
+    return set_save_dir_of_args(args, args.save_dir)
+
+
+def set_save_dir_of_args(args, save_dir: str):
+    args.save_dir = os.path.join(save_dir, str(uuid.uuid4()))
     return args
 
 
@@ -69,13 +75,13 @@ def create_trainer_from_args(args):
     trainer.set_hyper_parameter(hyper_parameter)
 
     if args.training_dataset_percentage is not None:
+        os.makedirs(args.save_dir, exist_ok=True)
         subset_dict = sample_subset(
             trainer.training_dataset, args.training_dataset_percentage
         )
         sample_indices = sum(subset_dict.values(), [])
         trainer.training_dataset = sub_dataset(
             trainer.training_dataset, sample_indices)
-        os.makedirs(args.save_dir, exist_ok=True)
         with open(
             os.path.join(args.save_dir, "training_dataset_indices.json"), mode="wt",
         ) as f:
