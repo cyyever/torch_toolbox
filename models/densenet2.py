@@ -119,6 +119,7 @@ class DenseNet3(nn.Module):
         self,
         depth,
         num_classes,
+        channels=3,
         growth_rate=12,
         reduction=0.5,
         bottleneck=True,
@@ -135,7 +136,7 @@ class DenseNet3(nn.Module):
         n = int(n)
         # 1st conv before any dense block
         self.conv1 = nn.Conv2d(
-            3, in_planes, kernel_size=3, stride=1, padding=1, bias=False
+            channels, in_planes, kernel_size=3, stride=1, padding=1, bias=False
         )
         # 1st block
         self.block1 = DenseBlock(n, in_planes, growth_rate, block, dropRate)
@@ -183,5 +184,9 @@ class DenseNet3(nn.Module):
         return self.fc(out)
 
 
-def densenet_cifar():
+def densenet_CIFAR10():
     return DenseNet3(40, 10)
+
+
+def densenet_MNIST():
+    return DenseNet3(40, 10, channels=1)
