@@ -90,7 +90,7 @@ def get_task_configuration(task_name: str, for_training: bool):
         model = densenet_MNIST()
         if for_training:
             hyper_parameter = HyperParameter(
-                epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
+                epochs=50, batch_size=64, learning_rate=0.1, weight_decay=1
             )
             hyper_parameter.set_lr_scheduler_factory(
                 lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
