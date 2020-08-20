@@ -74,8 +74,10 @@ class Trainer:
         return Trainer.repeated_training(repeated_num, self, training_callback)
 
     def train(self, **kwargs):
-        self.__visdom_env = "training_" + "{date:%Y-%m-%d_%H:%M:%S}".format(
-            date=datetime.datetime.now()
+        self.__visdom_env = (
+            "training_"
+            + str(self.model.__class__.__name__)
+            + "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
         )
 
         def pre_training_callback(trainer, optimizer, lr_scheduler):
