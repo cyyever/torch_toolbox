@@ -86,7 +86,7 @@ def get_task_configuration(task_name: str, for_training: bool):
             #         optimizer, verbose=True, factor=0.1
             #     )
             # )
-    elif task_name == "MNIST_densnet":
+    elif task_name == "MNIST_densenet":
         model = densenet_MNIST()
         if for_training:
             hyper_parameter = HyperParameter(
