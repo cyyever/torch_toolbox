@@ -77,7 +77,7 @@ class Trainer:
         self.__visdom_env = (
             "training_"
             + str(self.model.__class__.__name__)
-            + "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
+            + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
         )
 
         def pre_training_callback(trainer, optimizer, lr_scheduler):
@@ -207,6 +207,9 @@ class Trainer:
                 test_loss = test_loss.data.item()
                 trainer.test_loss[epoch] = test_loss
                 trainer.test_accuracy[epoch] = accuracy
+                EpochWindow(
+                    "test accuracy", env=trainer.__visdom_env
+                ).plot_accuracy(epoch, accuracy, "accuracy")
                 get_logger().info(
                     "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
                     epoch,
