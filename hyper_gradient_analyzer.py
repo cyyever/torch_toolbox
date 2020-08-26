@@ -1,11 +1,10 @@
 import copy
 import tempfile
 
-from cyy_naive_lib.list_op import split_list_to_chunks
 
 from .dataset import sub_dataset
-from .device import get_device
 from .hyper_gradient_trainer import HyperGradientTrainer
+from .synced_tensor_dict_util import iterate_over_synced_tensor_dict
 
 
 class HyperGradientAnalyzer:
@@ -22,17 +21,15 @@ class HyperGradientAnalyzer:
             training_set_size = len(self.hyper_gradient_matrix)
         contribution_dict = dict()
         test_gradient = self.validator.get_gradient()
-        for chunk in split_list_to_chunks(
-            self.hyper_gradient_matrix.keys(), self.cache_size // 3
+
+        for (sample_index, hyper_gradient) in iterate_over_synced_tensor_dict(
+            self.hyper_gradient_matrix
         ):
-            self.hyper_gradient_matrix.prefetch(chunk)
-            for instance_index in chunk:
-                hyper_gradient = self.hyper_gradient_matrix[instance_index].to(
-                    get_device()
-                )
-                contribution_dict[int(instance_index)] = (
-                    -(test_gradient @ hyper_gradient).data.item() / training_set_size
-                )
+            sample_index = int(sample_index)
+            contribution_dict[sample_index] = (
+                -(test_gradient @ hyper_gradient) / training_set_size
+            ).data.item()
+
         assert len(contribution_dict) == training_set_size
         return contribution_dict
 
@@ -41,39 +38,28 @@ class HyperGradientAnalyzer:
     ):
         if training_set_size is None:
             training_set_size = len(self.hyper_gradient_matrix)
-
-        test_gradient_dict = HyperGradientTrainer.create_gradient_matrix(
+        hyper_gradient_sum_dict = HyperGradientTrainer.create_gradient_matrix(
             self.cache_size, self.validator.model
         )
-        test_gradient_dict.set_storage_dir(tempfile.gettempdir())
+        hyper_gradient_sum_dict.set_storage_dir(tempfile.gettempdir())
 
+        for k, indices in training_subset_dict.items():
+            hyper_gradient_sum = None
+            for (_, hyper_gradient) in iterate_over_synced_tensor_dict(
+                self.hyper_gradient_matrix, indices
+            ):
+                if hyper_gradient_sum is None:
+                    hyper_gradient_sum = hyper_gradient
+                else:
+                    hyper_gradient_sum += hyper_gradient
+            hyper_gradient_sum_dict[str(k)] = hyper_gradient_sum
         tmp_validator = copy.deepcopy(self.validator)
+        contribution_dict = dict()
         for k, indices in test_subset_dict.items():
             subset = sub_dataset(self.validator.dataset, indices)
             assert len(subset) == len(indices)
             tmp_validator.set_dataset(subset)
-            test_gradient_dict[str(k)]= tmp_validator.get_gradient() * len(subset)
-
-        contribution_dict = dict()
-
-        for k, indices in training_subset_dict.items():
-            indice_str_list = [str(index) for index in indices]
-            hyper_gradient_sum = None
-            for chunk in split_list_to_chunks(
-                    indice_str_list, self.cache_size // 3):
-                self.hyper_gradient_matrix.prefetch(chunk)
-                for instance_index in chunk:
-                    hyper_gradient = self.hyper_gradient_matrix[instance_index].to(
-                        get_device())
-                    if hyper_gradient_sum is None:
-                        hyper_gradient_sum = hyper_gradient
-                    else:
-                        hyper_gradient_sum += hyper_gradient
-
-            for k2 in test_gradient_dict.keys():
-
-
-
+            sub_validator_gradient = tmp_validator.get_gradient() * len(subset)
             for k2 in hyper_gradient_sum_dict.keys():
                 gradient_sum = hyper_gradient_sum_dict[k2]
                 k2 = int(k2)
@@ -82,6 +68,4 @@ class HyperGradientAnalyzer:
                 contribution_dict[k2][k] = (
                     -(sub_validator_gradient @ gradient_sum) / training_set_size
                 ).data.item()
-
-
         return contribution_dict
