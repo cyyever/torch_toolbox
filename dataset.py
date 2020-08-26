@@ -300,15 +300,15 @@ def get_dataset_labels(name):
         ]
     if name == "CIFAR10":
         return [
-            "airplane",
-            "automobile",
-            "bird",
-            "cat",
-            "deer",
-            "dog",
-            "frog",
-            "horse",
-            "ship",
-            "truck",
+            "Airplane",
+            "Automobile",
+            "Bird",
+            "Cat",
+            "Deer",
+            "Dog",
+            "Frog",
+            "Horse",
+            "Ship",
+            "Truck",
         ]
     raise NotImplementedError(name)
