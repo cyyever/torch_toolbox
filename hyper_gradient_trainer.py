@@ -308,14 +308,14 @@ class HyperGradientTrainer:
 
     @staticmethod
     def create_gradient_matrix(
-        cache_size, model, storage_dir=None, concat_momentum=False,
+        cache_size, model=None, storage_dir=None, concat_momentum=False,
     ):
 
         if not storage_dir:
             storage_dir = ""
         mask = None
         gradient_shape = None
-        if prune.is_pruned(model):
+        if model is not None and prune.is_pruned(model):
             model_util = ModelUtil(model)
             get_logger().info(
                 "use pruned model, sparsity is %s",
