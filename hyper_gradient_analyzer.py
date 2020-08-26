@@ -53,19 +53,45 @@ class HyperGradientAnalyzer:
                 else:
                     hyper_gradient_sum += hyper_gradient
             hyper_gradient_sum_dict[str(k)] = hyper_gradient_sum
-        tmp_validator = copy.deepcopy(self.validator)
         contribution_dict = dict()
-        for k, indices in test_subset_dict.items():
+        for (test_key, test_subset_gradient) in self.get_test_gradients(
+            test_subset_dict
+        ):
+            for (training_key, hyper_gradient_sum) in iterate_over_synced_tensor_dict(
+                    hyper_gradient_sum_dict):
+                training_key = int(training_key)
+                if training_key not in contribution_dict:
+                    contribution_dict[training_key] = dict()
+                contribution_dict[training_key][test_key] = (
+                    -(test_subset_gradient @ hyper_gradient_sum) / training_set_size
+                ).data.item()
+        return contribution_dict
+
+    def get_training_sample_contributions(
+        self, test_subset_dict, training_set_size=None
+    ):
+        if training_set_size is None:
+            training_set_size = len(self.hyper_gradient_matrix)
+        contribution_dict = dict()
+
+        for (sample_index, hyper_gradient) in iterate_over_synced_tensor_dict(
+            self.hyper_gradient_matrix
+        ):
+            sample_index = int(sample_index)
+            for (test_key, test_subset_gradient) in self.get_test_gradients(
+                test_subset_dict
+            ):
+                if sample_index not in contribution_dict:
+                    contribution_dict[sample_index] = dict()
+                contribution_dict[sample_index][test_key] = (
+                    -(test_subset_gradient @ hyper_gradient) / training_set_size
+                ).data.item()
+        return contribution_dict
+
+    def get_test_gradients(self, test_subset_dict):
+        tmp_validator = copy.deepcopy(self.validator)
+        for test_key, indices in test_subset_dict.items():
             subset = sub_dataset(self.validator.dataset, indices)
             assert len(subset) == len(indices)
             tmp_validator.set_dataset(subset)
-            sub_validator_gradient = tmp_validator.get_gradient() * len(subset)
-            for k2 in hyper_gradient_sum_dict.keys():
-                gradient_sum = hyper_gradient_sum_dict[k2]
-                k2 = int(k2)
-                if k2 not in contribution_dict:
-                    contribution_dict[k2] = dict()
-                contribution_dict[k2][k] = (
-                    -(sub_validator_gradient @ gradient_sum) / training_set_size
-                ).data.item()
-        return contribution_dict
+            yield (test_key, tmp_validator.get_gradient() * len(subset))
