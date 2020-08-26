@@ -41,10 +41,20 @@ class HyperGradientAnalyzer:
     ):
         if training_set_size is None:
             training_set_size = len(self.hyper_gradient_matrix)
-        hyper_gradient_sum_dict = HyperGradientTrainer.create_gradient_matrix(
+
+        test_gradient_dict = HyperGradientTrainer.create_gradient_matrix(
             self.cache_size, self.validator.model
         )
-        hyper_gradient_sum_dict.set_storage_dir(tempfile.gettempdir())
+        test_gradient_dict.set_storage_dir(tempfile.gettempdir())
+
+        tmp_validator = copy.deepcopy(self.validator)
+        for k, indices in test_subset_dict.items():
+            subset = sub_dataset(self.validator.dataset, indices)
+            assert len(subset) == len(indices)
+            tmp_validator.set_dataset(subset)
+            test_gradient_dict[str(k)]= tmp_validator.get_gradient() * len(subset)
+
+        contribution_dict = dict()
 
         for k, indices in training_subset_dict.items():
             indice_str_list = [str(index) for index in indices]
@@ -59,14 +69,11 @@ class HyperGradientAnalyzer:
                         hyper_gradient_sum = hyper_gradient
                     else:
                         hyper_gradient_sum += hyper_gradient
-            hyper_gradient_sum_dict[str(k)] = hyper_gradient_sum
-        tmp_validator = copy.deepcopy(self.validator)
-        contribution_dict = dict()
-        for k, indices in test_subset_dict.items():
-            subset = sub_dataset(self.validator.dataset, indices)
-            assert len(subset) == len(indices)
-            tmp_validator.set_dataset(subset)
-            sub_validator_gradient = tmp_validator.get_gradient() * len(subset)
+
+            for k2 in test_gradient_dict.keys():
+
+
+
             for k2 in hyper_gradient_sum_dict.keys():
                 gradient_sum = hyper_gradient_sum_dict[k2]
                 k2 = int(k2)
@@ -75,4 +82,6 @@ class HyperGradientAnalyzer:
                 contribution_dict[k2][k] = (
                     -(sub_validator_gradient @ gradient_sum) / training_set_size
                 ).data.item()
+
+
         return contribution_dict
