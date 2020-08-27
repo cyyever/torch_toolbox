@@ -54,14 +54,15 @@ class HyperGradientAnalyzer:
                 else:
                     hyper_gradient_sum += hyper_gradient
             hyper_gradient_sum_dict[str(k)] = hyper_gradient_sum
+        test_subset_gradient_dict = self.get_test_gradient_dict(
+            test_subset_dict)
         contribution_dict = dict()
         for (training_key, hyper_gradient_sum) in iterate_over_synced_tensor_dict(
                 hyper_gradient_sum_dict):
             training_key = int(training_key)
             contribution_dict[training_key] = dict()
-            for (test_key, test_subset_gradient) in self.get_test_gradients(
-                test_subset_dict
-            ):
+            for (test_key, test_subset_gradient) in iterate_over_synced_tensor_dict(
+                    test_subset_gradient_dict):
                 contribution_dict[training_key][test_key] = (
                     -(test_subset_gradient @ hyper_gradient_sum) / training_set_size
                 ).data.item()
