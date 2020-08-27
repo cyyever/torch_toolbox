@@ -108,6 +108,5 @@ class HyperGradientAnalyzer:
         )
         test_gredient_dict.set_storage_dir(tempfile.gettempdir())
         for (test_key, gradient) in self.get_test_gradients(test_subset_dict):
-            assert test_key in test_gredient_dict
             test_gredient_dict[str(test_key)] = gradient
         return test_gredient_dict
