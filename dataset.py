@@ -284,7 +284,7 @@ def get_dataset(name, dataset_type: DatasetType):
 
 def get_dataset_labels(name):
     if name == "MNIST":
-        return list(range(10))
+        return [str(a) for a in range(10)]
     if name == "FashionMNIST":
         return [
             "T-shirt",
