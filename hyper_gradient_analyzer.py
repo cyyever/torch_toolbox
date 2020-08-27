@@ -9,11 +9,11 @@ from cyy_naive_lib.log import get_logger
 
 
 class HyperGradientAnalyzer:
-    def __init__(self, validator, hyper_gradient_dir):
+    def __init__(self, validator, hyper_gradient_dir, cache_size=1024):
         assert validator.loss_fun.reduction in ("mean", "elementwise_mean")
         self.validator = validator
 
-        self.cache_size = 1024
+        self.cache_size = cache_size
         self.hyper_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
             self.cache_size, self.validator.model, hyper_gradient_dir)
 
