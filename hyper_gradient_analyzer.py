@@ -83,7 +83,7 @@ class HyperGradientAnalyzer:
             self.hyper_gradient_matrix, training_subset_indices
         ):
             sample_index = int(sample_index)
-            get_logger().info("use sample %s",sample_index)
+            get_logger().info("use sample %s", sample_index)
             for (test_key, test_subset_gradient) in self.get_test_gradients(
                 test_subset_dict
             ):
@@ -101,3 +101,12 @@ class HyperGradientAnalyzer:
             assert len(subset) == len(indices)
             tmp_validator.set_dataset(subset)
             yield (test_key, tmp_validator.get_gradient() * len(subset))
+
+    def get_test_gradient_dict(self, test_subset_dict):
+        test_gredient_dict = HyperGradientTrainer.create_gradient_matrix(
+            self.cache_size
+        )
+        test_gredient_dict.set_storage_dir(tempfile.gettempdir())
+        for (test_key, gradient) in self.get_test_gradients(test_subset_dict):
+            test_gredient_dict[str(test_key)] = gradient
+        return test_gredient_dict
