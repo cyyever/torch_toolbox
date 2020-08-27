@@ -68,14 +68,18 @@ class HyperGradientAnalyzer:
         return contribution_dict
 
     def get_training_sample_contributions(
-        self, test_subset_dict, training_set_size=None
-    ):
+            self,
+            test_subset_dict,
+            training_subset_indices=None,
+            training_set_size=None):
+        if training_subset_indices is None:
+            training_subset_indices = self.hyper_gradient_matrix.key()
         if training_set_size is None:
             training_set_size = len(self.hyper_gradient_matrix)
         contribution_dict = dict()
 
         for (sample_index, hyper_gradient) in iterate_over_synced_tensor_dict(
-            self.hyper_gradient_matrix
+            self.hyper_gradient_matrix, training_subset_indices
         ):
             sample_index = int(sample_index)
             for (test_key, test_subset_gradient) in self.get_test_gradients(
