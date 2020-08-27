@@ -5,6 +5,7 @@ import tempfile
 from .dataset import sub_dataset
 from .hyper_gradient_trainer import HyperGradientTrainer
 from .synced_tensor_dict_util import iterate_over_synced_tensor_dict
+from cyy_naive_lib.log import get_logger
 
 
 class HyperGradientAnalyzer:
@@ -82,6 +83,7 @@ class HyperGradientAnalyzer:
             self.hyper_gradient_matrix, training_subset_indices
         ):
             sample_index = int(sample_index)
+            get_logger().info("use sample %s",sample_index)
             for (test_key, test_subset_gradient) in self.get_test_gradients(
                 test_subset_dict
             ):
