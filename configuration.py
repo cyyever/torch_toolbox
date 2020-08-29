@@ -6,7 +6,11 @@ from trainer import Trainer
 from validator import Validator
 from dataset import get_dataset, DatasetType
 from models.lenet import LeNet5
-from models.densenet2 import densenet_CIFAR10, densenet_MNIST
+from models.densenet2 import (
+    densenet_CIFAR10,
+    densenet_MNIST,
+    densenet_CIFAR10_group_norm,
+)
 
 
 def choose_loss_function(model):
@@ -66,6 +70,20 @@ def get_task_configuration(task_name: str, for_training: bool):
                 epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
             )
 
+            hyper_parameter.set_lr_scheduler_factory(
+                lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer, verbose=True, factor=0.1
+                )
+            )
+    elif task_name == "CIFAR10_densenet_group_norm":
+        model = densenet_CIFAR10_group_norm()
+        if for_training:
+            hyper_parameter = HyperParameter(
+                epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
+            )
+            # hyper_parameter.set_lr_scheduler_factory(
+            #     lambda optimizer, hyper_parameter: optim.lr_scheduler.CosineAnnealingLR(
+            #         optimizer, eta_min=0, T_max=hyper_parameter.epochs))
             hyper_parameter.set_lr_scheduler_factory(
                 lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
                     optimizer, verbose=True, factor=0.1
