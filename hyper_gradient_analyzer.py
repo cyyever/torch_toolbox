@@ -63,6 +63,7 @@ class HyperGradientAnalyzer:
             contribution_dict[training_key] = dict()
             for (test_key, test_subset_gradient) in iterate_over_synced_tensor_dict(
                     test_subset_gradient_dict):
+                test_key = int(test_key)
                 contribution_dict[training_key][test_key] = (
                     -(test_subset_gradient @ hyper_gradient_sum) / training_set_size
                 ).data.item()
