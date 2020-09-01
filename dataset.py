@@ -312,3 +312,8 @@ def get_dataset_labels(name):
             "Truck",
         ]
     raise NotImplementedError(name)
+
+
+def dataset_append_transform(dataset, transform_fun):
+    assert hasattr(dataset, "transform")
+    dataset.transform = transforms.Compose([dataset.transform, transform_fun])
