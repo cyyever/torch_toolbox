@@ -82,12 +82,13 @@ class Trainer:
 
         def pre_training_callback(trainer, optimizer, lr_scheduler):
             get_logger().info(
-                "begin training for %s epochs,hyper_parameter is %s,optimizer is %s ,lr_scheduler is %s, model is %s",
+                "begin training for %s epochs,hyper_parameter is %s,optimizer is %s ,lr_scheduler is %s, model is %s, loss function is %s",
                 self.__hyper_parameter.epochs,
                 self.__hyper_parameter,
                 optimizer,
                 lr_scheduler,
                 trainer.model.__class__.__name__,
+                trainer.loss_fun,
             )
 
         kwargs = Trainer.__prepend_callback(
@@ -141,8 +142,11 @@ class Trainer:
             loss_win = EpochWindow(
                 "training & validation loss", env=trainer.__visdom_env
             )
-            get_logger().info("epoch: %s, training loss: %s",
-                              epoch, trainer.training_loss[-1], )
+            get_logger().info(
+                "epoch: %s, training loss: %s",
+                epoch,
+                trainer.training_loss[-1],
+            )
             loss_win.plot_loss(epoch,
                                trainer.training_loss[-1],
                                "training loss")
@@ -208,8 +212,11 @@ class Trainer:
                 trainer.test_loss[epoch] = test_loss
                 trainer.test_accuracy[epoch] = accuracy
                 EpochWindow(
-                    "test accuracy", env=trainer.__visdom_env
-                ).plot_accuracy(epoch, accuracy, "accuracy")
+                    "test accuracy",
+                    env=trainer.__visdom_env).plot_accuracy(
+                    epoch,
+                    accuracy,
+                    "accuracy")
                 get_logger().info(
                     "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
                     epoch,
@@ -311,7 +318,11 @@ class Trainer:
                             gradient_list, sample_gradient_indices
                         ):
                             per_sample_gradient_callback(
-                                self, index, sample_gradient, optimizer=optimizer, )
+                                self,
+                                index,
+                                sample_gradient,
+                                optimizer=optimizer,
+                            )
                 optimizer.zero_grad()
                 outputs = self.model(instance_inputs)
                 loss = self.loss_fun(outputs, instance_targets)
