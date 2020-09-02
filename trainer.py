@@ -124,7 +124,7 @@ class Trainer:
             "plot_parameter_distribution", False)
         plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
 
-        def plot_loss_after_epoch(trainer, epoch, learning_rates):
+        def plot_loss_after_epoch(trainer, epoch, learning_rates, **kwargs):
             nonlocal plot_parameter_distribution
             nonlocal plot_class_accuracy
             if plot_parameter_distribution:
@@ -140,6 +140,11 @@ class Trainer:
                 env=trainer.__visdom_env).plot_learning_rate(
                 epoch,
                 learning_rates[0])
+            optimizer = kwargs.get("optimizer", None)
+            momentums = [group["momentum"] for group in optimizer.param_groups]
+            EpochWindow("momentum", env=trainer.__visdom_env).plot_scalar(
+                epoch, momentums[0], y_label="Momentum"
+            )
 
             loss_win = EpochWindow(
                 "training & validation loss", env=trainer.__visdom_env
@@ -370,7 +375,7 @@ class Trainer:
 
             self.training_loss.append(training_loss)
             for callback in kwargs.get("after_epoch_callbacks", []):
-                callback(self, epoch, cur_learning_rates)
+                callback(self, epoch, cur_learning_rates, optimizer=optimizer)
 
             if self.stop_criterion is not None and self.stop_criterion(
                 self, epoch, cur_learning_rates

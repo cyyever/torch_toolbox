@@ -118,9 +118,15 @@ class HyperGradientTrainer:
         else:
             self.delayed_approximation_computations = None
 
-        def after_epoch_callback(trainer, epoch, cur_learning_rates):
+        def after_epoch_callback(
+                trainer,
+                epoch,
+                cur_learning_rates,
+                **callback_kwargs):
             nonlocal kwargs
-            self.__after_epoch_callback(trainer, epoch, cur_learning_rates)
+            self.__after_epoch_callback(
+                trainer, epoch, cur_learning_rates, **callback_kwargs
+            )
             for callback in kwargs.get("after_epoch_callbacks", []):
                 callback(self, epoch)
 
@@ -480,7 +486,12 @@ class HyperGradientTrainer:
         hyper_gradient_dict.release()
         hyper_gradient_dict = None
 
-    def __after_epoch_callback(self, trainer, epoch, cur_learning_rates):
+    def __after_epoch_callback(
+            self,
+            trainer,
+            epoch,
+            cur_learning_rates,
+            **kwargs):
         total_epochs = trainer.get_hyper_parameter().epochs
         if epoch == total_epochs:
             return
