@@ -252,6 +252,10 @@ class Trainer:
             self.model.parameters(), self.training_dataset
         )
         lr_scheduler = self.__hyper_parameter.get_lr_scheduler(optimizer)
+        lr_step_after_batch = False
+        if isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR):
+            lr_step_after_batch = True
+            get_logger().info("adjust lr after batch")
         for callback in kwargs.get("pre_training_callbacks", []):
             callback(self, optimizer, lr_scheduler)
 
@@ -353,6 +357,8 @@ class Trainer:
                         optimizer=optimizer,
                     )
                 optimizer.step()
+                if lr_step_after_batch:
+                    lr_scheduler.step()
                 batch_index += 1
 
             self.training_loss.append(training_loss)
@@ -365,13 +371,14 @@ class Trainer:
                 get_logger().warning("early stop")
                 break
 
-            if isinstance(
-                    lr_scheduler,
-                    torch.optim.lr_scheduler.ReduceLROnPlateau):
-                lr_scheduler.step(
-                    self.training_loss[-1] + self.validation_loss[epoch])
-            else:
-                lr_scheduler.step()
+            if not lr_step_after_batch:
+                if isinstance(lr_scheduler,
+                              torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    lr_scheduler.step(
+                        self.training_loss[-1] + self.validation_loss[epoch]
+                    )
+                else:
+                    lr_scheduler.step()
 
     def load_model(self, model_path):
         self.model = torch.load(model_path, map_location=get_device())
