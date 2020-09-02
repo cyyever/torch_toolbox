@@ -251,7 +251,9 @@ class Trainer:
         optimizer = self.__hyper_parameter.get_optimizer(
             self.model.parameters(), self.training_dataset
         )
-        lr_scheduler = self.__hyper_parameter.get_lr_scheduler(optimizer)
+        lr_scheduler = self.__hyper_parameter.get_lr_scheduler(
+            optimizer, training_set_size
+        )
         lr_step_after_batch = False
         if isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR):
             lr_step_after_batch = True
@@ -266,13 +268,18 @@ class Trainer:
                     self.model.parameters(), self.training_dataset
                 )
                 lr_scheduler = self.__hyper_parameter.get_lr_scheduler(
-                    optimizer)
+                    optimizer, training_set_size
+                )
                 get_logger().warning("use new hyper-parameter")
 
             training_loss = 0.0
             cur_learning_rates = [group["lr"]
                                   for group in optimizer.param_groups]
             for batch in training_data_loader:
+                if lr_step_after_batch:
+                    cur_learning_rates = [
+                        group["lr"] for group in optimizer.param_groups
+                    ]
                 self.model.train()
                 self.model.to(device)
                 optimizer.zero_grad()
