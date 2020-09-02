@@ -81,14 +81,16 @@ class Trainer:
         )
 
         def pre_training_callback(trainer, optimizer, lr_scheduler):
+            model_util = ModelUtil(trainer.model)
             get_logger().info(
-                "begin training for %s epochs,hyper_parameter is %s,optimizer is %s ,lr_scheduler is %s, model is %s, loss function is %s",
+                "begin training for %s epochs,hyper_parameter is %s,optimizer is %s ,lr_scheduler is %s, model is %s, loss function is %s, parameter number is %s",
                 self.__hyper_parameter.epochs,
                 self.__hyper_parameter,
                 optimizer,
                 lr_scheduler,
                 trainer.model.__class__.__name__,
                 trainer.loss_fun,
+                len(model_util.get_parameter_list()),
             )
 
         kwargs = Trainer.__prepend_callback(
@@ -329,14 +331,15 @@ class Trainer:
                 batch_loss = loss.data.item()
                 loss.backward()
 
+                normalized_batch_loss = batch_loss
                 if hasattr(self.loss_fun, "reduction") and (
                     self.loss_fun.reduction == "mean"
                     or self.loss_fun.reduction == "elementwise_mean"
                 ):
-                    batch_loss *= real_batch_size
-                    batch_loss /= training_set_size
+                    normalized_batch_loss *= real_batch_size
+                    normalized_batch_loss /= training_set_size
 
-                training_loss += batch_loss
+                training_loss += normalized_batch_loss
 
                 for callback in kwargs.get("after_batch_callbacks", []):
                     callback(
