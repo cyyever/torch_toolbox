@@ -7,8 +7,7 @@ class HyperParameter:
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
-        self.lr_scheduler_factory = lambda optimizer: torch.optim.lr_scheduler.LambdaLR(
-            optimizer, lr_lambda=(lambda _: 1))
+        self.lr_scheduler_factory = None
         self.optimizer_factory = None
 
     def set_lr_scheduler_factory(self, lr_scheduler_factory):
