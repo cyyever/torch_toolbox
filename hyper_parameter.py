@@ -13,8 +13,9 @@ class HyperParameter:
     def set_lr_scheduler_factory(self, lr_scheduler_factory):
         self.lr_scheduler_factory = lr_scheduler_factory
 
-    def get_lr_scheduler(self, optimizer):
-        return self.lr_scheduler_factory(optimizer, self)
+    def get_lr_scheduler(self, optimizer, training_dataset_size):
+        return self.lr_scheduler_factory(
+            optimizer, self, training_dataset_size)
 
     def set_optimizer_factory(self, optimizer_factory):
         self.optimizer_factory = optimizer_factory
