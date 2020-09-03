@@ -8,9 +8,9 @@ from dataset import get_dataset, DatasetType
 from models.lenet import LeNet5
 from models.densenet2 import (
     densenet_CIFAR10,
-    densenet_MNIST,
     densenet_CIFAR10_group_norm,
 )
+from models.senet.se_resnet import se_resnet20
 
 
 def choose_loss_function(model):
@@ -42,7 +42,7 @@ def get_task_configuration(task_name: str, for_training: bool):
                 epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
             )
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer, _: optim.lr_scheduler.MultiStepLR(
+                lambda optimizer, _, __: optim.lr_scheduler.MultiStepLR(
                     optimizer, milestones=[5, 55, 555]
                 )
             )
@@ -58,11 +58,34 @@ def get_task_configuration(task_name: str, for_training: bool):
                 epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
             )
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
+                lambda optimizer, _, __: optim.lr_scheduler.ReduceLROnPlateau(
                     optimizer, verbose=True, factor=0.5, patience=2
                 )
             )
-
+    elif task_name == "CIFAR10_se_resnet":
+        model = se_resnet20(num_classes=10)
+        if for_training:
+            hyper_parameter = HyperParameter(
+                epochs=350, batch_size=128, learning_rate=0.1, weight_decay=5
+            )
+            hyper_parameter.set_lr_scheduler_factory(
+                lambda optimizer,
+                hyper_parameter,
+                training_dataset_size: optim.lr_scheduler.OneCycleLR(
+                    optimizer,
+                    pct_start=0.4,
+                    max_lr=0.2,
+                    total_steps=(
+                        hyper_parameter.epochs *
+                        (
+                            (training_dataset_size +
+                             hyper_parameter.batch_size -
+                             1) //
+                            hyper_parameter.batch_size)),
+                    anneal_strategy="linear",
+                    three_phase=True,
+                    div_factor=10,
+                ))
     elif task_name == "CIFAR10":
         model = densenet_CIFAR10()
         if for_training:
@@ -71,7 +94,7 @@ def get_task_configuration(task_name: str, for_training: bool):
             )
 
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
+                lambda optimizer, _, __: optim.lr_scheduler.ReduceLROnPlateau(
                     optimizer, verbose=True, factor=0.1
                 )
             )
@@ -82,53 +105,27 @@ def get_task_configuration(task_name: str, for_training: bool):
                 epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
             )
             # hyper_parameter.set_lr_scheduler_factory(
-            #     lambda optimizer, hyper_parameter: optim.lr_scheduler.CosineAnnealingLR(
-            #         optimizer, eta_min=0, T_max=hyper_parameter.epochs))
-            hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, verbose=True, factor=0.1
-                )
-            )
-    elif task_name == "CIFAR10_densenet_instance_norm":
-        model = densenet_CIFAR10(norm_function=nn.InstanceNorm2d)
-        if for_training:
-            hyper_parameter = HyperParameter(
-                epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
-            )
-            # hyper_parameter.set_lr_scheduler_factory(
-            #     lambda optimizer, hyper_parameter: optim.lr_scheduler.CosineAnnealingLR(
-            #         optimizer, eta_min=0, T_max=hyper_parameter.epochs))
-            hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, verbose=True, factor=0.1
-                )
-            )
-    elif task_name == "CIFAR10_lenet":
-        model = LeNet5(input_channels=3)
-        if for_training:
-            hyper_parameter = HyperParameter(
-                epochs=350, batch_size=64, learning_rate=0.01, weight_decay=1
-            )
-
-            hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer, hyper_parameter: optim.lr_scheduler.CosineAnnealingLR(
-                    optimizer, eta_min=0, T_max=hyper_parameter.epochs))
-            # hyper_parameter.set_lr_scheduler_factory(
-            #     lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
+            #     lambda optimizer, _, __: optim.lr_scheduler.ReduceLROnPlateau(
             #         optimizer, verbose=True, factor=0.1
             #     )
             # )
-    elif task_name == "MNIST_densenet":
-        model = densenet_MNIST()
-        if for_training:
-            hyper_parameter = HyperParameter(
-                epochs=50, batch_size=64, learning_rate=0.1, weight_decay=1
-            )
             hyper_parameter.set_lr_scheduler_factory(
-                lambda optimizer, _: optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, verbose=True, factor=0.1
-                )
-            )
+                lambda optimizer,
+                hyper_parameter,
+                training_dataset_size: optim.lr_scheduler.OneCycleLR(
+                    optimizer,
+                    max_lr=0.1,
+                    total_steps=(
+                        hyper_parameter.epochs *
+                        (
+                            (training_dataset_size +
+                             hyper_parameter.batch_size -
+                             1) //
+                            hyper_parameter.batch_size)),
+                    anneal_strategy="linear",
+                    three_phase=True,
+                    div_factor=10,
+                ))
     else:
         raise NotImplementedError(task_name)
 
