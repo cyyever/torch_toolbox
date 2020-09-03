@@ -137,7 +137,7 @@ class HyperGradientTrainer:
             ),
             pre_batch_callbacks=[self.__pre_batch_callback],
             after_batch_callbacks=[self.__after_batch_callback],
-            after_epoch_callbacks=[after_epoch_callback],
+            # after_epoch_callbacks=[after_epoch_callback],
         )
         self.trainer.save(self.save_dir)
         if self.use_approximation:
