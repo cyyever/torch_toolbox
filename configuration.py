@@ -11,6 +11,7 @@ from models.densenet2 import (
     densenet_CIFAR10_group_norm,
 )
 from models.senet.se_resnet import se_resnet20
+from models.senet.se_resnet_group_norm import se_resnet20_group_norm
 
 
 def choose_loss_function(model):
@@ -63,7 +64,7 @@ def get_task_configuration(task_name: str, for_training: bool):
                 )
             )
     elif task_name == "CIFAR10_se_resnet":
-        model = se_resnet20(num_classes=10)
+        model = se_resnet20_group_norm(num_classes=10)
         if for_training:
             hyper_parameter = HyperParameter(
                 epochs=350, batch_size=128, learning_rate=0.1, weight_decay=5
@@ -74,7 +75,7 @@ def get_task_configuration(task_name: str, for_training: bool):
                 training_dataset_size: optim.lr_scheduler.OneCycleLR(
                     optimizer,
                     pct_start=0.4,
-                    max_lr=0.2,
+                    max_lr=0.5,
                     total_steps=(
                         hyper_parameter.epochs *
                         (
