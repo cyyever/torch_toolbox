@@ -4,14 +4,13 @@ from synced_tensor_dict_util import iterate_over_synced_tensor_dict
 
 def compute_classic_influence_function(
     trainer,
-    validator,
+    test_gradient,
     training_sample_gradient_dict,
     batch_size=None,
     dampling_term=0,
     scale=1,
     epsilon=0.0001,
 ):
-    test_gradient = validator.get_gradient()
     training_dataset_size = len(trainer.training_dataset)
     if batch_size is None:
         batch_size = trainer.get_hyper_parameter().batch_size
