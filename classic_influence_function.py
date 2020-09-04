@@ -1,16 +1,11 @@
-import copy
-import typing
-from inverse_hessian_vector_product import (
-    stochastic_inverse_hessian_vector_product,
-    # conjugate_gradient_inverse_hessian_vector_product,
-)
-from dataset import sub_dataset
+from inverse_hessian_vector_product import stochastic_inverse_hessian_vector_product
+from synced_tensor_dict_util import iterate_over_synced_tensor_dict
 
 
 def compute_classic_influence_function(
     trainer,
     validator,
-    sample_indices: typing.Sequence,
+    training_sample_gradient_dict,
     batch_size=None,
     dampling_term=0,
     scale=1,
@@ -36,10 +31,9 @@ def compute_classic_influence_function(
         / training_dataset_size
     )
     contributions = dict()
-    for sample_index in sample_indices:
-        sample_dataset = sub_dataset(trainer.training_dataset, [sample_index])
-        sample_validator = copy.deepcopy(validator)
-        sample_validator.set_dataset(sample_dataset)
-        sample_gradient = sample_validator.get_gradient()
+
+    for (sample_index, sample_gradient) in iterate_over_synced_tensor_dict(
+        training_sample_gradient_dict
+    ):
         contributions[sample_index] = (product @ sample_gradient).data.item()
     return contributions
