@@ -5,8 +5,15 @@ import copy
 import json
 import argparse
 
-
-from tools.dataset import dataset_with_indices, sample_subset, sub_dataset
+from tools.dataset import (
+    dataset_with_indices,
+    sample_subset,
+    sub_dataset,
+    get_task_dataset_name,
+    replace_dataset_labels,
+    DatasetType,
+    get_dataset,
+)
 from tools.configuration import get_task_configuration
 from tools.hyper_gradient_trainer import HyperGradientTrainer
 
@@ -83,7 +90,8 @@ def create_trainer_from_args(args):
         trainer.training_dataset = sub_dataset(
             trainer.training_dataset, sample_indices)
         with open(
-            os.path.join(args.save_dir, "training_dataset_indices.json"), mode="wt",
+            os.path.join(args.save_dir, "training_dataset_indices.json"),
+            mode="wt",
         ) as f:
             json.dump(sample_indices, f)
 
@@ -119,12 +127,14 @@ def create_hyper_gradient_trainer_from_args(args):
 
     if args.hyper_gradient_sample_percentage is not None:
         subset_dict = sample_subset(
-            trainer.training_dataset, args.hyper_gradient_sample_percentage,
+            trainer.training_dataset,
+            args.hyper_gradient_sample_percentage,
         )
         sample_indices = sum(subset_dict.values(), [])
         os.makedirs(args.save_dir, exist_ok=True)
         with open(
-            os.path.join(args.save_dir, "hyper_gradient_indices.json"), mode="wt",
+            os.path.join(args.save_dir, "hyper_gradient_indices.json"),
+            mode="wt",
         ) as f:
             json.dump(sample_indices, f)
         hyper_gradient_trainer.set_computed_indices(sample_indices)
@@ -136,3 +146,25 @@ def create_validator_from_args(args):
     if args.model_path is not None:
         validator.load_model(args.model_path)
     return validator
+
+
+def get_randomized_label_map(args):
+    randomized_label_map: dict = dict()
+    with open(args.randomized_label_map_path, "r") as f:
+        for k, v in json.load(f).items():
+            randomized_label_map[int(k)] = int(v)
+    return randomized_label_map
+
+
+def get_training_dataset(args):
+    dataset_name = get_task_dataset_name(args.task_name)
+    training_dataset = get_dataset(dataset_name, DatasetType.Training)
+    if args.training_dataset_indices_path is not None:
+        with open(args.training_dataset_indices_path, "r") as f:
+            subset_indices = json.load(f)
+            training_dataset = sub_dataset(training_dataset, subset_indices)
+    if args.randomized_label_map_path is not None:
+        training_dataset = replace_dataset_labels(
+            training_dataset, get_randomized_label_map(args)
+        )
+    return training_dataset
