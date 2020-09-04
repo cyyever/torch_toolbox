@@ -15,14 +15,12 @@ def stochastic_inverse_hessian_vector_product(
     loss_fun,
     v,
     repeated_num=1,
-    max_iteration=None,
+    max_iteration=1000,
     batch_size=1,
     dampling_term=0,
     scale=1,
     epsilon=0.0001,
 ):
-    if max_iteration is None:
-        max_iteration = (len(dataset) + batch_size - 1) // batch_size
     get_logger().info(
         "repeated_num is %s,max_iteration is %s,batch_size is %s,dampling term is %s,scale is %s,epsilon is %s",
         repeated_num,
