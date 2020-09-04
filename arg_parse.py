@@ -158,7 +158,7 @@ def get_randomized_label_map(args):
 def get_training_dataset(args):
     dataset_name = get_task_dataset_name(args.task_name)
     training_dataset = get_dataset(dataset_name, DatasetType.Training)
-    if args.training_dataset_indices_path is not None:
+    if hasattr(args,"training_dataset_indices_path") and args.training_dataset_indices_path is not None:
         with open(args.training_dataset_indices_path, "r") as f:
             subset_indices = json.load(f)
             training_dataset = sub_dataset(training_dataset, subset_indices)
