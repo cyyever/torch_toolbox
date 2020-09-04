@@ -26,12 +26,12 @@ def compute_classic_influence_function(
             trainer.training_dataset,
             trainer.loss_fun,
             test_gradient,
-            repeated_num=5,
-            max_iteration=10000,
+            repeated_num=3,
+            max_iteration=None,
             batch_size=batch_size,
             dampling_term=dampling_term,
             scale=scale,
-            epsilon=epsilon
+            epsilon=epsilon,
         )
         / training_dataset_size
     )

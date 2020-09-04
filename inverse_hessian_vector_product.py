@@ -22,7 +22,7 @@ def stochastic_inverse_hessian_vector_product(
     epsilon=0.0001,
 ):
     if max_iteration is None:
-        max_iteration = len(dataset)
+        max_iteration = (len(dataset) + batch_size - 1) // batch_size
     get_logger().info(
         "repeated_num is %s,max_iteration is %s,batch_size is %s,dampling term is %s,scale is %s,epsilon is %s",
         repeated_num,
@@ -54,7 +54,13 @@ def stochastic_inverse_hessian_vector_product(
                     - hvp_function(cur_product).to(get_device()) / scale
                 )
                 diff = torch.dist(cur_product, next_product)
-                get_logger().debug("diff is %s, cur repeated sequence %s, iteration is %s, max_iteration is %s", diff,cur_repeated_id,iteration,max_iteration)
+                get_logger().debug(
+                    "diff is %s, cur repeated sequence %s, iteration is %s, max_iteration is %s",
+                    diff,
+                    cur_repeated_id,
+                    iteration,
+                    max_iteration,
+                )
                 cur_product = next_product
                 iteration += 1
                 if (diff <= epsilon or iteration >=
