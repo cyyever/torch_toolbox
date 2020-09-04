@@ -30,12 +30,10 @@ class HyperGradientTrainer:
             hessian_hyper_gradient_and_momentum_dir = kwargs.get(
                 "hessian_hyper_gradient_and_momentum_dir", None
             )
-            self.hessian_hyper_gradient_mom_dict = (
-                HyperGradientTrainer.create_gradient_matrix(
-                    cache_size,
-                    trainer.model,
-                    storage_dir=hessian_hyper_gradient_and_momentum_dir,
-                )
+            self.hessian_hyper_gradient_mom_dict = HyperGradientTrainer.create_gradient_matrix(
+                cache_size,
+                trainer.model,
+                storage_dir=hessian_hyper_gradient_and_momentum_dir,
             )
             if not hessian_hyper_gradient_and_momentum_dir:
                 self.hessian_hyper_gradient_mom_dict.set_storage_dir(
@@ -72,12 +70,10 @@ class HyperGradientTrainer:
             approx_hyper_gradient_and_momentum_dir = kwargs.get(
                 "approx_hyper_gradient_and_momentum_dir", None
             )
-            self.approx_hyper_gradient_mom_dict = (
-                HyperGradientTrainer.create_gradient_matrix(
-                    cache_size,
-                    trainer.model,
-                    storage_dir=approx_hyper_gradient_and_momentum_dir,
-                )
+            self.approx_hyper_gradient_mom_dict = HyperGradientTrainer.create_gradient_matrix(
+                cache_size,
+                trainer.model,
+                storage_dir=approx_hyper_gradient_and_momentum_dir,
             )
             if not approx_hyper_gradient_and_momentum_dir:
                 self.approx_hyper_gradient_mom_dict.set_storage_dir(
@@ -311,10 +307,7 @@ class HyperGradientTrainer:
 
     @staticmethod
     def create_gradient_matrix(
-        cache_size,
-        model=None,
-        storage_dir=None,
-        concat_momentum=False,
+        cache_size, model=None, storage_dir=None, concat_momentum=True,
     ):
 
         if not storage_dir:
@@ -367,11 +360,7 @@ class HyperGradientTrainer:
             self.hessian_computation_arguments = None
 
     def __per_sample_gradient_callback(
-        self,
-        trainer,
-        instance_index,
-        instance_gradient,
-        **kwargs,
+        self, trainer, instance_index, instance_gradient, **kwargs,
     ):
         assert instance_index in self.__get_computed_indices()
         self.batch_gradients[str(instance_index)] = instance_gradient
