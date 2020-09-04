@@ -9,12 +9,11 @@ from tools.dataset import (
     dataset_with_indices,
     sample_subset,
     sub_dataset,
-    get_task_dataset_name,
     replace_dataset_labels,
     DatasetType,
     get_dataset,
 )
-from tools.configuration import get_task_configuration
+from tools.configuration import get_task_configuration, get_task_dataset_name
 from tools.hyper_gradient_trainer import HyperGradientTrainer
 
 
