@@ -75,6 +75,14 @@ def split_dataset(dataset):
             len(dataset)))
 
 
+def get_sample_label(dataset, index):
+    assert index < len(dataset)
+    label = dataset[index][1]
+    if isinstance(label, torch.Tensor):
+        label = label.data.item()
+    assert isinstance(label, int)
+    return label
+
 def split_dataset_by_class(dataset):
     class_map = {}
     for index, item in enumerate(dataset):
@@ -111,10 +119,12 @@ def sample_subset(dataset, percentage):
     sample_indices = dict()
     for label, v in class_map.items():
         sample_size = int(len(v["indices"]) * percentage)
+        print("percentage is ", percentage)
         if sample_size == 0:
             get_logger().warning("percentage is too small, use sample size 1")
             sample_size = 1
         sample_indices[label] = random.sample(v["indices"], k=sample_size)
+        print("len label ", label, "is", len(sample_indices[label]))
     return sample_indices
 
 
