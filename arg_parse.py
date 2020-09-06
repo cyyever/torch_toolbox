@@ -5,6 +5,8 @@ import copy
 import json
 import argparse
 
+from cyy_naive_lib.log import get_logger
+
 from tools.dataset import (
     dataset_with_indices,
     sample_subset,
@@ -89,8 +91,7 @@ def create_trainer_from_args(args):
         trainer.training_dataset = sub_dataset(
             trainer.training_dataset, sample_indices)
         with open(
-            os.path.join(args.save_dir, "training_dataset_indices.json"),
-            mode="wt",
+            os.path.join(args.save_dir, "training_dataset_indices.json"), mode="wt",
         ) as f:
             json.dump(sample_indices, f)
 
@@ -126,14 +127,12 @@ def create_hyper_gradient_trainer_from_args(args):
 
     if args.hyper_gradient_sample_percentage is not None:
         subset_dict = sample_subset(
-            trainer.training_dataset,
-            args.hyper_gradient_sample_percentage,
+            trainer.training_dataset, args.hyper_gradient_sample_percentage,
         )
         sample_indices = sum(subset_dict.values(), [])
         os.makedirs(args.save_dir, exist_ok=True)
         with open(
-            os.path.join(args.save_dir, "hyper_gradient_indices.json"),
-            mode="wt",
+            os.path.join(args.save_dir, "hyper_gradient_indices.json"), mode="wt",
         ) as f:
             json.dump(sample_indices, f)
         hyper_gradient_trainer.set_computed_indices(sample_indices)
@@ -158,11 +157,16 @@ def get_randomized_label_map(args):
 def get_training_dataset(args):
     dataset_name = get_task_dataset_name(args.task_name)
     training_dataset = get_dataset(dataset_name, DatasetType.Training)
-    if hasattr(args,"training_dataset_indices_path") and args.training_dataset_indices_path is not None:
+    if (
+        hasattr(args, "training_dataset_indices_path")
+        and args.training_dataset_indices_path is not None
+    ):
+        get_logger().info("use training_dataset_indices_path")
         with open(args.training_dataset_indices_path, "r") as f:
             subset_indices = json.load(f)
             training_dataset = sub_dataset(training_dataset, subset_indices)
     if args.randomized_label_map_path is not None:
+        get_logger().info("use randomized_label_map_path")
         training_dataset = replace_dataset_labels(
             training_dataset, get_randomized_label_map(args)
         )
