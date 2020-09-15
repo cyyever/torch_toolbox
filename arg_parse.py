@@ -71,7 +71,7 @@ def set_save_dir_of_args(args, save_dir: str):
 
 
 def create_trainer_from_args(args):
-    if args.reproducing_seed is None:
+    if args.reproducing_seed is not None:
         get_logger().warning("set reproducing seed")
         assert isinstance(args.reproducing_seed, int)
         torch.backends.cudnn.deterministic = True
