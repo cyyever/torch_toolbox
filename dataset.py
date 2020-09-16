@@ -119,12 +119,10 @@ def sample_subset(dataset, percentage):
     sample_indices = dict()
     for label, v in class_map.items():
         sample_size = int(len(v["indices"]) * percentage)
-        print("percentage is ", percentage)
         if sample_size == 0:
             get_logger().warning("percentage is too small, use sample size 1")
             sample_size = 1
         sample_indices[label] = random.sample(v["indices"], k=sample_size)
-        print("len label ", label, "is", len(sample_indices[label]))
     return sample_indices
 
 
