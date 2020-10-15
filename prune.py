@@ -112,8 +112,8 @@ def lottery_ticket_prune(
             setattr(layer, name, pruned_tensor)
 
         trainer.set_hyper_parameter(copy.deepcopy(init_hyper_parameter))
-        trainer.save(os.path.join(save_dir, str(epoch)))
+        trainer.save_model(os.path.join(save_dir, str(epoch)))
 
     trainer.train(plot_parameter_distribution=True,
                   after_epoch_callbacks=[after_epoch_callback])
-    trainer.save(save_dir)
+    trainer.save_model(save_dir)

@@ -135,7 +135,7 @@ class HyperGradientTrainer:
             after_batch_callbacks=[self.__after_batch_callback],
             # after_epoch_callbacks=[after_epoch_callback],
         )
-        self.trainer.save(self.save_dir)
+        self.trainer.save_model(self.save_dir)
         if self.use_approximation:
             self.__save_hyper_gradients(
                 os.path.join(
@@ -470,7 +470,7 @@ class HyperGradientTrainer:
                 hyper_gradient = self.get_hyper_gradient(
                     index, use_approximation)
                 hyper_gradient_dict[index] = hyper_gradient
-        self.trainer.save(os.path.join(hyper_gradient_dir, "model"))
+        self.trainer.save_model(os.path.join(hyper_gradient_dir, "model"))
         hyper_gradient_dict.flush_all(True)
         hyper_gradient_dict.release()
         hyper_gradient_dict = None
