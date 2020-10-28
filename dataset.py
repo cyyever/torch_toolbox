@@ -56,7 +56,7 @@ def sub_dataset(dataset, indices: Iterable):
 
 
 def sample_dataset(dataset, index):
-    return torch.utils.data.Subset(dataset, [index])
+    return sub_dataset(dataset, [index])
 
 
 def complement_dataset(dataset, indices):
@@ -82,6 +82,7 @@ def get_sample_label(dataset, index):
         label = label.data.item()
     assert isinstance(label, int)
     return label
+
 
 def split_dataset_by_class(dataset):
     class_map = {}
