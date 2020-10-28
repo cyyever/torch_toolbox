@@ -63,7 +63,6 @@ class Trainer:
     def load_model(self, model_path):
         self.model = torch.load(model_path, map_location=get_device())
 
-
     def save_model(self, save_dir, model_name="model.pt"):
         os.makedirs(save_dir, exist_ok=True)
         torch.save(self.model, os.path.join(save_dir, model_name))
@@ -255,7 +254,6 @@ class Trainer:
 
         training_set_size = len(self.training_dataset)
         get_logger().info("training_set_size is %s", training_set_size)
-        batch_index = 0
         device = get_device()
         get_logger().info("use device %s", device)
         self.model.to(device)
@@ -288,7 +286,7 @@ class Trainer:
             training_loss = 0.0
             cur_learning_rates = [group["lr"]
                                   for group in optimizer.param_groups]
-            for batch in training_data_loader:
+            for batch_index, batch in enumerate(training_data_loader):
                 if lr_step_after_batch:
                     cur_learning_rates = [
                         group["lr"] for group in optimizer.param_groups
@@ -379,7 +377,6 @@ class Trainer:
                 optimizer.step()
                 if lr_step_after_batch:
                     lr_scheduler.step()
-                batch_index += 1
 
             self.training_loss.append(training_loss)
             for callback in kwargs.get("after_epoch_callbacks", []):
