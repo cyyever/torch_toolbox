@@ -1,5 +1,5 @@
-from cyy_naive_lib.list_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.sequence_op import split_list_to_chunks
 import cyy_pytorch_cpp
 
 import torch
@@ -24,7 +24,10 @@ def iterate_over_synced_tensor_dict(tensor_dict, keys: set = None):
 
 
 def create_tensor_dict(
-    cache_size, model=None, storage_dir=None, concat_momentum=False,
+    cache_size,
+    model=None,
+    storage_dir=None,
+    concat_momentum=False,
 ):
     if not storage_dir:
         storage_dir = ""
