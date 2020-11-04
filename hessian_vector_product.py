@@ -5,7 +5,7 @@ import copy
 import numpy as np
 import torch.autograd as autograd
 
-from cyy_naive_lib.list_op import split_list_to_chunks
+from cyy_naive_lib.sequence_op import split_list_to_chunks
 
 from device import get_cuda_devices
 from util import cat_tensors_to_vector
@@ -112,9 +112,7 @@ def processor_fun(task, args):
             model_snapshot,
             param_shape_dict,
         ),
-        tuple(
-            [parameter_vector] *
-            len(vector_chunk)),
+        tuple([parameter_vector] * len(vector_chunk)),
         vector_chunk,
         strict=True,
     )[1]

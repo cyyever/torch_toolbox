@@ -1,6 +1,3 @@
-import torch
-
-
 class HyperParameter:
     def __init__(self, epochs, batch_size, learning_rate, weight_decay=0):
         self.epochs = epochs

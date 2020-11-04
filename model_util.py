@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.utils.prune as prune
 
 
-from cyy_naive_lib.list_op import dict_value_by_order
+from cyy_naive_lib.mapping_op import get_mapping_values_by_order
 
 import util
 
@@ -111,7 +111,7 @@ class ModelUtil:
                 res[real_name] = self.get_attr(real_name + "_mask")
                 continue
             res[name] = torch.ones_like(parameter)
-        return util.cat_tensors_to_vector(dict_value_by_order(res))
+        return util.cat_tensors_to_vector(get_mapping_values_by_order(res))
 
     def get_sparsity(self):
         parameter_list = self.get_parameter_list()
@@ -134,4 +134,4 @@ class ModelUtil:
                 res[name[:-5]] = parameter
                 continue
             res[name] = parameter
-        return dict_value_by_order(res)
+        return get_mapping_values_by_order(res)
