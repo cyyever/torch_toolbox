@@ -1,3 +1,5 @@
+import os
+import shutil
 import torch
 import cyy_pytorch_cpp
 from synced_tensor_dict_util import iterate_over_synced_tensor_dict
@@ -15,3 +17,6 @@ for (key, tensor) in iterate_over_synced_tensor_dict(tensor_dict):
 for (key, tensor) in iterate_over_synced_tensor_dict(tensor_dict, {"1", "2"}):
     assert 1 <= int(key) <= 2
     assert tensor == torch.Tensor([int(key)])
+
+del tensor_dict
+shutil.rmtree("tensor_dict_dir")
