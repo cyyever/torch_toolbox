@@ -1,12 +1,14 @@
 import torch.nn as nn
 import torch.optim as optim
 
+from cyy_naive_lib.log import get_logger
+
 from hyper_parameter import HyperParameter
 from trainer import Trainer
 from validator import Validator
 from dataset import get_dataset, DatasetType
 from models.lenet import LeNet5
-from torchvision.models import mobilenet_v2
+from torchvision.models import MobileNetV2
 from models.densenet2 import (
     densenet_CIFAR10,
     densenet_CIFAR10_group_norm,
@@ -63,8 +65,8 @@ def get_task_configuration(task_name: str, for_training: bool):
                     optimizer, verbose=True, factor=0.5, patience=2
                 )
             )
-    elif task_name == "MNIST_MobileNet":
-        model = mobilenet_v2()
+    elif task_name == "CIFAR10_MobileNet":
+        model = MobileNetV2(num_classes=10)
         if for_training:
             hyper_parameter = HyperParameter(
                 epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
@@ -142,6 +144,7 @@ def get_task_configuration(task_name: str, for_training: bool):
         raise NotImplementedError(task_name)
 
     dataset_name = get_task_dataset_name(task_name)
+    get_logger().info("get dataset %s for task %s", dataset_name, task_name)
 
     if loss_fun is None:
         loss_fun = choose_loss_function(model)
