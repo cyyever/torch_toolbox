@@ -1,10 +1,12 @@
 import os
 import datetime
 import copy
+from typing import Callable
+
 import torch
 
 from cyy_naive_lib.log import get_logger
-from cyy_naive_lib.list_op import split_list_to_chunks
+from cyy_naive_lib.sequence_op import split_list_to_chunks
 
 from device import get_device
 from model_util import ModelUtil
@@ -40,7 +42,7 @@ class Trainer:
         self.model = copy.deepcopy(model)
         self.loss_fun = loss_fun
         self.training_dataset = training_dataset
-        self.stop_criterion = None
+        self.stop_criterion: Callable = None
         self.validation_dataset = None
         self.test_dataset = None
         self.__hyper_parameter = hyper_parameter

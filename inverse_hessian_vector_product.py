@@ -22,7 +22,7 @@ def stochastic_inverse_hessian_vector_product(
     epsilon=0.0001,
 ):
     if max_iteration is None:
-        max_iteration=1000
+        max_iteration = 1000
     get_logger().info(
         "repeated_num is %s,max_iteration is %s,batch_size is %s,dampling term is %s,scale is %s,epsilon is %s",
         repeated_num,
@@ -33,7 +33,9 @@ def stochastic_inverse_hessian_vector_product(
         epsilon,
     )
     data_loader = torch.utils.data.DataLoader(
-        dataset, batch_size=batch_size, shuffle=True,
+        dataset,
+        batch_size=batch_size,
+        shuffle=True,
     )
     product_list = []
     for cur_repeated_id in range(repeated_num):
