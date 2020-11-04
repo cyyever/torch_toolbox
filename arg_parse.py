@@ -151,6 +151,7 @@ def create_hyper_gradient_trainer_from_args(args):
             mode="wt",
         ) as f:
             json.dump(sample_indices, f)
+        get_logger().info("track %s samples", len(sample_indices))
         hyper_gradient_trainer.set_computed_indices(sample_indices)
     return hyper_gradient_trainer
 
