@@ -6,11 +6,11 @@ from trainer import Trainer
 from validator import Validator
 from dataset import get_dataset, DatasetType
 from models.lenet import LeNet5
+from torchvision.models import mobilenet_v2
 from models.densenet2 import (
     densenet_CIFAR10,
     densenet_CIFAR10_group_norm,
 )
-from models.senet.se_resnet import se_resnet20
 from models.senet.se_resnet_group_norm import se_resnet20_group_norm
 
 
@@ -54,6 +54,17 @@ def get_task_configuration(task_name: str, for_training: bool):
 
     elif task_name == "FashionMNIST":
         model = LeNet5()
+        if for_training:
+            hyper_parameter = HyperParameter(
+                epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
+            )
+            hyper_parameter.set_lr_scheduler_factory(
+                lambda optimizer, _, __: optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer, verbose=True, factor=0.5, patience=2
+                )
+            )
+    elif task_name == "MNIST_MobileNet":
+        model = mobilenet_v2()
         if for_training:
             hyper_parameter = HyperParameter(
                 epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
