@@ -28,6 +28,7 @@ class ReproducibleEnv:
         else:
             get_logger().warning("initialize and use reproducible env")
 
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         torch.set_deterministic(True)
@@ -39,21 +40,28 @@ class ReproducibleEnv:
         else:
             get_logger().warning("collect torch seed")
             self.torch_seed = torch.initial_seed()
+        assert self.torch_seed is not None
+
         if self.randomlib_state is not None:
-            assert isinstance(self.randomlib_state, int)
             get_logger().warning("overwrite random lib state")
             random.setstate(self.randomlib_state)
         else:
             get_logger().warning("get random lib state")
             self.randomlib_state = random.getstate()
+        assert self.randomlib_state is not None
 
         if self.numpy_state is not None:
             get_logger().warning("overwrite numpy random lib state")
-            numpy.random.setstate(copy.deepcopy(self.numpy_state))
+            numpy.random.set_state(copy.deepcopy(self.numpy_state))
+        else:
+            get_logger().warning("get numpy random lib state")
+            self.numpy_state = numpy.random.get_state()
+        assert self.numpy_state is not None
         self.initialized = True
         return self
 
     def disable(self):
+        os.environ.pop("CUBLAS_WORKSPACE_CONFIG")
         torch.backends.cudnn.deterministic = False
         torch.backends.cudnn.benchmark = True
         torch.set_deterministic(False)
