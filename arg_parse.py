@@ -52,7 +52,6 @@ def get_arg_parser():
     parser.add_argument("--repeated_num", type=int, default=None)
     parser.add_argument("--save_dir", type=str, default=None)
     parser.add_argument("--reproducible_env_load_path", type=str, default=None)
-    parser.add_argument("--reproducible_env_save_dir", type=str, default=None)
     parser.add_argument(
         "--make_reproducible",
         action="store_true",
@@ -65,12 +64,12 @@ def get_parsed_args(parser=None):
         parser = get_arg_parser()
     args = parser.parse_args()
     if args.save_dir is None:
-        args.save_dir = create_unique_save_dir(
+        args.save_dir = __create_unique_save_dir(
             os.path.join("models", args.task_name))
     return args
 
 
-def create_unique_save_dir(save_dir: str):
+def __create_unique_save_dir(save_dir: str):
     return os.path.join(save_dir, str(uuid.uuid4()))
 
 
@@ -81,19 +80,16 @@ def create_trainer_from_args(args):
         global_reproducible_env.load(args.reproducible_env_load_path)
         args.make_reproducible = True
 
-    if args.reproducible_env_save_dir is not None:
-        args.make_reproducible = True
-
-        def __exit_handler():
-            global global_reproducible_env
-            global_reproducible_env.save(
-                create_unique_save_dir(args.reproducible_env_save_dir)
-            )
-
-        atexit.register(__exit_handler)
-
     if args.make_reproducible:
         global_reproducible_env.enable()
+
+        if args.reproducible_env_load_path is None:
+
+            def __exit_handler():
+                global global_reproducible_env
+                global_reproducible_env.save(args.save_dir)
+
+            atexit.register(__exit_handler)
 
     trainer = get_task_configuration(args.task_name, True)
     if args.model_path is not None:
