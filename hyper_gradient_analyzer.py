@@ -75,7 +75,7 @@ class HyperGradientAnalyzer:
             training_subset_indices=None,
             training_set_size=None):
         if training_subset_indices is None:
-            training_subset_indices = self.hyper_gradient_matrix.key()
+            training_subset_indices = self.hyper_gradient_matrix.keys()
         if training_set_size is None:
             training_set_size = len(self.hyper_gradient_matrix)
         contribution_dict = dict()
