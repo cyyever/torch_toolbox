@@ -1,4 +1,5 @@
 import random
+import os
 import copy
 import pickle
 import torch
@@ -8,15 +9,25 @@ from cyy_naive_lib.log import get_logger
 
 
 class ReproducibleEnv:
-    def __init__(self):
+    def __init__(self, path: str = None):
         self.torch_seed = None
         self.randomlib_state = None
         self.numpy_state = None
+        self.initialized = False
 
-    def __enter__(self):
+        if path is not None:
+            self.load(path)
+
+    def enable(self):
         """
         https://pytorch.org/docs/stable/notes/randomness.html
         """
+
+        if self.initialized:
+            get_logger().warning("use reproducible env")
+        else:
+            get_logger().warning("initialize and use reproducible env")
+
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         torch.set_deterministic(True)
@@ -39,17 +50,28 @@ class ReproducibleEnv:
         if self.numpy_state is not None:
             get_logger().warning("overwrite numpy random lib state")
             numpy.random.setstate(copy.deepcopy(self.numpy_state))
+        self.initialized = True
+        return self
+
+    def disable(self):
+        torch.backends.cudnn.deterministic = False
+        torch.backends.cudnn.benchmark = True
+        torch.set_deterministic(False)
+
+    def __enter__(self):
+        self.enable()
         return self
 
     def __exit__(self, exc_type, exc_value, real_traceback):
         if real_traceback:
             return
-        torch.backends.cudnn.deterministic = False
-        torch.backends.cudnn.benchmark = True
-        torch.set_deterministic(False)
+        self.disable()
 
-    def save(self, path: str):
-        with open(path, "wb") as f:
+    def save(self, save_dir: str):
+        os.makedirs(save_dir, exist_ok=True)
+        env_path = os.path.join(save_dir, "reproducible_env")
+        get_logger().warning("save reproducible env to %s", env_path)
+        with open(env_path, "wb") as f:
             return pickle.dump(
                 {
                     "torch_seed": self.torch_seed,
@@ -61,7 +83,12 @@ class ReproducibleEnv:
 
     def load(self, path: str):
         with open(path, "rb") as f:
+            get_logger().warning("load reproducible env from %s", path)
             obj: dict = pickle.load(f)
             self.torch_seed = obj["torch_seed"]
             self.randomlib_state = obj["randomlib_state"]
             self.numpy_state = obj["numpy_state"]
+            self.initialized = False
+
+
+global_reproducible_env: ReproducibleEnv = ReproducibleEnv()
