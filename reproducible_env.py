@@ -76,6 +76,7 @@ class ReproducibleEnv:
         self.disable()
 
     def save(self, save_dir: str):
+        assert self.initialized
         os.makedirs(save_dir, exist_ok=True)
         env_path = os.path.join(save_dir, "reproducible_env")
         get_logger().warning("save reproducible env to %s", env_path)
