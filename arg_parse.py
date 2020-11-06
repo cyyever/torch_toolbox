@@ -2,7 +2,6 @@
 import uuid
 import os
 import copy
-import atexit
 import json
 import argparse
 
@@ -82,14 +81,7 @@ def create_trainer_from_args(args):
 
     if args.make_reproducible:
         global_reproducible_env.enable()
-
-        if args.reproducible_env_load_path is None:
-
-            def __exit_handler():
-                global global_reproducible_env
-                global_reproducible_env.save(args.save_dir)
-
-            atexit.register(__exit_handler)
+        global_reproducible_env.save(args.save_dir)
 
     trainer = get_task_configuration(args.task_name, True)
     if args.model_path is not None:
