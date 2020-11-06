@@ -69,11 +69,12 @@ class Trainer:
         os.makedirs(save_dir, exist_ok=True)
         torch.save(self.model, os.path.join(save_dir, model_name))
 
-    def repeated_train(self, repeated_num, save_dir, **kwargs):
+    def repeated_train(self, repeated_num, save_dir=None, **kwargs):
         def training_callback(_, trainer):
             nonlocal save_dir, kwargs
             trainer.train(**kwargs)
-            trainer.save_model(save_dir, with_timestamp=True)
+            if save_dir is not None:
+                trainer.save_model(save_dir, with_timestamp=True)
             return {
                 "training_loss": trainer.training_loss,
                 "validation_loss": trainer.validation_loss,
