@@ -13,7 +13,7 @@ from cyy_naive_lib.log import get_logger
 
 
 class DatasetFilter:
-    def __init__(self, dataset, filters):
+    def __init__(self, dataset: torch.utils.data.Dataset, filters):
         self.dataset = dataset
         self.filters = filters
         self.indices = self.__get_indices()
@@ -33,7 +33,7 @@ class DatasetFilter:
 
 
 class DatasetMapper:
-    def __init__(self, dataset, mappers):
+    def __init__(self, dataset: torch.utils.data.Dataset, mappers):
         self.dataset = dataset
         self.mappers = mappers
 
@@ -47,7 +47,7 @@ class DatasetMapper:
         return self.dataset.__len__()
 
 
-def sub_dataset(dataset, indices: Iterable):
+def sub_dataset(dataset: torch.utils.data.Dataset, indices: Iterable):
     r"""
     Subset of a dataset at specified indices in order.
     """
@@ -55,19 +55,19 @@ def sub_dataset(dataset, indices: Iterable):
     return torch.utils.data.Subset(dataset, indices)
 
 
-def sample_dataset(dataset, index):
+def sample_dataset(dataset: torch.utils.data.Dataset, index):
     return sub_dataset(dataset, [index])
 
 
-def complement_dataset(dataset, indices):
+def complement_dataset(dataset: torchvision.dataset.VisionDataset, indices):
     return sub_dataset(dataset, set(range(len(dataset)) - set(indices)))
 
 
-def dataset_with_indices(dataset):
+def dataset_with_indices(dataset: torch.utils.data.Dataset):
     return DatasetMapper(dataset, [lambda index, item: (*item, index)])
 
 
-def split_dataset(dataset):
+def split_dataset(dataset: torchvision.dataset.VisionDataset):
     return (
         torch.utils.data.Subset(
             dataset,
@@ -115,7 +115,7 @@ def split_dataset_by_ratio(dataset, ratio: float):
     )
 
 
-def sample_subset(dataset, percentage):
+def sample_subset(dataset, percentage: float):
     class_map = split_dataset_by_class(dataset)
     sample_indices = dict()
     for label, v in class_map.items():
