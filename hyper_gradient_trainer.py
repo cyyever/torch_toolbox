@@ -124,9 +124,9 @@ class HyperGradientTrainer:
                 cur_learning_rates,
                 **callback_kwargs):
             nonlocal kwargs
-            self.__after_epoch_callback(
-                trainer, epoch, cur_learning_rates, **callback_kwargs
-            )
+            # self.__after_epoch_callback(
+            #     trainer, epoch, cur_learning_rates, **callback_kwargs
+            # )
             for callback in kwargs.get("after_epoch_callbacks", []):
                 callback(self, epoch)
 
@@ -137,7 +137,7 @@ class HyperGradientTrainer:
             ),
             pre_batch_callbacks=[self.__pre_batch_callback],
             after_batch_callbacks=[self.__after_batch_callback],
-            # after_epoch_callbacks=[after_epoch_callback],
+            after_epoch_callbacks=[after_epoch_callback],
         )
         self.trainer.save_model(self.save_dir)
         if self.use_approximation:
@@ -384,11 +384,7 @@ class HyperGradientTrainer:
     def __after_batch_callback(
         self,
         trainer,
-        epoch,
         batch_index,
-        batch_size,
-        batch_loss,
-        cur_learning_rates,
         **kwargs,
     ):
 
@@ -396,7 +392,10 @@ class HyperGradientTrainer:
         if not isinstance(optimizer, torch.optim.SGD):
             raise RuntimeError("not SGD")
 
+        cur_learning_rates = kwargs["cur_learning_rates"][0]
+        assert len(cur_learning_rates) == 1
         cur_learning_rate = cur_learning_rates[0]
+        batch_size = kwargs["cur_batch_size"]
 
         momentums = [group["momentum"] for group in optimizer.param_groups]
         if len(momentums) != 1:
@@ -405,7 +404,7 @@ class HyperGradientTrainer:
         momentum = momentums[0]
         weight_decay = trainer.get_hyper_parameter().weight_decay
 
-        training_set_size = len(trainer.training_dataset)
+        training_set_size = kwargs["training_set_size"]
 
         for idx in self.__get_computed_indices():
             idx = str(idx)
