@@ -3,26 +3,35 @@ import torch
 import torch.nn as nn
 
 from device import get_device
+from model_loss import ModelWithLoss
 from model_util import ModelUtil
 from dataset import get_class_count, dataset_with_indices
 
 
 class Validator:
     def __init__(
-        self, model, loss_fun, dataset,
+        self,
+        model_with_loss: ModelWithLoss,
+        dataset,
     ):
-        try:
-            self.model = copy.deepcopy(model)
-        except RuntimeError:
-            self.model = model
-        self.loss_fun = loss_fun
+        self.model_with_loss = copy.deepcopy(model_with_loss)
         self.dataset = dataset
+
+    @property
+    def model(self):
+        return self.model_with_loss.model
+
+    @property
+    def loss_fun(self):
+        return self.model_with_loss.loss_fun
 
     def set_dataset(self, dataset):
         self.dataset = dataset
 
     def load_model(self, model_path):
-        self.model = torch.load(model_path, map_location=get_device())
+        self.model_with_loss.set_model(
+            torch.load(model_path, map_location=get_device())
+        )
 
     def validate(self, batch_size, **kwargs):
         class_count = dict()

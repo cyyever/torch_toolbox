@@ -1,7 +1,7 @@
 import os
 import datetime
 import copy
-from typing import Callable
+from typing import Callable, Optional
 
 import torch
 
@@ -11,16 +11,18 @@ from cyy_naive_lib.sequence_op import split_list_to_chunks
 from device import get_device
 from model_util import ModelUtil
 from validator import Validator
+from model_loss import ModelWithLoss
 from per_sample_gradient import get_per_sample_gradient
 from visualization import EpochWindow, Window
 
 
 class BasicTrainer:
-    def __init__(self, model, loss_fun, training_dataset, hyper_parameter):
-        self.model = copy.deepcopy(model)
-        self.loss_fun = loss_fun
+    def __init__(
+        self, model_with_loss: ModelWithLoss, training_dataset, hyper_parameter
+    ):
+        self.model_with_loss = copy.deepcopy(model_with_loss)
         self.training_dataset = training_dataset
-        self.stop_criterion: Callable = None
+        self.stop_criterion: Optional[Callable] = None
         self.validation_dataset = None
         self.test_dataset = None
         self.__hyper_parameter = hyper_parameter
@@ -28,10 +30,14 @@ class BasicTrainer:
         self.__visdom_env = None
         self.__reset_loss()
 
+    @property
+    def model(self):
+        return self.model_with_loss.model
+
     def get_validator(self, use_test_data=True):
         if use_test_data:
-            return Validator(self.model, self.loss_fun, self.test_dataset)
-        return Validator(self.model, self.loss_fun, self.validation_dataset)
+            return Validator(self.model_with_loss, self.test_dataset)
+        return Validator(self.model_with_loss, self.validation_dataset)
 
     def set_hyper_parameter(self, hyper_parameter):
         self.__hyper_parameter = hyper_parameter
@@ -41,7 +47,9 @@ class BasicTrainer:
         return self.__hyper_parameter
 
     def load_model(self, model_path):
-        self.model = torch.load(model_path, map_location=get_device())
+        self.model_with_loss.set_model(
+            torch.load(model_path, map_location=get_device())
+        )
 
     def save_model(self, save_dir, model_name="model.pt"):
         os.makedirs(save_dir, exist_ok=True)
@@ -147,8 +155,7 @@ class BasicTrainer:
                         sample_gradient_indices.append(instance_index)
                     if sample_gradient_indices:
                         gradient_list = get_per_sample_gradient(
-                            self.model,
-                            self.loss_fun,
+                            self.model_with_loss,
                             sample_gradient_inputs,
                             sample_gradient_targets,
                         )
@@ -165,15 +172,14 @@ class BasicTrainer:
                                 optimizer=optimizer,
                             )
                 optimizer.zero_grad()
-                outputs = self.model(instance_inputs)
-                loss = self.loss_fun(outputs, instance_targets)
+                loss = self.model_with_loss(instance_inputs, instance_targets)
                 batch_loss = loss.data.item()
                 loss.backward()
 
                 normalized_batch_loss = batch_loss
-                if hasattr(self.loss_fun, "reduction") and (
-                    self.loss_fun.reduction == "mean"
-                    or self.loss_fun.reduction == "elementwise_mean"
+                if hasattr(self.model_with_loss.loss_fun, "reduction") and (
+                    self.model_with_loss.loss_fun.reduction
+                    in ("mean", "elementwise_mean")
                 ):
                     normalized_batch_loss *= real_batch_size
                     normalized_batch_loss /= training_set_size
