@@ -1,5 +1,5 @@
-import torch.nn as nn
 import torch.optim as optim
+from torchvision.models import MobileNetV2
 
 from cyy_naive_lib.log import get_logger
 
@@ -7,22 +7,13 @@ from hyper_parameter import HyperParameter
 from trainer import Trainer
 from validator import Validator
 from dataset import get_dataset, DatasetType
+from model_loss import ModelWithLoss
 from models.lenet import LeNet5
-from torchvision.models import MobileNetV2
 from models.densenet2 import (
     densenet_CIFAR10,
     densenet_CIFAR10_group_norm,
 )
 from models.senet.se_resnet_group_norm import se_resnet20_group_norm
-
-
-def choose_loss_function(model):
-    last_layer = list(model.modules())[-1]
-    if isinstance(last_layer, nn.LogSoftmax):
-        return nn.NLLLoss()
-    if isinstance(last_layer, nn.Linear):
-        return nn.CrossEntropyLoss()
-    raise NotImplementedError()
 
 
 def get_task_dataset_name(name):
@@ -35,7 +26,6 @@ def get_task_dataset_name(name):
 
 def get_task_configuration(task_name: str, for_training: bool):
     model = None
-    loss_fun = None
     hyper_parameter = None
     momentum = 0.9
     if task_name == "MNIST":
@@ -146,8 +136,6 @@ def get_task_configuration(task_name: str, for_training: bool):
     dataset_name = get_task_dataset_name(task_name)
     get_logger().info("get dataset %s for task %s", dataset_name, task_name)
 
-    if loss_fun is None:
-        loss_fun = choose_loss_function(model)
     test_dataset = get_dataset(dataset_name, DatasetType.Test)
     if for_training:
         if hyper_parameter.optimizer_factory is None:
@@ -160,9 +148,12 @@ def get_task_configuration(task_name: str, for_training: bool):
                 )
             )
         training_dataset = get_dataset(dataset_name, DatasetType.Training)
-        trainer = Trainer(model, loss_fun, training_dataset, hyper_parameter)
+        trainer = Trainer(
+            ModelWithLoss(model),
+            training_dataset,
+            hyper_parameter)
         trainer.validation_dataset = get_dataset(
             dataset_name, DatasetType.Validation)
         trainer.test_dataset = test_dataset
         return trainer
-    return Validator(model, loss_fun, test_dataset)
+    return Validator(ModelWithLoss(model), test_dataset)
