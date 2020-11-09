@@ -16,28 +16,6 @@ from visualization import EpochWindow, Window
 
 
 class BasicTrainer:
-    @staticmethod
-    def __repeated_training(number: int, trainer, training_callback: Callable):
-        results: dict = dict()
-        for idx in range(number):
-            statistics = training_callback(idx, trainer)
-            assert isinstance(statistics, dict)
-            for k, v in statistics.items():
-                tensor = None
-                if isinstance(v, list):
-                    tensor = torch.Tensor(v)
-                elif isinstance(v, dict):
-                    tensor = torch.Tensor([v[k] for k in sorted(v.keys())])
-                else:
-                    raise RuntimeError("unsupported value" + str(v))
-                if k in results:
-                    results[k] += tensor
-                else:
-                    results[k] = tensor
-        for k, v in results.items():
-            results[k] = v / number
-        return results
-
     def __init__(self, model, loss_fun, training_dataset, hyper_parameter):
         self.model = copy.deepcopy(model)
         self.loss_fun = loss_fun
@@ -245,6 +223,28 @@ class BasicTrainer:
         self.validation_accuracy = {}
         self.test_loss = {}
         self.test_accuracy = {}
+
+    @staticmethod
+    def __repeated_training(number: int, trainer, training_callback: Callable):
+        results: dict = dict()
+        for idx in range(number):
+            statistics = training_callback(idx, trainer)
+            assert isinstance(statistics, dict)
+            for k, v in statistics.items():
+                tensor = None
+                if isinstance(v, list):
+                    tensor = torch.Tensor(v)
+                elif isinstance(v, dict):
+                    tensor = torch.Tensor([v[k] for k in sorted(v.keys())])
+                else:
+                    raise RuntimeError("unsupported value" + str(v))
+                if k in results:
+                    results[k] += tensor
+                else:
+                    results[k] = tensor
+        for k, v in results.items():
+            results[k] = v / number
+        return results
 
     @staticmethod
     def prepend_callback(kwargs, name, new_fun):
