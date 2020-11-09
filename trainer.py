@@ -107,23 +107,16 @@ class Trainer:
             kwargs, "pre_training_callbacks", pre_training_callback
         )
 
-        def after_batch_callback(
-            trainer,
-            epoch,
-            batch_index,
-            batch_size,
-            batch_loss,
-            learning_rates,
-            **kwargs
-        ):
-            ten_batches = len(trainer.training_dataset) // (10 * batch_size)
+        def after_batch_callback(trainer, batch_index, **kwargs):
+            training_set_size = kwargs["training_set_size"]
+            ten_batches = training_set_size // (10 * kwargs["cur_batch_size"])
             if ten_batches == 0 or batch_index % ten_batches == 0:
                 get_logger().info(
                     "epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
-                    epoch,
+                    kwargs["epoch"],
                     batch_index,
-                    learning_rates,
-                    batch_loss,
+                    kwargs["cur_learning_rates"],
+                    kwargs["batch_loss"],
                 )
 
         kwargs = Trainer.__prepend_callback(
@@ -365,21 +358,22 @@ class Trainer:
                     normalized_batch_loss /= training_set_size
 
                 training_loss += normalized_batch_loss
+                optimizer.step()
+                if lr_step_after_batch:
+                    lr_scheduler.step()
 
                 for callback in kwargs.get("after_batch_callbacks", []):
                     callback(
                         self,
-                        epoch,
                         batch_index,
-                        real_batch_size,
-                        batch_loss,
-                        cur_learning_rates,
+                        epoch=epoch,
+                        cur_learning_rates=cur_learning_rates,
+                        batch_loss=batch_loss,
+                        cur_batch_size=real_batch_size,
                         instance_indices=instance_indices,
                         optimizer=optimizer,
+                        training_set_size=training_set_size,
                     )
-                optimizer.step()
-                if lr_step_after_batch:
-                    lr_scheduler.step()
 
             self.training_loss.append(training_loss)
             for callback in kwargs.get("after_epoch_callbacks", []):
