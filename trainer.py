@@ -34,6 +34,9 @@ class BasicTrainer:
     def model(self):
         return self.model_with_loss.model
 
+    def loss_fun(self):
+        return self.model_with_loss.loss_fun
+
     def get_validator(self, use_test_data=True):
         if use_test_data:
             return Validator(self.model_with_loss, self.test_dataset)
