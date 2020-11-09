@@ -59,7 +59,7 @@ def sample_dataset(dataset: torch.utils.data.Dataset, index):
     return sub_dataset(dataset, [index])
 
 
-def complement_dataset(dataset: torchvision.dataset.VisionDataset, indices):
+def complement_dataset(dataset: torchvision.datasets.VisionDataset, indices):
     return sub_dataset(dataset, set(range(len(dataset)) - set(indices)))
 
 
@@ -67,7 +67,7 @@ def dataset_with_indices(dataset: torch.utils.data.Dataset):
     return DatasetMapper(dataset, [lambda index, item: (*item, index)])
 
 
-def split_dataset(dataset: torchvision.dataset.VisionDataset):
+def split_dataset(dataset: torchvision.datasets.VisionDataset):
     return (
         torch.utils.data.Subset(
             dataset,

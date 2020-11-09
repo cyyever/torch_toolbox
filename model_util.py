@@ -33,8 +33,8 @@ class ModelUtil:
             (parameter.grad for parameter in self.__get_parameter_seq())
         )
 
-    def deepcopy(self):
-        if self.is_pruned:
+    def deepcopy(self, keep_pruning_mask: bool = True):
+        if self.is_pruned and not keep_pruning_mask:
             for layer in self.model.modules():
                 for name, _ in layer.named_parameters(recurse=False):
                     if not name.endswith("_orig"):
