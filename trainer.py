@@ -34,6 +34,7 @@ class BasicTrainer:
     def model(self):
         return self.model_with_loss.model
 
+    @property
     def loss_fun(self):
         return self.model_with_loss.loss_fun
 
