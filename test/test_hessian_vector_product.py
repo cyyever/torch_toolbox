@@ -11,20 +11,20 @@ from model_util import ModelUtil
 def test_hessian_vector_product():
     trainer = get_task_configuration("MNIST", True)
     training_data_loader = torch.utils.data.DataLoader(
-        trainer.training_dataset, batch_size=16, shuffle=True,
+        trainer.training_dataset,
+        batch_size=16,
+        shuffle=True,
     )
     parameter_vector = ModelUtil(trainer.model).get_parameter_list()
     v = torch.ones(parameter_vector.shape)
     for batch in training_data_loader:
         hvp_function = get_hessian_vector_product_func(
-            trainer.model, batch, trainer.loss_fun
-        )
+            trainer.model_with_loss, batch)
         a = hvp_function([v, 2 * v])
         print(a)
         trainer = get_task_configuration("MNIST", True)
         hvp_function = get_hessian_vector_product_func(
-            trainer.model, batch, trainer.loss_fun
-        )
+            trainer.model_with_loss, batch)
         a = hvp_function([v, 2 * v])
         print(a)
 
