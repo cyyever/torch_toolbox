@@ -1,3 +1,4 @@
+from typing import Generator
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.sequence_op import split_list_to_chunks
 import cyy_pytorch_cpp
@@ -7,7 +8,9 @@ import torch.nn.utils.prune as prune
 from model_util import ModelUtil
 
 
-def iterate_over_synced_tensor_dict(tensor_dict, keys: set = None):
+def iterate_over_synced_tensor_dict(
+        tensor_dict: cyy_pytorch_cpp.data_structure.SyncedTensorDict,
+        keys: set = None) -> Generator:
     if keys is None:
         keys = set(tensor_dict.keys())
     else:
