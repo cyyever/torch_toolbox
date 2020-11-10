@@ -10,7 +10,7 @@ from cyy_naive_lib.sequence_op import split_list_to_chunks
 from device import get_cuda_devices
 from util import cat_tensors_to_vector
 from model_util import ModelUtil
-from process_task_queue import CUDAProcessTaskQueue
+from cuda_process_task_queue import CUDAProcessTaskQueue
 
 
 class ModelSnapshot:
