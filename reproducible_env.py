@@ -58,7 +58,6 @@ class ReproducibleEnv:
             self.numpy_state = numpy.random.get_state()
         assert self.numpy_state is not None
         self.initialized = True
-        return self
 
     def disable(self):
         os.environ.pop("CUBLAS_WORKSPACE_CONFIG")
