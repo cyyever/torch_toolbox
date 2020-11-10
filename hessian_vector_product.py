@@ -11,6 +11,7 @@ from device import get_cuda_devices
 from util import cat_tensors_to_vector
 from model_util import ModelUtil
 from cuda_process_task_queue import CUDAProcessTaskQueue
+from model_loss import ModelWithLoss
 
 
 class ModelSnapshot:
@@ -57,31 +58,25 @@ def load_model_parameters(model, parameters, param_shape_dict, device):
     assert bias == len(parameters)
 
 
-def __get_f(
-        device,
-        inputs,
-        targets,
-        loss_fun,
-        model_snapshot,
-        param_shape_dict):
+def __get_f(device, inputs, targets, model_with_loss, param_shape_dict):
     def f(*args):
-        nonlocal inputs, targets, loss_fun, param_shape_dict, model_snapshot, device
+        nonlocal inputs, targets, model_with_loss, param_shape_dict, device
         model_snapshots = ModelSnapshot.resize_and_get(
-            model_snapshot, device, len(args)
+            model_with_loss.model, device, len(args)
         )
         assert len(model_snapshots) >= len(args)
-        loss = None
+        total_loss = None
         for i, arg in enumerate(args):
             cur_model_snapshot = model_snapshots[i]
             load_model_parameters(
                 cur_model_snapshot, arg, param_shape_dict, device)
             cur_model_snapshot.to(device)
-            if loss is None:
-                loss = loss_fun(cur_model_snapshot(inputs), targets)
+            loss = model_with_loss.loss_fun(cur_model_snapshot(inputs), targets)
+            if total_loss is None:
+                total_loss = loss
             else:
-                loss += loss_fun(cur_model_snapshot(inputs), targets)
-        return loss
-
+                total_loss += loss
+        return total_loss
     return f
 
 
@@ -89,8 +84,7 @@ def processor_fun(task, args):
     (
         idx,
         vector_chunk,
-        loss_fun,
-        model_snapshot,
+        model_with_loss,
         parameter_dict,
         input_dict,
         target_dict,
@@ -108,8 +102,7 @@ def processor_fun(task, args):
             worker_device,
             inputs,
             targets,
-            loss_fun,
-            model_snapshot,
+            model_with_loss,
             param_shape_dict,
         ),
         tuple([parameter_vector] * len(vector_chunk)),
@@ -131,13 +124,13 @@ def __exit_handler():
 atexit.register(__exit_handler)
 
 
-def get_hessian_vector_product_func(model, batch, loss_fun):
+def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
     # get all parameters and names
     params = []
     param_shape_dict = dict()
     devices = get_cuda_devices()
 
-    model = ModelUtil(model).deepcopy()
+    model = ModelUtil(model_with_loss.model).deepcopy()
     if ModelUtil(model).is_pruned:
         ModelUtil(model).merge_and_remove_masks()
     model.zero_grad()
@@ -187,8 +180,7 @@ def get_hessian_vector_product_func(model, batch, loss_fun):
                 (
                     idx,
                     vector_chunk,
-                    loss_fun,
-                    model_snapshot,
+                    ModelWithLoss(model_snapshot, model_with_loss.loss_fun),
                     parameter_dict,
                     inputs_dict,
                     targets_dict,
