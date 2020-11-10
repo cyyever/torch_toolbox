@@ -36,8 +36,10 @@ def test_get_per_sample_gradient():
                 instance_inputs, instance_targets
             ):
                 trainer.model.zero_grad()
-                output = trainer.model(torch.stack([instance_input]))
-                loss = trainer.loss_fun(output, torch.stack([instance_target]))
+                loss = trainer.model_with_loss(
+                    torch.stack(
+                        [instance_input]), torch.stack(
+                        [instance_target]))
                 loss.backward()
                 gradient = ModelUtil(trainer.model).get_gradient_list()
                 if cnt == 0:
@@ -60,8 +62,10 @@ def test_get_per_sample_gradient():
                 instance_inputs, instance_targets
             ):
                 trainer.model.zero_grad()
-                output = trainer.model(torch.stack([instance_input]))
-                loss = trainer.loss_fun(output, torch.stack([instance_target]))
+                loss = trainer.model_with_loss(
+                    torch.stack(
+                        [instance_input]), torch.stack(
+                        [instance_target]))
                 loss.backward()
                 gradient = ModelUtil(trainer.model).get_gradient_list()
             break
