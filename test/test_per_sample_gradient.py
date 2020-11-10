@@ -13,7 +13,9 @@ from model_util import ModelUtil
 def test_get_per_sample_gradient():
     trainer = get_task_configuration("MNIST", True)
     training_data_loader = torch.utils.data.DataLoader(
-        trainer.training_dataset, batch_size=64, shuffle=True,
+        trainer.training_dataset,
+        batch_size=64,
+        shuffle=True,
     )
 
     device = get_device()
@@ -22,7 +24,7 @@ def test_get_per_sample_gradient():
     for batch in training_data_loader:
         with TimeCounter():
             gradients = get_per_sample_gradient(
-                trainer.model, trainer.loss_fun, batch[0], batch[1]
+                trainer.model_with_loss, batch[0], batch[1]
             )
             if cnt == 0:
                 print("per_sample_gradient result", gradients)
@@ -48,10 +50,7 @@ def test_get_per_sample_gradient():
     with Profile():
         for batch in training_data_loader:
             get_per_sample_gradient(
-                trainer.model,
-                trainer.loss_fun,
-                batch[0],
-                batch[1])
+                trainer.model_with_loss, batch[0], batch[1])
             break
     with Profile():
         for batch in training_data_loader:

@@ -1,4 +1,3 @@
-import os
 import shutil
 import torch
 import cyy_pytorch_cpp
