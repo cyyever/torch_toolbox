@@ -1,7 +1,7 @@
 import os
 from enum import Enum, auto
 import functools
-from typing import Iterable
+from typing import Iterable, Callable
 import random
 import PIL
 
@@ -13,7 +13,10 @@ from cyy_naive_lib.log import get_logger
 
 
 class DatasetFilter:
-    def __init__(self, dataset: torch.utils.data.Dataset, filters):
+    def __init__(
+            self,
+            dataset: torch.utils.data.Dataset,
+            filters: Iterable[Callable]):
         self.dataset = dataset
         self.filters = filters
         self.indices = self.__get_indices()
@@ -33,7 +36,10 @@ class DatasetFilter:
 
 
 class DatasetMapper:
-    def __init__(self, dataset: torch.utils.data.Dataset, mappers):
+    def __init__(
+            self,
+            dataset: torch.utils.data.Dataset,
+            mappers: Iterable[Callable]):
         self.dataset = dataset
         self.mappers = mappers
 
@@ -55,12 +61,8 @@ def sub_dataset(dataset: torch.utils.data.Dataset, indices: Iterable):
     return torch.utils.data.Subset(dataset, indices)
 
 
-def sample_dataset(dataset: torch.utils.data.Dataset, index):
+def sample_dataset(dataset: torch.utils.data.Dataset, index: int):
     return sub_dataset(dataset, [index])
-
-
-def complement_dataset(dataset: torchvision.datasets.VisionDataset, indices):
-    return sub_dataset(dataset, set(range(len(dataset)) - set(indices)))
 
 
 def dataset_with_indices(dataset: torch.utils.data.Dataset):
@@ -75,7 +77,7 @@ def split_dataset(dataset: torchvision.datasets.VisionDataset):
             len(dataset)))
 
 
-def get_sample_label(dataset, index):
+def get_sample_label(dataset: torchvision.datasets.VisionDataset, index):
     assert index < len(dataset)
     label = dataset[index][1]
     if isinstance(label, torch.Tensor):
@@ -84,8 +86,9 @@ def get_sample_label(dataset, index):
     return label
 
 
-def split_dataset_by_class(dataset):
-    class_map = {}
+def split_dataset_by_class(
+        dataset: torchvision.datasets.VisionDataset) -> dict:
+    class_map: dict = {}
     for index, item in enumerate(dataset):
         label = item[1]
         if isinstance(label, torch.Tensor):
@@ -100,7 +103,7 @@ def split_dataset_by_class(dataset):
     return class_map
 
 
-def split_dataset_by_ratio(dataset, ratio: float):
+def split_dataset_by_ratio(dataset: torch.utils.data.Dataset, ratio: float):
     assert 0 < ratio < 1
     first_part_indices = list()
     second_part_indices = list()
@@ -115,7 +118,9 @@ def split_dataset_by_ratio(dataset, ratio: float):
     )
 
 
-def sample_subset(dataset, percentage: float):
+def sample_subset(
+        dataset: torch.utils.data.Dataset,
+        percentage: float) -> dict:
     class_map = split_dataset_by_class(dataset)
     sample_indices = dict()
     for label, v in class_map.items():
