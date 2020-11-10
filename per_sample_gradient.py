@@ -46,7 +46,7 @@ atexit.register(__exit_handler)
 
 def get_per_sample_gradient(model_with_loss: ModelWithLoss, inputs, targets):
     global __task_queue
-    assert model_with_loss.get_loss_fun().reduction in ("mean", "elementwise_mean")
+    assert model_with_loss.loss_fun.reduction in ("mean", "elementwise_mean")
     assert len(inputs) == len(targets)
 
     model = ModelUtil(model_with_loss.model).deepcopy(keep_pruning_mask=False)
@@ -80,14 +80,14 @@ def get_per_sample_gradient(model_with_loss: ModelWithLoss, inputs, targets):
     for idx, (input_chunk, target_chunk) in enumerate(
             zip(input_chunks, target_chunks)):
         __task_queue.add_task(
-            (idx,
-             input_chunk,
-             target_chunk,
-             ModelWithLoss(
-                 copy.deepcopy(model),
-                 model_with_loss.get_loss_fun()),
+            (
+                idx,
+                input_chunk,
+                target_chunk,
+                ModelWithLoss(copy.deepcopy(model), model_with_loss.loss_fun),
                 master_device,
-             ))
+            )
+        )
 
     gradient_dict = dict()
     for _ in range(len(input_chunks)):
