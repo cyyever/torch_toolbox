@@ -9,7 +9,7 @@ from validator import Validator
 from dataset import get_dataset, DatasetType
 from model_loss import ModelWithLoss
 from models.lenet import LeNet5
-from models.densenet2 import (
+from models.densenet import (
     densenet_CIFAR10,
     densenet_CIFAR10_group_norm,
 )
