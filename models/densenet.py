@@ -224,6 +224,10 @@ class DenseNet3(nn.Module):
         return self.fc(out)
 
 
+def DenseNet40(num_classes, channels):
+    return DenseNet3(40, num_classes=num_classes, channels=channels)
+
+
 def densenet_CIFAR10(norm_function=nn.BatchNorm2d):
     return DenseNet3(40, 10, norm_function=norm_function)
 
