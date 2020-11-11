@@ -6,7 +6,7 @@ from torchvision.models import MobileNetV2
 from dataset import DatasetUtil
 from model_loss import ModelWithLoss
 from models.lenet import LeNet5
-from models.densenet2 import DenseNet40
+from models.densenet import DenseNet40
 
 
 def get_model(
