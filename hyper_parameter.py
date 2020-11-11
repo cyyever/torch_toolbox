@@ -105,7 +105,9 @@ def get_optimizer_factory(name: str):
     raise RuntimeError("unknown optimizer:" + name)
 
 
-def get_recommended_hyper_parameter(dataset_name: str, model_name: str):
+def get_recommended_hyper_parameter(
+    dataset_name: str, model_name: str
+) -> Any[HyperParameter]:
     """
     Given dataset and model, return a set of recommended hyper parameters
     """
@@ -123,6 +125,16 @@ def get_recommended_hyper_parameter(dataset_name: str, model_name: str):
         hyper_parameter.set_lr_scheduler_factory(
             lambda optimizer, _, __: optim.lr_scheduler.ReduceLROnPlateau(
                 optimizer, verbose=True, factor=0.5, patience=2
+            )
+        )
+    elif dataset_name == "CIFAR10":
+        hyper_parameter = HyperParameter(
+            epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
+        )
+
+        hyper_parameter.set_lr_scheduler_factory(
+            lambda optimizer, _, __: optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer, verbose=True, factor=0.1
             )
         )
     else:
