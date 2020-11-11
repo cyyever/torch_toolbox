@@ -1,9 +1,10 @@
 import os
 from enum import Enum, auto
 import functools
-from typing import Iterable, Callable
+from typing import Iterable, Callable, List, Generator, Tuple
 import random
 import PIL
+
 
 import torch
 import torchvision
@@ -69,7 +70,7 @@ def dataset_with_indices(dataset: torch.utils.data.Dataset):
     return DatasetMapper(dataset, [lambda index, item: (*item, index)])
 
 
-def split_dataset(dataset: torchvision.datasets.VisionDataset):
+def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
     return (
         torch.utils.data.Subset(
             dataset,
@@ -77,37 +78,96 @@ def split_dataset(dataset: torchvision.datasets.VisionDataset):
             len(dataset)))
 
 
-def get_sample_label(dataset: torchvision.datasets.VisionDataset, index):
-    assert index < len(dataset)
-    label = dataset[index][1]
-    if isinstance(label, torch.Tensor):
-        label = label.data.item()
-    assert isinstance(label, int)
-    return label
+class DatasetUtil:
+    def __init__(self, dataset: torch.utils.data.Dataset):
+        self.dataset = dataset
+        self.__channel = None
+        self.__len = None
 
+    @property
+    def len(self):
+        if self.__len is None:
+            self.__len = len(self.dataset)
+        return self.__len
 
-def split_dataset_by_class(
-        dataset: torchvision.datasets.VisionDataset) -> dict:
-    class_map: dict = {}
-    for index, item in enumerate(dataset):
-        label = item[1]
+    @property
+    def channel(self):
+        if self.__channel is not None:
+            return self.__channel
+        dataloader = torch.utils.data.DataLoader(self.dataset, batch_size=1)
+        channel = 0
+        for x, _ in dataloader:
+            channel = x.shape[1]
+            break
+        self.__channel = channel
+        return self.__channel
+
+    def get_mean_and_std(self):
+        dataloader = torch.utils.data.DataLoader(self.dataset, batch_size=1)
+        mean = torch.zeros(self.channel)
+        for x, _ in dataloader:
+            for i in range(self.channel):
+                mean[i] += x[:, i, :, :].mean()
+        mean.div_(self.len)
+
+        wh = None
+        std = torch.zeros(self.channel)
+        for x, _ in dataloader:
+            if wh is None:
+                wh = x.shape[2] * x.shape[3]
+            for i in range(self.channel):
+                std[i] += torch.sum((x[:, i, :, :] -
+                                     mean[i].data.item()) ** 2) / wh
+
+        std = std.div(self.len).sqrt()
+        return mean, std
+
+    def get_sample_label(self, index):
+        label = self.dataset[index][1]
         if isinstance(label, torch.Tensor):
             label = label.data.item()
-        if label not in class_map:
-            class_map[label] = []
-        class_map[label].append(index)
-    for label, indices in class_map.items():
-        class_map[label] = dict()
-        class_map[label]["indices"] = indices
-        class_map[label]["dataset"] = torch.utils.data.Subset(dataset, indices)
-    return class_map
+        return label
+
+    def get_labels(self) -> set:
+        def count_instance(container, instance):
+            label = instance[1]
+            container.add(label)
+            return container
+
+        return functools.reduce(count_instance, self.dataset, set())
+
+    def get_label_number(self) -> int:
+        return len(self.get_labels())
+
+    def save_sample_image(self, idx, path: str):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if isinstance(self.dataset[idx][0], PIL.Image.Image):
+            self.dataset[idx][0].save(path)
+            return
+        torchvision.utils.save_image(self.dataset[idx][0], path)
 
 
-def split_dataset_by_ratio(dataset: torch.utils.data.Dataset, ratio: float):
+def split_dataset_by_label(
+        dataset: torchvision.datasets.VisionDataset) -> dict:
+    label_map: dict = {}
+    for index, _ in enumerate(dataset):
+        label = DatasetUtil(dataset).get_sample_label(index)
+        if label not in label_map:
+            label_map[label] = []
+        label_map[label].append(index)
+    for label, indices in label_map.items():
+        label_map[label] = dict()
+        label_map[label]["indices"] = indices
+    return label_map
+
+
+def split_dataset_by_ratio(
+        dataset: torch.utils.data.Dataset,
+        ratio: float) -> Tuple:
     assert 0 < ratio < 1
     first_part_indices = list()
     second_part_indices = list()
-    for _, v in split_dataset_by_class(dataset).items():
+    for _, v in split_dataset_by_label(dataset).items():
         label_indices_list = sorted(v["indices"])
         delimiter = int(len(label_indices_list) * ratio)
         first_part_indices += label_indices_list[:delimiter]
@@ -121,9 +181,9 @@ def split_dataset_by_ratio(dataset: torch.utils.data.Dataset, ratio: float):
 def sample_subset(
         dataset: torch.utils.data.Dataset,
         percentage: float) -> dict:
-    class_map = split_dataset_by_class(dataset)
+    label_map = split_dataset_by_label(dataset)
     sample_indices = dict()
-    for label, v in class_map.items():
+    for label, v in label_map.items():
         sample_size = int(len(v["indices"]) * percentage)
         if sample_size == 0:
             get_logger().warning("percentage is too small, use sample size 1")
@@ -132,7 +192,7 @@ def sample_subset(
     return sample_indices
 
 
-def randomize_subset_label(dataset, percentage):
+def randomize_subset_label(dataset, percentage: float) -> dict:
     sample_indices = sample_subset(dataset, percentage)
     labels = sample_indices.keys()
     randomized_label_map = dict()
@@ -158,53 +218,10 @@ def replace_dataset_labels(dataset, label_map: dict):
     return DatasetMapper(dataset, [mapper])
 
 
-def get_classes(dataset):
-    def count_instance(container, instance):
-        label = instance[1]
-        container.add(label)
-        return container
-
-    return functools.reduce(count_instance, dataset, set())
-
-
-def get_class_count(dataset):
-    res = dict()
-    for k, v in split_dataset_by_class(dataset).items():
-        res[k] = len(v["indices"])
-    return res
-
-
-def save_sample(dataset, idx, path):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    if isinstance(dataset[idx][0], PIL.Image.Image):
-        dataset[idx][0].save(path)
-        return
-    torchvision.utils.save_image(dataset[idx][0], path)
-
-
-def get_mean_and_std(dataset):
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1)
-    mean = None
-    channel = None
-    for x, _ in dataloader:
-        channel = x.shape[1]
-        if mean is None:
-            mean = torch.zeros(channel)
-        for i in range(channel):
-            mean[i] += x[:, i, :, :].mean()
-    mean.div_(len(dataset))
-
-    wh = None
-    std = torch.zeros(channel)
-    for x, _ in dataloader:
-        if wh is None:
-            wh = x.shape[2] * x.shape[3]
-        for i in range(channel):
-            std[i] += torch.sum((x[:, i, :, :] -
-                                 mean[i].data.item()) ** 2) / wh
-
-    std = std.div(len(dataset)).sqrt()
-    return mean, std
+class DatasetType(Enum):
+    Training = auto()
+    Validation = auto()
+    Test = auto()
 
 
 __dataset_dir = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
@@ -215,16 +232,10 @@ def set_dataset_dir(new_dataset_dir):
     __dataset_dir = new_dataset_dir
 
 
-class DatasetType(Enum):
-    Training = auto()
-    Validation = auto()
-    Test = auto()
-
-
 __datasets: dict = dict()
 
 
-def get_dataset(name, dataset_type: DatasetType):
+def get_dataset(name: str, dataset_type: DatasetType):
     root_dir = os.path.join(__dataset_dir, name)
     for_train = dataset_type in (DatasetType.Training, DatasetType.Validation)
     split_training_dataset_ratio = None
@@ -296,7 +307,7 @@ def get_dataset(name, dataset_type: DatasetType):
     return __datasets[name][dataset_type]
 
 
-def get_dataset_labels(name):
+def get_dataset_label_names(name: str) -> List[str]:
     if name == "MNIST":
         return [str(a) for a in range(10)]
     if name == "FashionMNIST":
@@ -331,3 +342,4 @@ def get_dataset_labels(name):
 def dataset_append_transform(dataset, transform_fun):
     assert hasattr(dataset, "transform")
     dataset.transform = transforms.Compose([dataset.transform, transform_fun])
+    return dataset

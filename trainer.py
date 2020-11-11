@@ -50,6 +50,10 @@ class BasicTrainer:
     def get_hyper_parameter(self):
         return self.__hyper_parameter
 
+    @property
+    def hyper_parameter(self):
+        return self.__hyper_parameter
+
     def load_model(self, model_path):
         self.model_with_loss.set_model(
             torch.load(model_path, map_location=get_device())
@@ -289,7 +293,7 @@ class Trainer(BasicTrainer):
             kwargs, "pre_training_callbacks", pre_training_callback
         )
 
-        def after_batch_callback(trainer, batch_index, **kwargs):
+        def after_batch_callback(_, batch_index, **kwargs):
             training_set_size = kwargs["training_set_size"]
             ten_batches = training_set_size // (10 * kwargs["cur_batch_size"])
             if ten_batches == 0 or batch_index % ten_batches == 0:
@@ -397,9 +401,7 @@ class Trainer(BasicTrainer):
             ):
                 (test_loss, accuracy, other_data,) = trainer.get_validator(
                     use_test_data=True
-                ).validate(
-                    trainer.__hyper_parameter.batch_size, per_class_accuracy=False
-                )
+                ).validate(trainer.hyper_parameter.batch_size, per_class_accuracy=False)
                 test_loss = test_loss.data.item()
                 trainer.test_loss[epoch] = test_loss
                 trainer.test_accuracy[epoch] = accuracy

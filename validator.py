@@ -5,7 +5,7 @@ import torch.nn as nn
 from device import get_device
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
-from dataset import get_class_count, dataset_with_indices
+from dataset import DatasetUtil, dataset_with_indices
 
 
 class Validator:
@@ -39,7 +39,7 @@ class Validator:
 
         per_class_accuracy = kwargs.get("per_class_accuracy", False)
         if per_class_accuracy:
-            class_count = get_class_count(self.dataset)
+            class_count = DatasetUtil(self.dataset).get_label_number()
             for k in class_count:
                 class_correct_count[k] = 0
 
