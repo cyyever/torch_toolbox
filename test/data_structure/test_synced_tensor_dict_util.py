@@ -1,7 +1,7 @@
 import shutil
 import torch
 import cyy_pytorch_cpp
-from synced_tensor_dict_util import iterate_over_synced_tensor_dict
+from data_structure.synced_tensor_dict_util import iterate_over_synced_tensor_dict
 
 tensor_dict = cyy_pytorch_cpp.data_structure.SyncedTensorDict("")
 tensor_dict.set_in_memory_number(10)
