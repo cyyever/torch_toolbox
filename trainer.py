@@ -8,23 +8,28 @@ import torch
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.sequence_op import split_list_to_chunks
 
+from dataset import dataset_with_indices
 from algorithm.per_sample_gradient import get_per_sample_gradient
 from device import get_device
 from model_util import ModelUtil
 from inference import Inferencer
 from model_loss import ModelWithLoss
 from visualization import EpochWindow, Window
+from hyper_parameter import HyperParameter
 
 
 class BasicTrainer:
     def __init__(
-        self, model_with_loss: ModelWithLoss, training_dataset, hyper_parameter
+        self,
+        model_with_loss: ModelWithLoss,
+        training_dataset,
+        hyper_parameter: Optional[HyperParameter],
     ):
         self.model_with_loss = copy.deepcopy(model_with_loss)
-        self.training_dataset = training_dataset
+        self.__training_dataset = training_dataset
+        self.__validation_dataset: Optional[torch.utils.data.Dataset] = None
+        self.__test_dataset: Optional[torch.utils.data.Dataset] = None
         self.__stop_criterion: Optional[Callable] = None
-        self.__validation_dataset = None
-        self.__test_dataset = None
         self.__hyper_parameter = hyper_parameter
         self.__reset_hyper_parameter = False
         self.__visdom_env = None
@@ -39,19 +44,26 @@ class BasicTrainer:
         return self.model_with_loss.loss_fun
 
     @property
+    def training_dataset(self):
+        return self.__training_dataset
+
+    def set_training_dataset(self, training_dataset: torch.utils.data.Dataset):
+        self.__training_dataset = training_dataset
+
+    @property
     def validation_dataset(self):
-        return self.model_with_loss.__validation_dataset
+        return self.__validation_dataset
 
     def set_validation_dataset(
             self, validation_dataset: torch.utils.data.Dataset):
-        self.model_with_loss.__validation_dataset = validation_dataset
+        self.__validation_dataset = validation_dataset
 
     @property
     def test_dataset(self):
-        return self.model_with_loss.__test_dataset
+        return self.__test_dataset
 
     def set_test_dataset(self, test_dataset: torch.utils.data.Dataset):
-        self.model_with_loss.__test_dataset = test_dataset
+        self.__test_dataset = test_dataset
 
     def get_inferencer(self):
         return Inferencer(self.model_with_loss, self.test_dataset)
@@ -89,47 +101,48 @@ class BasicTrainer:
             repeated_num, self, training_callback)
 
     def train(self, **kwargs):
-        training_data_loader = torch.utils.data.DataLoader(
-            self.training_dataset,
-            batch_size=self.__hyper_parameter.batch_size,
-            shuffle=True,
-        )
+        assert self.hyper_parameter is not None
 
         training_set_size = len(self.training_dataset)
         get_logger().info("training_set_size is %s", training_set_size)
         device = get_device()
         get_logger().info("use device %s", device)
         self.model.to(device)
-        self.__reset_hyper_parameter = False
+        self.__reset_hyper_parameter = True
         self.__reset_loss()
-        optimizer = self.__hyper_parameter.get_optimizer(
-            self.model.parameters(), self.training_dataset
-        )
-        lr_scheduler = self.__hyper_parameter.get_lr_scheduler(
-            optimizer, training_set_size
-        )
-        lr_step_after_batch = False
-        if isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR):
-            lr_step_after_batch = True
-            get_logger().info("adjust lr after batch")
-        for callback in kwargs.get("pre_training_callbacks", []):
-            callback(self, optimizer, lr_scheduler)
+        optimizer = None
+        lr_scheduler = None
+        lr_step_after_batch = None
 
         for epoch in range(1, self.__hyper_parameter.epochs + 1):
             if self.__reset_hyper_parameter:
                 self.__reset_hyper_parameter = False
                 optimizer = self.__hyper_parameter.get_optimizer(
-                    self.model.parameters(), self.training_dataset
+                    self.model.parameters(), len(self.training_dataset)
                 )
                 lr_scheduler = self.__hyper_parameter.get_lr_scheduler(
                     optimizer, training_set_size
                 )
-                get_logger().warning("use new hyper-parameter")
-
+                if epoch != 1:
+                    get_logger().warning("use new hyper-parameter")
+                lr_step_after_batch = False
+                if isinstance(lr_scheduler,
+                              torch.optim.lr_scheduler.OneCycleLR):
+                    lr_step_after_batch = True
+                    get_logger().info("adjust lr after batch")
+            if epoch == 1:
+                for callback in kwargs.get("pre_training_callbacks", []):
+                    callback(self, optimizer, lr_scheduler)
             training_loss = 0.0
             cur_learning_rates = [group["lr"]
                                   for group in optimizer.param_groups]
-            for batch_index, batch in enumerate(training_data_loader):
+            for batch_index, batch in enumerate(
+                torch.utils.data.DataLoader(
+                    dataset_with_indices(self.training_dataset),
+                    batch_size=self.__hyper_parameter.batch_size,
+                    shuffle=True,
+                )
+            ):
                 if lr_step_after_batch:
                     cur_learning_rates = [
                         group["lr"] for group in optimizer.param_groups
