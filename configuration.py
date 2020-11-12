@@ -8,7 +8,7 @@ from model_factory import get_model
 
 def get_trainer_from_configuration(
     dataset_name: str, model_name: str, hyper_parameter: HyperParameter = None
-):
+) -> Trainer:
     if hyper_parameter is None:
         hyper_parameter = get_recommended_hyper_parameter(
             dataset_name, model_name)
@@ -27,6 +27,6 @@ def get_trainer_from_configuration(
     return trainer
 
 
-def get_inferencer_from_configuration(dataset_name: str, model_name: str):
+def get_inferencer_from_configuration(dataset_name: str, model_name: str)->Inferencer:
     test_dataset = get_dataset(dataset_name, DatasetType.Test)
     return Inferencer(get_model(model_name, test_dataset), test_dataset)

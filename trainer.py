@@ -246,6 +246,10 @@ class BasicTrainer:
             if not lr_step_after_batch:
                 if isinstance(lr_scheduler,
                               torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    get_logger().debug(
+                        "call ReduceLROnPlateau for total loss %s",
+                        self.training_loss[-1] + self.validation_loss[epoch],
+                    )
                     lr_scheduler.step(
                         self.training_loss[-1] + self.validation_loss[epoch]
                     )
@@ -301,8 +305,8 @@ class Trainer(BasicTrainer):
             model_util = ModelUtil(trainer.model)
             get_logger().info(
                 "begin training for %s epochs,hyper_parameter is %s,optimizer is %s ,lr_scheduler is %s, model is %s, loss function is %s, parameter number is %s",
-                trainer.get_hyper_parameter().epochs,
-                trainer.get_hyper_parameter(),
+                trainer.hyper_parameter.epochs,
+                trainer.hyper_parameter,
                 optimizer,
                 lr_scheduler,
                 trainer.model.__class__.__name__,
@@ -334,7 +338,9 @@ class Trainer(BasicTrainer):
             "plot_parameter_distribution", False)
         plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
 
-        def plot_loss_after_epoch(trainer, epoch, learning_rates, **kwargs):
+        def plot_loss_after_epoch(
+            trainer: BasicTrainer, epoch, learning_rates, **kwargs
+        ):
             nonlocal plot_parameter_distribution
             nonlocal plot_class_accuracy
             if plot_parameter_distribution:
@@ -374,10 +380,12 @@ class Trainer(BasicTrainer):
                 trainer.validation_dataset is not None
                 and epoch % validation_epoch_interval == 0
             ):
-                (validation_loss, accuracy, other_data,) = trainer.get_inferencer(
-                    use_test_data=False
-                ).validate(
-                    trainer.get_hyper_parameter().batch_size, per_class_accuracy=True
+                (
+                    validation_loss,
+                    accuracy,
+                    other_data,
+                ) = trainer.get_inferencer().inference(
+                    trainer.hyper_parameter.batch_size, per_class_accuracy=True
                 )
                 validation_loss = validation_loss.data.item()
                 trainer.validation_loss[epoch] = validation_loss
@@ -418,11 +426,10 @@ class Trainer(BasicTrainer):
             test_epoch_interval = int(kwargs.get("test_epoch_interval", 5))
             if trainer.test_dataset is not None and (
                 epoch % test_epoch_interval == 0
-                or epoch == trainer.get_hyper_parameter().epochs
+                or epoch == trainer.hyper_parameter.epochs
             ):
-                (test_loss, accuracy, other_data,) = trainer.get_inferencer(
-                    use_test_data=True
-                ).validate(trainer.hyper_parameter.batch_size, per_class_accuracy=False)
+                (test_loss, accuracy, other_data,) = trainer.get_inferencer().inference(
+                    trainer.hyper_parameter.batch_size, per_class_accuracy=False)
                 test_loss = test_loss.data.item()
                 trainer.test_loss[epoch] = test_loss
                 trainer.test_accuracy[epoch] = accuracy

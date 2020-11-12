@@ -39,8 +39,7 @@ class Inferencer:
 
         per_class_accuracy = kwargs.get("per_class_accuracy", False)
         if per_class_accuracy:
-            class_count = DatasetUtil(self.__dataset).get_label_number()
-            for k in class_count:
+            for k in range(DatasetUtil(self.__dataset).get_label_number()):
                 class_correct_count[k] = 0
 
         per_sample_loss = kwargs.get("per_sample_loss", False)
