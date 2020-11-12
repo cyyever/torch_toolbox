@@ -40,7 +40,6 @@ def get_arg_parser():
         "--make_reproducible",
         action="store_true",
         default=False)
-    parser.add_argument("--repeated_num", type=int, default=None)
     parser.add_argument("--save_dir", type=str, default=None)
     return parser
 
@@ -51,8 +50,8 @@ def get_parsed_args(parser=None):
     args = parser.parse_args()
     if args.save_dir is None:
         args.save_dir = os.path.join(
-            os.path.join("final_models", args.task_name), str(uuid.uuid4())
-        )
+            "final_models", args.dataset_name, args.model_name, str(
+                uuid.uuid4()))
 
     return args
 
