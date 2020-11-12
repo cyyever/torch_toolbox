@@ -9,43 +9,26 @@ from cyy_naive_lib.log import get_logger
 
 from .visualization import EpochWindow
 from .model_util import ModelUtil
-from .configuration import get_task_configuration
 
 
 def lottery_ticket_prune(
-    task_name,
+    trainer,
     pruning_accuracy,
     pruning_amount,
     model_path=None,
-    hyper_parameter=None,
     save_dir=None,
 ):
-    visualization_env = (
-        "prune_"
-        + task_name
-        + "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
+    visualization_env = "prune_" + "{date:%Y-%m-%d_%H:%M:%S}".format(
+        date=datetime.datetime.now()
     )
 
-    trainer = get_task_configuration(task_name, True)
     if model_path is not None:
         get_logger().info("use model %s", model_path)
         trainer.model = torch.load(model_path)
-    model_util = ModelUtil(trainer.model)
-    if model_path is not None:
+        model_util = ModelUtil(trainer.model)
         sparsity, _, __ = model_util.get_sparsity()
         get_logger().info("loaded model sparsity is %s%%", sparsity)
 
-    if hyper_parameter is not None:
-        default_hyper_parameter = trainer.get_hyper_parameter()
-        if hyper_parameter.epochs is not None:
-            default_hyper_parameter.epochs = hyper_parameter.epochs
-        if hyper_parameter.batch_size is not None:
-            default_hyper_parameter.batch_size = hyper_parameter.batch_size
-        if hyper_parameter.learning_rate is not None:
-            default_hyper_parameter.learning_rate = hyper_parameter.learning_rate
-        if hyper_parameter.weight_decay is not None:
-            default_hyper_parameter.weight_decay = hyper_parameter.weight_decay
-        trainer.set_hyper_parameter(default_hyper_parameter)
     init_hyper_parameter = copy.deepcopy(trainer.get_hyper_parameter())
     get_logger().info("prune model when test accuracy is %s", pruning_accuracy)
     get_logger().info("prune amount is %s", pruning_amount)
@@ -56,11 +39,8 @@ def lottery_ticket_prune(
 
     if save_dir is None:
         save_dir = os.path.join(
-            "models",
-            trainer.model.__class__.__name__ +
-            "_" +
-            task_name,
-            "pruned")
+            "models", trainer.model.__class__.__name__ + "_" + "pruned"
+        )
 
     def after_epoch_callback(trainer, epoch, _):
         nonlocal init_parameters
