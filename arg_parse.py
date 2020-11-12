@@ -4,20 +4,23 @@ import os
 import copy
 import json
 import argparse
+import logging
 import torch
 
 from cyy_naive_lib.log import get_logger
 
-from tools.dataset import (
+from dataset import (
     sample_subset,
     sub_dataset,
     replace_dataset_labels,
 )
-from tools.configuration import (
+from configuration import (
     get_trainer_from_configuration,
     get_inferencer_from_configuration,
 )
-from tools.reproducible_env import global_reproducible_env
+from reproducible_env import global_reproducible_env
+from trainer import Trainer
+from inference import Inferencer
 
 
 def get_arg_parser():
@@ -31,16 +34,22 @@ def get_arg_parser():
     parser.add_argument("--weight_decay", type=float, default=None)
     parser.add_argument("--stop_accuracy", type=float, default=None)
     parser.add_argument("--model_path", type=str, default=None)
+    parser.add_argument("--save_dir", type=str, default=None)
     parser.add_argument("--reproducible_env_load_path", type=str, default=None)
-    parser.add_argument(
-        "--training_dataset_percentage",
-        type=float,
-        default=None)
     parser.add_argument(
         "--make_reproducible",
         action="store_true",
         default=False)
-    parser.add_argument("--save_dir", type=str, default=None)
+    parser.add_argument("--debug", action="store_true", default=False)
+    parser.add_argument(
+        "--training_dataset_percentage",
+        type=float,
+        default=None)
+    parser.add_argument("--randomized_label_map_path", type=str, default=None)
+    parser.add_argument(
+        "--training_dataset_indices_path",
+        type=str,
+        default=None)
     return parser
 
 
@@ -56,6 +65,12 @@ def get_parsed_args(parser=None):
     return args
 
 
+def affect_global_process_from_args(args):
+    if args.debug:
+        get_logger().setLevel(logging.DEBUG)
+    set_reproducible_env_from_args(args)
+
+
 def set_reproducible_env_from_args(args):
     # TODO fix location
     global global_reproducible_env
@@ -69,7 +84,7 @@ def set_reproducible_env_from_args(args):
         global_reproducible_env.save(args.save_dir)
 
 
-def create_trainer_from_args(args):
+def create_trainer_from_args(args) -> Trainer:
     trainer = get_trainer_from_configuration(
         args.dataset_name, args.model_name)
 
@@ -101,7 +116,7 @@ def create_trainer_from_args(args):
     return trainer
 
 
-def create_inferencer_from_args(args):
+def create_inferencer_from_args(args) -> Inferencer:
     inferencer = get_inferencer_from_configuration(
         args.dataset_name, args.model_name)
     if args.model_path is not None:

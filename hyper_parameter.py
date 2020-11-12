@@ -70,7 +70,7 @@ class HyperParameter:
         assert self.__optimizer_factory is not None
         kwargs: dict = {
             "params": params,
-            "lr": self.epochs,
+            "lr": self.learning_rate,
             "momentum": self.momentum,
             "weight_decay": self.weight_decay / training_dataset_size,
         }
@@ -98,21 +98,23 @@ class HyperParameter:
 def get_default_lr_scheduler(
     optimizer, hyper_parameter: HyperParameter, training_dataset_size: int
 ):
-    return optim.lr_scheduler.OneCycleLR(
-        optimizer,
-        pct_start=0.4,
-        max_lr=0.5,
-        total_steps=(
-            hyper_parameter.epochs
-            * (
-                (training_dataset_size + hyper_parameter.batch_size - 1)
-                // hyper_parameter.batch_size
-            )
-        ),
-        anneal_strategy="linear",
-        three_phase=True,
-        div_factor=10,
-    )
+    return optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer, verbose=True, factor=0.1)
+    # return optim.lr_scheduler.OneCycleLR(
+    #     optimizer,
+    #     pct_start=0.4,
+    #     max_lr=0.5,
+    #     total_steps=(
+    #         hyper_parameter.epochs
+    #         * (
+    #             (training_dataset_size + hyper_parameter.batch_size - 1)
+    #             // hyper_parameter.batch_size
+    #         )
+    #     ),
+    #     anneal_strategy="linear",
+    #     three_phase=True,
+    #     div_factor=10,
+    # )
 
 
 def get_optimizer_factory(name: str):
@@ -138,21 +140,12 @@ def get_recommended_hyper_parameter(
         hyper_parameter = HyperParameter(
             epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
         )
-        hyper_parameter.set_lr_scheduler_factory(
-            lambda optimizer, _, __: optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, verbose=True, factor=0.5, patience=2
-            )
-        )
+        hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
     elif dataset_name == "CIFAR10":
         hyper_parameter = HyperParameter(
             epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
         )
-
-        hyper_parameter.set_lr_scheduler_factory(
-            lambda optimizer, _, __: optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, verbose=True, factor=0.1
-            )
-        )
+        hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
     else:
         get_logger().error(
             "no hyper parameter for dataset %s and model %s",
