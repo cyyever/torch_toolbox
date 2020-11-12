@@ -1,5 +1,7 @@
-from inverse_hessian_vector_product import stochastic_inverse_hessian_vector_product
-from synced_tensor_dict_util import iterate_over_synced_tensor_dict
+from algorithm.inverse_hessian_vector_product import (
+    stochastic_inverse_hessian_vector_product,
+)
+from data_structure.synced_tensor_dict_util import iterate_over_synced_tensor_dict
 
 
 def compute_classic_influence_function(
@@ -16,9 +18,8 @@ def compute_classic_influence_function(
         batch_size = trainer.get_hyper_parameter().batch_size
     product = (
         stochastic_inverse_hessian_vector_product(
-            trainer.model,
             trainer.training_dataset,
-            trainer.loss_fun,
+            trainer.model_with_loss,
             test_gradient,
             repeated_num=3,
             max_iteration=None,

@@ -1,5 +1,5 @@
 import torch
-from conjugate_gradient import conjugate_gradient
+from algorithm.conjugate_gradient import conjugate_gradient
 from device import get_device
 
 
