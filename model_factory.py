@@ -11,13 +11,15 @@ from models.densenet import DenseNet40
 
 def get_model(
         name: str,
-        dataset: torch.utils.data.Dataset = None) -> ModelWithLoss:
+        dataset: torch.utils.data.Dataset) -> ModelWithLoss:
     name_to_model_mapping: dict = {
         "LeNet5": LeNet5,
         "MobileNet": MobileNetV2,
         "DenseNet40": DenseNet40,
     }
-    change_mapping_keys(name_to_model_mapping, lambda x: x.lower())
+    name_to_model_mapping = change_mapping_keys(
+        name_to_model_mapping, lambda x: x.lower()
+    )
     model_constructor = name_to_model_mapping.get(name.lower(), None)
     if model_constructor is None:
         raise RuntimeError("unknown model name:", name)

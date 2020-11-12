@@ -24,21 +24,36 @@ class HyperParameter:
     def epochs(self):
         return self.__epochs
 
+    def set_epochs(self, epochs):
+        self.__epochs = epochs
+
     @property
     def batch_size(self):
         return self.__batch_size
+
+    def set_batch_size(self, batch_size):
+        self.__batch_size = batch_size
 
     @property
     def learning_rate(self):
         return self.__learning_rate
 
+    def set_learning_rate(self, learning_rate):
+        self.__learning_rate = learning_rate
+
     @property
     def weight_decay(self):
         return self.__weight_decay
 
+    def set_weight_decay(self, weight_decay):
+        self.__weight_decay = weight_decay
+
     @property
     def momentum(self):
         return self.__momentum
+
+    def set_momentum(self, momentum):
+        self.__momentum = momentum
 
     def set_lr_scheduler_factory(self, lr_scheduler_factory: Callable):
         self.__lr_scheduler_factory = lr_scheduler_factory
