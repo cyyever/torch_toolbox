@@ -20,13 +20,10 @@ def test_hessian_vector_product():
     for batch in training_data_loader:
         hvp_function = get_hessian_vector_product_func(
             trainer.model_with_loss, batch)
-        a = hvp_function([v, 2 * v])
-        assert torch.all(torch.eq(a[0], 2 * a[1]))
-        trainer = get_trainer_from_configuration("MNIST", "LeNet5")
-        hvp_function = get_hessian_vector_product_func(
-            trainer.model_with_loss, batch)
-        b = hvp_function([v, 2 * v])
-        assert torch.all(torch.eq(a, b))
+        a = hvp_function([v, 2 * v, 3 * v])
+        assert len(a) == 3
+        assert torch.linalg.norm(a[1] - 2 * a[0], ord=2).data.item() < 0.0005
+        assert torch.linalg.norm(a[2] - 3 * a[0], ord=2).data.item() < 0.0005
 
         with TimeCounter() as c:
             a = hvp_function(v)
