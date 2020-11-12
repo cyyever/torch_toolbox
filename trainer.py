@@ -10,7 +10,7 @@ from cyy_naive_lib.sequence_op import split_list_to_chunks
 
 from device import get_device
 from model_util import ModelUtil
-from validator import Validator
+from inference import Inferencer
 from model_loss import ModelWithLoss
 from per_sample_gradient import get_per_sample_gradient
 from visualization import EpochWindow, Window
@@ -22,9 +22,9 @@ class BasicTrainer:
     ):
         self.model_with_loss = copy.deepcopy(model_with_loss)
         self.training_dataset = training_dataset
-        self.stop_criterion: Optional[Callable] = None
-        self.validation_dataset = None
-        self.test_dataset = None
+        self.__stop_criterion: Optional[Callable] = None
+        self.__validation_dataset = None
+        self.__test_dataset = None
         self.__hyper_parameter = hyper_parameter
         self.__reset_hyper_parameter = False
         self.__visdom_env = None
@@ -38,17 +38,27 @@ class BasicTrainer:
     def loss_fun(self):
         return self.model_with_loss.loss_fun
 
-    def get_validator(self, use_test_data=True):
-        if use_test_data:
-            return Validator(self.model_with_loss, self.test_dataset)
-        return Validator(self.model_with_loss, self.validation_dataset)
+    @property
+    def validation_dataset(self):
+        return self.model_with_loss.__validation_dataset
+
+    def set_validation_dataset(
+            self, validation_dataset: torch.utils.data.Dataset):
+        self.model_with_loss.__validation_dataset = validation_dataset
+
+    @property
+    def test_dataset(self):
+        return self.model_with_loss.__test_dataset
+
+    def set_test_dataset(self, test_dataset: torch.utils.data.Dataset):
+        self.model_with_loss.__test_dataset = test_dataset
+
+    def get_inferencer(self):
+        return Inferencer(self.model_with_loss, self.test_dataset)
 
     def set_hyper_parameter(self, hyper_parameter):
         self.__hyper_parameter = hyper_parameter
         self.__reset_hyper_parameter = True
-
-    def get_hyper_parameter(self):
-        return self.__hyper_parameter
 
     @property
     def hyper_parameter(self):
@@ -214,7 +224,7 @@ class BasicTrainer:
             for callback in kwargs.get("after_epoch_callbacks", []):
                 callback(self, epoch, cur_learning_rates, optimizer=optimizer)
 
-            if self.stop_criterion is not None and self.stop_criterion(
+            if self.__stop_criterion is not None and self.__stop_criterion(
                 self, epoch, cur_learning_rates
             ):
                 get_logger().warning("early stop")
@@ -230,8 +240,6 @@ class BasicTrainer:
                     lr_scheduler.step()
 
     def __reset_loss(self):
-        self.min_training_loss = None
-        self.min_training_loss_model = None
         self.training_loss = []
         self.validation_loss = {}
         self.validation_accuracy = {}
@@ -353,7 +361,7 @@ class Trainer(BasicTrainer):
                 trainer.validation_dataset is not None
                 and epoch % validation_epoch_interval == 0
             ):
-                (validation_loss, accuracy, other_data,) = trainer.get_validator(
+                (validation_loss, accuracy, other_data,) = trainer.get_inferencer(
                     use_test_data=False
                 ).validate(
                     trainer.get_hyper_parameter().batch_size, per_class_accuracy=True
@@ -399,7 +407,7 @@ class Trainer(BasicTrainer):
                 epoch % test_epoch_interval == 0
                 or epoch == trainer.get_hyper_parameter().epochs
             ):
-                (test_loss, accuracy, other_data,) = trainer.get_validator(
+                (test_loss, accuracy, other_data,) = trainer.get_inferencer(
                     use_test_data=True
                 ).validate(trainer.hyper_parameter.batch_size, per_class_accuracy=False)
                 test_loss = test_loss.data.item()

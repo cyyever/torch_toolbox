@@ -1,4 +1,4 @@
-from typing import Callable, Any
+from typing import Callable, Optional
 import torch.optim as optim
 from cyy_naive_lib.log import get_logger
 
@@ -17,8 +17,8 @@ class HyperParameter:
         self.__learning_rate = learning_rate
         self.__weight_decay = weight_decay
         self.__momentum = momentum
-        self.__lr_scheduler_factory: Any[Callable] = None
-        self.__optimizer_factory: Any[Callable] = None
+        self.__lr_scheduler_factory: Optional[Callable] = None
+        self.__optimizer_factory: Optional[Callable] = None
 
     @property
     def epochs(self):
@@ -52,6 +52,7 @@ class HyperParameter:
         self.__optimizer_factory = optimizer_factory
 
     def get_optimizer(self, params, training_dataset_size: int):
+        assert self.__optimizer_factory is not None
         kwargs: dict = {
             "params": params,
             "lr": self.epochs,
@@ -107,7 +108,7 @@ def get_optimizer_factory(name: str):
 
 def get_recommended_hyper_parameter(
     dataset_name: str, model_name: str
-) -> Any[HyperParameter]:
+) -> Optional[HyperParameter]:
     """
     Given dataset and model, return a set of recommended hyper parameters
     """

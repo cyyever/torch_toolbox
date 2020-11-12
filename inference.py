@@ -8,14 +8,14 @@ from model_util import ModelUtil
 from dataset import DatasetUtil, dataset_with_indices
 
 
-class Validator:
+class Inferencer:
     def __init__(
         self,
         model_with_loss: ModelWithLoss,
         dataset,
     ):
         self.model_with_loss = copy.deepcopy(model_with_loss)
-        self.dataset = dataset
+        self.__dataset = dataset
 
     @property
     def model(self):
@@ -26,20 +26,20 @@ class Validator:
         return self.model_with_loss.loss_fun
 
     def set_dataset(self, dataset):
-        self.dataset = dataset
+        self.__dataset = dataset
 
     def load_model(self, model_path):
         self.model_with_loss.set_model(
             torch.load(model_path, map_location=get_device())
         )
 
-    def validate(self, batch_size, **kwargs):
+    def inference(self, batch_size, **kwargs):
         class_count = dict()
         class_correct_count = dict()
 
         per_class_accuracy = kwargs.get("per_class_accuracy", False)
         if per_class_accuracy:
-            class_count = DatasetUtil(self.dataset).get_label_number()
+            class_count = DatasetUtil(self.__dataset).get_label_number()
             for k in class_count:
                 class_correct_count[k] = 0
 
@@ -48,7 +48,7 @@ class Validator:
         per_sample_prob = kwargs.get("per_sample_prob", False)
         if per_sample_prob:
             per_sample_output = True
-        dataset = dataset_with_indices(self.dataset)
+        dataset = dataset_with_indices(self.__dataset)
 
         validation_data_loader = torch.utils.data.DataLoader(
             dataset, batch_size=batch_size
@@ -157,5 +157,5 @@ class Validator:
             )
 
     def get_gradient(self):
-        self.validate(64, use_grad=True)
+        self.inference(64, use_grad=True)
         return ModelUtil(self.model).get_gradient_list()
