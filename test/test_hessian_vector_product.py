@@ -1,7 +1,7 @@
 import torch
 from cyy_naive_lib.time_counter import TimeCounter
 
-from configuration import get_task_configuration
+from configuration import get_trainer_from_configuration
 from hessian_vector_product import get_hessian_vector_product_func
 from model_util import ModelUtil
 
@@ -9,7 +9,7 @@ from model_util import ModelUtil
 
 
 def test_hessian_vector_product():
-    trainer = get_task_configuration("MNIST", True)
+    trainer = get_trainer_from_configuration("MNIST", "LeNet5")
     training_data_loader = torch.utils.data.DataLoader(
         trainer.training_dataset,
         batch_size=16,
@@ -21,12 +21,12 @@ def test_hessian_vector_product():
         hvp_function = get_hessian_vector_product_func(
             trainer.model_with_loss, batch)
         a = hvp_function([v, 2 * v])
-        print(a)
-        trainer = get_task_configuration("MNIST", True)
+        assert torch.all(torch.eq(a[0], 2 * a[1]))
+        trainer = get_trainer_from_configuration("MNIST", "LeNet5")
         hvp_function = get_hessian_vector_product_func(
             trainer.model_with_loss, batch)
-        a = hvp_function([v, 2 * v])
-        print(a)
+        b = hvp_function([v, 2 * v])
+        assert torch.all(torch.eq(a, b))
 
         with TimeCounter() as c:
             a = hvp_function(v)

@@ -4,14 +4,14 @@ import torch
 from cyy_naive_lib.time_counter import TimeCounter
 from cyy_naive_lib.profiling import Profile
 
-from configuration import get_task_configuration
+from configuration import get_trainer_from_configuration
 from per_sample_gradient import get_per_sample_gradient
 from device import get_device
 from model_util import ModelUtil
 
 
 def test_get_per_sample_gradient():
-    trainer = get_task_configuration("MNIST", True)
+    trainer = get_trainer_from_configuration("MNIST", "LeNet5")
     training_data_loader = torch.utils.data.DataLoader(
         trainer.training_dataset,
         batch_size=64,
