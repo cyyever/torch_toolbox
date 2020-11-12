@@ -5,8 +5,8 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from device import get_device
-from hessian_vector_product import get_hessian_vector_product_func
-from conjugate_gradient import conjugate_gradient_general
+from algorithm.hessian_vector_product import get_hessian_vector_product_func
+from algorithm.conjugate_gradient import conjugate_gradient_general
 from model_loss import ModelWithLoss
 
 
