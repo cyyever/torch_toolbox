@@ -10,7 +10,7 @@ from cyy_naive_lib.sequence_op import split_list_to_chunks
 from device import get_cuda_devices
 from util import cat_tensors_to_vector
 from model_util import ModelUtil
-from cuda_process_task_queue import CUDAProcessTaskQueue
+from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
 from model_loss import ModelWithLoss
 
 
@@ -71,12 +71,14 @@ def __get_f(device, inputs, targets, model_with_loss, param_shape_dict):
             load_model_parameters(
                 cur_model_snapshot, arg, param_shape_dict, device)
             cur_model_snapshot.to(device)
-            loss = model_with_loss.loss_fun(cur_model_snapshot(inputs), targets)
+            loss = model_with_loss.loss_fun(
+                cur_model_snapshot(inputs), targets)
             if total_loss is None:
                 total_loss = loss
             else:
                 total_loss += loss
         return total_loss
+
     return f
 
 
