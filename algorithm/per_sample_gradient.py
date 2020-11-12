@@ -9,7 +9,7 @@ from cyy_naive_lib.sequence_op import split_list_to_chunks
 from device import get_cuda_devices
 from model_util import ModelUtil
 from model_loss import ModelWithLoss
-from cuda_process_task_queue import CUDAProcessTaskQueue
+from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
 
 
 def __worker_fun(task, args):

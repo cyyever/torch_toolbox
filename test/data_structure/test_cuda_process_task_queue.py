@@ -1,4 +1,4 @@
-from cuda_process_task_queue import CUDAProcessTaskQueue
+from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
 
 
 def hello(task, args):

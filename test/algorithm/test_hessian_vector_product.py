@@ -2,7 +2,7 @@ import torch
 from cyy_naive_lib.time_counter import TimeCounter
 
 from configuration import get_trainer_from_configuration
-from hessian_vector_product import get_hessian_vector_product_func
+from algorithm.hessian_vector_product import get_hessian_vector_product_func
 from model_util import ModelUtil
 
 # from cyy_naive_lib.profiling import Profile
