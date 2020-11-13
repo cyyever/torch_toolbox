@@ -2,7 +2,7 @@
 from typing import Callable
 
 import torch.multiprocessing
-from cyy_naive_lib.process_task_queue import ProcessTaskQueue
+from cyy_naive_lib.data_structure.process_task_queue import ProcessTaskQueue
 
 from device import get_cuda_devices
 

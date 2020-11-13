@@ -6,7 +6,7 @@ from typing import Callable, Optional
 import torch
 
 from cyy_naive_lib.log import get_logger
-from cyy_naive_lib.sequence_op import split_list_to_chunks
+from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 
 from dataset import dataset_with_indices
 from algorithm.per_sample_gradient import get_per_sample_gradient
