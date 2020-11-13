@@ -1,5 +1,6 @@
 import torch
 import visdom
+from cyy_naive_lib.shell_factory import exec_cmd
 
 
 class Window:
@@ -14,6 +15,7 @@ class Window:
         if env is None:
             env = "main"
         if env not in Window.__sessions:
+            exec_cmd("cd $HOME && nohup visdom &", throw=False)
             Window.__sessions[env] = visdom.Visdom(env=env)
 
         self.vis = Window.__sessions[env]
@@ -50,10 +52,18 @@ class Window:
         if name is None:
             name = y_label
 
-        opts = dict(xlabel=x_label, ylabel=y_label,)
+        opts = dict(
+            xlabel=x_label,
+            ylabel=y_label,
+        )
         opts.update(self.get_opts())
         self.win = self.vis.line(
-            Y=y, X=x, win=self.win, name=name, update=update, opts=opts,
+            Y=y,
+            X=x,
+            win=self.win,
+            name=name,
+            update=update,
+            opts=opts,
         )
         self._add_window()
 
