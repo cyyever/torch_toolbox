@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.utils.prune as prune
 
 
-from cyy_naive_lib.mapping_op import get_mapping_values_by_order
+from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_order
 
 import util
 

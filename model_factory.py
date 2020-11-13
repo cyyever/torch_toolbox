@@ -1,6 +1,6 @@
 import torch
 
-from cyy_naive_lib.mapping_op import change_mapping_keys
+from cyy_naive_lib.algorithm.mapping_op import change_mapping_keys
 from torchvision.models import MobileNetV2
 
 from inspect import signature
