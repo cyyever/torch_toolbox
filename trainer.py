@@ -86,11 +86,11 @@ class BasicTrainer:
         torch.save(self.model, os.path.join(save_dir, model_name))
 
     def repeated_train(self, repeated_num, save_dir=None, **kwargs):
-        def training_callback(_, trainer):
+        def training_callback(_, trainer: BasicTrainer):
             nonlocal save_dir, kwargs
             trainer.train(**kwargs)
             if save_dir is not None:
-                trainer.save_model(save_dir, with_timestamp=True)
+                trainer.save_model(save_dir)
             return {
                 "training_loss": trainer.training_loss,
                 "validation_loss": trainer.validation_loss,
