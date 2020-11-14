@@ -15,10 +15,6 @@ class Window:
         if env is None:
             env = "main"
         if env not in Window.__sessions:
-            exec_cmd(
-                "cd $HOME && nohup visdom &",
-                throw=False,
-                use_temp_dir=True)
             Window.__sessions[env] = visdom.Visdom(env=env)
 
         self.vis = Window.__sessions[env]
