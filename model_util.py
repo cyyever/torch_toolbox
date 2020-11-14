@@ -127,11 +127,20 @@ class ModelUtil:
             self.__is_pruned = prune.is_pruned(self.model)
         return self.__is_pruned
 
-    def __get_parameter_seq(self):
+    def load_parameter_dict(self, parameter_dict: dict):
+        assert not self.is_pruned
+        for name, parameter in parameter_dict.items():
+            self.set_attr(name, parameter)
+
+    def get_parameter_dict(self) -> dict:
         res = dict()
         for name, parameter in self.model.named_parameters():
             if self.is_pruned and name.endswith("_orig"):
                 res[name[:-5]] = parameter
                 continue
             res[name] = parameter
+        return res
+
+    def __get_parameter_seq(self):
+        res = self.get_parameter_dict()
         return get_mapping_values_by_order(res)
