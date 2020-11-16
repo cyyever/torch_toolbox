@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from cyy_naive_lib.task_queue import TaskQueue
+from cyy_naive_lib.data_structure.task_queue import TaskQueue
 
 from device import get_cuda_devices
 

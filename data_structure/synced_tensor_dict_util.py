@@ -1,6 +1,6 @@
 from typing import Generator
 from cyy_naive_lib.log import get_logger
-from cyy_naive_lib.sequence_op import split_list_to_chunks
+from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 import cyy_pytorch_cpp
 
 import torch

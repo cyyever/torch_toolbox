@@ -5,7 +5,7 @@ import copy
 import numpy as np
 import torch.autograd as autograd
 
-from cyy_naive_lib.sequence_op import split_list_to_chunks
+from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 
 from device import get_cuda_devices
 from util import cat_tensors_to_vector
