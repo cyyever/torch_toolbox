@@ -1,7 +1,7 @@
 import os
 from enum import Enum, auto
 import functools
-from typing import Iterable, Callable, List, Generator, Tuple
+from typing import Iterable, Callable, List, Generator
 import random
 import PIL
 
@@ -163,19 +163,24 @@ def split_dataset_by_label(
 
 def split_dataset_by_ratio(
         dataset: torch.utils.data.Dataset,
-        ratio: float) -> Tuple:
-    assert 0 < ratio < 1
-    first_part_indices = list()
-    second_part_indices = list()
+        parts: list) -> list:
+    assert parts
+    sub_dataset_indices_list: list = []
+    for _ in parts:
+        sub_dataset_indices_list.append([])
+
     for _, v in split_dataset_by_label(dataset).items():
         label_indices_list = sorted(v["indices"])
-        delimiter = int(len(label_indices_list) * ratio)
-        first_part_indices += label_indices_list[:delimiter]
-        second_part_indices += label_indices_list[delimiter:]
-    return (
-        sub_dataset(dataset, first_part_indices),
-        sub_dataset(dataset, second_part_indices),
-    )
+        i = 0
+        while parts:
+            ratio = parts[0] / sum(parts)
+            delimiter = int(len(label_indices_list) * ratio)
+            sub_dataset_indices_list[i] += label_indices_list[:delimiter]
+            label_indices_list = label_indices_list[delimiter:]
+            i += 1
+
+    return [sub_dataset(dataset, indices)
+            for indices in sub_dataset_indices_list]
 
 
 def sample_subset(
@@ -237,12 +242,14 @@ __datasets: dict = dict()
 
 def get_dataset(name: str, dataset_type: DatasetType):
     root_dir = os.path.join(__dataset_dir, name)
-    for_train = dataset_type in (DatasetType.Training, DatasetType.Validation)
+    for_training = dataset_type in (
+        DatasetType.Training,
+        DatasetType.Validation)
     split_training_dataset_ratio = None
     if name == "MNIST":
         dataset = torchvision.datasets.MNIST(
             root=root_dir,
-            train=for_train,
+            train=for_training,
             download=True,
             transform=transforms.Compose(
                 [
@@ -252,7 +259,7 @@ def get_dataset(name: str, dataset_type: DatasetType):
                 ]
             ),
         )
-        split_training_dataset_ratio = 5 / 6
+        split_training_dataset_ratio = [5, 1]
     elif name == "FashionMNIST":
         transform = [
             transforms.Resize((32, 32)),
@@ -265,11 +272,11 @@ def get_dataset(name: str, dataset_type: DatasetType):
         ]
         dataset = torchvision.datasets.FashionMNIST(
             root=root_dir,
-            train=for_train,
+            train=for_training,
             download=True,
             transform=transforms.Compose(transform),
         )
-        split_training_dataset_ratio = 5 / 6
+        split_training_dataset_ratio = [5, 1]
     elif name == "CIFAR10":
         transform = []
 
@@ -287,18 +294,18 @@ def get_dataset(name: str, dataset_type: DatasetType):
         ]
         dataset = torchvision.datasets.CIFAR10(
             root=root_dir,
-            train=for_train,
+            train=for_training,
             download=True,
             transform=transforms.Compose(transform),
         )
-        split_training_dataset_ratio = 4 / 5
+        split_training_dataset_ratio = [4, 1]
     else:
         raise NotImplementedError(name)
-    if not for_train:
+    if not for_training:
         return dataset
 
     if name not in __datasets:
-        training_dataset, validation_dataset = split_dataset_by_ratio(
+        training_dataset, validation_dataset = *split_dataset_by_ratio(
             dataset, split_training_dataset_ratio
         )
         __datasets[name] = dict()
