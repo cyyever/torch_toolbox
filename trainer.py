@@ -155,8 +155,12 @@ class BasicTrainer:
                 for callback in kwargs.get("pre_batch_callbacks", []):
                     callback(self, batch, batch_index)
 
-                instance_inputs = batch[0].to(device)
-                instance_targets = batch[1].to(device)
+                instance_inputs = batch[0]
+                instance_targets = batch[1]
+                if isinstance(instance_inputs, torch.Tensor):
+                    instance_inputs = instance_inputs.to(device)
+                if isinstance(instance_targets, torch.Tensor):
+                    instance_targets = instance_targets.to(device)
                 instance_indices = None
                 if len(batch) >= 3:
                     instance_indices = [idx.data.item() for idx in batch[2]]

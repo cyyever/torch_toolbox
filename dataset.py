@@ -11,7 +11,7 @@ import torchvision
 import torchvision.transforms as transforms
 
 from cyy_naive_lib.log import get_logger
-import datasets
+from datasets.webank_street_dataset import WebankStreetDataset
 
 
 class DatasetFilter:
@@ -132,7 +132,11 @@ class DatasetUtil:
     def get_labels(self) -> set:
         def count_instance(container, instance):
             label = instance[1]
-            container.add(label)
+            if isinstance(label, dict):
+                if "labels" in label:
+                    container.update(label["labels"].tolist())
+            else:
+                container.add(label)
             return container
 
         return functools.reduce(count_instance, self.dataset, set())
@@ -163,15 +167,23 @@ def split_dataset_by_label(
 
 
 def split_dataset_by_ratio(
-        dataset: torch.utils.data.Dataset,
-        parts: list) -> list:
+    dataset: torch.utils.data.Dataset, parts: list, by_label: bool = True
+) -> list:
     assert parts
     sub_dataset_indices_list: list = []
     for _ in parts:
         sub_dataset_indices_list.append([])
 
-    for _, v in split_dataset_by_label(dataset).items():
-        label_indices_list = sorted(v["indices"])
+    if by_label:
+        for _, v in split_dataset_by_label(dataset).items():
+            label_indices_list = sorted(v["indices"])
+            for i, part in enumerate(parts):
+                delimiter = int(len(label_indices_list)
+                                * part / sum(parts[i:]))
+                sub_dataset_indices_list[i] += label_indices_list[:delimiter]
+                label_indices_list = label_indices_list[delimiter:]
+    else:
+        label_indices_list = list(range(len(dataset)))
         for i, part in enumerate(parts):
             delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
             sub_dataset_indices_list[i] += label_indices_list[:delimiter]
@@ -244,6 +256,7 @@ def get_dataset(name: str, dataset_type: DatasetType):
         DatasetType.Training,
         DatasetType.Validation)
     training_dataset_parts = None
+    by_label = True
     if name == "MNIST":
         dataset = torchvision.datasets.MNIST(
             root=root_dir,
@@ -298,10 +311,10 @@ def get_dataset(name: str, dataset_type: DatasetType):
         )
         training_dataset_parts = [4, 1]
     elif name == "WebankStreet":
-        dataset = datasets.webank_street_dataset.WebankStreetDataset(
-            "~/Street_Dataset/Street_Dataset",
+        dataset = WebankStreetDataset(
+            "/home/cyy/Street_Dataset/Street_Dataset",
             train=True,
-            transform=[transforms.ToTensor()],
+            transform=transforms.ToTensor(),
         )
         mean, std = DatasetUtil(dataset).get_mean_and_std()
         transform = []
@@ -314,12 +327,13 @@ def get_dataset(name: str, dataset_type: DatasetType):
             transforms.ToTensor(),
             transforms.Normalize(mean=mean, std=std),
         ]
-        dataset = datasets.webank_street_dataset.WebankStreetDataset(
-            "~/Street_Dataset/Street_Dataset",
+        dataset = WebankStreetDataset(
+            "/home/cyy/Street_Dataset/Street_Dataset",
             train=for_training,
-            transform=transform,
+            transform=transforms.Compose(transform),
         )
         training_dataset_parts = [4, 1]
+        by_label = False
     else:
         raise NotImplementedError(name)
     if not for_training:
@@ -327,8 +341,8 @@ def get_dataset(name: str, dataset_type: DatasetType):
 
     if name not in __datasets:
         training_dataset, validation_dataset = tuple(
-            split_dataset_by_ratio(dataset, training_dataset_parts)
-        )
+            split_dataset_by_ratio(
+                dataset, training_dataset_parts, by_label=by_label))
         __datasets[name] = dict()
         __datasets[name][DatasetType.Training] = training_dataset
         __datasets[name][DatasetType.Validation] = validation_dataset

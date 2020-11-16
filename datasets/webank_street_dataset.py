@@ -19,7 +19,7 @@ class WebankStreetDataset:
             with open(os.path.join(root_dir, "test_label.json"), "rt") as f:
                 self.__json = json.load(f)
         self.__labels: dict = dict()
-        idx = 0
+        idx = 1
         for img_json in self.__json:
             for item in img_json["items"]:
                 label = item["class"]
@@ -35,16 +35,16 @@ class WebankStreetDataset:
                 self.__image_dir,
                 img_json["image_id"] +
                 ".jpg"))
-        if self.__transform is not None:
-            img = self.__transform(img)
         target = {"boxes": [], "labels": []}
         for item in img_json["items"]:
-            target["boxes"].append(item["bbox"])
+            target["boxes"].append([int(a) for a in item["bbox"]])
             target["labels"].append(self.__labels[item["class"]])
 
         target["boxes"] = torch.FloatTensor(target["boxes"])
-        target["labels"] = torch.Int64Tenso(target["labels"])
-        return (img, target)
+        target["labels"] = torch.LongTensor(target["labels"])
+        if self.__transform is not None:
+            img = self.__transform(img)
+        return img, target
 
     def __len__(self):
         return len(self.__json)
