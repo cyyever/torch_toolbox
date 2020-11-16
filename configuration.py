@@ -12,6 +12,7 @@ def get_trainer_from_configuration(
     if hyper_parameter is None:
         hyper_parameter = get_recommended_hyper_parameter(
             dataset_name, model_name)
+        assert hyper_parameter is not None
 
     training_dataset = get_dataset(dataset_name, DatasetType.Test)
     validation_dataset = get_dataset(dataset_name, DatasetType.Validation)

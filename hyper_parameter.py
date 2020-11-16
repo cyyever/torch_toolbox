@@ -146,6 +146,11 @@ def get_recommended_hyper_parameter(
             epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
         )
         hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
+    elif dataset_name == "WebankStreet":
+        hyper_parameter = HyperParameter(
+            epochs=50, batch_size=32, learning_rate=0.1, weight_decay=1
+        )
+        hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
     else:
         get_logger().error(
             "no hyper parameter for dataset %s and model %s",
