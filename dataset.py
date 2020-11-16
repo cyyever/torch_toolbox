@@ -171,9 +171,8 @@ def split_dataset_by_ratio(
 
     for _, v in split_dataset_by_label(dataset).items():
         label_indices_list = sorted(v["indices"])
-        for i in range(len(parts)):
-            delimiter = int(len(label_indices_list) *
-                            parts[i] / sum(parts[i:]))
+        for i, part in enumerate(parts):
+            delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
             sub_dataset_indices_list[i] += label_indices_list[:delimiter]
             label_indices_list = label_indices_list[delimiter:]
 
