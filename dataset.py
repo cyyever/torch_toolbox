@@ -171,13 +171,11 @@ def split_dataset_by_ratio(
 
     for _, v in split_dataset_by_label(dataset).items():
         label_indices_list = sorted(v["indices"])
-        i = 0
-        while parts:
-            ratio = parts[0] / sum(parts)
-            delimiter = int(len(label_indices_list) * ratio)
+        for i in range(len(parts)):
+            delimiter = int(len(label_indices_list) *
+                            parts[i] / sum(parts[i:]))
             sub_dataset_indices_list[i] += label_indices_list[:delimiter]
             label_indices_list = label_indices_list[delimiter:]
-            i += 1
 
     return [sub_dataset(dataset, indices)
             for indices in sub_dataset_indices_list]
@@ -245,7 +243,7 @@ def get_dataset(name: str, dataset_type: DatasetType):
     for_training = dataset_type in (
         DatasetType.Training,
         DatasetType.Validation)
-    split_training_dataset_ratio = None
+    training_dataset_parts = None
     if name == "MNIST":
         dataset = torchvision.datasets.MNIST(
             root=root_dir,
@@ -259,7 +257,7 @@ def get_dataset(name: str, dataset_type: DatasetType):
                 ]
             ),
         )
-        split_training_dataset_ratio = [5, 1]
+        training_dataset_parts = [5, 1]
     elif name == "FashionMNIST":
         transform = [
             transforms.Resize((32, 32)),
@@ -276,7 +274,7 @@ def get_dataset(name: str, dataset_type: DatasetType):
             download=True,
             transform=transforms.Compose(transform),
         )
-        split_training_dataset_ratio = [5, 1]
+        training_dataset_parts = [5, 1]
     elif name == "CIFAR10":
         transform = []
 
@@ -298,15 +296,15 @@ def get_dataset(name: str, dataset_type: DatasetType):
             download=True,
             transform=transforms.Compose(transform),
         )
-        split_training_dataset_ratio = [4, 1]
+        training_dataset_parts = [4, 1]
     else:
         raise NotImplementedError(name)
     if not for_training:
         return dataset
 
     if name not in __datasets:
-        training_dataset, validation_dataset = *split_dataset_by_ratio(
-            dataset, split_training_dataset_ratio
+        training_dataset, validation_dataset = tuple(
+            split_dataset_by_ratio(dataset, training_dataset_parts)
         )
         __datasets[name] = dict()
         __datasets[name][DatasetType.Training] = training_dataset
