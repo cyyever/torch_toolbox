@@ -1,14 +1,23 @@
 import os
 import json
 import torch
+from PIL import Image
 
 
-class DetectionDataset:
-    def __init__(self, image_dir: str, json_path: str, suffix=".jpg"):
-        self.__image_dir = image_dir
-        with open(json_path, "rt") as f:
-            self.__json = json.load(f)
-        self.__suffix = suffix
+class WebankStreetDataset:
+    def __init__(
+        self,
+        root_dir: str,
+        train: bool,
+        transform=None,
+    ):
+        self.__image_dir = os.path.join(root_dir, "Images")
+        if train:
+            with open(os.path.join(root_dir, "train_label.json"), "rt") as f:
+                self.__json = json.load(f)
+        else:
+            with open(os.path.join(root_dir, "test_label.json"), "rt") as f:
+                self.__json = json.load(f)
         self.__labels: dict = dict()
         idx = 0
         for img_json in self.__json:
@@ -17,21 +26,25 @@ class DetectionDataset:
                 if label not in self.__labels:
                     self.__labels[label] = idx
                     idx += 1
+        self.__transform = transform
 
     def __getitem__(self, index):
         img_json = self.__json[index]
-        with open(
-            os.path.join(self.__image_dir, img_json["image_id"] + self.__suffix),
-            "rb",
-        ) as f:
-            target = {"boxes": [], "labels": []}
-            for item in img_json["items"]:
-                target["boxes"].append(item["bbox"])
-                target["labels"].append(self.__labels[item["class"]])
+        img = Image.open(
+            os.path.join(
+                self.__image_dir,
+                img_json["image_id"] +
+                ".jpg"))
+        if self.__transform is not None:
+            img = self.__transform(img)
+        target = {"boxes": [], "labels": []}
+        for item in img_json["items"]:
+            target["boxes"].append(item["bbox"])
+            target["labels"].append(self.__labels[item["class"]])
 
-            target["boxes"] = torch.FloatTensor(target["boxes"])
-            target["labels"] = torch.Int64Tenso(target["labels"])
-            return (f.read(), target)
+        target["boxes"] = torch.FloatTensor(target["boxes"])
+        target["labels"] = torch.Int64Tenso(target["labels"])
+        return (img, target)
 
     def __len__(self):
         return len(self.__json)

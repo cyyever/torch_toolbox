@@ -11,6 +11,7 @@ import torchvision
 import torchvision.transforms as transforms
 
 from cyy_naive_lib.log import get_logger
+import datasets
 
 
 class DatasetFilter:
@@ -294,6 +295,29 @@ def get_dataset(name: str, dataset_type: DatasetType):
             train=for_training,
             download=True,
             transform=transforms.Compose(transform),
+        )
+        training_dataset_parts = [4, 1]
+    elif name == "WebankStreet":
+        dataset = datasets.webank_street_dataset.WebankStreetDataset(
+            "~/Street_Dataset/Street_Dataset",
+            train=True,
+            transform=[transforms.ToTensor()],
+        )
+        mean, std = DatasetUtil(dataset).get_mean_and_std()
+        transform = []
+        if dataset_type == DatasetType.Training:
+            transform += [
+                transforms.RandomHorizontalFlip(),
+            ]
+
+        transform += [
+            transforms.ToTensor(),
+            transforms.Normalize(mean=mean, std=std),
+        ]
+        dataset = datasets.webank_street_dataset.WebankStreetDataset(
+            "~/Street_Dataset/Street_Dataset",
+            train=for_training,
+            transform=transform,
         )
         training_dataset_parts = [4, 1]
     else:

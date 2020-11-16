@@ -2,7 +2,7 @@ import torch
 
 from cyy_naive_lib.algorithm.mapping_op import change_mapping_keys
 from torchvision.models import MobileNetV2
-
+from torchvision.models.detection.faster_rcnn import fasterrcnn_resnet50_fpn
 from inspect import signature
 from dataset import DatasetUtil
 from model_loss import ModelWithLoss
@@ -15,6 +15,7 @@ def get_model(name: str, dataset: torch.utils.data.Dataset) -> ModelWithLoss:
         "LeNet5": LeNet5,
         "MobileNet": MobileNetV2,
         "DenseNet40": DenseNet40,
+        "FasterRCNN": fasterrcnn_resnet50_fpn,
     }
     name_to_model_mapping = change_mapping_keys(
         name_to_model_mapping, lambda x: x.lower()
@@ -31,5 +32,7 @@ def get_model(name: str, dataset: torch.utils.data.Dataset) -> ModelWithLoss:
             kwargs[param] = dataset_util.channel
         if param in ("num_classes"):
             kwargs[param] = dataset_util.get_label_number()
+        if param == "pretrained":
+            kwargs[param] = False
 
     return ModelWithLoss(model_constructor(**kwargs))
