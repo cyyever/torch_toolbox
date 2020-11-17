@@ -24,13 +24,16 @@ class ModelWithLoss:
     def loss_fun(self):
         return self.__loss_fun
 
-    def __call__(self, inputs, target):
+    def __call__(self, inputs, target) -> dict:
         if isinstance(self.__model, GeneralizedRCNN):
             loss_dict: dict = self.__model(inputs, target)
-            return sum(loss for loss in loss_dict.values())
+            return {"loss": sum(loss for loss in loss_dict.values())}
 
         assert self.__loss_fun is not None
-        return self.__loss_fun(self.__model(inputs), target)
+
+        output = self.__model(inputs)
+        loss = self.__loss_fun(output, target)
+        return {"loss": loss, "output": output}
 
     def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
         last_layer = list(self.__model.modules())[-1]
@@ -39,3 +42,9 @@ class ModelWithLoss:
         if isinstance(last_layer, nn.Linear):
             return nn.CrossEntropyLoss()
         raise NotImplementedError()
+
+    def is_averaged_loss(self) -> bool:
+        if hasattr(self.loss_fun, "reduction"):
+            if self.loss_fun.reduction in ("mean", "elementwise_mean"):
+                return True
+        return False
