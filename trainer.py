@@ -24,7 +24,7 @@ class BasicTrainer:
         training_dataset,
         hyper_parameter: Optional[HyperParameter],
     ):
-        self.model_with_loss = copy.deepcopy(model_with_loss)
+        self.__model_with_loss = copy.deepcopy(model_with_loss)
         self.__training_dataset = training_dataset
         self.__validation_dataset: Optional[torch.utils.data.Dataset] = None
         self.__test_dataset: Optional[torch.utils.data.Dataset] = None
@@ -33,6 +33,10 @@ class BasicTrainer:
         self.__reset_hyper_parameter = False
         self.__visdom_env = None
         self.__reset_loss()
+
+    @property
+    def model_with_loss(self):
+        return self.__model_with_loss
 
     @property
     def model(self):
@@ -208,7 +212,8 @@ class BasicTrainer:
                             )
                 optimizer.zero_grad()
                 result = self.model_with_loss(
-                    instance_inputs, instance_targets)
+                    instance_inputs, instance_targets, for_training=True
+                )
                 loss = result["loss"]
                 batch_loss = loss.data.item()
                 loss.backward()
@@ -301,19 +306,19 @@ class Trainer(BasicTrainer):
         self.__visdom_env = (
             "training_"
             + str(self.model.__class__.__name__)
+            + "_"
+            + str(self.training_dataset)
             + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
         )
 
         def pre_training_callback(trainer, optimizer, lr_scheduler):
             model_util = ModelUtil(trainer.model)
             get_logger().info(
-                "begin training for %s epochs,hyper_parameter is %s,optimizer is %s ,lr_scheduler is %s, model is %s, loss function is %s, parameter number is %s",
-                trainer.hyper_parameter.epochs,
+                "begin training, hyper_parameter is %s, optimizer is %s ,lr_scheduler is %s, %s, parameter number is %s",
                 trainer.hyper_parameter,
                 optimizer,
                 lr_scheduler,
-                trainer.model.__class__.__name__,
-                trainer.loss_fun,
+                trainer.model_with_loss,
                 len(model_util.get_parameter_list()),
             )
 

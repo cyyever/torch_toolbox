@@ -24,10 +24,12 @@ class ModelWithLoss:
     def loss_fun(self):
         return self.__loss_fun
 
-    def __call__(self, inputs, target) -> dict:
+    def __call__(self, inputs, target, for_training: bool) -> dict:
         if isinstance(self.__model, GeneralizedRCNN):
-            loss_dict: dict = self.__model(inputs, target)
-            return {"loss": sum(loss for loss in loss_dict.values())}
+            if for_training:
+                loss_dict: dict = self.__model(inputs, target)
+                return {"loss": sum(loss for loss in loss_dict.values())}
+            return self.__model(inputs)
 
         assert self.__loss_fun is not None
 
@@ -48,3 +50,8 @@ class ModelWithLoss:
             if self.loss_fun.reduction in ("mean", "elementwise_mean"):
                 return True
         return False
+
+    def __str__(self):
+        return "model: {}, loss_fun: {}".format(
+            self.model.__class__.__name__, self.loss_fun
+        )
