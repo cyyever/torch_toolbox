@@ -55,10 +55,7 @@ class Inferencer:
             for k in range(DatasetUtil(self.__dataset).get_label_number()):
                 class_correct_count[k] = 0
 
-        per_sample_output = kwargs.get("per_sample_output", False)
         per_sample_prob = kwargs.get("per_sample_prob", False)
-        if per_sample_prob:
-            per_sample_output = True
         data_loader = self.__hyper_parameter.get_dataloader(
             self.__dataset, False)
 
@@ -69,7 +66,7 @@ class Inferencer:
             num_correct = 0
             num_examples = 0
             device = get_device()
-            self.model.eval()
+            self.model_with_loss.set_model_mode(self.__phase)
             self.model.zero_grad()
             self.model.to(device)
             total_loss = torch.zeros(1)
@@ -81,16 +78,14 @@ class Inferencer:
 
                 result = self.model_with_loss(
                     inputs, targets, phase=self.__phase)
-                print("result is ", result)
                 batch_loss = result["loss"]
-                outputs = result.get("output", None)
+                output = result.get("output", None)
 
-                if per_sample_output:
+                if per_sample_prob and output:
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
-                        instance_output[instance_index] = outputs[i]
+                        instance_output[instance_index] = output[i]
 
-                # batch_loss = self.loss_fun(outputs, targets)
                 if self.model_with_loss.is_averaged_loss():
                     normalized_batch_loss = (
                         batch_loss * real_batch_size / len(self.__dataset)
@@ -101,17 +96,18 @@ class Inferencer:
                     normalized_batch_loss.backward()
 
                 total_loss += normalized_batch_loss
-                correct = torch.eq(torch.max(outputs, dim=1)
-                                   [1], targets).view(-1)
+                if output:
+                    correct = torch.eq(torch.max(output, dim=1)[
+                                       1], targets).view(-1)
 
-                if per_class_accuracy:
-                    for k in class_count:
-                        class_correct_count[k] += torch.sum(
-                            correct[targets == k]
-                        ).item()
+                    if per_class_accuracy:
+                        for k in class_count:
+                            class_correct_count[k] += torch.sum(
+                                correct[targets == k]
+                            ).item()
 
-                num_correct += torch.sum(correct).item()
-                num_examples += correct.shape[0]
+                    num_correct += torch.sum(correct).item()
+                    num_examples += correct.shape[0]
 
             if per_class_accuracy:
                 for k in class_count:
@@ -137,12 +133,14 @@ class Inferencer:
                 else:
                     raise RuntimeError("unsupported layer", type(last_layer))
 
+            accuracy = None
+            if num_examples != 0:
+                accuracy = num_correct / num_examples
             return (
                 total_loss,
-                num_correct / num_examples,
+                accuracy,
                 {
                     "per_class_accuracy": class_count,
-                    "per_sample_output": instance_output,
                     "per_sample_prob": instance_prob,
                 },
             )

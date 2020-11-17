@@ -50,5 +50,8 @@ class WebankStreetDataset:
     def __len__(self):
         return len(self.__json)
 
+    def __str__(self):
+        return "WebankStreetDataset"
+
     def label_0_for_background(self):
         return True

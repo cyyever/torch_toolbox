@@ -26,9 +26,28 @@ class ModelWithLoss:
     def loss_fun(self):
         return self.__loss_fun
 
+    def set_model_mode(self, phase: MachineLearningPhase):
+        if isinstance(self.__model, GeneralizedRCNN):
+            if phase in (
+                MachineLearningPhase.Training,
+                MachineLearningPhase.Validation,
+            ):
+                self.model.train()
+            else:
+                self.model.eval()
+            return
+
+        if phase == MachineLearningPhase.Training:
+            self.model.train()
+            return
+        self.model.eval()
+
     def __call__(self, inputs, target, phase: MachineLearningPhase) -> dict:
         if isinstance(self.__model, GeneralizedRCNN):
-            if phase in (MachineLearningPhase.Training,):
+            if phase in (
+                MachineLearningPhase.Training,
+                MachineLearningPhase.Validation,
+            ):
                 loss_dict: dict = self.__model(inputs, target)
                 return {"loss": sum(loss for loss in loss_dict.values())}
             return self.__model(inputs)
