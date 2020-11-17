@@ -96,7 +96,7 @@ class Inferencer:
                     normalized_batch_loss.backward()
 
                 total_loss += normalized_batch_loss
-                if output:
+                if output is not None:
                     correct = torch.eq(torch.max(output, dim=1)[
                                        1], targets).view(-1)
 

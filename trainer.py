@@ -309,9 +309,9 @@ class Trainer(BasicTrainer):
     def train(self, **kwargs):
         self.__visdom_env = (
             "training_"
-            # + str(self.model.__class__.__name__)
-            # + "_"
-            + str(self.training_dataset)
+            # # + str(self.model.__class__.__name__)
+            # # + "_"
+            # + str(self.training_dataset)
             + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
         )
 
