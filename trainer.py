@@ -207,15 +207,14 @@ class BasicTrainer:
                                 optimizer=optimizer,
                             )
                 optimizer.zero_grad()
-                loss = self.model_with_loss(instance_inputs, instance_targets)
+                result = self.model_with_loss(
+                    instance_inputs, instance_targets)
+                loss = result["loss"]
                 batch_loss = loss.data.item()
                 loss.backward()
 
                 normalized_batch_loss = batch_loss
-                if hasattr(self.model_with_loss.loss_fun, "reduction") and (
-                    self.model_with_loss.loss_fun.reduction
-                    in ("mean", "elementwise_mean")
-                ):
+                if self.model_with_loss.is_averaged_loss():
                     normalized_batch_loss *= real_batch_size
                     normalized_batch_loss /= training_set_size
 

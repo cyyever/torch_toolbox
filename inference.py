@@ -2,7 +2,7 @@ import copy
 import torch
 import torch.nn as nn
 
-from device import get_device
+from device import get_device, put_data_to_device
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
 from dataset import DatasetUtil, dataset_with_indices
@@ -42,7 +42,6 @@ class Inferencer:
             for k in range(DatasetUtil(self.__dataset).get_label_number()):
                 class_correct_count[k] = 0
 
-        per_sample_loss = kwargs.get("per_sample_loss", False)
         per_sample_output = kwargs.get("per_sample_output", False)
         per_sample_prob = kwargs.get("per_sample_prob", False)
         if per_sample_prob:
@@ -52,9 +51,11 @@ class Inferencer:
         validation_data_loader = torch.utils.data.DataLoader(
             dataset, batch_size=batch_size
         )
+        hyper_parameter = kwargs.get("hyper_parameter", None)
+        if hyper_parameter:
+            validation_data_loader = hyper_parameter.get_dataloader()
 
         use_grad = kwargs.get("use_grad", False)
-        instance_validation_loss = dict()
         instance_output = dict()
         instance_prob = dict()
         with torch.set_grad_enabled(use_grad):
@@ -68,45 +69,26 @@ class Inferencer:
             validation_loss = validation_loss.to(device)
             for batch in validation_data_loader:
                 real_batch_size = batch[0].shape[0]
-                inputs = batch[0]
-                targets = batch[1]
-                if isinstance(inputs, torch.Tensor):
-                    inputs = inputs.to(device)
-                if isinstance(targets, torch.Tensor):
-                    targets = targets.to(device)
+                inputs = put_data_to_device(batch[0], device)
+                targets = put_data_to_device(batch[1], device)
 
                 outputs = self.model(inputs)
 
-                if per_sample_loss:
-                    for i, instance_index in enumerate(batch[2]):
-                        instance_index = instance_index.data.item()
-                        instance_validation_loss[instance_index] = self.loss_fun(
-                            outputs[i].unsqueeze(0), targets[i].unsqueeze(0))
                 if per_sample_output:
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
                         instance_output[instance_index] = outputs[i]
 
-                loss_is_mean = False
-                if hasattr(self.loss_fun, "reduction") and (
-                    self.loss_fun.reduction == "mean"
-                    or self.loss_fun.reduction == "elementwise_mean"
-                ):
-                    loss_is_mean = True
-
-                loss = self.loss_fun(outputs, targets)
-                if loss_is_mean:
-                    batch_loss = loss * real_batch_size / len(dataset)
+                batch_loss = self.loss_fun(outputs, targets)
+                if self.model_with_loss.is_averaged_loss():
+                    normalized_batch_loss = batch_loss * \
+                        real_batch_size / len(dataset)
                 else:
-                    batch_loss = loss
+                    normalized_batch_loss = batch_loss
                 if use_grad:
-                    batch_loss.backward()
-                batch_loss = loss.data.item()
-                if loss_is_mean:
-                    batch_loss *= real_batch_size
-                    batch_loss /= len(dataset)
+                    normalized_batch_loss.backward()
 
-                validation_loss += batch_loss
+                validation_loss += normalized_batch_loss
                 correct = torch.eq(torch.max(outputs, dim=1)
                                    [1], targets).view(-1)
 
@@ -118,9 +100,6 @@ class Inferencer:
 
                 num_correct += torch.sum(correct).item()
                 num_examples += correct.shape[0]
-                after_batch_callback = kwargs.get("after_batch_callback", None)
-                if after_batch_callback is not None:
-                    after_batch_callback(self.model, batch_loss)
 
             if per_class_accuracy:
                 for k in class_count:
@@ -151,7 +130,6 @@ class Inferencer:
                 num_correct / num_examples,
                 {
                     "per_class_accuracy": class_count,
-                    "per_sample_loss": instance_validation_loss,
                     "per_sample_output": instance_output,
                     "per_sample_prob": instance_prob,
                 },
