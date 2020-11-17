@@ -1,9 +1,9 @@
+from inspect import signature
 import torch
 
 from cyy_naive_lib.algorithm.mapping_op import change_mapping_keys
 from torchvision.models import MobileNetV2
 from torchvision.models.detection.faster_rcnn import fasterrcnn_resnet50_fpn
-from inspect import signature
 from dataset import DatasetUtil
 from model_loss import ModelWithLoss
 from models.lenet import LeNet5
@@ -30,13 +30,9 @@ def get_model(name: str, dataset: torch.utils.data.Dataset) -> ModelWithLoss:
     for param in sig.parameters:
         if param in ("input_channels", "channels"):
             kwargs[param] = dataset_util.channel
-        if param in ("num_classes"):
+        if param == "num_classes":
             kwargs[param] = dataset_util.get_label_number()
         if param == "pretrained":
             kwargs[param] = False
-
-    # label 0 is reserved for the background
-    if model_constructor is fasterrcnn_resnet50_fpn:
-        kwargs["num_classes"] += 1
 
     return ModelWithLoss(model_constructor(**kwargs))
