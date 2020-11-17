@@ -12,21 +12,26 @@ class WebankStreetDataset:
         transform=None,
     ):
         self.__image_dir = os.path.join(root_dir, "Images")
+
+        # get all classes
+        labels = set()
+        for json_file in ("train_label.json", "test_label.json"):
+            with open(os.path.join(root_dir, json_file), "rt") as f:
+                for img_json in json.load(f):
+                    for item in img_json["items"]:
+                        label = item["class"]
+                        labels.add(label)
         if train:
             with open(os.path.join(root_dir, "train_label.json"), "rt") as f:
                 self.__json = json.load(f)
         else:
             with open(os.path.join(root_dir, "test_label.json"), "rt") as f:
                 self.__json = json.load(f)
+        labels = sorted(list(labels))
         self.__labels: dict = dict()
         # label 0 is reserved for the background
-        idx = 1
-        for img_json in self.__json:
-            for item in img_json["items"]:
-                label = item["class"]
-                if label not in self.__labels:
-                    self.__labels[label] = idx
-                    idx += 1
+        for idx, label in enumerate(labels):
+            self.__labels[label] = idx + 1
         self.__transform = transform
 
     def __getitem__(self, index):
