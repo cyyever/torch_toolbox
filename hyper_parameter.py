@@ -4,6 +4,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from dataset import dataset_with_indices
+from phase import MachineLearningPhase
 
 
 class HyperParameter:
@@ -83,11 +84,11 @@ class HyperParameter:
     def set_dataloader_collate_fn(self, collate_fn):
         self.__collate_fn = collate_fn
 
-    def get_dataloader(self, dataset, for_training: bool):
+    def get_dataloader(self, dataset, phase: MachineLearningPhase):
         return torch.utils.data.DataLoader(
             dataset_with_indices(dataset),
             batch_size=self.batch_size,
-            shuffle=for_training,
+            shuffle=(phase == MachineLearningPhase.Training),
             collate_fn=self.__collate_fn,
         )
 
