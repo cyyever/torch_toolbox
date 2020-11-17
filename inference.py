@@ -77,14 +77,20 @@ class Inferencer:
                 targets = put_data_to_device(batch[1], device)
                 real_batch_size = get_batch_size(inputs)
 
-                outputs = self.model(inputs)
+                result = self.model_with_loss(
+                    inputs, targets, for_training=False)
+                print("result is ", result)
+                batch_loss = result["loss"]
+                outputs = result.get("output", None)
+                # outputs = self.model(inputs)
 
                 if per_sample_output:
+                    # outputs = result["output"]
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
                         instance_output[instance_index] = outputs[i]
 
-                batch_loss = self.loss_fun(outputs, targets)
+                # batch_loss = self.loss_fun(outputs, targets)
                 if self.model_with_loss.is_averaged_loss():
                     normalized_batch_loss = (
                         batch_loss * real_batch_size / len(self.__dataset)
