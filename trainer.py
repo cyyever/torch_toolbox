@@ -16,6 +16,7 @@ from inference import Inferencer
 from model_loss import ModelWithLoss
 from visualization import EpochWindow, Window
 from hyper_parameter import HyperParameter
+from phase import MachineLearningPhase
 
 
 class BasicTrainer:
@@ -145,7 +146,7 @@ class BasicTrainer:
                                   for group in optimizer.param_groups]
             for batch_index, batch in enumerate(
                 self.__hyper_parameter.get_dataloader(
-                    self.training_dataset, for_training=True
+                    self.training_dataset, phase=MachineLearningPhase.Training
                 )
             ):
                 if lr_step_after_batch:

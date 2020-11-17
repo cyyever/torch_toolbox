@@ -2,6 +2,7 @@ from typing import Optional
 import torch
 import torch.nn as nn
 from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
+from phase import MachineLearningPhase
 
 
 class ModelWithLoss:
@@ -25,9 +26,12 @@ class ModelWithLoss:
     def loss_fun(self):
         return self.__loss_fun
 
-    def __call__(self, inputs, target, for_training: bool) -> dict:
+    def __call__(self, inputs, target, phase: MachineLearningPhase) -> dict:
         if isinstance(self.__model, GeneralizedRCNN):
-            if for_training:
+            if phase in (
+                MachineLearningPhase.Training,
+                MachineLearningPhase.Validation,
+            ):
                 loss_dict: dict = self.__model(inputs, target)
                 return {"loss": sum(loss for loss in loss_dict.values())}
             return self.__model(inputs)

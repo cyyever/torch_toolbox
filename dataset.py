@@ -1,5 +1,4 @@
 import os
-from enum import Enum, auto
 import functools
 from typing import Iterable, Callable, List, Generator
 import random
@@ -12,6 +11,7 @@ import torchvision.transforms as transforms
 
 from cyy_naive_lib.log import get_logger
 from datasets.webank_street_dataset import WebankStreetDataset
+from phase import MachineLearningPhase
 
 
 class DatasetFilter:
@@ -238,12 +238,6 @@ def replace_dataset_labels(dataset, label_map: dict):
     return DatasetMapper(dataset, [mapper])
 
 
-class MachineLearningPhase(Enum):
-    Training = auto()
-    Validation = auto()
-    Test = auto()
-
-
 __dataset_dir = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
 
 
@@ -255,9 +249,9 @@ def set_dataset_dir(new_dataset_dir):
 __datasets: dict = dict()
 
 
-def get_dataset(name: str, dataset_type: MachineLearningPhase):
+def get_dataset(name: str, phase: MachineLearningPhase):
     root_dir = os.path.join(__dataset_dir, name)
-    for_training = dataset_type in (
+    for_training = phase in (
         MachineLearningPhase.Training,
         MachineLearningPhase.Validation,
     )
@@ -281,7 +275,7 @@ def get_dataset(name: str, dataset_type: MachineLearningPhase):
         transform = [
             transforms.Resize((32, 32)),
         ]
-        if dataset_type == MachineLearningPhase.Training:
+        if phase == MachineLearningPhase.Training:
             transform.append(transforms.RandomHorizontalFlip())
         transform += [
             transforms.ToTensor(),
@@ -297,7 +291,7 @@ def get_dataset(name: str, dataset_type: MachineLearningPhase):
     elif name == "CIFAR10":
         transform = []
 
-        if dataset_type == MachineLearningPhase.Training:
+        if phase == MachineLearningPhase.Training:
             transform += [
                 transforms.RandomCrop(32, padding=4),
                 transforms.RandomHorizontalFlip(),
@@ -324,7 +318,7 @@ def get_dataset(name: str, dataset_type: MachineLearningPhase):
         )
         mean, std = DatasetUtil(dataset).get_mean_and_std()
         transform = []
-        if dataset_type == MachineLearningPhase.Training:
+        if phase == MachineLearningPhase.Training:
             transform += [
                 transforms.RandomHorizontalFlip(),
             ]
@@ -352,7 +346,7 @@ def get_dataset(name: str, dataset_type: MachineLearningPhase):
         __datasets[name] = dict()
         __datasets[name][MachineLearningPhase.Training] = training_dataset
         __datasets[name][MachineLearningPhase.Validation] = validation_dataset
-    return __datasets[name][dataset_type]
+    return __datasets[name][phase]
 
 
 def get_dataset_label_names(name: str) -> List[str]:
