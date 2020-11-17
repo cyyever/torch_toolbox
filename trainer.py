@@ -70,11 +70,13 @@ class BasicTrainer:
     def set_test_dataset(self, test_dataset: torch.utils.data.Dataset):
         self.__test_dataset = test_dataset
 
-    def get_inferencer(self):
+    def get_validator(self) -> Inferencer:
         return Inferencer(
             self.model_with_loss,
             self.test_dataset,
-            self.hyper_parameter)
+            phase=MachineLearningPhase.Validation,
+            hyper_parameter=self.hyper_parameter,
+        )
 
     def set_hyper_parameter(self, hyper_parameter):
         self.__hyper_parameter = hyper_parameter
@@ -306,8 +308,8 @@ class Trainer(BasicTrainer):
     def train(self, **kwargs):
         self.__visdom_env = (
             "training_"
-            + str(self.model.__class__.__name__)
-            + "_"
+            # + str(self.model.__class__.__name__)
+            # + "_"
             + str(self.training_dataset)
             + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
         )
@@ -393,7 +395,7 @@ class Trainer(BasicTrainer):
                     validation_loss,
                     accuracy,
                     other_data,
-                ) = trainer.get_inferencer().inference(per_class_accuracy=True)
+                ) = trainer.get_validator().inference(per_class_accuracy=True)
                 validation_loss = validation_loss.data.item()
                 trainer.validation_loss[epoch] = validation_loss
                 trainer.validation_accuracy[epoch] = accuracy
@@ -430,29 +432,32 @@ class Trainer(BasicTrainer):
                                 "class_" + str(k) + "_accuracy",
                             )
 
-            test_epoch_interval = int(kwargs.get("test_epoch_interval", 5))
-            if trainer.test_dataset is not None and (
-                epoch % test_epoch_interval == 0
-                or epoch == trainer.hyper_parameter.epochs
-            ):
-                (test_loss, accuracy, other_data, ) = trainer.get_inferencer(
-                ).inference(per_class_accuracy=False)
-                test_loss = test_loss.data.item()
-                trainer.test_loss[epoch] = test_loss
-                trainer.test_accuracy[epoch] = accuracy
-                EpochWindow(
-                    "test accuracy",
-                    env=trainer.__visdom_env).plot_accuracy(
-                    epoch,
-                    accuracy,
-                    "accuracy")
-                get_logger().info(
-                    "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
-                    epoch,
-                    learning_rates,
-                    test_loss,
-                    accuracy,
-                )
+                # test_epoch_interval = int(kwargs.get("test_epoch_interval", 5))
+                # if trainer.test_dataset is not None and (
+                #     epoch % test_epoch_interval == 0
+                #     or epoch == trainer.hyper_parameter.epochs
+                # ):
+                #     (
+                #         test_loss,
+                #         accuracy,
+                #         other_data,
+                #     ) = trainer.get_validator().inference(per_class_accuracy=False)
+                #     test_loss = test_loss.data.item()
+                #     trainer.test_loss[epoch] = test_loss
+                #     trainer.test_accuracy[epoch] = accuracy
+                #     EpochWindow(
+                #         "test accuracy",
+                #         env=trainer.__visdom_env).plot_accuracy(
+                #         epoch,
+                #         accuracy,
+                #         "accuracy")
+                #     get_logger().info(
+                #         "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
+                #         epoch,
+                #         learning_rates,
+                #         test_loss,
+                #         accuracy,
+                #     )
                 Window.save_envs()
 
         kwargs = BasicTrainer.prepend_callback(
