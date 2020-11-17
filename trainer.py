@@ -69,7 +69,10 @@ class BasicTrainer:
         self.__test_dataset = test_dataset
 
     def get_inferencer(self):
-        return Inferencer(self.model_with_loss, self.test_dataset)
+        return Inferencer(
+            self.model_with_loss,
+            self.test_dataset,
+            self.hyper_parameter)
 
     def set_hyper_parameter(self, hyper_parameter):
         self.__hyper_parameter = hyper_parameter
@@ -392,9 +395,7 @@ class Trainer(BasicTrainer):
                     validation_loss,
                     accuracy,
                     other_data,
-                ) = trainer.get_inferencer().inference(
-                    trainer.hyper_parameter.batch_size, per_class_accuracy=True
-                )
+                ) = trainer.get_inferencer().inference(per_class_accuracy=True)
                 validation_loss = validation_loss.data.item()
                 trainer.validation_loss[epoch] = validation_loss
                 trainer.validation_accuracy[epoch] = accuracy
@@ -436,8 +437,8 @@ class Trainer(BasicTrainer):
                 epoch % test_epoch_interval == 0
                 or epoch == trainer.hyper_parameter.epochs
             ):
-                (test_loss, accuracy, other_data,) = trainer.get_inferencer().inference(
-                    trainer.hyper_parameter.batch_size, per_class_accuracy=False)
+                (test_loss, accuracy, other_data, ) = trainer.get_inferencer(
+                ).inference(per_class_accuracy=False)
                 test_loss = test_loss.data.item()
                 trainer.test_loss[epoch] = test_loss
                 trainer.test_accuracy[epoch] = accuracy

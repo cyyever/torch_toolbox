@@ -1,11 +1,14 @@
 import copy
+from typing import Optional
+
 import torch
 import torch.nn as nn
 
+from hyper_parameter import HyperParameter
 from device import get_device, put_data_to_device
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
-from dataset import DatasetUtil, dataset_with_indices
+from dataset import DatasetUtil
 
 
 class Inferencer:
@@ -13,9 +16,15 @@ class Inferencer:
         self,
         model_with_loss: ModelWithLoss,
         dataset,
+        hyper_parameter: Optional[HyperParameter] = None,
     ):
-        self.model_with_loss = copy.deepcopy(model_with_loss)
+        self.__model_with_loss = copy.deepcopy(model_with_loss)
         self.__dataset = dataset
+        self.__hyper_parameter = hyper_parameter
+
+    @property
+    def model_with_loss(self):
+        return self.__model_with_loss
 
     @property
     def model(self):
@@ -33,7 +42,7 @@ class Inferencer:
             torch.load(model_path, map_location=get_device())
         )
 
-    def inference(self, batch_size, **kwargs):
+    def inference(self, **kwargs):
         class_count = dict()
         class_correct_count = dict()
 
@@ -46,14 +55,9 @@ class Inferencer:
         per_sample_prob = kwargs.get("per_sample_prob", False)
         if per_sample_prob:
             per_sample_output = True
-        dataset = dataset_with_indices(self.__dataset)
-
-        validation_data_loader = torch.utils.data.DataLoader(
-            dataset, batch_size=batch_size
+        validation_data_loader = self.__hyper_parameter.get_dataloader(
+            self.__dataset, False
         )
-        hyper_parameter = kwargs.get("hyper_parameter", None)
-        if hyper_parameter:
-            validation_data_loader = hyper_parameter.get_dataloader()
 
         use_grad = kwargs.get("use_grad", False)
         instance_output = dict()
@@ -81,8 +85,9 @@ class Inferencer:
 
                 batch_loss = self.loss_fun(outputs, targets)
                 if self.model_with_loss.is_averaged_loss():
-                    normalized_batch_loss = batch_loss * \
-                        real_batch_size / len(dataset)
+                    normalized_batch_loss = (
+                        batch_loss * real_batch_size / len(self.__dataset)
+                    )
                 else:
                     normalized_batch_loss = batch_loss
                 if use_grad:
@@ -136,5 +141,5 @@ class Inferencer:
             )
 
     def get_gradient(self):
-        self.inference(64, use_grad=True)
+        self.inference(use_grad=True)
         return ModelUtil(self.model).get_gradient_list()
