@@ -19,6 +19,7 @@ class WebankStreetDataset:
             with open(os.path.join(root_dir, "test_label.json"), "rt") as f:
                 self.__json = json.load(f)
         self.__labels: dict = dict()
+        # label 0 is reserved for the background
         idx = 1
         for img_json in self.__json:
             for item in img_json["items"]:

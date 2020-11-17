@@ -1,6 +1,9 @@
 from typing import Callable, Optional
 import torch.optim as optim
+import torch
 from cyy_naive_lib.log import get_logger
+
+from dataset import dataset_with_indices
 
 
 class HyperParameter:
@@ -17,6 +20,7 @@ class HyperParameter:
         self.__learning_rate = learning_rate
         self.__weight_decay = weight_decay
         self.__momentum = momentum
+        self.__collate_fn = None
         self.__lr_scheduler_factory: Optional[Callable] = None
         self.__optimizer_factory: Optional[Callable] = None
 
@@ -75,6 +79,17 @@ class HyperParameter:
             "weight_decay": self.weight_decay / training_dataset_size,
         }
         return self.__optimizer_factory(**kwargs)
+
+    def set_dataloader_collate_fn(self, collate_fn):
+        self.__collate_fn = collate_fn
+
+    def get_dataloader(self, dataset, for_training: bool):
+        return torch.utils.data.DataLoader(
+            dataset_with_indices(dataset),
+            batch_size=self.batch_size,
+            shuffle=for_training,
+            collate_fn=self.__collate_fn,
+        )
 
     def __str__(self):
         s = (
@@ -148,7 +163,7 @@ def get_recommended_hyper_parameter(
         hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
     elif dataset_name == "WebankStreet":
         hyper_parameter = HyperParameter(
-            epochs=50, batch_size=32, learning_rate=0.1, weight_decay=1
+            epochs=50, batch_size=4, learning_rate=0.005, weight_decay=1
         )
         hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
     else:
@@ -157,5 +172,13 @@ def get_recommended_hyper_parameter(
             dataset_name,
             model_name)
         return None
+    if model_name == "FasterRCNN":
+        hyper_parameter.set_dataloader_collate_fn(
+            lambda batch: (
+                [d[0] for d in batch],
+                [d[1] for d in batch],
+                torch.Tensor([d[2] for d in batch]),
+            )
+        )
     hyper_parameter.set_optimizer_factory(get_optimizer_factory("SGD"))
     return hyper_parameter

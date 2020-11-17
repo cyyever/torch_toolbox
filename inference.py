@@ -70,8 +70,10 @@ class Inferencer:
                 real_batch_size = batch[0].shape[0]
                 inputs = batch[0]
                 targets = batch[1]
-                inputs = inputs.to(device)
-                targets = targets.to(device)
+                if isinstance(inputs, torch.Tensor):
+                    inputs = inputs.to(device)
+                if isinstance(targets, torch.Tensor):
+                    targets = targets.to(device)
 
                 outputs = self.model(inputs)
 

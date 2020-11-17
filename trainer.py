@@ -8,9 +8,8 @@ import torch
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 
-from dataset import dataset_with_indices
 from algorithm.per_sample_gradient import get_per_sample_gradient
-from device import get_device
+from device import get_device, put_data_to_device
 from model_util import ModelUtil
 from inference import Inferencer
 from model_loss import ModelWithLoss
@@ -137,10 +136,8 @@ class BasicTrainer:
             cur_learning_rates = [group["lr"]
                                   for group in optimizer.param_groups]
             for batch_index, batch in enumerate(
-                torch.utils.data.DataLoader(
-                    dataset_with_indices(self.training_dataset),
-                    batch_size=self.__hyper_parameter.batch_size,
-                    shuffle=True,
+                self.__hyper_parameter.get_dataloader(
+                    self.training_dataset, for_training=True
                 )
             ):
                 if lr_step_after_batch:
@@ -150,20 +147,23 @@ class BasicTrainer:
                 self.model.train()
                 self.model.to(device)
                 optimizer.zero_grad()
-                real_batch_size = batch[0].shape[0]
 
                 for callback in kwargs.get("pre_batch_callbacks", []):
                     callback(self, batch, batch_index)
 
-                instance_inputs = batch[0]
-                instance_targets = batch[1]
-                if isinstance(instance_inputs, torch.Tensor):
-                    instance_inputs = instance_inputs.to(device)
-                if isinstance(instance_targets, torch.Tensor):
-                    instance_targets = instance_targets.to(device)
+                instance_inputs = put_data_to_device(batch[0], device)
+                instance_targets = put_data_to_device(batch[1], device)
                 instance_indices = None
                 if len(batch) >= 3:
                     instance_indices = [idx.data.item() for idx in batch[2]]
+
+                real_batch_size = None
+                if isinstance(instance_inputs, torch.Tensor):
+                    real_batch_size = batch[0].shape[0]
+                elif isinstance(instance_inputs, list):
+                    real_batch_size = len(instance_inputs)
+                else:
+                    assert False
 
                 if "per_sample_gradient_callback" in kwargs:
                     assert instance_indices is not None
