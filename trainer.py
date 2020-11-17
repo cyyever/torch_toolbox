@@ -11,6 +11,7 @@ from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from algorithm.per_sample_gradient import get_per_sample_gradient
 from device import get_device, put_data_to_device
 from model_util import ModelUtil
+from util import get_batch_size
 from inference import Inferencer
 from model_loss import ModelWithLoss
 from visualization import EpochWindow, Window
@@ -164,13 +165,7 @@ class BasicTrainer:
                 if len(batch) >= 3:
                     instance_indices = [idx.data.item() for idx in batch[2]]
 
-                real_batch_size = None
-                if isinstance(instance_inputs, torch.Tensor):
-                    real_batch_size = batch[0].shape[0]
-                elif isinstance(instance_inputs, list):
-                    real_batch_size = len(instance_inputs)
-                else:
-                    assert False
+                real_batch_size = get_batch_size(instance_inputs)
 
                 if "per_sample_gradient_callback" in kwargs:
                     assert instance_indices is not None

@@ -1,3 +1,4 @@
+from typing import Optional
 import torch
 import torch.nn as nn
 from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
@@ -37,7 +38,9 @@ class ModelWithLoss:
         loss = self.__loss_fun(output, target)
         return {"loss": loss, "output": output}
 
-    def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
+    def __choose_loss_function(self) -> Optional[torch.nn.modules.loss._Loss]:
+        if isinstance(self.__model, GeneralizedRCNN):
+            return None
         last_layer = list(self.__model.modules())[-1]
         if isinstance(last_layer, nn.LogSoftmax):
             return nn.NLLLoss()
