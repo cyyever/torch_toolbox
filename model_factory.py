@@ -35,4 +35,8 @@ def get_model(name: str, dataset: torch.utils.data.Dataset) -> ModelWithLoss:
         if param == "pretrained":
             kwargs[param] = False
 
+    # label 0 is reserved for the background
+    if model_constructor is fasterrcnn_resnet50_fpn:
+        kwargs["num_classes"] += 1
+
     return ModelWithLoss(model_constructor(**kwargs))

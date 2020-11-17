@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
 
 
 class ModelWithLoss:
@@ -23,9 +24,13 @@ class ModelWithLoss:
     def loss_fun(self):
         return self.__loss_fun
 
-    def __call__(self, tensor: torch.Tensor, target: torch.Tensor):
+    def __call__(self, inputs, target):
+        if isinstance(self.__model, GeneralizedRCNN):
+            loss_dict: dict = self.__model(inputs, target)
+            return sum(loss for loss in loss_dict.values())
+
         assert self.__loss_fun is not None
-        return self.__loss_fun(self.__model(tensor), target)
+        return self.__loss_fun(self.__model(inputs), target)
 
     def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
         last_layer = list(self.__model.modules())[-1]
