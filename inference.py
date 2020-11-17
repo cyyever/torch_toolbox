@@ -56,9 +56,8 @@ class Inferencer:
         per_sample_prob = kwargs.get("per_sample_prob", False)
         if per_sample_prob:
             per_sample_output = True
-        validation_data_loader = self.__hyper_parameter.get_dataloader(
-            self.__dataset, False
-        )
+        data_loader = self.__hyper_parameter.get_dataloader(
+            self.__dataset, False)
 
         use_grad = kwargs.get("use_grad", False)
         instance_output = dict()
@@ -72,7 +71,7 @@ class Inferencer:
             self.model.to(device)
             total_loss = torch.zeros(1)
             total_loss = total_loss.to(device)
-            for batch in validation_data_loader:
+            for batch in data_loader:
                 inputs = put_data_to_device(batch[0], device)
                 targets = put_data_to_device(batch[1], device)
                 real_batch_size = get_batch_size(inputs)
