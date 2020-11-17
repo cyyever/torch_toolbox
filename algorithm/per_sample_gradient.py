@@ -10,6 +10,7 @@ from device import get_cuda_devices
 from model_util import ModelUtil
 from model_loss import ModelWithLoss
 from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
+from phase import MachineLearningPhase
 
 
 def __worker_fun(task, args):
@@ -23,7 +24,9 @@ def __worker_fun(task, args):
         model_with_loss.model.zero_grad()
         sample_input = torch.stack([sample_input]).to(device)
         sample_target = torch.stack([sample_target]).to(device)
-        loss = model_with_loss(sample_input, sample_target)
+        loss = model_with_loss(
+            sample_input, sample_target, MachineLearningPhase.Training
+        )["loss"]
         loss.backward()
         gradient_lists.append(
             ModelUtil(

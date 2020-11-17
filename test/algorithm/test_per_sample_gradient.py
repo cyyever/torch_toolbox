@@ -7,7 +7,6 @@ from cyy_naive_lib.profiling import Profile
 from configuration import get_trainer_from_configuration
 from algorithm.per_sample_gradient import get_per_sample_gradient
 from device import get_device
-from model_util import ModelUtil
 
 
 def test_get_per_sample_gradient():
@@ -19,33 +18,14 @@ def test_get_per_sample_gradient():
     )
 
     device = get_device()
-    cnt = 0
     trainer.model.to(device)
-    for batch in training_data_loader:
+    for cnt, batch in enumerate(training_data_loader):
         with TimeCounter():
             gradients = get_per_sample_gradient(
                 trainer.model_with_loss, batch[0], batch[1]
             )
             if cnt == 0:
                 print("per_sample_gradient result", gradients)
-
-        with TimeCounter():
-            instance_inputs = batch[0].to(device)
-            instance_targets = batch[1].to(device)
-            for (instance_input, instance_target) in zip(
-                instance_inputs, instance_targets
-            ):
-                trainer.model.zero_grad()
-                loss = trainer.model_with_loss(
-                    torch.stack(
-                        [instance_input]), torch.stack(
-                        [instance_target]))
-                loss.backward()
-                gradient = ModelUtil(trainer.model).get_gradient_list()
-                if cnt == 0:
-                    print("per_sample_gradient single gradient", gradient)
-
-        cnt += 1
         if cnt > 3:
             break
 
@@ -53,19 +33,4 @@ def test_get_per_sample_gradient():
         for batch in training_data_loader:
             get_per_sample_gradient(
                 trainer.model_with_loss, batch[0], batch[1])
-            break
-    with Profile():
-        for batch in training_data_loader:
-            instance_inputs = batch[0].to(device)
-            instance_targets = batch[1].to(device)
-            for (instance_input, instance_target) in zip(
-                instance_inputs, instance_targets
-            ):
-                trainer.model.zero_grad()
-                loss = trainer.model_with_loss(
-                    torch.stack(
-                        [instance_input]), torch.stack(
-                        [instance_target]))
-                loss.backward()
-                gradient = ModelUtil(trainer.model).get_gradient_list()
             break

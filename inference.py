@@ -70,8 +70,8 @@ class Inferencer:
             self.model.eval()
             self.model.zero_grad()
             self.model.to(device)
-            validation_loss = torch.zeros(1)
-            validation_loss = validation_loss.to(device)
+            total_loss = torch.zeros(1)
+            total_loss = total_loss.to(device)
             for batch in validation_data_loader:
                 inputs = put_data_to_device(batch[0], device)
                 targets = put_data_to_device(batch[1], device)
@@ -100,7 +100,7 @@ class Inferencer:
                 if use_grad:
                     normalized_batch_loss.backward()
 
-                validation_loss += normalized_batch_loss
+                total_loss += normalized_batch_loss
                 correct = torch.eq(torch.max(outputs, dim=1)
                                    [1], targets).view(-1)
 
@@ -138,7 +138,7 @@ class Inferencer:
                     raise RuntimeError("unsupported layer", type(last_layer))
 
             return (
-                validation_loss,
+                total_loss,
                 num_correct / num_examples,
                 {
                     "per_class_accuracy": class_count,
