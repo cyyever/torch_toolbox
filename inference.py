@@ -10,6 +10,7 @@ from model_loss import ModelWithLoss
 from model_util import ModelUtil
 from util import get_batch_size
 from dataset import DatasetUtil
+from phase import MachineLearningPhase
 
 
 class Inferencer:
@@ -17,10 +18,12 @@ class Inferencer:
         self,
         model_with_loss: ModelWithLoss,
         dataset,
+        phase: MachineLearningPhase,
         hyper_parameter: Optional[HyperParameter] = None,
     ):
         self.__model_with_loss = copy.deepcopy(model_with_loss)
         self.__dataset = dataset
+        self.__phase = phase
         self.__hyper_parameter = hyper_parameter
 
     @property
@@ -31,9 +34,9 @@ class Inferencer:
     def model(self):
         return self.model_with_loss.model
 
-    @property
-    def loss_fun(self):
-        return self.model_with_loss.loss_fun
+    # @property
+    # def loss_fun(self):
+    #     return self.model_with_loss.loss_fun
 
     def set_dataset(self, dataset):
         self.__dataset = dataset
@@ -77,14 +80,12 @@ class Inferencer:
                 real_batch_size = get_batch_size(inputs)
 
                 result = self.model_with_loss(
-                    inputs, targets, for_training=False)
+                    inputs, targets, phase=self.__phase)
                 print("result is ", result)
                 batch_loss = result["loss"]
                 outputs = result.get("output", None)
-                # outputs = self.model(inputs)
 
                 if per_sample_output:
-                    # outputs = result["output"]
                     for i, instance_index in enumerate(batch[2]):
                         instance_index = instance_index.data.item()
                         instance_output[instance_index] = outputs[i]
