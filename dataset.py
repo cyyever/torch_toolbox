@@ -238,7 +238,7 @@ def replace_dataset_labels(dataset, label_map: dict):
     return DatasetMapper(dataset, [mapper])
 
 
-class DatasetType(Enum):
+class MachineLearningPhase(Enum):
     Training = auto()
     Validation = auto()
     Test = auto()
@@ -255,11 +255,12 @@ def set_dataset_dir(new_dataset_dir):
 __datasets: dict = dict()
 
 
-def get_dataset(name: str, dataset_type: DatasetType):
+def get_dataset(name: str, dataset_type: MachineLearningPhase):
     root_dir = os.path.join(__dataset_dir, name)
     for_training = dataset_type in (
-        DatasetType.Training,
-        DatasetType.Validation)
+        MachineLearningPhase.Training,
+        MachineLearningPhase.Validation,
+    )
     training_dataset_parts = None
     by_label = True
     if name == "MNIST":
@@ -280,7 +281,7 @@ def get_dataset(name: str, dataset_type: DatasetType):
         transform = [
             transforms.Resize((32, 32)),
         ]
-        if dataset_type == DatasetType.Training:
+        if dataset_type == MachineLearningPhase.Training:
             transform.append(transforms.RandomHorizontalFlip())
         transform += [
             transforms.ToTensor(),
@@ -296,7 +297,7 @@ def get_dataset(name: str, dataset_type: DatasetType):
     elif name == "CIFAR10":
         transform = []
 
-        if dataset_type == DatasetType.Training:
+        if dataset_type == MachineLearningPhase.Training:
             transform += [
                 transforms.RandomCrop(32, padding=4),
                 transforms.RandomHorizontalFlip(),
@@ -323,7 +324,7 @@ def get_dataset(name: str, dataset_type: DatasetType):
         )
         mean, std = DatasetUtil(dataset).get_mean_and_std()
         transform = []
-        if dataset_type == DatasetType.Training:
+        if dataset_type == MachineLearningPhase.Training:
             transform += [
                 transforms.RandomHorizontalFlip(),
             ]
@@ -349,8 +350,8 @@ def get_dataset(name: str, dataset_type: DatasetType):
             split_dataset_by_ratio(
                 dataset, training_dataset_parts, by_label=by_label))
         __datasets[name] = dict()
-        __datasets[name][DatasetType.Training] = training_dataset
-        __datasets[name][DatasetType.Validation] = validation_dataset
+        __datasets[name][MachineLearningPhase.Training] = training_dataset
+        __datasets[name][MachineLearningPhase.Validation] = validation_dataset
     return __datasets[name][dataset_type]
 
 

@@ -7,20 +7,20 @@ import argparse
 
 from cyy_naive_lib.log import get_logger
 
-from tools.dataset import (
+from .dataset import (
     dataset_with_indices,
     sample_subset,
     sub_dataset,
     replace_dataset_labels,
-    DatasetType,
+    MachineLearningPhase,
     get_dataset,
 )
-from tools.configuration import (
+from .configuration import (
     get_trainer_from_configuration,
     get_inferencer_from_configuration,
 )
-from tools.hyper_gradient_trainer import HyperGradientTrainer
-from tools.reproducible_env import global_reproducible_env
+from .hyper_gradient_trainer import HyperGradientTrainer
+from .reproducible_env import global_reproducible_env
 
 
 def get_arg_parser():
@@ -180,7 +180,7 @@ def get_randomized_label_map(args):
 
 def get_training_dataset(args):
     dataset_name = get_task_dataset_name(args.task_name)
-    training_dataset = get_dataset(dataset_name, DatasetType.Training)
+    training_dataset = get_dataset(dataset_name, MachineLearningPhase.Training)
     if (
         hasattr(args, "training_dataset_indices_path")
         and args.training_dataset_indices_path is not None
