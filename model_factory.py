@@ -31,7 +31,10 @@ def get_model(name: str, dataset: torch.utils.data.Dataset) -> ModelWithLoss:
         if param in ("input_channels", "channels"):
             kwargs[param] = dataset_util.channel
         if param == "num_classes":
-            kwargs[param] = dataset_util.get_label_number()
+            label_num = dataset_util.get_label_number()
+            if model_constructor is fasterrcnn_resnet50_fpn:
+                label_num += 1
+            kwargs[param] = label_num
         if param == "pretrained":
             kwargs[param] = False
 

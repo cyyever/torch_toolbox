@@ -139,11 +139,7 @@ class DatasetUtil:
                 container.add(label)
             return container
 
-        result = functools.reduce(count_instance, self.dataset, set())
-        if hasattr(self.dataset, "label_0_for_background"):
-            if self.dataset.label_0_for_background():
-                result.add(0)
-        return result
+        return functools.reduce(count_instance, self.dataset, set())
 
     def get_label_number(self) -> int:
         return len(self.get_labels())

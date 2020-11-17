@@ -3,13 +3,14 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
+from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
 
 from hyper_parameter import HyperParameter
 from device import get_device, put_data_to_device
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
 from util import get_batch_size
-from dataset import DatasetUtil
+from dataset import DatasetUtil, split_dataset_by_label
 from phase import MachineLearningPhase
 
 
@@ -34,10 +35,6 @@ class Inferencer:
     def model(self):
         return self.model_with_loss.model
 
-    # @property
-    # def loss_fun(self):
-    #     return self.model_with_loss.loss_fun
-
     def set_dataset(self, dataset):
         self.__dataset = dataset
 
@@ -51,9 +48,14 @@ class Inferencer:
         class_correct_count = dict()
 
         per_class_accuracy = kwargs.get("per_class_accuracy", False)
+        if isinstance(self.model, GeneralizedRCNN):
+            per_class_accuracy = False
         if per_class_accuracy:
-            for k in range(DatasetUtil(self.__dataset).get_label_number()):
-                class_correct_count[k] = 0
+            dataset_util = DatasetUtil(self.__dataset)
+            tmp = split_dataset_by_label(self.__dataset)
+            for label in dataset_util.get_labels():
+                class_correct_count[label] = 0
+                class_count[label] = len(tmp[label]["indices"])
 
         per_sample_prob = kwargs.get("per_sample_prob", False)
         data_loader = self.__hyper_parameter.get_dataloader(
@@ -101,17 +103,18 @@ class Inferencer:
                                        1], targets).view(-1)
 
                     if per_class_accuracy:
-                        for k in class_count:
-                            class_correct_count[k] += torch.sum(
-                                correct[targets == k]
+                        for label in class_correct_count:
+                            class_correct_count[label] += torch.sum(
+                                correct[targets == label]
                             ).item()
 
                     num_correct += torch.sum(correct).item()
                     num_examples += correct.shape[0]
 
             if per_class_accuracy:
-                for k in class_count:
-                    class_count[k] = class_correct_count[k] / class_count[k]
+                for label in class_count:
+                    class_count[label] = class_correct_count[label] / \
+                        class_count[label]
             if per_sample_prob:
                 last_layer = list(self.model.modules())[-1]
                 if isinstance(last_layer, nn.LogSoftmax):

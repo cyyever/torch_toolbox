@@ -14,7 +14,7 @@ def get_trainer_from_configuration(
             dataset_name, model_name)
         assert hyper_parameter is not None
 
-    training_dataset = get_dataset(dataset_name, MachineLearningPhase.Test)
+    training_dataset = get_dataset(dataset_name, MachineLearningPhase.Training)
     validation_dataset = get_dataset(
         dataset_name, MachineLearningPhase.Validation)
     test_dataset = get_dataset(dataset_name, MachineLearningPhase.Test)
