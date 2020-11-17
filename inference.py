@@ -8,6 +8,7 @@ from hyper_parameter import HyperParameter
 from device import get_device, put_data_to_device
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
+from util import get_batch_size
 from dataset import DatasetUtil
 
 
@@ -72,9 +73,9 @@ class Inferencer:
             validation_loss = torch.zeros(1)
             validation_loss = validation_loss.to(device)
             for batch in validation_data_loader:
-                real_batch_size = batch[0].shape[0]
                 inputs = put_data_to_device(batch[0], device)
                 targets = put_data_to_device(batch[1], device)
+                real_batch_size = get_batch_size(inputs)
 
                 outputs = self.model(inputs)
 
