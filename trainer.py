@@ -155,7 +155,8 @@ class BasicTrainer:
                     cur_learning_rates = [
                         group["lr"] for group in optimizer.param_groups
                     ]
-                self.model.train()
+                self.model_with_loss.set_model_mode(
+                    MachineLearningPhase.Training)
                 self.model.to(device)
                 optimizer.zero_grad()
 
@@ -224,7 +225,7 @@ class BasicTrainer:
                 normalized_batch_loss = batch_loss
                 if self.model_with_loss.is_averaged_loss():
                     normalized_batch_loss *= real_batch_size
-                    normalized_batch_loss /= training_set_size
+                normalized_batch_loss /= training_set_size
 
                 training_loss += normalized_batch_loss
                 optimizer.step()
@@ -407,12 +408,13 @@ class Trainer(BasicTrainer):
                     accuracy,
                 )
                 loss_win.plot_loss(epoch, validation_loss, "validation loss")
-                EpochWindow(
-                    "validation accuracy", env=trainer.__visdom_env
-                ).plot_accuracy(epoch, accuracy, "accuracy")
+                if accuracy is not None:
+                    EpochWindow(
+                        "validation accuracy", env=trainer.__visdom_env
+                    ).plot_accuracy(epoch, accuracy, "accuracy")
 
-                if plot_class_accuracy:
-                    class_accuracy = other_data["per_class_accuracy"]
+                class_accuracy = other_data["per_class_accuracy"]
+                if plot_class_accuracy and class_accuracy:
                     for idx, sub_list in enumerate(
                         split_list_to_chunks(list(class_accuracy.keys()), 2)
                     ):
