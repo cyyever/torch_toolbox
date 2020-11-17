@@ -211,7 +211,9 @@ class BasicTrainer:
                             )
                 optimizer.zero_grad()
                 result = self.model_with_loss(
-                    instance_inputs, instance_targets, for_training=True
+                    instance_inputs,
+                    instance_targets,
+                    phase=MachineLearningPhase.Training,
                 )
                 loss = result["loss"]
                 batch_loss = loss.data.item()
