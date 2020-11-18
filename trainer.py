@@ -12,7 +12,7 @@ from algorithm.per_sample_gradient import get_per_sample_gradient
 from device import get_device, put_data_to_device
 from model_util import ModelUtil
 from util import get_batch_size
-from inference import Inferencer, ClassificationInferencer
+from inference import Inferencer, ClassificationInferencer, DetectionInferencer
 from model_loss import ModelWithLoss
 from visualization import EpochWindow, Window
 from hyper_parameter import HyperParameter
@@ -55,6 +55,9 @@ class BasicTrainer:
     def set_training_dataset(self, training_dataset: torch.utils.data.Dataset):
         self.__training_dataset = training_dataset
 
+    def set_stop_criterion(self, stop_criterion: Callable):
+        self.__stop_criterion = stop_criterion
+
     @property
     def validation_dataset(self):
         return self.__validation_dataset
@@ -78,6 +81,13 @@ class BasicTrainer:
             dataset = self.test_dataset
         if self.model_with_loss.model_type == ModelType.Classification:
             return ClassificationInferencer(
+                self.model_with_loss,
+                dataset,
+                phase=phase,
+                hyper_parameter=self.hyper_parameter,
+            )
+        if self.model_with_loss.model_type == ModelType.Detection:
+            return DetectionInferencer(
                 self.model_with_loss,
                 dataset,
                 phase=phase,
@@ -142,7 +152,7 @@ class BasicTrainer:
                     optimizer, training_set_size
                 )
                 if epoch != 1:
-                    get_logger().warning("use new hyper-parameter")
+                    get_logger().warning("use new hyper-parameters")
                 lr_step_after_batch = False
                 if isinstance(lr_scheduler,
                               torch.optim.lr_scheduler.OneCycleLR):
@@ -318,9 +328,7 @@ class Trainer(BasicTrainer):
         super().__init__(*args, **kwargs)
         self.visdom_env = (
             "training_"
-            # # + str(self.model.__class__.__name__)
-            # # + "_"
-            # + str(self.training_dataset)
+            + str(self.model.__class__.__name__)
             + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
         )
 
@@ -451,7 +459,7 @@ class ClassificationTrainer(Trainer):
                     epoch % test_epoch_interval == 0
                     or epoch == trainer.hyper_parameter.epochs
                 ):
-                    (test_loss, accuracy, other_data) = trainer.get_inferencer(
+                    (test_loss, accuracy, _) = trainer.get_inferencer(
                         phase=MachineLearningPhase.Test
                     ).inference(per_class_accuracy=False)
                     test_loss = test_loss.data.item()
