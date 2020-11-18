@@ -123,23 +123,45 @@ class DatasetUtil:
         std = std.div(self.len).sqrt()
         return mean, std
 
+    @staticmethod
+    def get_labels_from_target(target):
+        if isinstance(target, int):
+            return set([target])
+        if isinstance(target, torch.Tensor):
+            return set([target.data.item()])
+        if isinstance(target, dict):
+            if "labels" in target:
+                return set(target["labels"].tolist())
+        raise RuntimeError("can't extract labels from target: " + str(target))
+
+    @staticmethod
+    def get_label_from_target(target):
+        labels = DatasetUtil.get_labels_from_target(target)
+        assert len(labels) == 1
+        return next(iter(labels))
+
     def get_sample_label(self, index):
-        label = self.dataset[index][1]
-        if isinstance(label, torch.Tensor):
-            label = label.data.item()
-        return label
+        return DatasetUtil.get_label_from_target(self.dataset[index][1])
 
     def get_labels(self) -> set:
         def count_instance(container, instance):
-            label = instance[1]
-            if isinstance(label, dict):
-                if "labels" in label:
-                    container.update(label["labels"].tolist())
-            else:
-                container.add(label)
+            labels = DatasetUtil.get_labels_from_target(instance[1])
+            container.update(labels)
             return container
 
         return functools.reduce(count_instance, self.dataset, set())
+
+    def split_by_label(self) -> dict:
+        label_map: dict = {}
+        for index, _ in enumerate(self.dataset):
+            label = self.get_sample_label(index)
+            if label not in label_map:
+                label_map[label] = []
+            label_map[label].append(index)
+        for label, indices in label_map.items():
+            label_map[label] = dict()
+            label_map[label]["indices"] = indices
+        return label_map
 
     def get_label_number(self) -> int:
         return len(self.get_labels())
@@ -151,73 +173,52 @@ class DatasetUtil:
             return
         torchvision.utils.save_image(self.dataset[idx][0], path)
 
+    def split_by_ratio(self, parts: list, by_label: bool = True) -> list:
+        assert parts
+        sub_dataset_indices_list: list = []
+        for _ in parts:
+            sub_dataset_indices_list.append([])
 
-def split_dataset_by_label(
-        dataset: torchvision.datasets.VisionDataset) -> dict:
-    label_map: dict = {}
-    for index, _ in enumerate(dataset):
-        label = DatasetUtil(dataset).get_sample_label(index)
-        if label not in label_map:
-            label_map[label] = []
-        label_map[label].append(index)
-    for label, indices in label_map.items():
-        label_map[label] = dict()
-        label_map[label]["indices"] = indices
-    return label_map
-
-
-def split_dataset_by_ratio(
-        dataset: torchvision.datasets.VisionDataset,
-        parts: list,
-        by_label: bool = True) -> list:
-    assert parts
-    sub_dataset_indices_list: list = []
-    for _ in parts:
-        sub_dataset_indices_list.append([])
-
-    if by_label:
-        for _, v in split_dataset_by_label(dataset).items():
-            label_indices_list = sorted(v["indices"])
+        if by_label:
+            for _, v in self.split_by_label().items():
+                label_indices_list = sorted(v["indices"])
+                for i, part in enumerate(parts):
+                    delimiter = int(len(label_indices_list)
+                                    * part / sum(parts[i:]))
+                    sub_dataset_indices_list[i] += label_indices_list[:delimiter]
+                    label_indices_list = label_indices_list[delimiter:]
+        else:
+            label_indices_list = list(range(len(self.dataset)))
             for i, part in enumerate(parts):
                 delimiter = int(len(label_indices_list)
                                 * part / sum(parts[i:]))
                 sub_dataset_indices_list[i] += label_indices_list[:delimiter]
                 label_indices_list = label_indices_list[delimiter:]
-    else:
-        label_indices_list = list(range(len(dataset)))
-        for i, part in enumerate(parts):
-            delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
-            sub_dataset_indices_list[i] += label_indices_list[:delimiter]
-            label_indices_list = label_indices_list[delimiter:]
 
-    return [sub_dataset(dataset, indices)
-            for indices in sub_dataset_indices_list]
+        return [sub_dataset(self.dataset, indices)
+                for indices in sub_dataset_indices_list]
 
+    def sample_subset(self, percentage: float) -> dict:
+        label_map = self.split_by_label()
+        sample_indices = dict()
+        for label, v in label_map.items():
+            sample_size = int(len(v["indices"]) * percentage)
+            if sample_size == 0:
+                get_logger().warning("percentage is too small, use sample size 1")
+                sample_size = 1
+            sample_indices[label] = random.sample(v["indices"], k=sample_size)
+        return sample_indices
 
-def sample_subset(
-        dataset: torch.utils.data.Dataset,
-        percentage: float) -> dict:
-    label_map = split_dataset_by_label(dataset)
-    sample_indices = dict()
-    for label, v in label_map.items():
-        sample_size = int(len(v["indices"]) * percentage)
-        if sample_size == 0:
-            get_logger().warning("percentage is too small, use sample size 1")
-            sample_size = 1
-        sample_indices[label] = random.sample(v["indices"], k=sample_size)
-    return sample_indices
-
-
-def randomize_subset_label(dataset, percentage: float) -> dict:
-    sample_indices = sample_subset(dataset, percentage)
-    labels = sample_indices.keys()
-    randomized_label_map = dict()
-    for label, indices in sample_indices.items():
-        other_labels = list(set(labels) - set([label]))
-        for index in indices:
-            randomized_label_map[index] = random.choice(other_labels)
-            assert randomized_label_map[index] != dataset[index][1]
-    return randomized_label_map
+    def randomize_subset_label(self, percentage: float) -> dict:
+        sample_indices = self.sample_subset(percentage)
+        labels = sample_indices.keys()
+        randomized_label_map = dict()
+        for label, indices in sample_indices.items():
+            other_labels = list(set(labels) - set([label]))
+            for index in indices:
+                randomized_label_map[index] = random.choice(other_labels)
+                assert randomized_label_map[index] != self.dataset[index][1]
+        return randomized_label_map
 
 
 def replace_dataset_labels(dataset, label_map: dict):
@@ -336,9 +337,10 @@ def get_dataset(name: str, phase: MachineLearningPhase):
         return dataset
 
     if name not in __datasets:
+        dataset_util = DatasetUtil(dataset)
         training_dataset, validation_dataset = tuple(
-            split_dataset_by_ratio(
-                dataset, training_dataset_parts, by_label=by_label))
+            dataset_util.split_by_ratio(
+                training_dataset_parts, by_label=by_label))
         __datasets[name] = dict()
         __datasets[name][MachineLearningPhase.Training] = training_dataset
         __datasets[name][MachineLearningPhase.Validation] = validation_dataset

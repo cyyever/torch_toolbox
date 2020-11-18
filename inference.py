@@ -9,7 +9,7 @@ from device import get_device, put_data_to_device
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
 from util import get_batch_size
-from dataset import DatasetUtil, split_dataset_by_label
+from dataset import DatasetUtil
 from local_types import MachineLearningPhase
 
 
@@ -95,30 +95,32 @@ class Inferencer:
 
 class ClassificationInferencer(Inferencer):
     def inference(self, **kwargs):
-        class_count = dict()
-        class_correct_count = dict()
+        classification_count_per_label = dict()
+        classification_correct_count_per_label = dict()
         instance_output = dict()
         instance_prob = dict()
         per_sample_prob = kwargs.get("per_sample_prob", False)
 
         dataset_util = DatasetUtil(self.dataset)
-        tmp = split_dataset_by_label(self.dataset)
         for label in dataset_util.get_labels():
-            class_correct_count[label] = 0
-            class_count[label] = len(tmp[label]["indices"])
+            classification_correct_count_per_label[label] = 0
+            classification_count_per_label[label] = 0
 
         def after_batch_callback(batch, result, targets):
             nonlocal per_sample_prob
             nonlocal instance_output
             output = result["output"]
+            for target in targets:
+                label = DatasetUtil.get_label_from_target(target)
+                classification_count_per_label[label] += 1
             if per_sample_prob:
                 for i, instance_index in enumerate(batch[2]):
                     instance_index = instance_index.data.item()
                     instance_output[instance_index] = output[i]
             correct = torch.eq(torch.max(output, dim=1)[1], targets).view(-1)
 
-            for label in class_correct_count:
-                class_correct_count[label] += torch.sum(
+            for label in classification_correct_count_per_label:
+                classification_correct_count_per_label[label] += torch.sum(
                     correct[targets == label]
                 ).item()
 
@@ -147,12 +149,15 @@ class ClassificationInferencer(Inferencer):
                     )
             else:
                 raise RuntimeError("unsupported layer", type(last_layer))
-        accuracy = sum(class_correct_count.values()) / \
-            sum(class_count.values())
+        accuracy = sum(classification_correct_count_per_label.values()) / sum(
+            classification_count_per_label.values()
+        )
         per_class_accuracy = dict()
-        for label in class_count:
-            per_class_accuracy[label] = class_correct_count[label] / \
-                class_count[label]
+        for label in classification_count_per_label:
+            per_class_accuracy[label] = (
+                classification_correct_count_per_label[label]
+                / classification_count_per_label[label]
+            )
         return (
             loss,
             accuracy,
@@ -165,5 +170,35 @@ class ClassificationInferencer(Inferencer):
 
 class DetectionInferencer(Inferencer):
     def inference(self, **kwargs):
+        detection_count_per_label = dict()
+        detection_correct_count_per_label = dict()
+        instance_output = dict()
+
+        dataset_util = DatasetUtil(self.dataset)
+        for label in dataset_util.get_labels():
+            detection_correct_count_per_label[label] = 0
+            detection_count_per_label[label] = 0
+
+        def after_batch_callback(_, result, targets):
+            # nonlocal instance_output
+            # output = result["output"]
+            print(targets)
+
+        kwargs = Inferencer.prepend_callback(
+            kwargs, "after_batch_callbacks", after_batch_callback
+        )
         loss = super().inference(**kwargs)
-        return loss
+
+        accuracy = sum(detection_correct_count_per_label.values()) / sum(
+            detection_count_per_label.values()
+        )
+        per_class_accuracy = dict()
+        for label in detection_count_per_label:
+            per_class_accuracy[label] = (
+                detection_correct_count_per_label[label]
+                / detection_count_per_label[label]
+            )
+        return (
+            loss,
+            accuracy,
+        )

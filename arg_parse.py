@@ -9,11 +9,7 @@ import torch
 
 from cyy_naive_lib.log import get_logger
 
-from dataset import (
-    sample_subset,
-    sub_dataset,
-    replace_dataset_labels,
-)
+from dataset import sub_dataset, replace_dataset_labels, DatasetUtil
 from configuration import (
     get_trainer_from_configuration,
     get_inferencer_from_configuration,
@@ -139,9 +135,9 @@ def get_training_dataset(
         args.training_dataset_percentage and args.training_dataset_percentage)
     if args.training_dataset_percentage is not None:
         os.makedirs(args.save_dir, exist_ok=True)
-        subset_dict = sample_subset(
-            training_dataset,
-            args.training_dataset_percentage)
+        subset_dict = DatasetUtil(training_dataset).sample_subset(
+            args.training_dataset_percentage
+        )
         sample_indices: list = sum(subset_dict.values(), [])
         training_dataset = sub_dataset(training_dataset, sample_indices)
         with open(

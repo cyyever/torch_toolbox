@@ -21,17 +21,18 @@ class WebankStreetDataset:
                     for item in img_json["items"]:
                         label = item["class"]
                         labels.add(label)
+        labels = sorted(list(labels))
+        self.__labels: dict = dict()
+        # label 0 is reserved for the background
+        for idx, label in enumerate(labels):
+            self.__labels[label] = idx + 1
+
         if train:
             with open(os.path.join(root_dir, "train_label.json"), "rt") as f:
                 self.__json = json.load(f)
         else:
             with open(os.path.join(root_dir, "test_label.json"), "rt") as f:
                 self.__json = json.load(f)
-        labels = sorted(list(labels))
-        self.__labels: dict = dict()
-        # label 0 is reserved for the background
-        for idx, label in enumerate(labels):
-            self.__labels[label] = idx + 1
         self.__transform = transform
 
     def __getitem__(self, index):
