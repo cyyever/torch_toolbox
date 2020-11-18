@@ -12,11 +12,11 @@ from algorithm.per_sample_gradient import get_per_sample_gradient
 from device import get_device, put_data_to_device
 from model_util import ModelUtil
 from util import get_batch_size
-from inference import Inferencer
+from inference import Inferencer, ClassificationInferencer
 from model_loss import ModelWithLoss
 from visualization import EpochWindow, Window
 from hyper_parameter import HyperParameter
-from phase import MachineLearningPhase
+from local_types import MachineLearningPhase, ModelType
 
 
 class BasicTrainer:
@@ -44,9 +44,9 @@ class BasicTrainer:
     def model(self):
         return self.model_with_loss.model
 
-    @property
-    def loss_fun(self):
-        return self.model_with_loss.loss_fun
+    # @property
+    # def loss_fun(self):
+    #     return self.model_with_loss.loss_fun
 
     @property
     def training_dataset(self):
@@ -71,12 +71,14 @@ class BasicTrainer:
         self.__test_dataset = test_dataset
 
     def get_validator(self) -> Inferencer:
-        return Inferencer(
-            self.model_with_loss,
-            self.test_dataset,
-            phase=MachineLearningPhase.Validation,
-            hyper_parameter=self.hyper_parameter,
-        )
+        if self.model_with_loss.model_type == ModelType.Classification:
+            return ClassificationInferencer(
+                self.model_with_loss,
+                self.test_dataset,
+                phase=MachineLearningPhase.Validation,
+                hyper_parameter=self.hyper_parameter,
+            )
+        assert False
 
     def set_hyper_parameter(self, hyper_parameter):
         self.__hyper_parameter = hyper_parameter
@@ -396,7 +398,7 @@ class Trainer(BasicTrainer):
                     validation_loss,
                     accuracy,
                     other_data,
-                ) = trainer.get_validator().inference(per_class_accuracy=True)
+                ) = trainer.get_validator().inference()
                 validation_loss = validation_loss.data.item()
                 trainer.validation_loss[epoch] = validation_loss
                 trainer.validation_accuracy[epoch] = accuracy

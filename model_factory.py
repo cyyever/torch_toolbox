@@ -8,6 +8,7 @@ from dataset import DatasetUtil
 from model_loss import ModelWithLoss
 from models.lenet import LeNet5
 from models.densenet import DenseNet40
+from local_types import ModelType
 
 
 def get_model(name: str, dataset: torch.utils.data.Dataset) -> ModelWithLoss:
@@ -38,4 +39,8 @@ def get_model(name: str, dataset: torch.utils.data.Dataset) -> ModelWithLoss:
         if param == "pretrained":
             kwargs[param] = False
 
-    return ModelWithLoss(model_constructor(**kwargs))
+    model_type = ModelType.Classification
+    if model_constructor is fasterrcnn_resnet50_fpn:
+        model_type = ModelType.Detection
+
+    return ModelWithLoss(model_constructor(**kwargs), model_type=model_type)

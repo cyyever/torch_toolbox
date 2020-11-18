@@ -10,7 +10,7 @@ from device import get_cuda_devices
 from model_util import ModelUtil
 from model_loss import ModelWithLoss
 from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
-from phase import MachineLearningPhase
+from local_types import MachineLearningPhase
 
 
 def __worker_fun(task, args):

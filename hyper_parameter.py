@@ -4,7 +4,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from dataset import dataset_with_indices
-from phase import MachineLearningPhase
+from local_types import MachineLearningPhase
 
 
 class HyperParameter:
