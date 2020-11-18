@@ -127,9 +127,6 @@ class ClassificationInferencer(Inferencer):
         )
         loss = super().inference(**kwargs)
 
-        for label in class_count:
-            class_count[label] = class_correct_count[label] / \
-                class_count[label]
         if per_sample_prob:
             last_layer = list(self.model.modules())[-1]
             if isinstance(last_layer, nn.LogSoftmax):
@@ -151,9 +148,6 @@ class ClassificationInferencer(Inferencer):
             else:
                 raise RuntimeError("unsupported layer", type(last_layer))
 
-        for label in class_count:
-            class_count[label] = class_correct_count[label] / \
-                class_count[label]
         if per_sample_prob:
             last_layer = list(self.model.modules())[-1]
             if isinstance(last_layer, nn.LogSoftmax):
@@ -177,11 +171,15 @@ class ClassificationInferencer(Inferencer):
 
         accuracy = sum(class_correct_count.values()) / \
             sum(class_count.values())
+        per_class_accuracy = dict()
+        for label in class_count:
+            per_class_accuracy[label] = class_correct_count[label] / \
+                class_count[label]
         return (
             loss,
             accuracy,
             {
-                "per_class_accuracy": class_count,
+                "per_class_accuracy": per_class_accuracy,
                 "per_sample_prob": instance_prob,
             },
         )

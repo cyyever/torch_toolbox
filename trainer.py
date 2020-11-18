@@ -33,7 +33,7 @@ class BasicTrainer:
         self.__stop_criterion: Optional[Callable] = None
         self.__hyper_parameter = hyper_parameter
         self.__reset_hyper_parameter = False
-        self.__visdom_env = None
+        self.visdom_env = None
         self.__reset_loss()
 
     @property
@@ -79,6 +79,7 @@ class BasicTrainer:
                 hyper_parameter=self.hyper_parameter,
             )
         assert False
+        return None
 
     def set_hyper_parameter(self, hyper_parameter):
         self.__hyper_parameter = hyper_parameter
@@ -308,8 +309,9 @@ class BasicTrainer:
 
 
 class Trainer(BasicTrainer):
-    def train(self, **kwargs):
-        self.__visdom_env = (
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.visdom_env = (
             "training_"
             # # + str(self.model.__class__.__name__)
             # # + "_"
@@ -317,6 +319,7 @@ class Trainer(BasicTrainer):
             + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
         )
 
+    def train(self, **kwargs):
         def pre_training_callback(trainer, optimizer, lr_scheduler):
             model_util = ModelUtil(trainer.model)
             get_logger().info(
@@ -348,37 +351,23 @@ class Trainer(BasicTrainer):
             kwargs, "after_batch_callbacks", after_batch_callback
         )
 
-        plot_parameter_distribution = kwargs.get(
-            "plot_parameter_distribution", False)
-        plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
-
         def plot_loss_after_epoch(
             trainer: BasicTrainer, epoch, learning_rates, **kwargs
         ):
-            nonlocal plot_parameter_distribution
-            nonlocal plot_class_accuracy
-            if plot_parameter_distribution:
-                layer_win = Window(
-                    "parameter distribution",
-                    env=trainer.__visdom_env)
-
-                layer_win.plot_histogram(
-                    ModelUtil(trainer.model).get_parameter_list())
-
             EpochWindow(
                 "learning rate",
-                env=trainer.__visdom_env).plot_learning_rate(
+                env=trainer.visdom_env).plot_learning_rate(
                 epoch,
                 learning_rates[0])
             optimizer = kwargs.get("optimizer", None)
             momentums = [group["momentum"] for group in optimizer.param_groups]
-            EpochWindow("momentum", env=trainer.__visdom_env).plot_scalar(
+            EpochWindow("momentum", env=trainer.visdom_env).plot_scalar(
                 epoch, momentums[0], y_label="Momentum"
             )
 
             loss_win = EpochWindow(
-                "training & validation loss", env=trainer.__visdom_env
-            )
+                "training & validation loss",
+                env=trainer.visdom_env)
             get_logger().info(
                 "epoch: %s, training loss: %s",
                 epoch,
@@ -388,53 +377,63 @@ class Trainer(BasicTrainer):
                                trainer.training_loss[-1],
                                "training loss")
 
-            validation_epoch_interval = int(
-                kwargs.get("validation_epoch_interval", 1))
-            if (
-                trainer.validation_dataset is not None
-                and epoch % validation_epoch_interval == 0
-            ):
-                (
-                    validation_loss,
-                    accuracy,
-                    other_data,
-                ) = trainer.get_validator().inference()
-                validation_loss = validation_loss.data.item()
-                trainer.validation_loss[epoch] = validation_loss
-                trainer.validation_accuracy[epoch] = accuracy
-                get_logger().info(
-                    "epoch: %s, learning_rate: %s, validation loss: %s, accuracy = %s",
-                    epoch,
-                    learning_rates,
-                    validation_loss,
-                    accuracy,
-                )
-                loss_win.plot_loss(epoch, validation_loss, "validation loss")
-                if accuracy is not None:
-                    EpochWindow(
-                        "validation accuracy", env=trainer.__visdom_env
-                    ).plot_accuracy(epoch, accuracy, "accuracy")
+        return super().train(**kwargs)
 
-                class_accuracy = other_data["per_class_accuracy"]
-                if plot_class_accuracy and class_accuracy:
-                    for idx, sub_list in enumerate(
-                        split_list_to_chunks(list(class_accuracy.keys()), 2)
-                    ):
-                        class_accuracy_win = EpochWindow(
-                            "class accuracy part " + str(idx), env=trainer.__visdom_env)
-                        for k in sub_list:
-                            get_logger().info(
-                                "epoch: %s, learning_rate: %s, class %s accuracy = %s",
-                                epoch,
-                                learning_rates,
-                                k,
-                                class_accuracy[k],
-                            )
-                            class_accuracy_win.plot_accuracy(
-                                epoch,
-                                class_accuracy[k],
-                                "class_" + str(k) + "_accuracy",
-                            )
+
+class ClassificationTrainer(Trainer):
+    def train(self, **kwargs):
+        plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
+
+        def plot_loss_after_epoch(
+            trainer: BasicTrainer, epoch, learning_rates, **kwargs
+        ):
+            nonlocal plot_class_accuracy
+            (
+                validation_loss,
+                accuracy,
+                other_data,
+            ) = trainer.get_validator().inference()
+            validation_loss = validation_loss.data.item()
+            trainer.validation_loss[epoch] = validation_loss
+            trainer.validation_accuracy[epoch] = accuracy
+            get_logger().info(
+                "epoch: %s, learning_rate: %s, validation loss: %s, accuracy = %s",
+                epoch,
+                learning_rates,
+                validation_loss,
+                accuracy,
+            )
+            loss_win = EpochWindow(
+                "training & validation loss",
+                env=trainer.visdom_env)
+            loss_win.plot_loss(epoch, validation_loss, "validation loss")
+            EpochWindow(
+                "validation accuracy",
+                env=trainer.visdom_env).plot_accuracy(
+                epoch,
+                accuracy,
+                "accuracy")
+
+            class_accuracy = other_data["per_class_accuracy"]
+            if plot_class_accuracy:
+                for idx, sub_list in enumerate(
+                    split_list_to_chunks(list(class_accuracy.keys()), 2)
+                ):
+                    class_accuracy_win = EpochWindow(
+                        "class accuracy part " + str(idx), env=trainer.visdom_env)
+                    for k in sub_list:
+                        get_logger().info(
+                            "epoch: %s, learning_rate: %s, class %s accuracy = %s",
+                            epoch,
+                            learning_rates,
+                            k,
+                            class_accuracy[k],
+                        )
+                        class_accuracy_win.plot_accuracy(
+                            epoch,
+                            class_accuracy[k],
+                            "class_" + str(k) + "_accuracy",
+                        )
 
                 # test_epoch_interval = int(kwargs.get("test_epoch_interval", 5))
                 # if trainer.test_dataset is not None and (
@@ -451,7 +450,7 @@ class Trainer(BasicTrainer):
                 #     trainer.test_accuracy[epoch] = accuracy
                 #     EpochWindow(
                 #         "test accuracy",
-                #         env=trainer.__visdom_env).plot_accuracy(
+                #         env=trainer.visdom_env).plot_accuracy(
                 #         epoch,
                 #         accuracy,
                 #         "accuracy")

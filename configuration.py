@@ -1,9 +1,10 @@
 from hyper_parameter import HyperParameter
-from trainer import Trainer
+from trainer import Trainer, ClassificationTrainer
 from inference import Inferencer
 from dataset import get_dataset, MachineLearningPhase
 from hyper_parameter import get_recommended_hyper_parameter
 from model_factory import get_model
+from local_types import ModelType
 
 
 def get_trainer_from_configuration(
@@ -18,12 +19,12 @@ def get_trainer_from_configuration(
     validation_dataset = get_dataset(
         dataset_name, MachineLearningPhase.Validation)
     test_dataset = get_dataset(dataset_name, MachineLearningPhase.Test)
-    trainer = Trainer(
-        get_model(
-            model_name,
-            training_dataset),
-        training_dataset,
-        hyper_parameter)
+    model_with_loss = get_model(model_name, training_dataset)
+    trainer: Trainer = None
+    if model_with_loss.model_type == ModelType.Classification:
+        trainer = ClassificationTrainer(
+            model_with_loss, training_dataset, hyper_parameter
+        )
     trainer.set_validation_dataset(validation_dataset)
     trainer.set_test_dataset(test_dataset)
     return trainer
@@ -32,5 +33,11 @@ def get_trainer_from_configuration(
 def get_inferencer_from_configuration(
         dataset_name: str,
         model_name: str) -> Inferencer:
-    test_dataset = get_dataset(dataset_name, MachineLearningPhase.Test)
-    return Inferencer(get_model(model_name, test_dataset), test_dataset)
+    phase = MachineLearningPhase.Test
+    test_dataset = get_dataset(dataset_name, phase=phase)
+    return Inferencer(
+        get_model(
+            model_name,
+            test_dataset),
+        test_dataset,
+        phase=phase)
