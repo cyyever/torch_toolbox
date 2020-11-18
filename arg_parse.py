@@ -109,7 +109,7 @@ def create_trainer_from_args(args) -> Trainer:
     trainer.set_hyper_parameter(hyper_parameter)
 
     if args.stop_accuracy is not None:
-        trainer.stop_criterion = (
+        trainer.set_stop_criterion(
             lambda trainer, epoch, __: trainer.validation_accuracy[epoch]
             >= args.stop_accuracy
         )

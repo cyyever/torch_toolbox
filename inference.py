@@ -147,28 +147,6 @@ class ClassificationInferencer(Inferencer):
                     )
             else:
                 raise RuntimeError("unsupported layer", type(last_layer))
-
-        if per_sample_prob:
-            last_layer = list(self.model.modules())[-1]
-            if isinstance(last_layer, nn.LogSoftmax):
-                for k, v in instance_output.items():
-                    probs = torch.exp(v)
-                    max_prob_index = torch.argmax(probs).data.item()
-                    instance_prob[k] = (
-                        max_prob_index,
-                        probs[max_prob_index].data.item(),
-                    )
-            elif isinstance(last_layer, nn.Linear):
-                for k, v in instance_output.items():
-                    prob_v = nn.Softmax()(v)
-                    max_prob_index = torch.argmax(prob_v).data.item()
-                    instance_prob[k] = (
-                        max_prob_index,
-                        prob_v[max_prob_index].data.item(),
-                    )
-            else:
-                raise RuntimeError("unsupported layer", type(last_layer))
-
         accuracy = sum(class_correct_count.values()) / \
             sum(class_count.values())
         per_class_accuracy = dict()
@@ -183,3 +161,9 @@ class ClassificationInferencer(Inferencer):
                 "per_sample_prob": instance_prob,
             },
         )
+
+
+class DetectionInferencer(Inferencer):
+    def inference(self, **kwargs):
+        loss = super().inference(**kwargs)
+        return loss
