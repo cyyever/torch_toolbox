@@ -70,12 +70,17 @@ class BasicTrainer:
     def set_test_dataset(self, test_dataset: torch.utils.data.Dataset):
         self.__test_dataset = test_dataset
 
-    def get_validator(self) -> Inferencer:
+    def get_inferencer(self, phase: MachineLearningPhase) -> Inferencer:
+        assert phase != MachineLearningPhase.Training
+
+        dataset = self.validation_dataset
+        if phase == MachineLearningPhase.Test:
+            dataset = self.test_dataset
         if self.model_with_loss.model_type == ModelType.Classification:
             return ClassificationInferencer(
                 self.model_with_loss,
-                self.test_dataset,
-                phase=MachineLearningPhase.Validation,
+                dataset,
+                phase=phase,
                 hyper_parameter=self.hyper_parameter,
             )
         assert False
@@ -351,9 +356,11 @@ class Trainer(BasicTrainer):
             kwargs, "after_batch_callbacks", after_batch_callback
         )
 
-        def plot_loss_after_epoch(
-            trainer: BasicTrainer, epoch, learning_rates, **kwargs
-        ):
+        def plot_after_epoch(
+                trainer: BasicTrainer,
+                epoch,
+                learning_rates,
+                **kwargs):
             EpochWindow(
                 "learning rate",
                 env=trainer.visdom_env).plot_learning_rate(
@@ -376,7 +383,11 @@ class Trainer(BasicTrainer):
             loss_win.plot_loss(epoch,
                                trainer.training_loss[-1],
                                "training loss")
+            Window.save_envs()
 
+        kwargs = BasicTrainer.prepend_callback(
+            kwargs, "after_epoch_callbacks", plot_after_epoch
+        )
         return super().train(**kwargs)
 
 
@@ -384,15 +395,15 @@ class ClassificationTrainer(Trainer):
     def train(self, **kwargs):
         plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
 
-        def plot_loss_after_epoch(
-            trainer: BasicTrainer, epoch, learning_rates, **kwargs
-        ):
+        def plot_after_epoch(
+                trainer: BasicTrainer,
+                epoch,
+                learning_rates,
+                **kwargs):
             nonlocal plot_class_accuracy
-            (
-                validation_loss,
-                accuracy,
-                other_data,
-            ) = trainer.get_validator().inference()
+            (validation_loss, accuracy, other_data,) = trainer.get_inferencer(
+                phase=MachineLearningPhase.Validation
+            ).inference()
             validation_loss = validation_loss.data.item()
             trainer.validation_loss[epoch] = validation_loss
             trainer.validation_accuracy[epoch] = accuracy
@@ -435,35 +446,33 @@ class ClassificationTrainer(Trainer):
                             "class_" + str(k) + "_accuracy",
                         )
 
-                # test_epoch_interval = int(kwargs.get("test_epoch_interval", 5))
-                # if trainer.test_dataset is not None and (
-                #     epoch % test_epoch_interval == 0
-                #     or epoch == trainer.hyper_parameter.epochs
-                # ):
-                #     (
-                #         test_loss,
-                #         accuracy,
-                #         other_data,
-                #     ) = trainer.get_validator().inference(per_class_accuracy=False)
-                #     test_loss = test_loss.data.item()
-                #     trainer.test_loss[epoch] = test_loss
-                #     trainer.test_accuracy[epoch] = accuracy
-                #     EpochWindow(
-                #         "test accuracy",
-                #         env=trainer.visdom_env).plot_accuracy(
-                #         epoch,
-                #         accuracy,
-                #         "accuracy")
-                #     get_logger().info(
-                #         "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
-                #         epoch,
-                #         learning_rates,
-                #         test_loss,
-                #         accuracy,
-                #     )
+                test_epoch_interval = int(kwargs.get("test_epoch_interval", 5))
+                if trainer.test_dataset is not None and (
+                    epoch % test_epoch_interval == 0
+                    or epoch == trainer.hyper_parameter.epochs
+                ):
+                    (test_loss, accuracy, other_data) = trainer.get_inferencer(
+                        phase=MachineLearningPhase.Test
+                    ).inference(per_class_accuracy=False)
+                    test_loss = test_loss.data.item()
+                    trainer.test_loss[epoch] = test_loss
+                    trainer.test_accuracy[epoch] = accuracy
+                    EpochWindow(
+                        "test accuracy",
+                        env=trainer.visdom_env).plot_accuracy(
+                        epoch,
+                        accuracy,
+                        "accuracy")
+                    get_logger().info(
+                        "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
+                        epoch,
+                        learning_rates,
+                        test_loss,
+                        accuracy,
+                    )
                 Window.save_envs()
 
         kwargs = BasicTrainer.prepend_callback(
-            kwargs, "after_epoch_callbacks", plot_loss_after_epoch
+            kwargs, "after_epoch_callbacks", plot_after_epoch
         )
         return super().train(**kwargs)
