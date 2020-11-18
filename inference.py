@@ -88,12 +88,10 @@ class Inferencer:
                         instance_index = instance_index.data.item()
                         instance_output[instance_index] = output[i]
 
+                normalized_batch_loss = batch_loss
                 if self.model_with_loss.is_averaged_loss():
-                    normalized_batch_loss = (
-                        batch_loss * real_batch_size / len(self.__dataset)
-                    )
-                else:
-                    normalized_batch_loss = batch_loss
+                    normalized_batch_loss *= real_batch_size
+                normalized_batch_loss /= len(self.__dataset)
                 if use_grad:
                     normalized_batch_loss.backward()
 
