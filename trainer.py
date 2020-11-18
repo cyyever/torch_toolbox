@@ -454,31 +454,73 @@ class ClassificationTrainer(Trainer):
                             "class_" + str(k) + "_accuracy",
                         )
 
-                test_epoch_interval = int(kwargs.get("test_epoch_interval", 5))
-                if trainer.test_dataset is not None and (
-                    epoch % test_epoch_interval == 0
-                    or epoch == trainer.hyper_parameter.epochs
-                ):
-                    (test_loss, accuracy, _) = trainer.get_inferencer(
-                        phase=MachineLearningPhase.Test
-                    ).inference(per_class_accuracy=False)
-                    test_loss = test_loss.data.item()
-                    trainer.test_loss[epoch] = test_loss
-                    trainer.test_accuracy[epoch] = accuracy
-                    EpochWindow(
-                        "test accuracy",
-                        env=trainer.visdom_env).plot_accuracy(
-                        epoch,
-                        accuracy,
-                        "accuracy")
-                    get_logger().info(
-                        "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
-                        epoch,
-                        learning_rates,
-                        test_loss,
-                        accuracy,
-                    )
-                Window.save_envs()
+            test_epoch_interval = int(kwargs.get("test_epoch_interval", 2))
+            if trainer.test_dataset is not None and (
+                epoch % test_epoch_interval == 0
+                or epoch == trainer.hyper_parameter.epochs
+            ):
+                (test_loss, accuracy, _) = trainer.get_inferencer(
+                    phase=MachineLearningPhase.Test
+                ).inference(per_class_accuracy=False)
+                test_loss = test_loss.data.item()
+                trainer.test_loss[epoch] = test_loss
+                trainer.test_accuracy[epoch] = accuracy
+                EpochWindow(
+                    "test accuracy",
+                    env=trainer.visdom_env).plot_accuracy(
+                    epoch,
+                    accuracy,
+                    "accuracy")
+                get_logger().info(
+                    "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
+                    epoch,
+                    learning_rates,
+                    test_loss,
+                    accuracy,
+                )
+            Window.save_envs()
+
+        kwargs = BasicTrainer.prepend_callback(
+            kwargs, "after_epoch_callbacks", plot_after_epoch
+        )
+        return super().train(**kwargs)
+
+
+class DetectionTrainer(Trainer):
+    def train(self, **kwargs):
+        plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
+
+        def plot_after_epoch(
+                trainer: BasicTrainer,
+                epoch,
+                learning_rates,
+                **kwargs):
+            nonlocal plot_class_accuracy
+            (validation_loss, accuracy, other_data,) = trainer.get_inferencer(
+                phase=MachineLearningPhase.Validation
+            ).inference()
+            validation_loss = validation_loss.data.item()
+            trainer.validation_loss[epoch] = validation_loss
+            trainer.validation_accuracy[epoch] = accuracy
+            get_logger().info(
+                "epoch: %s, learning_rate: %s, validation loss: %s, accuracy = %s",
+                epoch,
+                learning_rates,
+                validation_loss,
+                accuracy,
+            )
+            loss_win = EpochWindow(
+                "training & validation loss",
+                env=trainer.visdom_env)
+            loss_win.plot_loss(epoch, validation_loss, "validation loss")
+            EpochWindow(
+                "validation accuracy",
+                env=trainer.visdom_env).plot_accuracy(
+                epoch,
+                accuracy,
+                "accuracy")
+
+            Window.save_envs()
 
         kwargs = BasicTrainer.prepend_callback(
             kwargs, "after_epoch_callbacks", plot_after_epoch

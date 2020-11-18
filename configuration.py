@@ -1,5 +1,5 @@
 from hyper_parameter import HyperParameter
-from trainer import Trainer, ClassificationTrainer
+from trainer import Trainer, ClassificationTrainer, DetectionTrainer
 from inference import Inferencer
 from dataset import get_dataset, MachineLearningPhase
 from hyper_parameter import get_recommended_hyper_parameter
@@ -25,6 +25,11 @@ def get_trainer_from_configuration(
         trainer = ClassificationTrainer(
             model_with_loss, training_dataset, hyper_parameter
         )
+    elif model_with_loss.model_type == ModelType.Detection:
+        trainer = DetectionTrainer(
+            model_with_loss,
+            training_dataset,
+            hyper_parameter)
     trainer.set_validation_dataset(validation_dataset)
     trainer.set_test_dataset(test_dataset)
     return trainer
