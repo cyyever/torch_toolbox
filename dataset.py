@@ -307,6 +307,32 @@ def get_dataset(name: str, phase: MachineLearningPhase):
             transform=transforms.Compose(transform),
         )
         training_dataset_parts = [4, 1]
+    elif name == "SVHN":
+        dataset = torchvision.datasets.SVHN(
+            root=root_dir,
+            split="extra",
+            download=True,
+            transform=transforms.ToTensor(),
+        )
+        mean, std = DatasetUtil(dataset).get_mean_and_std()
+
+        transform = []
+        if phase == MachineLearningPhase.Training:
+            transform += [
+                transforms.RandomCrop(32, padding=4),
+            ]
+
+        transform += [
+            transforms.ToTensor(),
+            transforms.Normalize(mean=mean, std=std),
+        ]
+        dataset = torchvision.datasets.SVHN(
+            root=root_dir,
+            split=("extra" if for_training else "test"),
+            download=True,
+            transform=transforms.Compose(transform),
+        )
+        training_dataset_parts = [4, 1]
     elif name == "WebankStreet":
         dataset = WebankStreetDataset(
             "/home/cyy/Street_Dataset/Street_Dataset",

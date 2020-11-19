@@ -167,6 +167,11 @@ def get_recommended_hyper_parameter(
             epochs=50, batch_size=4, learning_rate=0.0001, weight_decay=1
         )
         hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
+    elif dataset_name == "SVHN":
+        hyper_parameter = HyperParameter(
+            epochs=50, batch_size=4, learning_rate=0.0001, weight_decay=1
+        )
+        hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
     else:
         get_logger().error(
             "no hyper parameter for dataset %s and model %s",
