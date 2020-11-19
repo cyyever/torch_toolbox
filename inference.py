@@ -3,6 +3,7 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
+from torchvision.ops.boxes import box_iou
 
 from hyper_parameter import HyperParameter
 from device import get_device, put_data_to_device
@@ -169,10 +170,15 @@ class ClassificationInferencer(Inferencer):
 
 
 class DetectionInferencer(Inferencer):
+    def __init__(self, *args, **kwargs):
+        iou_threshold = kwargs.pop("iou_threshold", None)
+        assert iou_threshold
+        super().__init__(*args, **kwargs)
+        self.iou_threshold = iou_threshold
+
     def inference(self, **kwargs):
         detection_count_per_label = dict()
         detection_correct_count_per_label = dict()
-        instance_output = dict()
 
         dataset_util = DatasetUtil(self.dataset)
         for label in dataset_util.get_labels():
@@ -180,9 +186,37 @@ class DetectionInferencer(Inferencer):
             detection_count_per_label[label] = 0
 
         def after_batch_callback(_, result, targets):
-            # nonlocal instance_output
-            # output = result["output"]
-            print(targets)
+            for target in targets:
+                for label in target["labels"]:
+                    label = label.data.item()
+                    detection_count_per_label[label] += 1
+
+            detection: list = result["detection"]
+            for idx, sample_detection in enumerate(detection):
+                detected_boxex = sample_detection["boxes"]
+                if detected_boxex.nelement() == 0:
+                    continue
+                target = targets[idx]
+                target_boxex = target["boxes"]
+                iou_matrix = box_iou(target_boxex, detected_boxex)
+                for box_idx, iou in enumerate(iou_matrix):
+                    max_iou_index = torch.argmax(iou)
+                    if iou[max_iou_index] < self.iou_threshold:
+                        continue
+                    print(
+                        "max iou is",
+                        iou[max_iou_index],
+                        "target label",
+                        target["labels"][box_idx],
+                        "detected label",
+                        sample_detection["labels"][max_iou_index],
+                    )
+                    if (
+                        target["labels"][box_idx]
+                        == sample_detection["labels"][max_iou_index]
+                    ):
+                        label = target["labels"][box_idx].data.item()
+                        detection_correct_count_per_label[label] += 1
 
         kwargs = Inferencer.prepend_callback(
             kwargs, "after_batch_callbacks", after_batch_callback
@@ -198,7 +232,4 @@ class DetectionInferencer(Inferencer):
                 detection_correct_count_per_label[label]
                 / detection_count_per_label[label]
             )
-        return (
-            loss,
-            accuracy,
-        )
+        return (loss, accuracy, {"per_class_accuracy": per_class_accuracy})
