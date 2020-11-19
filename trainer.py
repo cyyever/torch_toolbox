@@ -92,6 +92,7 @@ class BasicTrainer:
                 dataset,
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
+                iou_threshold=0.6,
             )
         assert False
         return None
