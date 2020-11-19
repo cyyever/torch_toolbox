@@ -58,6 +58,3 @@ class WebankStreetDataset:
 
     def __str__(self):
         return "WebankStreetDataset"
-
-    def label_0_for_background(self):
-        return True
