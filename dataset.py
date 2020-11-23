@@ -52,7 +52,7 @@ class DatasetMapper:
         return item
 
     def __len__(self):
-        return self.dataset.__len__()
+        return len(self.dataset)
 
 
 def sub_dataset(dataset: torch.utils.data.Dataset, indices: Iterable):
