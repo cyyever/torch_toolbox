@@ -132,7 +132,7 @@ def get_training_dataset(
     args, training_dataset: torch.utils.data.Dataset
 ) -> torch.utils.data.Dataset:
     assert not (
-        args.training_dataset_percentage and args.training_dataset_percentage)
+        args.training_dataset_percentage and args.training_dataset_indices_path)
     if args.training_dataset_percentage is not None:
         os.makedirs(args.save_dir, exist_ok=True)
         subset_dict = DatasetUtil(training_dataset).sample_subset(
