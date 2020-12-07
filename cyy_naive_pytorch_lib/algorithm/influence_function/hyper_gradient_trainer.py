@@ -437,16 +437,14 @@ class HyperGradientTrainer:
         return torch.split(tmp, tmp.shape[0] // 2)
 
     def foreach_hyper_gradient(self, use_approximation, callback):
-        if use_approximation:
-            get_logger().info("begin do do_delayed_computation")
-            self.do_delayed_computation()
-            get_logger().info("end do do_delayed_computation")
         hyper_gradient_mom_dict = None
         if use_approximation:
             hyper_gradient_mom_dict = self.approx_hyper_gradient_mom_dict
         else:
             hyper_gradient_mom_dict = self.hessian_hyper_gradient_mom_dict
         for index in hyper_gradient_mom_dict.keys():
+            if use_approximation:
+                self.do_delayed_computation(index)
             hyper_gradient, _ = self.__get_hyper_gradient_and_momentum(
                 index, use_approximation
             )
