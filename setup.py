@@ -17,7 +17,9 @@ setuptools.setup(
         "cyy_naive_pytorch_lib/models",
         "cyy_naive_pytorch_lib/shapely_value",
         "cyy_naive_pytorch_lib/data_structure",
-        "cyy_naive_pytorch_lib/algorithm"],
+        "cyy_naive_pytorch_lib/algorithm",
+        "cyy_naive_pytorch_lib/algorithm/influence_function",
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
