@@ -35,13 +35,9 @@ class Inferencer:
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
 
-    # @property
-    # def model_with_loss(self):
-    #     return self.__model_with_loss
-
-    # @property
-    # def model(self):
-    #     return self.model_with_loss.model
+    @property
+    def model(self):
+        return self.__model_with_loss.model
 
     @property
     def dataset(self):
