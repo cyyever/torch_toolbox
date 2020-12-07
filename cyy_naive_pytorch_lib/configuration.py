@@ -1,7 +1,8 @@
 from hyper_parameter import HyperParameter
 from trainer import Trainer, ClassificationTrainer, DetectionTrainer
 from inference import Inferencer
-from dataset import get_dataset, MachineLearningPhase
+from dataset import get_dataset
+from local_types import MachineLearningPhase
 from hyper_parameter import get_recommended_hyper_parameter
 from model_factory import get_model
 from local_types import ModelType

@@ -9,7 +9,13 @@ import torch
 
 from cyy_naive_lib.log import get_logger
 
-from dataset import sub_dataset, replace_dataset_labels, DatasetUtil
+from local_types import MachineLearningPhase
+from dataset import (
+    sub_dataset,
+    replace_dataset_labels,
+    DatasetUtil,
+    get_dataset,
+)
 from configuration import (
     get_trainer_from_configuration,
     get_inferencer_from_configuration,
@@ -84,9 +90,7 @@ def create_trainer_from_args(args) -> Trainer:
     trainer = get_trainer_from_configuration(
         args.dataset_name, args.model_name)
 
-    trainer.set_training_dataset(
-        get_training_dataset(
-            args, trainer.training_dataset))
+    trainer.set_training_dataset(get_training_dataset(args))
     if args.model_path is not None:
         trainer.load_model(args.model_path)
 
@@ -128,9 +132,11 @@ def __get_randomized_label_map(args):
     return randomized_label_map
 
 
-def get_training_dataset(
-    args, training_dataset: torch.utils.data.Dataset
-) -> torch.utils.data.Dataset:
+def get_training_dataset(args) -> torch.utils.data.Dataset:
+
+    training_dataset = get_dataset(
+        args.dataset_name,
+        MachineLearningPhase.Training)
     assert not (
         args.training_dataset_percentage and args.training_dataset_indices_path)
     if args.training_dataset_percentage is not None:
