@@ -6,11 +6,11 @@ import torch
 import torch.nn.utils.prune as prune
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.time_counter import TimeCounter
-from cyy_naive_lib.sequence_op import split_list_to_chunks
+from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 import cyy_pytorch_cpp
 
 from model_util import ModelUtil
-from .hessian_vector_product import get_hessian_vector_product_func
+from algorithm.hessian_vector_product import get_hessian_vector_product_func
 
 
 class HyperGradientTrainer:
@@ -392,9 +392,8 @@ class HyperGradientTrainer:
         if not isinstance(optimizer, torch.optim.SGD):
             raise RuntimeError("not SGD")
 
-        cur_learning_rates = kwargs["cur_learning_rates"][0]
-        assert len(cur_learning_rates) == 1
-        cur_learning_rate = cur_learning_rates[0]
+        assert len(kwargs["cur_learning_rates"]) == 1
+        cur_learning_rate = kwargs["cur_learning_rates"][0]
         batch_size = kwargs["cur_batch_size"]
 
         momentums = [group["momentum"] for group in optimizer.param_groups]
@@ -402,7 +401,7 @@ class HyperGradientTrainer:
             raise RuntimeError("unsupported momentums")
 
         momentum = momentums[0]
-        weight_decay = trainer.get_hyper_parameter().weight_decay
+        weight_decay = trainer.hyper_parameter.weight_decay
 
         training_set_size = kwargs["training_set_size"]
 

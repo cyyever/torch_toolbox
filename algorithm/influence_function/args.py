@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-import os
 import json
+import os
 
 from cyy_naive_lib.log import get_logger
 
-from arg_parse import create_trainer_from_args
-from .dataset import sample_subset
+from arg_parse import create_trainer_from_args, get_arg_parser
+from dataset import DatasetUtil
+
 from .hyper_gradient_trainer import HyperGradientTrainer
 
 
-def add_arguments_to_parser(parser):
+def add_arguments_to_parser(parser=None):
+    if parser is None:
+        parser = get_arg_parser()
+
     parser.add_argument("--cache_size", type=int, default=None)
     parser.add_argument(
         "--approx_hyper_gradient_and_momentum_dir", type=str, default=None
@@ -26,6 +30,7 @@ def add_arguments_to_parser(parser):
         "--use_approximation",
         action="store_true",
         default=True)
+    return parser
 
 
 def create_hyper_gradient_trainer_from_args(args):
@@ -42,9 +47,8 @@ def create_hyper_gradient_trainer_from_args(args):
     )
 
     if args.hyper_gradient_sample_percentage is not None:
-        subset_dict = sample_subset(
-            trainer.training_dataset,
-            args.hyper_gradient_sample_percentage,
+        subset_dict = DatasetUtil(trainer.training_dataset).sample_subset(
+            args.hyper_gradient_sample_percentage
         )
         sample_indices = sum(subset_dict.values(), [])
         os.makedirs(args.save_dir, exist_ok=True)
