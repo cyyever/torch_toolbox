@@ -3,25 +3,30 @@ import tempfile
 
 from cyy_naive_lib.log import get_logger
 
+from inference import Inferencer
 from .dataset import sub_dataset
 from .hyper_gradient_trainer import HyperGradientTrainer
 from .synced_tensor_dict_util import iterate_over_synced_tensor_dict
 
 
 class HyperGradientAnalyzer:
-    def __init__(self, validator, hyper_gradient_dir, cache_size=1024):
-        assert validator.loss_fun.reduction in ("mean", "elementwise_mean")
-        self.validator = validator
+    def __init__(
+            self,
+            inferencer: Inferencer,
+            hyper_gradient_dir,
+            cache_size=1024):
+        assert inferencer.loss_fun.reduction in ("mean", "elementwise_mean")
+        self.inferencer: Inferencer = inferencer
 
         self.cache_size = cache_size
         self.hyper_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
-            self.cache_size, self.validator.model, hyper_gradient_dir)
+            self.cache_size, self.inferencer.model, hyper_gradient_dir)
 
     def get_contributions(self, training_set_size=None):
         if training_set_size is None:
             training_set_size = len(self.hyper_gradient_matrix)
         contribution_dict = dict()
-        test_gradient = self.validator.get_gradient()
+        test_gradient = self.inferencer.get_gradient()
 
         for (sample_index, hyper_gradient) in iterate_over_synced_tensor_dict(
             self.hyper_gradient_matrix
@@ -40,7 +45,7 @@ class HyperGradientAnalyzer:
         if training_set_size is None:
             training_set_size = len(self.hyper_gradient_matrix)
         hyper_gradient_sum_dict = HyperGradientTrainer.create_gradient_matrix(
-            self.cache_size, self.validator.model
+            self.cache_size, self.inferencer.model
         )
         hyper_gradient_sum_dict.set_storage_dir(tempfile.gettempdir())
 
@@ -96,12 +101,12 @@ class HyperGradientAnalyzer:
         return contribution_dict
 
     def get_test_gradients(self, test_subset_dict: dict):
-        tmp_validator = copy.deepcopy(self.validator)
+        tmp_inferencer = copy.deepcopy(self.inferencer)
         for test_key, indices in test_subset_dict.items():
-            subset = sub_dataset(self.validator.dataset, indices)
+            subset = sub_dataset(self.inferencer.dataset, indices)
             assert len(subset) == len(indices)
-            tmp_validator.set_dataset(subset)
-            yield (test_key, tmp_validator.get_gradient() * len(subset))
+            tmp_inferencer.set_dataset(subset)
+            yield (test_key, tmp_inferencer.get_gradient() * len(subset))
 
     def get_test_gradient_dict(self, test_subset_dict: dict):
         test_gredient_dict = HyperGradientTrainer.create_gradient_matrix(
