@@ -1,6 +1,6 @@
 import copy
 import tempfile
-from synced_tensor_dict_util import create_tensor_dict
+from data_structure.synced_tensor_dict_util import create_tensor_dict
 
 
 def get_dataset_gradients(dataset_dict: dict, validator, cache_size=512):
