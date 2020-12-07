@@ -35,13 +35,13 @@ class Inferencer:
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
 
-    @property
-    def model_with_loss(self):
-        return self.__model_with_loss
+    # @property
+    # def model_with_loss(self):
+    #     return self.__model_with_loss
 
-    @property
-    def model(self):
-        return self.model_with_loss.model
+    # @property
+    # def model(self):
+    #     return self.model_with_loss.model
 
     @property
     def dataset(self):
@@ -51,7 +51,7 @@ class Inferencer:
         self.__dataset = dataset
 
     def load_model(self, model_path):
-        self.model_with_loss.set_model(
+        self.__model_with_loss.set_model(
             torch.load(model_path, map_location=get_device())
         )
 
@@ -63,7 +63,7 @@ class Inferencer:
         use_grad = kwargs.get("use_grad", False)
         with torch.set_grad_enabled(use_grad):
             device = get_device()
-            self.model_with_loss.set_model_mode(self.__phase)
+            self.__model_with_loss.set_model_mode(self.__phase)
             self.model.zero_grad()
             self.model.to(device)
             total_loss = torch.zeros(1)
@@ -73,7 +73,7 @@ class Inferencer:
                 targets = put_data_to_device(batch[1], device)
                 real_batch_size = get_batch_size(inputs)
 
-                result = self.model_with_loss(
+                result = self.__model_with_loss(
                     inputs, targets, phase=self.__phase)
                 batch_loss = result["loss"]
 
@@ -81,7 +81,7 @@ class Inferencer:
                     callback(batch, result, targets)
 
                 normalized_batch_loss = batch_loss
-                if self.model_with_loss.is_averaged_loss():
+                if self.__model_with_loss.is_averaged_loss():
                     normalized_batch_loss *= real_batch_size
                 normalized_batch_loss /= len(self.__dataset)
                 if use_grad:
