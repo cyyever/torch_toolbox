@@ -266,7 +266,12 @@ class BasicTrainer:
 
             self.training_loss.append(training_loss)
             for callback in kwargs.get("after_epoch_callbacks", []):
-                callback(self, epoch, cur_learning_rates, optimizer=optimizer)
+                callback(
+                    self,
+                    epoch,
+                    cur_learning_rates=cur_learning_rates,
+                    optimizer=optimizer,
+                )
 
             if self.__stop_criterion is not None and self.__stop_criterion(
                 self, epoch, cur_learning_rates
@@ -365,11 +370,8 @@ class Trainer(BasicTrainer):
             kwargs, "after_batch_callbacks", after_batch_callback
         )
 
-        def plot_after_epoch(
-                trainer: BasicTrainer,
-                epoch,
-                learning_rates,
-                **kwargs):
+        def plot_after_epoch(trainer: BasicTrainer, epoch, **kwargs):
+            learning_rates = kwargs["cur_learning_rates"]
             EpochWindow(
                 "learning rate",
                 env=trainer.visdom_env).plot_learning_rate(
@@ -404,12 +406,9 @@ class ClassificationTrainer(Trainer):
     def train(self, **kwargs):
         plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
 
-        def plot_after_epoch(
-                trainer: BasicTrainer,
-                epoch,
-                learning_rates,
-                **kwargs):
+        def plot_after_epoch(trainer: BasicTrainer, epoch, **kwargs):
             nonlocal plot_class_accuracy
+            learning_rates = kwargs["cur_learning_rates"]
             (validation_loss, accuracy, other_data,) = trainer.get_inferencer(
                 phase=MachineLearningPhase.Validation
             ).inference()
