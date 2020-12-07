@@ -42,7 +42,7 @@ def lottery_ticket_prune(
             "models", trainer.model.__class__.__name__ + "_" + "pruned"
         )
 
-    def after_epoch_callback(trainer, epoch, _):
+    def after_epoch_callback(trainer, epoch):
         nonlocal init_parameters
         nonlocal save_dir
         nonlocal init_hyper_parameter

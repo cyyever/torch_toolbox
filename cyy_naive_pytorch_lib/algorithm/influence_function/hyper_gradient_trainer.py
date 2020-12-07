@@ -118,11 +118,7 @@ class HyperGradientTrainer:
         else:
             self.delayed_approximation_computations = None
 
-        def after_epoch_callback(
-                trainer,
-                epoch,
-                cur_learning_rates,
-                **callback_kwargs):
+        def after_epoch_callback(trainer, epoch, **callback_kwargs):
             nonlocal kwargs
             # self.__after_epoch_callback(
             #     trainer, epoch, cur_learning_rates, **callback_kwargs
@@ -360,7 +356,7 @@ class HyperGradientTrainer:
 
         if self.use_hessian:
             self.hvp_function = get_hessian_vector_product_func(
-                trainer.model, batch, trainer.loss_fun
+                trainer.model_with_loss, batch
             )
             self.hessian_computation_arguments = dict()
         else:
@@ -445,14 +441,15 @@ class HyperGradientTrainer:
             get_logger().info("begin do do_delayed_computation")
             self.do_delayed_computation()
             get_logger().info("end do do_delayed_computation")
-        dict = None
+        hyper_gradient_mom_dict = None
         if use_approximation:
-            dict = self.approx_hyper_gradient_mom_dict
+            hyper_gradient_mom_dict = self.approx_hyper_gradient_mom_dict
         else:
-            dict = self.hessian_hyper_gradient_mom_dict
-        for index in dict.keys():
+            hyper_gradient_mom_dict = self.hessian_hyper_gradient_mom_dict
+        for index in hyper_gradient_mom_dict.keys():
             hyper_gradient, _ = self.__get_hyper_gradient_and_momentum(
-                index, use_approximation)
+                index, use_approximation
+            )
             callback(index, hyper_gradient)
 
     def __set_hyper_gradient_and_momentum(
@@ -499,12 +496,7 @@ class HyperGradientTrainer:
         hyper_gradient_dict.release()
         hyper_gradient_dict = None
 
-    def __after_epoch_callback(
-            self,
-            trainer,
-            epoch,
-            cur_learning_rates,
-            **kwargs):
+    def __after_epoch_callback(self, trainer, epoch, **kwargs):
         total_epochs = trainer.get_hyper_parameter().epochs
         if epoch == total_epochs:
             return
