@@ -1,6 +1,7 @@
 import os
 import datetime
 import copy
+import logging
 from typing import Callable, Optional
 
 import torch
@@ -43,10 +44,6 @@ class BasicTrainer:
     @property
     def model(self):
         return self.model_with_loss.model
-
-    # @property
-    # def loss_fun(self):
-    #     return self.model_with_loss.loss_fun
 
     @property
     def training_dataset(self):
@@ -117,9 +114,11 @@ class BasicTrainer:
     def repeated_train(self, repeated_num, save_dir=None, **kwargs):
         def training_callback(_, trainer: BasicTrainer):
             nonlocal save_dir, kwargs
+            get_logger().setLevel(logging.ERROR)
             trainer.train(**kwargs)
             if save_dir is not None:
                 trainer.save_model(save_dir)
+            get_logger().setLevel(logging.DEBUG)
             return {
                 "training_loss": trainer.training_loss,
                 "validation_loss": trainer.validation_loss,
@@ -330,6 +329,11 @@ class BasicTrainer:
 
 
 class Trainer(BasicTrainer):
+    """
+    This trainer is designed to add logging to BasicTrainer
+
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.visdom_env = (
