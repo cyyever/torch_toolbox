@@ -29,7 +29,7 @@ def lottery_ticket_prune(
         sparsity, _, __ = model_util.get_sparsity()
         get_logger().info("loaded model sparsity is %s%%", sparsity)
 
-    init_hyper_parameter = copy.deepcopy(trainer.get_hyper_parameter())
+    init_hyper_parameter = copy.deepcopy(trainer.hyper_parameter)
     get_logger().info("prune model when test accuracy is %s", pruning_accuracy)
     get_logger().info("prune amount is %s", pruning_amount)
 

@@ -495,7 +495,7 @@ class HyperGradientTrainer:
         hyper_gradient_dict = None
 
     def __after_epoch_callback(self, trainer, epoch, **kwargs):
-        total_epochs = trainer.get_hyper_parameter().epochs
+        total_epochs = trainer.hyper_parameter.epochs
         if epoch == total_epochs:
             return
         if epoch % 10 != 0:
