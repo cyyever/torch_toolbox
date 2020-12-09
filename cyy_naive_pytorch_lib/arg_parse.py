@@ -117,11 +117,13 @@ def create_trainer_from_args(args) -> Trainer:
 
 
 def create_inferencer_from_args(args) -> Inferencer:
-    inferencer = get_inferencer_from_configuration(
-        args.dataset_name, args.model_name)
-    if args.model_path is not None:
-        inferencer.load_model(args.model_path)
-    return inferencer
+    trainer = create_trainer_from_args(args)
+    return trainer.get_inferencer(MachineLearningPhase.Test)
+    # inferencer = get_inferencer_from_configuration(
+    #     args.dataset_name, args.model_name)
+    # if args.model_path is not None:
+    #     inferencer.load_model(args.model_path)
+    # return inferencer
 
 
 def __get_randomized_label_map(args):
