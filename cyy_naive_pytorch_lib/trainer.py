@@ -115,6 +115,7 @@ class BasicTrainer:
         def training_callback(_, trainer: BasicTrainer):
             nonlocal save_dir, kwargs
             get_logger().setLevel(logging.ERROR)
+            kwargs["test_epoch_interval"] = 1
             trainer.train(**kwargs)
             if save_dir is not None:
                 trainer.save_model(save_dir)
@@ -123,6 +124,8 @@ class BasicTrainer:
                 "training_loss": trainer.training_loss,
                 "validation_loss": trainer.validation_loss,
                 "validation_accuracy": trainer.validation_accuracy,
+                "test_loss": trainer.test_loss,
+                "test_accuracy": trainer.test_accuracy,
             }
 
         return BasicTrainer.__repeated_training(
