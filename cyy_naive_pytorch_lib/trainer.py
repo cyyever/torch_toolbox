@@ -273,6 +273,7 @@ class BasicTrainer:
                     epoch,
                     cur_learning_rates=cur_learning_rates,
                     optimizer=optimizer,
+                    **kwargs
                 )
 
             if self.__stop_criterion is not None and self.__stop_criterion(
