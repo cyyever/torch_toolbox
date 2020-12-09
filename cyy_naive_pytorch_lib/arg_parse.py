@@ -18,8 +18,9 @@ from dataset import (
 )
 from configuration import (
     get_trainer_from_configuration,
-    get_inferencer_from_configuration,
 )
+
+# get_inferencer_from_configuration,
 from reproducible_env import global_reproducible_env
 from trainer import Trainer
 from inference import Inferencer
@@ -74,8 +75,6 @@ def affect_global_process_from_args(args):
 
 
 def set_reproducible_env_from_args(args):
-    # TODO fix location
-    global global_reproducible_env
     if args.reproducible_env_load_path is not None:
         assert not global_reproducible_env.initialized
         global_reproducible_env.load(args.reproducible_env_load_path)
@@ -116,9 +115,10 @@ def create_trainer_from_args(args) -> Trainer:
     return trainer
 
 
-def create_inferencer_from_args(args) -> Inferencer:
+def create_inferencer_from_args(
+        args, phase=MachineLearningPhase.Test) -> Inferencer:
     trainer = create_trainer_from_args(args)
-    return trainer.get_inferencer(MachineLearningPhase.Test)
+    return trainer.get_inferencer(phase)
     # inferencer = get_inferencer_from_configuration(
     #     args.dataset_name, args.model_name)
     # if args.model_path is not None:
