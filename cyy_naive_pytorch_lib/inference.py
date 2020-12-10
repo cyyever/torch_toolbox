@@ -1,5 +1,4 @@
 import copy
-from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -27,7 +26,7 @@ class Inferencer:
         model_with_loss: ModelWithLoss,
         dataset,
         phase: MachineLearningPhase,
-        hyper_parameter: Optional[HyperParameter] = None,
+        hyper_parameter: HyperParameter,
     ):
         assert phase != MachineLearningPhase.Training
         self.__model_with_loss = copy.deepcopy(model_with_loss)
