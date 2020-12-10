@@ -1,6 +1,5 @@
 from hyper_parameter import HyperParameter
 from trainer import Trainer, ClassificationTrainer, DetectionTrainer
-from inference import Inferencer
 from dataset import get_dataset
 from local_types import MachineLearningPhase
 from hyper_parameter import get_recommended_hyper_parameter
@@ -34,16 +33,3 @@ def get_trainer_from_configuration(
     trainer.set_validation_dataset(validation_dataset)
     trainer.set_test_dataset(test_dataset)
     return trainer
-
-
-def get_inferencer_from_configuration(
-        dataset_name: str,
-        model_name: str) -> Inferencer:
-    phase = MachineLearningPhase.Test
-    test_dataset = get_dataset(dataset_name, phase=phase)
-    return Inferencer(
-        get_model(
-            model_name,
-            test_dataset),
-        test_dataset,
-        phase=phase)
