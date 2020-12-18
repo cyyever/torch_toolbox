@@ -8,7 +8,7 @@ from hyper_parameter import HyperParameter
 from device import get_device, put_data_to_device
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
-from util import get_batch_size
+from tensor import get_batch_size
 from dataset import DatasetUtil
 from local_types import MachineLearningPhase
 

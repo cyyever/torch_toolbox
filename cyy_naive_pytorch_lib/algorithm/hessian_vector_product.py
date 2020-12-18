@@ -8,7 +8,7 @@ import torch.autograd as autograd
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 
 from device import get_cuda_devices
-from util import cat_tensors_to_vector
+from tensor import cat_tensors_to_vector
 from model_util import ModelUtil
 from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
 from model_loss import ModelWithLoss

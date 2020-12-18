@@ -6,7 +6,7 @@ import torch.nn.utils.prune as prune
 
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_order
 
-import util
+from tensor import cat_tensors_to_vector
 
 
 class ModelUtil:
@@ -15,7 +15,7 @@ class ModelUtil:
         self.__is_pruned = None
 
     def get_parameter_list(self):
-        return util.cat_tensors_to_vector(self.__get_parameter_seq())
+        return cat_tensors_to_vector(self.__get_parameter_seq())
 
     def get_gradient_list(self):
         if self.is_pruned:
@@ -29,7 +29,7 @@ class ModelUtil:
                     mask = getattr(layer, real_name + "_mask", None)
                     assert mask is not None
                     parameter.grad = parameter.grad * mask
-        return util.cat_tensors_to_vector(
+        return cat_tensors_to_vector(
             (parameter.grad for parameter in self.__get_parameter_seq())
         )
 
@@ -111,7 +111,7 @@ class ModelUtil:
                 res[real_name] = self.get_attr(real_name + "_mask")
                 continue
             res[name] = torch.ones_like(parameter)
-        return util.cat_tensors_to_vector(get_mapping_values_by_order(res))
+        return cat_tensors_to_vector(get_mapping_values_by_order(res))
 
     def get_sparsity(self):
         parameter_list = self.get_parameter_list()
