@@ -12,7 +12,7 @@ from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from algorithm.per_sample_gradient import get_per_sample_gradient
 from device import get_device, put_data_to_device
 from model_util import ModelUtil
-from util import get_batch_size
+from tensor import get_batch_size
 from inference import Inferencer, ClassificationInferencer, DetectionInferencer
 from model_loss import ModelWithLoss
 from visualization import EpochWindow, Window
