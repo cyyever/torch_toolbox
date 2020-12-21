@@ -1,6 +1,5 @@
 import torch
 import visdom
-from cyy_naive_lib.shell_factory import exec_cmd
 
 
 class Window:
@@ -76,12 +75,8 @@ class Window:
         if self.win is not None:
             update = "replace"
         self.win = self.vis.scatter(
-            X=x,
-            Y=y,
-            win=self.win,
-            name=name,
-            update=update,
-            opts=self.get_opts())
+            X=x, Y=y, win=self.win, name=name, update=update, opts=self.get_opts()
+        )
         self._add_window()
 
     def save(self):
