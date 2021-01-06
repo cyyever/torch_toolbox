@@ -238,6 +238,8 @@ class BasicTrainer:
                 normalized_batch_loss /= training_set_size
                 training_loss += normalized_batch_loss
 
+                for callback in kwargs.get("pre_step_callbacks", []):
+                    callback(self)
                 optimizer.step()
                 if lr_step_after_batch:
                     lr_scheduler.step()
