@@ -100,6 +100,12 @@ class BasicTrainer:
     def hyper_parameter(self):
         return self.__hyper_parameter
 
+    @property
+    def get_optimizer(self):
+        return self.hyper_parameter.get_optimizer(
+            self.model.parameters(), len(self.training_dataset)
+        )
+
     def load_model(self, model_path):
         self.model_with_loss.set_model(
             torch.load(model_path, map_location=get_device())
@@ -145,9 +151,7 @@ class BasicTrainer:
         for epoch in range(1, self.__hyper_parameter.epochs + 1):
             if self.__reset_hyper_parameter:
                 self.__reset_hyper_parameter = False
-                optimizer = self.__hyper_parameter.get_optimizer(
-                    self.model.parameters(), len(self.training_dataset)
-                )
+                optimizer = self.get_optimizer()
                 lr_scheduler = self.__hyper_parameter.get_lr_scheduler(
                     optimizer, training_set_size
                 )
