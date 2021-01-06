@@ -138,7 +138,9 @@ class BasicTrainer:
 
         training_set_size = len(self.training_dataset)
         get_logger().info("training_set_size is %s", training_set_size)
-        device = get_device()
+        device = kwargs.get("device", None)
+        if device is None:
+            device = get_device()
         get_logger().info("use device %s", device)
         self.model.to(device)
         self.__reset_hyper_parameter = True
