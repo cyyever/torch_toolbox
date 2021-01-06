@@ -20,8 +20,8 @@ from trainer import Trainer
 
 def get_arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_name", type=str)
-    parser.add_argument("--model_name", type=str)
+    parser.add_argument("--dataset_name", type=str, required=True)
+    parser.add_argument("--model_name", type=str, required=True)
     parser.add_argument("--epochs", type=int, default=None)
     parser.add_argument("--batch_size", type=int, default=None)
     parser.add_argument("--learning_rate", type=float, default=None)
