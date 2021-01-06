@@ -2,6 +2,7 @@ import copy
 import datetime
 import logging
 import os
+import threading
 from typing import Callable, Optional
 
 import torch
@@ -338,6 +339,8 @@ class Trainer(BasicTrainer):
         self.visdom_env = (
             "training_"
             + str(self.model.__class__.__name__)
+            + "_"
+            + str(threading.get_native_id())
             + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
         )
 
