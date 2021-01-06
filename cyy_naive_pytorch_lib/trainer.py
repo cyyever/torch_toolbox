@@ -338,6 +338,8 @@ class Trainer(BasicTrainer):
         self.visdom_env = (
             "training_"
             + str(self.model.__class__.__name__)
+            + "_"
+            + str(os.getpid())
             + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
         )
 
