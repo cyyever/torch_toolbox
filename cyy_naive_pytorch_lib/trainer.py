@@ -100,7 +100,6 @@ class BasicTrainer:
     def hyper_parameter(self):
         return self.__hyper_parameter
 
-    @property
     def get_optimizer(self):
         return self.hyper_parameter.get_optimizer(
             self.model.parameters(), len(self.training_dataset)
