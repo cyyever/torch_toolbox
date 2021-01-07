@@ -247,7 +247,7 @@ class BasicTrainer:
                 callbacks = kwargs.get("optimizer_step_callbacks", [])
                 if callbacks:
                     for callback in callbacks:
-                        callback(self, optimizer=optimizer)
+                        callback(self, optimizer=optimizer, device=device)
                 else:
                     optimizer.step()
                 if lr_step_after_batch:
