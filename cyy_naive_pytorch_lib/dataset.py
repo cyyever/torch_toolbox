@@ -11,7 +11,7 @@ import torchvision.transforms as transforms
 
 from cyy_naive_lib.log import get_logger
 from datasets.webank_street_dataset import WebankStreetDataset
-from local_types import MachineLearningPhase
+from ml_types import MachineLearningPhase
 
 
 class DatasetFilter:

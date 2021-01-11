@@ -10,7 +10,7 @@ from model_loss import ModelWithLoss
 from model_util import ModelUtil
 from tensor import get_batch_size
 from dataset import DatasetUtil
-from local_types import MachineLearningPhase
+from ml_types import MachineLearningPhase
 
 
 class Inferencer:

@@ -1,10 +1,10 @@
 from hyper_parameter import HyperParameter
 from trainer import Trainer, ClassificationTrainer, DetectionTrainer
 from dataset import get_dataset
-from local_types import MachineLearningPhase
+from ml_types import MachineLearningPhase
 from hyper_parameter import get_recommended_hyper_parameter
 from model_factory import get_model
-from local_types import ModelType
+from ml_types import ModelType
 
 
 def get_trainer_from_configuration(

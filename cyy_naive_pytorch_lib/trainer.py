@@ -13,7 +13,7 @@ from algorithm.per_sample_gradient import get_per_sample_gradient
 from device import get_device, put_data_to_device
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
-from local_types import MachineLearningPhase, ModelType
+from ml_types import MachineLearningPhase, ModelType
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
 from tensor import get_batch_size

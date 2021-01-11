@@ -13,7 +13,7 @@ from configuration import get_trainer_from_configuration
 from dataset import (DatasetUtil, get_dataset, replace_dataset_labels,
                      sub_dataset)
 from inference import Inferencer
-from local_types import MachineLearningPhase
+from ml_types import MachineLearningPhase
 from reproducible_env import global_reproducible_env
 from trainer import Trainer
 
