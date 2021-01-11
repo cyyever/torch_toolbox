@@ -2,16 +2,16 @@
 from typing import Callable
 
 import torch.multiprocessing
-from cyy_naive_lib.data_structure.process_task_queue import ProcessTaskQueue
+from cyy_naive_lib.data_structure.task_queue import TaskQueue
 
 from device import get_cuda_devices
 
 
-class CUDAProcessTaskQueue(ProcessTaskQueue):
-    def __init__(self, processor_fun: Callable):
+class CUDAProcessTaskQueue(TaskQueue):
+    def __init__(self, worker_fun: Callable):
         self.cuda_devices = get_cuda_devices()
         super().__init__(
-            processor_fun=processor_fun,
+            worker_fun=worker_fun,
             ctx=torch.multiprocessing.get_context("spawn"),
             worker_num=len(self.cuda_devices),
         )
