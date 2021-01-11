@@ -114,7 +114,12 @@ class HyperParameter:
 def get_default_lr_scheduler(
     optimizer, hyper_parameter: HyperParameter, training_dataset_size: int
 ):
-    return optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True, factor=0.1)
+    return optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        verbose=True,
+        factor=0.1,
+        patience=min(10, hyper_parameter.epochs + 9 // 10),
+    )
     # return optim.lr_scheduler.OneCycleLR(
     #     optimizer,
     #     pct_start=0.4,
