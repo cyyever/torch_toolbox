@@ -1,12 +1,17 @@
 from typing import Optional
+
 import torch
 import torch.nn as nn
 from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
-from local_types import MachineLearningPhase
-from local_types import ModelType
+
+from local_types import MachineLearningPhase, ModelType
 
 
 class ModelWithLoss:
+    """
+    Combine a model with a loss function.
+    """
+
     def __init__(
         self,
         model: torch.nn.Module,
@@ -19,9 +24,6 @@ class ModelWithLoss:
             self.__loss_fun = self.__choose_loss_function()
         self.__model_type = model_type
 
-    def set_model(self, model: torch.nn.Module):
-        self.__model = model
-
     @property
     def model(self):
         return self.__model
@@ -33,6 +35,9 @@ class ModelWithLoss:
     @property
     def loss_fun(self):
         return self.__loss_fun
+
+    def set_model(self, model: torch.nn.Module):
+        self.__model = model
 
     def set_model_mode(self, phase: MachineLearningPhase):
         if isinstance(self.__model, GeneralizedRCNN):
@@ -49,15 +54,16 @@ class ModelWithLoss:
 
     def __call__(self, inputs, target, phase: MachineLearningPhase) -> dict:
         if isinstance(self.__model, GeneralizedRCNN):
-            loss_dict: dict = None
+            detection = None
             if phase in (MachineLearningPhase.Training,):
                 loss_dict = self.__model(inputs, target)
-                return {"loss": sum(loss for loss in loss_dict.values())}
-            loss_dict, detection = self.__model(inputs, target)
-            return {
-                "loss": sum(loss for loss in loss_dict.values()),
-                "detection": detection,
-            }
+            else:
+                loss_dict, detection = self.__model(inputs, target)
+
+            result = {"loss": sum(loss for loss in loss_dict.values())}
+            if detection is not None:
+                result["detection"] = detection
+            return result
 
         assert self.__loss_fun is not None
 

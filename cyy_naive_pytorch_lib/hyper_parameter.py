@@ -1,6 +1,7 @@
 from typing import Callable, Optional
-import torch.optim as optim
+
 import torch
+import torch.optim as optim
 from cyy_naive_lib.log import get_logger
 
 from dataset import dataset_with_indices
@@ -65,8 +66,7 @@ class HyperParameter:
 
     def get_lr_scheduler(self, optimizer, training_dataset_size: int):
         assert self.__lr_scheduler_factory is not None
-        return self.__lr_scheduler_factory(
-            optimizer, self, training_dataset_size)
+        return self.__lr_scheduler_factory(optimizer, self, training_dataset_size)
 
     def set_optimizer_factory(self, optimizer_factory: Callable):
         self.__optimizer_factory = optimizer_factory
@@ -114,8 +114,7 @@ class HyperParameter:
 def get_default_lr_scheduler(
     optimizer, hyper_parameter: HyperParameter, training_dataset_size: int
 ):
-    return optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, verbose=True, factor=0.1)
+    return optim.lr_scheduler.ReduceLROnPlateau(optimizer, verbose=True, factor=0.1)
     # return optim.lr_scheduler.OneCycleLR(
     #     optimizer,
     #     pct_start=0.4,
@@ -174,9 +173,8 @@ def get_recommended_hyper_parameter(
         hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
     else:
         get_logger().error(
-            "no hyper parameter for dataset %s and model %s",
-            dataset_name,
-            model_name)
+            "no hyper parameter for dataset %s and model %s", dataset_name, model_name
+        )
         return None
     if model_name == "FasterRCNN":
         hyper_parameter.set_dataloader_collate_fn(
