@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
-import copy
 import atexit
-import torch
+import copy
 
+import torch
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 
-from device import get_cuda_devices
-from model_util import ModelUtil
-from model_loss import ModelWithLoss
 from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
-from local_types import MachineLearningPhase
+from device import get_cuda_devices
+from ml_types import MachineLearningPhase
+from model_loss import ModelWithLoss
+from model_util import ModelUtil
 
 
 def __worker_fun(task, args):
@@ -29,8 +29,9 @@ def __worker_fun(task, args):
         )["loss"]
         loss.backward()
         gradient_lists.append(
-            ModelUtil(
-                model_with_loss.model).get_gradient_list().to(master_device))
+            ModelUtil(model_with_loss.model).get_gradient_list().to(
+                master_device)
+        )
     assert len(gradient_lists) == len(input_chunk)
     return (index, gradient_lists)
 
@@ -64,19 +65,13 @@ def get_per_sample_gradient(model_with_loss: ModelWithLoss, inputs, targets):
 
     input_chunks = list(
         split_list_to_chunks(
-            inputs,
-            (len(inputs) +
-             len(devices) -
-             1) //
-            len(devices)))
+            inputs, (len(inputs) + len(devices) - 1) // len(devices))
+    )
 
     target_chunks = list(
         split_list_to_chunks(
-            targets,
-            (len(targets) +
-             len(devices) -
-             1) //
-            len(devices)))
+            targets, (len(targets) + len(devices) - 1) // len(devices))
+    )
     if __task_queue is None:
         __task_queue = CUDAProcessTaskQueue(__worker_fun)
     __task_queue.start()
