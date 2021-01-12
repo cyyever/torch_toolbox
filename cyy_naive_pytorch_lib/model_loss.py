@@ -52,9 +52,11 @@ class ModelWithLoss:
             return
         self.model.eval()
 
-    def __call__(self, inputs, target, phase: MachineLearningPhase) -> dict:
+    def __call__(self, inputs, target,
+                 phase: MachineLearningPhase = None) -> dict:
         if isinstance(self.__model, GeneralizedRCNN):
             detection = None
+            assert phase is not None
             if phase in (MachineLearningPhase.Training,):
                 loss_dict = self.__model(inputs, target)
             else:
