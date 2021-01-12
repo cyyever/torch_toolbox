@@ -2,16 +2,16 @@
 
 import atexit
 import copy
+
 import numpy as np
 import torch.autograd as autograd
-
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 
-from device import get_cuda_devices
-from tensor import cat_tensors_to_vector
-from model_util import ModelUtil
 from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
+from device import get_cuda_devices
 from model_loss import ModelWithLoss
+from model_util import ModelUtil
+from tensor import cat_tensors_to_vector
 
 
 class ModelSnapshot:
@@ -50,9 +50,7 @@ def load_model_parameters(model, parameters, param_shape_dict, device):
     bias = 0
     for name, shape in param_shape_dict.items():
         param_element_num = np.prod(shape)
-        param = parameters.narrow(
-            0, bias, param_element_num).view(
-            *shape).to(device)
+        param = parameters.narrow(0, bias, param_element_num).view(*shape).to(device)
         ModelUtil(model).set_attr(name, param, as_parameter=False)
         bias += param_element_num
     assert bias == len(parameters)
@@ -66,13 +64,13 @@ def __get_f(device, inputs, targets, model_with_loss, param_shape_dict):
         )
         assert len(model_snapshots) >= len(args)
         total_loss = None
+        temp_model_with_loss = copy.deepcopy(model_with_loss)
         for i, arg in enumerate(args):
             cur_model_snapshot = model_snapshots[i]
-            load_model_parameters(
-                cur_model_snapshot, arg, param_shape_dict, device)
+            load_model_parameters(cur_model_snapshot, arg, param_shape_dict, device)
             cur_model_snapshot.to(device)
-            loss = model_with_loss.loss_fun(
-                cur_model_snapshot(inputs), targets)
+            temp_model_with_loss.set_model(cur_model_snapshot)
+            loss = temp_model_with_loss(inputs, targets)
             if total_loss is None:
                 total_loss = loss
             else:
@@ -82,7 +80,7 @@ def __get_f(device, inputs, targets, model_with_loss, param_shape_dict):
     return f
 
 
-def processor_fun(task, args):
+def worker_fun(task, args):
     (
         idx,
         vector_chunk,
@@ -153,8 +151,7 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
     for device in devices:
         inputs_dict[str(device)] = copy.deepcopy(batch[0]).to(device)
         targets_dict[str(device)] = copy.deepcopy(batch[1]).to(device)
-        parameter_dict[str(device)] = copy.deepcopy(
-            parameter_snapshot).to(device)
+        parameter_dict[str(device)] = copy.deepcopy(parameter_snapshot).to(device)
 
     def vhp_func(v):
         global task_queue
@@ -175,7 +172,7 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
         assert len(vector_chunks) <= len(devices)
 
         if task_queue is None:
-            task_queue = CUDAProcessTaskQueue(processor_fun)
+            task_queue = CUDAProcessTaskQueue(worker_fun)
         task_queue.start()
         for idx, vector_chunk in enumerate(vector_chunks):
             task_queue.add_task(
