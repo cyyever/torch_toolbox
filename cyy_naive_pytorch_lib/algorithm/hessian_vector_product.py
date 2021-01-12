@@ -73,7 +73,7 @@ def __get_f(device, inputs, targets, model_with_loss, param_shape_dict):
                 cur_model_snapshot, arg, param_shape_dict, device)
             cur_model_snapshot.to(device)
             temp_model_with_loss.set_model(cur_model_snapshot)
-            loss = temp_model_with_loss(inputs, targets)
+            loss = temp_model_with_loss(inputs, targets)["loss"]
             if total_loss is None:
                 total_loss = loss
             else:
