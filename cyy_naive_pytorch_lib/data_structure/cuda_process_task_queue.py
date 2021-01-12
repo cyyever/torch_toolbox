@@ -17,4 +17,4 @@ class CUDAProcessTaskQueue(TaskQueue):
         )
 
     def _get_extra_task_arguments(self, worker_id):
-        return [self.cuda_devices[worker_id]]
+        return [self.cuda_devices[worker_id % len(self.cuda_devices)]]
