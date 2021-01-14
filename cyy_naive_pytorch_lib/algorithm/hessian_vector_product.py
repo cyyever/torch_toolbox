@@ -50,7 +50,9 @@ def load_model_parameters(model, parameters, param_shape_dict, device):
     bias = 0
     for name, shape in param_shape_dict.items():
         param_element_num = np.prod(shape)
-        param = parameters.narrow(0, bias, param_element_num).view(*shape).to(device)
+        param = parameters.narrow(
+            0, bias, param_element_num).view(
+            *shape).to(device)
         ModelUtil(model).set_attr(name, param, as_parameter=False)
         bias += param_element_num
     assert bias == len(parameters)
@@ -64,13 +66,14 @@ def __get_f(device, inputs, targets, model_with_loss, param_shape_dict):
         )
         assert len(model_snapshots) >= len(args)
         total_loss = None
-        temp_model_with_loss = copy.deepcopy(model_with_loss)
+        temp_model_with_loss: ModelWithLoss = copy.deepcopy(model_with_loss)
         for i, arg in enumerate(args):
             cur_model_snapshot = model_snapshots[i]
-            load_model_parameters(cur_model_snapshot, arg, param_shape_dict, device)
+            load_model_parameters(
+                cur_model_snapshot, arg, param_shape_dict, device)
             cur_model_snapshot.to(device)
             temp_model_with_loss.set_model(cur_model_snapshot)
-            loss = temp_model_with_loss(inputs, targets)
+            loss = temp_model_with_loss(inputs, targets)["loss"]
             if total_loss is None:
                 total_loss = loss
             else:
@@ -151,7 +154,8 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
     for device in devices:
         inputs_dict[str(device)] = copy.deepcopy(batch[0]).to(device)
         targets_dict[str(device)] = copy.deepcopy(batch[1]).to(device)
-        parameter_dict[str(device)] = copy.deepcopy(parameter_snapshot).to(device)
+        parameter_dict[str(device)] = copy.deepcopy(
+            parameter_snapshot).to(device)
 
     def vhp_func(v):
         global task_queue
