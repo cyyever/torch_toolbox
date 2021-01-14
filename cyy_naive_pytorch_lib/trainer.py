@@ -339,6 +339,8 @@ class Trainer(BasicTrainer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+    def train(self, **kwargs):
         self.visdom_env = (
             "training_"
             + str(self.model.__class__.__name__)
@@ -347,7 +349,6 @@ class Trainer(BasicTrainer):
             + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
         )
 
-    def train(self, **kwargs):
         def pre_training_callback(trainer, optimizer, lr_scheduler):
             model_util = ModelUtil(trainer.model)
             get_logger().info(
