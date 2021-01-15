@@ -66,10 +66,29 @@ class HyperParameter:
 
     def get_lr_scheduler(self, optimizer, training_dataset_size: int):
         assert self.__lr_scheduler_factory is not None
-        return self.__lr_scheduler_factory(optimizer, self, training_dataset_size)
+        return self.__lr_scheduler_factory(
+            self, optimizer, training_dataset_size=training_dataset_size
+        )
+
+    @staticmethod
+    def get_lr_scheduler_factory(name):
+        if name == "ReduceLROnPlateau":
+            return lambda hyper_parameter, optimizer, **kwargs: optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer,
+                verbose=True,
+                factor=0.1,
+                patience=min(10, hyper_parameter.epochs + 9 // 10),
+            )
+        raise RuntimeError("unknown learning rate scheduler:" + name)
 
     def set_optimizer_factory(self, optimizer_factory: Callable):
         self.__optimizer_factory = optimizer_factory
+
+    @staticmethod
+    def get_optimizer_factory(name: str):
+        if name == "SGD":
+            return optim.SGD
+        raise RuntimeError("unknown optimizer:" + name)
 
     def get_optimizer(self, params, training_dataset_size: int):
         assert self.__optimizer_factory is not None
@@ -111,36 +130,30 @@ class HyperParameter:
         return s
 
 
-def get_default_lr_scheduler(
-    optimizer, hyper_parameter: HyperParameter, training_dataset_size: int
-):
-    return optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        verbose=True,
-        factor=0.1,
-        patience=min(10, hyper_parameter.epochs + 9 // 10),
-    )
-    # return optim.lr_scheduler.OneCycleLR(
-    #     optimizer,
-    #     pct_start=0.4,
-    #     max_lr=0.5,
-    #     total_steps=(
-    #         hyper_parameter.epochs
-    #         * (
-    #             (training_dataset_size + hyper_parameter.batch_size - 1)
-    #             // hyper_parameter.batch_size
-    #         )
-    #     ),
-    #     anneal_strategy="linear",
-    #     three_phase=True,
-    #     div_factor=10,
-    # )
-
-
-def get_optimizer_factory(name: str):
-    if name == "SGD":
-        return optim.SGD
-    raise RuntimeError("unknown optimizer:" + name)
+# def get_default_lr_scheduler(
+#     optimizer, hyper_parameter: HyperParameter, training_dataset_size: int
+# ):
+#     return optim.lr_scheduler.ReduceLROnPlateau(
+#         optimizer,
+#         verbose=True,
+#         factor=0.1,
+#         patience=min(10, hyper_parameter.epochs + 9 // 10),
+#     )
+# return optim.lr_scheduler.OneCycleLR(
+#     optimizer,
+#     pct_start=0.4,
+#     max_lr=0.5,
+#     total_steps=(
+#         hyper_parameter.epochs
+#         * (
+#             (training_dataset_size + hyper_parameter.batch_size - 1)
+#             // hyper_parameter.batch_size
+#         )
+#     ),
+#     anneal_strategy="linear",
+#     three_phase=True,
+#     div_factor=10,
+# )
 
 
 def get_recommended_hyper_parameter(
@@ -155,32 +168,30 @@ def get_recommended_hyper_parameter(
         hyper_parameter = HyperParameter(
             epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
         )
-        hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
     elif dataset_name == "FashionMNIST" and model_name.lower() == "LeNet5".lower():
         hyper_parameter = HyperParameter(
             epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
         )
-        hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
     elif dataset_name == "CIFAR10":
         hyper_parameter = HyperParameter(
             epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
         )
-        hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
     elif dataset_name == "WebankStreet":
         hyper_parameter = HyperParameter(
             epochs=50, batch_size=4, learning_rate=0.0001, weight_decay=1
         )
-        hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
     elif dataset_name == "SVHN":
         hyper_parameter = HyperParameter(
             epochs=50, batch_size=4, learning_rate=0.0001, weight_decay=1
         )
-        hyper_parameter.set_lr_scheduler_factory(get_default_lr_scheduler)
     else:
         get_logger().error(
             "no hyper parameter for dataset %s and model %s", dataset_name, model_name
         )
         return None
+    hyper_parameter.set_lr_scheduler_factory(
+        HyperParameter.get_lr_scheduler_factory("ReduceLROnPlateau")
+    )
     if model_name == "FasterRCNN":
         hyper_parameter.set_dataloader_collate_fn(
             lambda batch: (
@@ -189,5 +200,6 @@ def get_recommended_hyper_parameter(
                 torch.Tensor([d[2] for d in batch]),
             )
         )
-    hyper_parameter.set_optimizer_factory(get_optimizer_factory("SGD"))
+    hyper_parameter.set_optimizer_factory(
+        HyperParameter.get_optimizer_factory("SGD"))
     return hyper_parameter
