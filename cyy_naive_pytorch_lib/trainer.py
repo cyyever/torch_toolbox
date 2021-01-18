@@ -59,7 +59,8 @@ class BasicTrainer:
     def validation_dataset(self):
         return self.__validation_dataset
 
-    def set_validation_dataset(self, validation_dataset: torch.utils.data.Dataset):
+    def set_validation_dataset(
+            self, validation_dataset: torch.utils.data.Dataset):
         self.__validation_dataset = validation_dataset
 
     @property
@@ -132,7 +133,8 @@ class BasicTrainer:
                 "test_accuracy": trainer.test_accuracy,
             }
 
-        return BasicTrainer.__repeated_training(repeated_num, self, training_callback)
+        return BasicTrainer.__repeated_training(
+            repeated_num, self, training_callback)
 
     def train(self, **kwargs):
         assert self.hyper_parameter is not None
@@ -160,14 +162,16 @@ class BasicTrainer:
                 if epoch != 1:
                     get_logger().warning("use new hyper-parameters")
                 lr_step_after_batch = False
-                if isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR):
+                if isinstance(lr_scheduler,
+                              torch.optim.lr_scheduler.OneCycleLR):
                     lr_step_after_batch = True
                     get_logger().info("adjust lr after batch")
             if epoch == 1:
                 for callback in kwargs.get("pre_training_callbacks", []):
                     callback(self, optimizer, lr_scheduler)
             training_loss = 0.0
-            cur_learning_rates = [group["lr"] for group in optimizer.param_groups]
+            cur_learning_rates = [group["lr"]
+                                  for group in optimizer.param_groups]
             for batch_index, batch in enumerate(
                 self.__hyper_parameter.get_dataloader(
                     self.training_dataset, phase=MachineLearningPhase.Training
@@ -177,7 +181,8 @@ class BasicTrainer:
                     cur_learning_rates = [
                         group["lr"] for group in optimizer.param_groups
                     ]
-                self.model_with_loss.set_model_mode(MachineLearningPhase.Training)
+                self.model_with_loss.set_model_mode(
+                    MachineLearningPhase.Training)
                 self.model.to(device)
                 optimizer.zero_grad()
 
@@ -218,7 +223,8 @@ class BasicTrainer:
                             sample_gradient_targets,
                         )
 
-                        assert len(gradient_list) == len(sample_gradient_indices)
+                        assert len(gradient_list) == len(
+                            sample_gradient_indices)
                         for (sample_gradient, index) in zip(
                             gradient_list, sample_gradient_indices
                         ):
@@ -247,7 +253,7 @@ class BasicTrainer:
                 callbacks = kwargs.get("optimizer_step_callbacks", [])
                 if callbacks:
                     for callback in callbacks:
-                        callback(self, optimizer=optimizer, device=device)
+                        callback(optimizer, trainer=self, device=device)
                 else:
                     optimizer.step()
                 if lr_step_after_batch:
@@ -283,7 +289,8 @@ class BasicTrainer:
                 break
 
             if not lr_step_after_batch:
-                if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                if isinstance(lr_scheduler,
+                              torch.optim.lr_scheduler.ReduceLROnPlateau):
                     get_logger().debug(
                         "call ReduceLROnPlateau for total loss %s",
                         self.training_loss[-1] + self.validation_loss[epoch],
@@ -337,9 +344,6 @@ class Trainer(BasicTrainer):
 
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def train(self, **kwargs):
         self.visdom_env = (
             "training_"
@@ -391,13 +395,17 @@ class Trainer(BasicTrainer):
                 epoch, momentums[0], y_label="Momentum"
             )
 
-            loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
+            loss_win = EpochWindow(
+                "training & validation loss",
+                env=trainer.visdom_env)
             get_logger().info(
                 "epoch: %s, training loss: %s",
                 epoch,
                 trainer.training_loss[-1],
             )
-            loss_win.plot_loss(epoch, trainer.training_loss[-1], "training loss")
+            loss_win.plot_loss(epoch,
+                               trainer.training_loss[-1],
+                               "training loss")
             Window.save_envs()
 
         kwargs = BasicTrainer.prepend_callback(
@@ -426,7 +434,9 @@ class ClassificationTrainer(Trainer):
                 validation_loss,
                 accuracy,
             )
-            loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
+            loss_win = EpochWindow(
+                "training & validation loss",
+                env=trainer.visdom_env)
             loss_win.plot_loss(epoch, validation_loss, "validation loss")
             EpochWindow("validation accuracy", env=trainer.visdom_env).plot_accuracy(
                 epoch, accuracy, "accuracy"
@@ -487,7 +497,8 @@ class DetectionTrainer(Trainer):
     def train(self, **kwargs):
         plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
 
-        def plot_after_epoch(trainer: BasicTrainer, epoch, learning_rates, **kwargs):
+        def plot_after_epoch(trainer: BasicTrainer, epoch,
+                             learning_rates, **kwargs):
             nonlocal plot_class_accuracy
             (validation_loss, accuracy, _,) = trainer.get_inferencer(
                 phase=MachineLearningPhase.Validation
@@ -502,7 +513,9 @@ class DetectionTrainer(Trainer):
                 validation_loss,
                 accuracy,
             )
-            loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
+            loss_win = EpochWindow(
+                "training & validation loss",
+                env=trainer.visdom_env)
             loss_win.plot_loss(epoch, validation_loss, "validation loss")
             EpochWindow("validation accuracy", env=trainer.visdom_env).plot_accuracy(
                 epoch, accuracy, "accuracy"
