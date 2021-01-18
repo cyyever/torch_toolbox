@@ -72,7 +72,7 @@ def get_per_sample_gradient(model_with_loss: ModelWithLoss, inputs, targets):
     if __task_queue is None:
         __task_queue = CUDAProcessTaskQueue(__worker_fun)
     __task_queue.start()
-    for idx, (input_chunk, target_chunk) in zip(input_chunks, target_chunks):
+    for idx, (input_chunk, target_chunk) in enumerate(zip(input_chunks, target_chunks)):
         __task_queue.add_task(
             (
                 idx,
