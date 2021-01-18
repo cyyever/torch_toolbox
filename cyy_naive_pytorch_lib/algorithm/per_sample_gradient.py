@@ -29,8 +29,7 @@ def __worker_fun(task, args):
         )["loss"]
         loss.backward()
         gradient_lists.append(
-            ModelUtil(model_with_loss.model).get_gradient_list().to(
-                master_device)
+            ModelUtil(model_with_loss.model).get_gradient_list().to(master_device)
         )
     assert len(gradient_lists) == len(input_chunk)
     return (index, gradient_lists)
@@ -64,19 +63,16 @@ def get_per_sample_gradient(model_with_loss: ModelWithLoss, inputs, targets):
     master_device = devices[0]
 
     input_chunks = list(
-        split_list_to_chunks(
-            inputs, (len(inputs) + len(devices) - 1) // len(devices))
+        split_list_to_chunks(inputs, (len(inputs) + len(devices) - 1) // len(devices))
     )
 
     target_chunks = list(
-        split_list_to_chunks(
-            targets, (len(targets) + len(devices) - 1) // len(devices))
+        split_list_to_chunks(targets, (len(targets) + len(devices) - 1) // len(devices))
     )
     if __task_queue is None:
         __task_queue = CUDAProcessTaskQueue(__worker_fun)
     __task_queue.start()
-    for idx, (input_chunk, target_chunk) in enumerate(
-            zip(input_chunks, target_chunks)):
+    for idx, (input_chunk, target_chunk) in zip(input_chunks, target_chunks):
         __task_queue.add_task(
             (
                 idx,

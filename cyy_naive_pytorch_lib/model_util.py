@@ -1,9 +1,9 @@
 import copy
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.utils.prune as prune
-
-
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_order
 
 from tensor import cat_tensors_to_vector
@@ -11,11 +11,30 @@ from tensor import cat_tensors_to_vector
 
 class ModelUtil:
     def __init__(self, model: torch.nn.Module):
-        self.model = model
+        self.__model = model
         self.__is_pruned = None
+        self.__parameter_dict = None
+
+    @property
+    def model(self):
+        return self.__model
 
     def get_parameter_list(self):
         return cat_tensors_to_vector(self.__get_parameter_seq())
+
+    def load_parameter_list(self, parameter_list: torch.Tensor):
+        parameter_dict = self.get_parameter_dict()
+        bias = 0
+        for name in sorted(parameter_dict.keys()):
+            parameter = parameter_dict[name]
+            shape = parameter.shape
+            param_element_num = np.prod(shape)
+            parameter = parameter_list.narrow(0, bias, param_element_num).view(*shape)
+            parameter_dict[name] = parameter
+            bias += param_element_num
+
+        assert bias == parameter_list.shape[0]
+        self.load_parameter_dict(parameter_dict)
 
     def get_gradient_list(self):
         if self.is_pruned:
@@ -117,8 +136,7 @@ class ModelUtil:
         parameter_list = self.get_parameter_list()
         parameter_count = len(parameter_list)
         none_zero_parameter_num = torch.sum(parameter_list != 0)
-        sparsity = 100 * float(none_zero_parameter_num) / \
-            float(parameter_count)
+        sparsity = 100 * float(none_zero_parameter_num) / float(parameter_count)
         return (sparsity, none_zero_parameter_num, parameter_count)
 
     @property
@@ -129,17 +147,21 @@ class ModelUtil:
 
     def load_parameter_dict(self, parameter_dict: dict):
         assert not self.is_pruned
+        self.__parameter_dict = None
         for name, parameter in parameter_dict.items():
             self.set_attr(name, parameter)
 
     def get_parameter_dict(self) -> dict:
+        if self.__parameter_dict is not None:
+            return self.__parameter_dict
         res = dict()
         for name, parameter in self.model.named_parameters():
             if self.is_pruned and name.endswith("_orig"):
                 res[name[:-5]] = parameter
                 continue
             res[name] = parameter
-        return res
+        self.__parameter_dict = res
+        return self.__parameter_dict
 
     def __get_parameter_seq(self):
         res = self.get_parameter_dict()
