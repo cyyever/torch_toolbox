@@ -1,24 +1,20 @@
-import os
 import functools
-from typing import Iterable, Callable, List, Generator
+import os
 import random
+from typing import Callable, Generator, Iterable, List
+
 import PIL
-
-
 import torch
 import torchvision
 import torchvision.transforms as transforms
-
 from cyy_naive_lib.log import get_logger
+
 from datasets.webank_street_dataset import WebankStreetDataset
 from ml_types import MachineLearningPhase
 
 
 class DatasetFilter:
-    def __init__(
-            self,
-            dataset: torch.utils.data.Dataset,
-            filters: Iterable[Callable]):
+    def __init__(self, dataset: torch.utils.data.Dataset, filters: Iterable[Callable]):
         self.dataset = dataset
         self.filters = filters
         self.indices = self.__get_indices()
@@ -38,10 +34,7 @@ class DatasetFilter:
 
 
 class DatasetMapper:
-    def __init__(
-            self,
-            dataset: torch.utils.data.Dataset,
-            mappers: Iterable[Callable]):
+    def __init__(self, dataset: torch.utils.data.Dataset, mappers: Iterable[Callable]):
         self.dataset = dataset
         self.mappers = mappers
 
@@ -72,16 +65,12 @@ def dataset_with_indices(dataset: torch.utils.data.Dataset):
 
 
 def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
-    return (
-        torch.utils.data.Subset(
-            dataset,
-            [index]) for index in range(
-            len(dataset)))
+    return (torch.utils.data.Subset(dataset, [index]) for index in range(len(dataset)))
 
 
 class DatasetUtil:
     def __init__(self, dataset: torch.utils.data.Dataset):
-        self.dataset = dataset
+        self.dataset: torch.utils.data.Dataset = dataset
         self.__channel = None
         self.__len = None
 
@@ -117,8 +106,7 @@ class DatasetUtil:
             if wh is None:
                 wh = x.shape[2] * x.shape[3]
             for i in range(self.channel):
-                std[i] += torch.sum((x[:, i, :, :] -
-                                     mean[i].data.item()) ** 2) / wh
+                std[i] += torch.sum((x[:, i, :, :] - mean[i].data.item()) ** 2) / wh
 
         std = std.div(self.len).sqrt()
         return mean, std
@@ -175,6 +163,8 @@ class DatasetUtil:
 
     def split_by_ratio(self, parts: list, by_label: bool = True) -> list:
         assert parts
+        if len(parts) == 1:
+            return [self.dataset]
         sub_dataset_indices_list: list = []
         for _ in parts:
             sub_dataset_indices_list.append([])
@@ -183,20 +173,19 @@ class DatasetUtil:
             for _, v in self.split_by_label().items():
                 label_indices_list = sorted(v["indices"])
                 for i, part in enumerate(parts):
-                    delimiter = int(len(label_indices_list)
-                                    * part / sum(parts[i:]))
+                    delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
                     sub_dataset_indices_list[i] += label_indices_list[:delimiter]
                     label_indices_list = label_indices_list[delimiter:]
         else:
             label_indices_list = list(range(len(self.dataset)))
             for i, part in enumerate(parts):
-                delimiter = int(len(label_indices_list)
-                                * part / sum(parts[i:]))
+                delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
                 sub_dataset_indices_list[i] += label_indices_list[:delimiter]
                 label_indices_list = label_indices_list[delimiter:]
 
-        return [sub_dataset(self.dataset, indices)
-                for indices in sub_dataset_indices_list]
+        return [
+            sub_dataset(self.dataset, indices) for indices in sub_dataset_indices_list
+        ]
 
     def sample_subset(self, percentage: float) -> dict:
         label_map = self.split_by_label()
@@ -365,8 +354,8 @@ def get_dataset(name: str, phase: MachineLearningPhase):
     if name not in __datasets:
         dataset_util = DatasetUtil(dataset)
         training_dataset, validation_dataset = tuple(
-            dataset_util.split_by_ratio(
-                training_dataset_parts, by_label=by_label))
+            dataset_util.split_by_ratio(training_dataset_parts, by_label=by_label)
+        )
         __datasets[name] = dict()
         __datasets[name][MachineLearningPhase.Training] = training_dataset
         __datasets[name][MachineLearningPhase.Validation] = validation_dataset
