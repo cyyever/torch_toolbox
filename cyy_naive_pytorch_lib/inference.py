@@ -2,15 +2,16 @@ import copy
 
 import torch
 import torch.nn as nn
+from cyy_naive_lib.log import get_logger
 from torchvision.ops.boxes import box_iou
 
-from hyper_parameter import HyperParameter
+from dataset import DatasetUtil
 from device import get_device, put_data_to_device
+from hyper_parameter import HyperParameter
+from ml_types import MachineLearningPhase
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
 from tensor import get_batch_size
-from dataset import DatasetUtil
-from ml_types import MachineLearningPhase
 
 
 class Inferencer:
@@ -57,7 +58,8 @@ class Inferencer:
 
         use_grad = kwargs.get("use_grad", False)
         with torch.set_grad_enabled(use_grad):
-            device = get_device()
+            device = kwargs.get("device", get_device())
+            get_logger().info("use device %s", device)
             self.__model_with_loss.set_model_mode(self.__phase)
             self.model.zero_grad()
             self.model.to(device)
@@ -68,8 +70,7 @@ class Inferencer:
                 targets = put_data_to_device(batch[1], device)
                 real_batch_size = get_batch_size(inputs)
 
-                result = self.__model_with_loss(
-                    inputs, targets, phase=self.__phase)
+                result = self.__model_with_loss(inputs, targets, phase=self.__phase)
                 batch_loss = result["loss"]
 
                 for callback in kwargs.get("after_batch_callbacks", []):
