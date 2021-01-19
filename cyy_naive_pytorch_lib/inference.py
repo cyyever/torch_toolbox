@@ -28,9 +28,12 @@ class Inferencer:
         dataset,
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
+        deep_copy=True,
     ):
         assert phase != MachineLearningPhase.Training
-        self.__model_with_loss = copy.deepcopy(model_with_loss)
+        self.__model_with_loss = model_with_loss
+        if deep_copy:
+            self.__model_with_loss = copy.deepcopy(model_with_loss)
         self.__dataset = dataset
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
