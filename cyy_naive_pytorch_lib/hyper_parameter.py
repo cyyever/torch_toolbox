@@ -71,6 +71,10 @@ class HyperParameter:
         )
 
     @staticmethod
+    def lr_scheduler_step_after_batch(lr_scheduler):
+        return isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR)
+
+    @staticmethod
     def get_lr_scheduler_factory(name):
         if name == "ReduceLROnPlateau":
             return lambda hyper_parameter, optimizer, **kwargs: optim.lr_scheduler.ReduceLROnPlateau(
@@ -200,6 +204,5 @@ def get_recommended_hyper_parameter(
                 torch.Tensor([d[2] for d in batch]),
             )
         )
-    hyper_parameter.set_optimizer_factory(
-        HyperParameter.get_optimizer_factory("SGD"))
+    hyper_parameter.set_optimizer_factory(HyperParameter.get_optimizer_factory("SGD"))
     return hyper_parameter
