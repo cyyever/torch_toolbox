@@ -21,7 +21,7 @@ class LeNet5(nn.Module):
     """
 
     def __init__(self, input_channels=1):
-        super(LeNet5, self).__init__()
+        super().__init__()
 
         self.input_channels = input_channels
         self.convnet = nn.Sequential(
@@ -45,7 +45,6 @@ class LeNet5(nn.Module):
                     ("f6", nn.Linear(120, 84)),
                     ("relu6", nn.ReLU()),
                     ("f7", nn.Linear(84, 10)),
-                    ("sig7", nn.LogSoftmax(dim=-1)),
                 ]
             )
         )
