@@ -114,9 +114,7 @@ class BasicTrainer:
         self.model_with_loss.set_model(model)
 
     def load_model(self, model_path):
-        self.model_with_loss.set_model(
-            torch.load(model_path, map_location=get_device())
-        )
+        self.set_model(torch.load(model_path, map_location=get_device()))
 
     def save_model(self, save_dir, model_name="model.pt"):
         os.makedirs(save_dir, exist_ok=True)

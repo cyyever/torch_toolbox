@@ -43,6 +43,9 @@ class Inferencer:
     def model(self):
         return self.__model_with_loss.model
 
+    def set_model(self, model: torch.nn.Module):
+        self.__model_with_loss.set_model(model)
+
     @property
     def dataset(self):
         return self.__dataset
@@ -51,9 +54,7 @@ class Inferencer:
         self.__dataset = dataset
 
     def load_model(self, model_path):
-        self.__model_with_loss.set_model(
-            torch.load(model_path, map_location=get_device())
-        )
+        self.set_model(torch.load(model_path, map_location=get_device()))
 
     def inference(self, **kwargs):
         data_loader = self.__hyper_parameter.get_dataloader(
