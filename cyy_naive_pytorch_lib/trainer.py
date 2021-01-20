@@ -151,9 +151,8 @@ class BasicTrainer:
         self.__reset_loss()
         optimizer = None
         lr_scheduler = None
-        lr_step_after_batch = None
 
-        for epoch in range(1, self.__hyper_parameter.epoch + 1):
+        for epoch in range(1, self.hyper_parameter.epoch + 1):
             if self.__reset_hyper_parameter:
                 self.__reset_hyper_parameter = False
                 optimizer = self.get_optimizer()
@@ -162,9 +161,7 @@ class BasicTrainer:
                 )
                 if epoch != 1:
                     get_logger().warning("use new hyper-parameters")
-                lr_step_after_batch = False
-                if isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR):
-                    lr_step_after_batch = True
+                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                     get_logger().info("adjust lr after batch")
             if epoch == 1:
                 for callback in kwargs.get("pre_training_callbacks", []):
@@ -176,7 +173,7 @@ class BasicTrainer:
                     self.training_dataset, phase=MachineLearningPhase.Training
                 )
             ):
-                if lr_step_after_batch:
+                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                     cur_learning_rates = [
                         group["lr"] for group in optimizer.param_groups
                     ]
@@ -253,7 +250,7 @@ class BasicTrainer:
                         callback(optimizer, trainer=self, device=device)
                 else:
                     optimizer.step()
-                if lr_step_after_batch:
+                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                     lr_scheduler.step()
 
                 for callback in kwargs.get("after_batch_callbacks", []):
@@ -287,7 +284,7 @@ class BasicTrainer:
                 get_logger().warning("early stop")
                 break
 
-            if not lr_step_after_batch:
+            if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                 if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                     get_logger().debug(
                         "call ReduceLROnPlateau for total loss %s",
