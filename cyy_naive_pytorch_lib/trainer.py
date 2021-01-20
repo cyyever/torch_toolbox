@@ -271,12 +271,13 @@ class BasicTrainer:
 
             self.training_loss.append(training_loss)
             for callback in kwargs.get("after_epoch_callbacks", []):
+                if "device" not in kwargs:
+                    kwargs["device"] = device
                 callback(
                     self,
                     epoch,
                     cur_learning_rates=cur_learning_rates,
                     optimizer=optimizer,
-                    device=device,
                     **kwargs,
                 )
 
