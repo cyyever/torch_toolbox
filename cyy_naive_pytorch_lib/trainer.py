@@ -69,7 +69,9 @@ class BasicTrainer:
     def set_test_dataset(self, test_dataset: torch.utils.data.Dataset):
         self.__test_dataset = test_dataset
 
-    def get_inferencer(self, phase: MachineLearningPhase, copy_model=True) -> Inferencer:
+    def get_inferencer(
+        self, phase: MachineLearningPhase, copy_model=True
+    ) -> Inferencer:
         assert phase != MachineLearningPhase.Training
 
         dataset = self.validation_dataset
@@ -81,7 +83,7 @@ class BasicTrainer:
                 dataset,
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
-                copy_model=deep_copy,
+                copy_model=copy_model,
             )
         if self.model_with_loss.model_type == ModelType.Detection:
             return DetectionInferencer(
@@ -90,7 +92,7 @@ class BasicTrainer:
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
                 iou_threshold=0.6,
-                copy_model=deep_copy
+                copy_model=copy_model,
             )
         assert False
         return None
