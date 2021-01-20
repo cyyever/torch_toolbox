@@ -22,7 +22,7 @@ def get_arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_name", type=str, required=True)
     parser.add_argument("--model_name", type=str, required=True)
-    parser.add_argument("--epochs", type=int, default=None)
+    parser.add_argument("--epoch", type=int, default=None)
     parser.add_argument("--batch_size", type=int, default=None)
     parser.add_argument("--learning_rate", type=float, default=None)
     parser.add_argument("--momentum", type=float, default=None)
@@ -78,8 +78,8 @@ def create_trainer_from_args(args) -> Trainer:
 
     hyper_parameter = copy.deepcopy(trainer.hyper_parameter)
     assert hyper_parameter is not None
-    if args.epochs is not None:
-        hyper_parameter.set_epochs(args.epochs)
+    if args.epoch is not None:
+        hyper_parameter.set_epoch(args.epoch)
     if args.batch_size is not None:
         hyper_parameter.set_batch_size(args.batch_size)
     if args.learning_rate is not None:

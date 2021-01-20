@@ -155,7 +155,7 @@ class BasicTrainer:
         lr_scheduler = None
         lr_step_after_batch = None
 
-        for epoch in range(1, self.__hyper_parameter.epochs + 1):
+        for epoch in range(1, self.__hyper_parameter.epoch + 1):
             if self.__reset_hyper_parameter:
                 self.__reset_hyper_parameter = False
                 optimizer = self.get_optimizer()
@@ -459,7 +459,7 @@ class ClassificationTrainer(Trainer):
             test_epoch_interval = int(kwargs.get("test_epoch_interval", 2))
             if trainer.test_dataset is not None and (
                 epoch % test_epoch_interval == 0
-                or epoch == trainer.hyper_parameter.epochs
+                or epoch == trainer.hyper_parameter.epoch
             ):
                 (test_loss, accuracy, _) = trainer.get_inferencer(
                     phase=MachineLearningPhase.Test
