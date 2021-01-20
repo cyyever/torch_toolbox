@@ -101,7 +101,7 @@ class ModelUtil:
         for component in components:
             if not hasattr(model, component):
                 return False
-            model = component
+            model = getattr(model, component)
         return True
 
     def get_original_parameters_for_pruning(self):
