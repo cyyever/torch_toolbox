@@ -95,6 +95,15 @@ class ModelUtil:
             else:
                 delattr(model, component)
 
+    def has_attr(self, name: str) -> bool:
+        model = self.model
+        components = name.split(".")
+        for component in components:
+            if not hasattr(model, component):
+                return False
+            model = getattr(model, component)
+        return True
+
     def get_original_parameters_for_pruning(self):
         res = dict()
         for layer in self.model.modules():

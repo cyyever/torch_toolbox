@@ -69,7 +69,9 @@ class BasicTrainer:
     def set_test_dataset(self, test_dataset: torch.utils.data.Dataset):
         self.__test_dataset = test_dataset
 
-    def get_inferencer(self, phase: MachineLearningPhase) -> Inferencer:
+    def get_inferencer(
+        self, phase: MachineLearningPhase, copy_model=True
+    ) -> Inferencer:
         assert phase != MachineLearningPhase.Training
 
         dataset = self.validation_dataset
@@ -81,6 +83,7 @@ class BasicTrainer:
                 dataset,
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
+                copy_model=copy_model,
             )
         if self.model_with_loss.model_type == ModelType.Detection:
             return DetectionInferencer(
@@ -89,6 +92,7 @@ class BasicTrainer:
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
                 iou_threshold=0.6,
+                copy_model=copy_model,
             )
         assert False
         return None
@@ -110,9 +114,7 @@ class BasicTrainer:
         self.model_with_loss.set_model(model)
 
     def load_model(self, model_path):
-        self.model_with_loss.set_model(
-            torch.load(model_path, map_location=get_device())
-        )
+        self.set_model(torch.load(model_path, map_location=get_device()))
 
     def save_model(self, save_dir, model_name="model.pt"):
         os.makedirs(save_dir, exist_ok=True)
@@ -142,18 +144,15 @@ class BasicTrainer:
 
         training_set_size = len(self.training_dataset)
         get_logger().info("training_set_size is %s", training_set_size)
-        device = kwargs.get("device", None)
-        if device is None:
-            device = get_device()
+        device = kwargs.get("device", get_device())
         get_logger().info("use device %s", device)
         self.model.to(device)
         self.__reset_hyper_parameter = True
         self.__reset_loss()
         optimizer = None
         lr_scheduler = None
-        lr_step_after_batch = None
 
-        for epoch in range(1, self.__hyper_parameter.epochs + 1):
+        for epoch in range(1, self.hyper_parameter.epoch + 1):
             if self.__reset_hyper_parameter:
                 self.__reset_hyper_parameter = False
                 optimizer = self.get_optimizer()
@@ -162,9 +161,7 @@ class BasicTrainer:
                 )
                 if epoch != 1:
                     get_logger().warning("use new hyper-parameters")
-                lr_step_after_batch = False
-                if isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR):
-                    lr_step_after_batch = True
+                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                     get_logger().info("adjust lr after batch")
             if epoch == 1:
                 for callback in kwargs.get("pre_training_callbacks", []):
@@ -176,7 +173,7 @@ class BasicTrainer:
                     self.training_dataset, phase=MachineLearningPhase.Training
                 )
             ):
-                if lr_step_after_batch:
+                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                     cur_learning_rates = [
                         group["lr"] for group in optimizer.param_groups
                     ]
@@ -253,7 +250,7 @@ class BasicTrainer:
                         callback(optimizer, trainer=self, device=device)
                 else:
                     optimizer.step()
-                if lr_step_after_batch:
+                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                     lr_scheduler.step()
 
                 for callback in kwargs.get("after_batch_callbacks", []):
@@ -271,12 +268,14 @@ class BasicTrainer:
 
             self.training_loss.append(training_loss)
             for callback in kwargs.get("after_epoch_callbacks", []):
+                if "device" not in kwargs:
+                    kwargs["device"] = device
                 callback(
                     self,
                     epoch,
                     cur_learning_rates=cur_learning_rates,
                     optimizer=optimizer,
-                    **kwargs
+                    **kwargs,
                 )
 
             if self.__stop_criterion is not None and self.__stop_criterion(
@@ -285,7 +284,7 @@ class BasicTrainer:
                 get_logger().warning("early stop")
                 break
 
-            if not lr_step_after_batch:
+            if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                 if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                     get_logger().debug(
                         "call ReduceLROnPlateau for total loss %s",
@@ -457,7 +456,7 @@ class ClassificationTrainer(Trainer):
             test_epoch_interval = int(kwargs.get("test_epoch_interval", 2))
             if trainer.test_dataset is not None and (
                 epoch % test_epoch_interval == 0
-                or epoch == trainer.hyper_parameter.epochs
+                or epoch == trainer.hyper_parameter.epoch
             ):
                 (test_loss, accuracy, _) = trainer.get_inferencer(
                     phase=MachineLearningPhase.Test

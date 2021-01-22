@@ -11,13 +11,13 @@ from ml_types import MachineLearningPhase
 class HyperParameter:
     def __init__(
         self,
-        epochs: int,
+        epoch: int,
         batch_size: int,
         learning_rate: float,
         weight_decay: float,
         momentum: float = 0.9,
     ):
-        self.__epochs = epochs
+        self.__epoch = epoch
         self.__batch_size = batch_size
         self.__learning_rate = learning_rate
         self.__weight_decay = weight_decay
@@ -27,11 +27,11 @@ class HyperParameter:
         self.__optimizer_factory: Optional[Callable] = None
 
     @property
-    def epochs(self):
-        return self.__epochs
+    def epoch(self):
+        return self.__epoch
 
-    def set_epochs(self, epochs):
-        self.__epochs = epochs
+    def set_epoch(self, epoch):
+        self.__epoch = epoch
 
     @property
     def batch_size(self):
@@ -71,13 +71,17 @@ class HyperParameter:
         )
 
     @staticmethod
+    def lr_scheduler_step_after_batch(lr_scheduler):
+        return isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR)
+
+    @staticmethod
     def get_lr_scheduler_factory(name):
         if name == "ReduceLROnPlateau":
             return lambda hyper_parameter, optimizer, **kwargs: optim.lr_scheduler.ReduceLROnPlateau(
                 optimizer,
                 verbose=True,
                 factor=0.1,
-                patience=min(10, hyper_parameter.epochs + 9 // 10),
+                patience=min(10, hyper_parameter.epoch + 9 // 10),
             )
         raise RuntimeError("unknown learning rate scheduler:" + name)
 
@@ -115,8 +119,8 @@ class HyperParameter:
 
     def __str__(self):
         s = (
-            "epochs:"
-            + str(self.epochs)
+            "epoch:"
+            + str(self.epoch)
             + " batch_size:"
             + str(self.batch_size)
             + " learning_rate:"
@@ -139,14 +143,14 @@ class HyperParameter:
 #         optimizer,
 #         verbose=True,
 #         factor=0.1,
-#         patience=min(10, hyper_parameter.epochs + 9 // 10),
+#         patience=min(10, hyper_parameter.epoch + 9 // 10),
 #     )
 # return optim.lr_scheduler.OneCycleLR(
 #     optimizer,
 #     pct_start=0.4,
 #     max_lr=0.5,
 #     total_steps=(
-#         hyper_parameter.epochs
+#         hyper_parameter.epoch
 #         * (
 #             (training_dataset_size + hyper_parameter.batch_size - 1)
 #             // hyper_parameter.batch_size
@@ -168,23 +172,23 @@ def get_recommended_hyper_parameter(
     hyper_parameter = None
     if dataset_name == "MNIST":
         hyper_parameter = HyperParameter(
-            epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
+            epoch=50, batch_size=64, learning_rate=0.01, weight_decay=1
         )
     elif dataset_name == "FashionMNIST" and model_name.lower() == "LeNet5".lower():
         hyper_parameter = HyperParameter(
-            epochs=50, batch_size=64, learning_rate=0.01, weight_decay=1
+            epoch=50, batch_size=64, learning_rate=0.01, weight_decay=1
         )
     elif dataset_name == "CIFAR10":
         hyper_parameter = HyperParameter(
-            epochs=350, batch_size=128, learning_rate=0.1, weight_decay=1
+            epoch=350, batch_size=128, learning_rate=0.1, weight_decay=1
         )
     elif dataset_name == "WebankStreet":
         hyper_parameter = HyperParameter(
-            epochs=50, batch_size=4, learning_rate=0.0001, weight_decay=1
+            epoch=50, batch_size=4, learning_rate=0.0001, weight_decay=1
         )
     elif dataset_name == "SVHN":
         hyper_parameter = HyperParameter(
-            epochs=50, batch_size=4, learning_rate=0.0001, weight_decay=1
+            epoch=50, batch_size=4, learning_rate=0.0001, weight_decay=1
         )
     else:
         get_logger().error(
