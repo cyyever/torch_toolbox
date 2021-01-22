@@ -88,6 +88,8 @@ class HyperParameter:
     def get_optimizer_factory(name: str):
         if name == "SGD":
             return optim.SGD
+        if name == "Adam":
+            return optim.Adam
         raise RuntimeError("unknown optimizer:" + name)
 
     def get_optimizer(self, params, training_dataset_size: int):
@@ -200,6 +202,5 @@ def get_recommended_hyper_parameter(
                 torch.Tensor([d[2] for d in batch]),
             )
         )
-    hyper_parameter.set_optimizer_factory(
-        HyperParameter.get_optimizer_factory("SGD"))
+    hyper_parameter.set_optimizer_factory(HyperParameter.get_optimizer_factory("Adam"))
     return hyper_parameter
