@@ -385,10 +385,12 @@ class Trainer(BasicTrainer):
                 epoch, learning_rates[0]
             )
             optimizer = kwargs.get("optimizer", None)
-            momentums = [group["momentum"] for group in optimizer.param_groups]
-            EpochWindow("momentum", env=trainer.visdom_env).plot_scalar(
-                epoch, momentums[0], y_label="Momentum"
-            )
+            for group in optimizer.param_groups:
+                if "momentum" in group:
+                    momentum = group["momentum"]
+                    EpochWindow("momentum", env=trainer.visdom_env).plot_scalar(
+                        epoch, momentum, y_label="Momentum"
+                    )
 
             loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
             get_logger().info(
