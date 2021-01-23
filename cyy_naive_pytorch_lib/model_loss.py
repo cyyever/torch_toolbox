@@ -25,7 +25,7 @@ class ModelWithLoss:
         self.__model_type = model_type
 
     @property
-    def model(self):
+    def model(self) -> torch.nn.Module:
         return self.__model
 
     @property
@@ -52,8 +52,7 @@ class ModelWithLoss:
             return
         self.model.eval()
 
-    def __call__(self, inputs, target,
-                 phase: MachineLearningPhase = None) -> dict:
+    def __call__(self, inputs, target, phase: MachineLearningPhase = None) -> dict:
         if isinstance(self.__model, GeneralizedRCNN):
             detection = None
             assert phase is not None

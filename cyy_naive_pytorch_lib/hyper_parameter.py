@@ -1,3 +1,5 @@
+import inspect
+import multiprocessing
 from typing import Callable, Optional
 
 import torch
@@ -104,7 +106,14 @@ class HyperParameter:
             "momentum": self.momentum,
             "weight_decay": self.weight_decay / training_dataset_size,
         }
-        return self.__optimizer_factory(**kwargs)
+
+        sig = inspect.signature(self.__optimizer_factory)
+        parameter_names = {
+            p.name for p in sig.parameters.values() if p.kind == p.POSITIONAL_OR_KEYWORD
+        }
+        return self.__optimizer_factory(
+            **{k: kwargs[k] for k in kwargs if k in parameter_names}
+        )
 
     def set_dataloader_collate_fn(self, collate_fn):
         self.__collate_fn = collate_fn
@@ -115,6 +124,7 @@ class HyperParameter:
             batch_size=self.batch_size,
             shuffle=(phase == MachineLearningPhase.Training),
             collate_fn=self.__collate_fn,
+            num_workers=multiprocessing.cpu_count(),
         )
 
     def __str__(self):
