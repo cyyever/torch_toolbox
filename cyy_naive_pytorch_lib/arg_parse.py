@@ -12,6 +12,7 @@ from cyy_naive_lib.log import get_logger
 from configuration import get_trainer_from_configuration
 from dataset import (DatasetUtil, get_dataset, replace_dataset_labels,
                      sub_dataset)
+from hyper_parameter import HyperParameter
 from inference import Inferencer
 from ml_types import MachineLearningPhase
 from reproducible_env import global_reproducible_env
@@ -25,6 +26,7 @@ def get_arg_parser():
     parser.add_argument("--epoch", type=int, default=None)
     parser.add_argument("--batch_size", type=int, default=None)
     parser.add_argument("--learning_rate", type=float, default=None)
+    parser.add_argument("--optimizer", type=str, default=None)
     parser.add_argument("--momentum", type=float, default=None)
     parser.add_argument("--weight_decay", type=float, default=None)
     parser.add_argument("--stop_accuracy", type=float, default=None)
@@ -88,6 +90,10 @@ def create_trainer_from_args(args) -> Trainer:
         hyper_parameter.set_momentum(args.momentum)
     if args.weight_decay is not None:
         hyper_parameter.set_weight_decay(args.weight_decay)
+    if args.optimizer is not None:
+        hyper_parameter.set_optimizer_factory(
+            HyperParameter.get_optimizer_factory(args.optimizer)
+        )
     trainer.set_hyper_parameter(hyper_parameter)
 
     if args.stop_accuracy is not None:
