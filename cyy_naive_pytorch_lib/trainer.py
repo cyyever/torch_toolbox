@@ -42,7 +42,7 @@ class BasicTrainer:
         return self.__model_with_loss
 
     @property
-    def model(self):
+    def model(self) -> torch.nn.Module:
         return self.model_with_loss.model
 
     @property
