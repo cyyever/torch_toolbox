@@ -154,10 +154,12 @@ class ModelUtil:
             self.__is_pruned = prune.is_pruned(self.model)
         return self.__is_pruned
 
-    def load_parameter_dict(self, parameter_dict: dict):
+    def load_parameter_dict(self, parameter_dict: dict, check_parameter: bool = False):
         assert not self.is_pruned
         self.__parameter_dict = None
         for name, parameter in parameter_dict.items():
+            if check_parameter:
+                assert self.has_attr(name)
             self.set_attr(name, parameter)
 
     def get_parameter_dict(self) -> dict:
