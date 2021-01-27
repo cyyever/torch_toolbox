@@ -137,7 +137,7 @@ class ModelUtil:
             if isinstance(v, sub_module_type):
                 changed_modules[k] = f(k, v)
         for k, v in changed_modules.items():
-            setattr(self.model, k, v)
+            self.set_attr(k, v)
 
     def get_pruning_mask_list(self):
         assert self.is_pruned
