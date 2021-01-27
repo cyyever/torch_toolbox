@@ -1,20 +1,24 @@
 from inspect import signature
-import torch
 
+import torch
 from cyy_naive_lib.algorithm.mapping_op import change_mapping_keys
 from torchvision.models import MobileNetV2
 from torchvision.models.detection.faster_rcnn import fasterrcnn_resnet50_fpn
+
 from dataset import DatasetUtil
-from model_loss import ModelWithLoss
-from models.lenet import LeNet5
-from models.densenet import DenseNet40
 from ml_types import ModelType
+from model_loss import ModelWithLoss
+from models.densenet import DenseNet40
+from models.lenet import LeNet5
+
+# .quantization.mobilenet import MobileNetV2
 
 
 def get_model(name: str, dataset: torch.utils.data.Dataset) -> ModelWithLoss:
     name_to_model_mapping: dict = {
         "LeNet5": LeNet5,
-        "MobileNet": MobileNetV2,
+        "MobileNetV2": MobileNetV2,
+        "QuantizationMobileNetV2": torchvision.models.quantization.mobilenet.MobileNetV2,
         "DenseNet40": DenseNet40,
         "FasterRCNN": fasterrcnn_resnet50_fpn,
     }
