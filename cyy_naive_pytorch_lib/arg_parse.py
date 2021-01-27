@@ -34,10 +34,10 @@ def get_arg_parser():
     parser.add_argument("--save_dir", type=str, default=None)
     parser.add_argument("--reproducible_env_load_path", type=str, default=None)
     parser.add_argument("--make_reproducible", action="store_true", default=False)
-    parser.add_argument("--debug", action="store_true", default=False)
     parser.add_argument("--training_dataset_percentage", type=float, default=None)
     parser.add_argument("--randomized_label_map_path", type=str, default=None)
     parser.add_argument("--training_dataset_indices_path", type=str, default=None)
+    parser.add_argument("--logger_level", type=str, default=None)
     return parser
 
 
@@ -54,8 +54,8 @@ def get_parsed_args(parser=None):
 
 
 def affect_global_process_from_args(args):
-    if args.debug:
-        get_logger().setLevel(logging.DEBUG)
+    if args.logger_level is not None:
+        get_logger().setLevel(args.logger_level)
     set_reproducible_env_from_args(args)
 
 
