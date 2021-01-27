@@ -29,15 +29,20 @@ class Inferencer:
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
         copy_model=True,
+        device=None,
     ):
         assert phase != MachineLearningPhase.Training
         self.__model_with_loss = model_with_loss
         if copy_model:
-            get_logger().info("copy model in inferencer")
+            get_logger().debug("copy model in inferencer")
             self.__model_with_loss = copy.deepcopy(model_with_loss)
         self.__dataset = dataset
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
+        if device is not None:
+            self.__device = device
+        else:
+            self.__device = get_device()
 
     @property
     def model(self):
@@ -46,6 +51,9 @@ class Inferencer:
     def set_model(self, model: torch.nn.Module):
         self.__model_with_loss.set_model(model)
 
+    def load_model(self, model_path):
+        self.set_model(torch.load(model_path, map_location=self.device))
+
     @property
     def dataset(self):
         return self.__dataset
@@ -53,8 +61,12 @@ class Inferencer:
     def set_dataset(self, dataset):
         self.__dataset = dataset
 
-    def load_model(self, model_path):
-        self.set_model(torch.load(model_path, map_location=get_device()))
+    @property
+    def device(self):
+        return self.__device
+
+    def set_device(self, device):
+        self.__device = device
 
     def inference(self, **kwargs):
         data_loader = self.__hyper_parameter.get_dataloader(
@@ -63,16 +75,15 @@ class Inferencer:
 
         use_grad = kwargs.get("use_grad", False)
         with torch.set_grad_enabled(use_grad):
-            device = kwargs.get("device", get_device())
-            get_logger().info("use device %s", device)
+            get_logger().debug("use device %s", self.device)
             self.__model_with_loss.set_model_mode(self.__phase)
             self.model.zero_grad()
-            self.model.to(device)
+            self.model.to(self.device)
             total_loss = torch.zeros(1)
-            total_loss = total_loss.to(device)
+            total_loss = total_loss.to(self.device)
             for batch in data_loader:
-                inputs = put_data_to_device(batch[0], device)
-                targets = put_data_to_device(batch[1], device)
+                inputs = put_data_to_device(batch[0], self.device)
+                targets = put_data_to_device(batch[1], self.device)
                 real_batch_size = get_batch_size(inputs)
 
                 result = self.__model_with_loss(inputs, targets, phase=self.__phase)
