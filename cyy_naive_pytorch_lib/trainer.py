@@ -35,6 +35,7 @@ class BasicTrainer:
         self.__hyper_parameter = hyper_parameter
         self.__reset_hyper_parameter = False
         self.visdom_env = None
+        self.__device = get_device()
         self.__reset_loss()
 
     @property
@@ -69,6 +70,13 @@ class BasicTrainer:
     def set_test_dataset(self, test_dataset: torch.utils.data.Dataset):
         self.__test_dataset = test_dataset
 
+    @property
+    def device(self):
+        return self.__device
+
+    def set_device(self, device):
+        self.__device = device
+
     def get_inferencer(
         self, phase: MachineLearningPhase, copy_model=True
     ) -> Inferencer:
@@ -84,6 +92,7 @@ class BasicTrainer:
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
                 copy_model=copy_model,
+                device=self.device,
             )
         if self.model_with_loss.model_type == ModelType.Detection:
             return DetectionInferencer(
@@ -93,6 +102,7 @@ class BasicTrainer:
                 hyper_parameter=self.hyper_parameter,
                 iou_threshold=0.6,
                 copy_model=copy_model,
+                device=self.device,
             )
         assert False
         return None
@@ -114,7 +124,7 @@ class BasicTrainer:
         self.model_with_loss.set_model(model)
 
     def load_model(self, model_path):
-        self.set_model(torch.load(model_path, map_location=get_device()))
+        self.set_model(torch.load(model_path, map_location=self.device))
 
     def save_model(self, save_dir, model_name="model.pt"):
         os.makedirs(save_dir, exist_ok=True)
@@ -144,9 +154,7 @@ class BasicTrainer:
 
         training_set_size = len(self.training_dataset)
         get_logger().info("training_set_size is %s", training_set_size)
-        device = kwargs.get("device", get_device())
-        get_logger().info("use device %s", device)
-        self.model.to(device)
+        get_logger().info("use device %s", self.device)
         self.__reset_hyper_parameter = True
         self.__reset_loss()
         optimizer = None
@@ -178,14 +186,14 @@ class BasicTrainer:
                         group["lr"] for group in optimizer.param_groups
                     ]
                 self.model_with_loss.set_model_mode(MachineLearningPhase.Training)
-                self.model.to(device)
+                self.model.to(self.device)
                 optimizer.zero_grad()
 
                 for callback in kwargs.get("pre_batch_callbacks", []):
                     callback(self, batch, batch_index)
 
-                instance_inputs = put_data_to_device(batch[0], device)
-                instance_targets = put_data_to_device(batch[1], device)
+                instance_inputs = put_data_to_device(batch[0], self.device)
+                instance_targets = put_data_to_device(batch[1], self.device)
                 instance_indices = None
                 if len(batch) >= 3:
                     instance_indices = [idx.data.item() for idx in batch[2]]
@@ -247,7 +255,7 @@ class BasicTrainer:
                 callbacks = kwargs.get("optimizer_step_callbacks", [])
                 if callbacks:
                     for callback in callbacks:
-                        callback(optimizer, trainer=self, device=device)
+                        callback(optimizer, trainer=self, device=self.device)
                 else:
                     optimizer.step()
                 if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
@@ -268,8 +276,6 @@ class BasicTrainer:
 
             self.training_loss.append(training_loss)
             for callback in kwargs.get("after_epoch_callbacks", []):
-                if "device" not in kwargs:
-                    kwargs["device"] = device
                 callback(
                     self,
                     epoch,
