@@ -1,4 +1,5 @@
 import copy
+from typing import Callable, Type
 
 import numpy as np
 import torch
@@ -129,6 +130,14 @@ class ModelUtil:
 
         for layer, name in removed_items:
             prune.remove(layer, name)
+
+    def change_sub_modules(self, sub_module_type: Type, f: Callable):
+        changed_modules: dict = dict()
+        for k, v in self.model.named_modules():
+            if isinstance(v, sub_module_type):
+                changed_modules[k] = f(k, v)
+        for k, v in changed_modules.items():
+            setattr(self.model, k, v)
 
     def get_pruning_mask_list(self):
         assert self.is_pruned
