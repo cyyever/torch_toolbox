@@ -6,13 +6,11 @@ from torchvision.models import MobileNetV2
 from torchvision.models.detection.faster_rcnn import fasterrcnn_resnet50_fpn
 from torchvision.models.quantization.mobilenet import QuantizableMobileNetV2
 
-from .dataset import DatasetUtil
-from .ml_types import ModelType
-from .model_loss import ModelWithLoss
-from .models.densenet import DenseNet40
-from .models.lenet import LeNet5
-
-# .quantization.mobilenet import MobileNetV2
+from dataset import DatasetUtil
+from ml_types import ModelType
+from model_loss import ModelWithLoss
+from models.densenet import DenseNet40
+from models.lenet import LeNet5
 
 
 def get_model(name: str, dataset: torch.utils.data.Dataset) -> ModelWithLoss:
