@@ -87,13 +87,16 @@ class HyperParameter:
                     patience = 2
                 get_logger().info("ReduceLROnPlateau patience is %s", patience)
                 return optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer, verbose=True, factor=0.1, patience=patience
+                    optimizer,
+                    verbose=True,
+                    factor=0.1,
+                    patience=patience,
                 )
             if name == "OneCycleLR":
                 return optim.lr_scheduler.OneCycleLR(
                     optimizer,
                     pct_start=0.4,
-                    max_lr=0.5,
+                    max_lr=hyper_parameter.learning_rate * 5,
                     total_steps=(
                         hyper_parameter.epoch
                         * (
