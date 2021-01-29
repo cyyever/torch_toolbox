@@ -293,12 +293,10 @@ class BasicTrainer:
             if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                 if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                     get_logger().debug(
-                        "call ReduceLROnPlateau for total loss %s",
-                        self.training_loss[-1] + self.validation_loss[epoch],
+                        "call ReduceLROnPlateau for training loss %s",
+                        self.training_loss[-1],
                     )
-                    lr_scheduler.step(
-                        self.training_loss[-1] + self.validation_loss[epoch]
-                    )
+                    lr_scheduler.step(self.training_loss[-1])
                 else:
                     lr_scheduler.step()
 
