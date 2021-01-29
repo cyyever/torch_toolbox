@@ -21,7 +21,7 @@ class QuantizationTrainer:
         trainer: Trainer,
         replace_layer=True,
     ):
-        self.trainer: Trainer = trainer
+        self.__trainer: Trainer = trainer
         if replace_layer:
             model_util = ModelUtil(copy.deepcopy(self.trainer.model))
             # change ReLU6 to ReLU
@@ -36,8 +36,12 @@ class QuantizationTrainer:
                     ),
                 )
 
-        self.original_model = self.trainer.model
+        self.original_model = self.__trainer.model
         self.quantized_model = None
+
+    @property
+    def trainer(self):
+        return self.__trainer
 
     def train(self, **kwargs):
         self.prepare_quantization()
