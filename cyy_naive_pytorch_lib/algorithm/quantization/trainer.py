@@ -1,30 +1,29 @@
 import copy
-from typing import Optional
 
 import torch
 from cyy_naive_lib.log import get_logger
-from cyy_naive_pytorch_lib.hyper_parameter import HyperParameter
-from cyy_naive_pytorch_lib.model_loss import ModelWithLoss
+# from cyy_naive_pytorch_lib.hyper_parameter import HyperParameter
+# from cyy_naive_pytorch_lib.model_loss import ModelWithLoss
 from cyy_naive_pytorch_lib.model_util import ModelUtil
 from cyy_naive_pytorch_lib.trainer import Trainer
 from torch.quantization.fuser_method_mappings import OP_LIST_TO_FUSER_METHOD
 
+# from typing import Optional
 
-class QuantizationTrainer(Trainer):
+
+class QuantizationTrainer:
     """
     This trainer is used for Training Aware Quantization
     """
 
     def __init__(
         self,
-        model_with_loss: ModelWithLoss,
-        training_dataset,
-        hyper_parameter: Optional[HyperParameter],
+        trainer: Trainer,
         replace_layer=True,
     ):
-        super().__init__(model_with_loss, training_dataset, hyper_parameter)
+        self.trainer: Trainer = trainer
         if replace_layer:
-            model_util = ModelUtil(copy.deepcopy(self.model))
+            model_util = ModelUtil(copy.deepcopy(self.trainer.model))
             # change ReLU6 to ReLU
             if model_util.has_sub_module(torch.nn.modules.activation.ReLU6):
                 get_logger().info(
@@ -37,13 +36,15 @@ class QuantizationTrainer(Trainer):
                     ),
                 )
 
-        self.original_model = self.model
+        self.original_model = self.trainer.model
         self.quantized_model = None
 
     def train(self, **kwargs):
-        pass
+        self.prepare_quantization()
+        self.trainer.train(**kwargs)
+        self.get_quantized_model()
 
-    def __prepare_quantization(self):
+    def prepare_quantization(self):
         if ModelUtil(self.original_model).has_sub_module(torch.quantization.QuantStub):
             quant_model = copy.deepcopy(self.original_model)
         else:
@@ -64,13 +65,13 @@ class QuantizationTrainer(Trainer):
             )
         torch.quantization.prepare_qat(quant_model, inplace=True)
         get_logger().debug("quant_model is %s", quant_model)
-        self.set_model(quant_model)
+        self.trainer.set_model(quant_model)
 
     def get_quantized_model(self) -> torch.nn.Module:
         if self.quantized_model is None:
-            self.model.cpu()
-            self.model.eval()
-            self.quantized_model = torch.quantization.convert(self.model)
+            self.trainer.model.cpu()
+            self.trainer.model.eval()
+            self.quantized_model = torch.quantization.convert(self.trainer.model)
         return self.quantized_model
 
     def reset_quantized_model(self):
