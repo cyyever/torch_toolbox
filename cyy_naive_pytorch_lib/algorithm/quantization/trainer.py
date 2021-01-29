@@ -40,7 +40,7 @@ class QuantizationTrainer:
         self.quantized_model = None
 
     @property
-    def trainer(self):
+    def trainer(self) -> Trainer:
         return self.__trainer
 
     def train(self, **kwargs):
