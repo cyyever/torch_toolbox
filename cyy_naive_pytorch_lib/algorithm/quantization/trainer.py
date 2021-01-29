@@ -1,13 +1,13 @@
 import copy
-from typing import Callable, Optional
+from typing import Optional
 
 import torch
 from cyy_naive_lib.log import get_logger
-
-from hyper_parameter import HyperParameter
-from model_loss import ModelWithLoss
-from model_util import ModelUtil
-from trainer import Trainer
+from cyy_naive_pytorch_lib.hyper_parameter import HyperParameter
+from cyy_naive_pytorch_lib.model_loss import ModelWithLoss
+from cyy_naive_pytorch_lib.model_util import ModelUtil
+from cyy_naive_pytorch_lib.trainer import Trainer
+from torch.quantization.fuser_method_mappings import OP_LIST_TO_FUSER_METHOD
 
 
 class QuantizationTrainer(Trainer):
@@ -59,7 +59,7 @@ class QuantizationTrainer(Trainer):
         else:
             torch.quantization.fuse_modules(
                 quant_model,
-                self.__get_fused_modules(quant_model),
+                QuantizationTrainer.get_fused_modules(quant_model),
                 inplace=True,
             )
         torch.quantization.prepare_qat(quant_model, inplace=True)
@@ -72,3 +72,36 @@ class QuantizationTrainer(Trainer):
             self.model.eval()
             self.quantized_model = torch.quantization.convert(self.model)
         return self.quantized_model
+
+    @staticmethod
+    def get_fused_modules(model):
+        modules = list(model.named_modules())
+        list_of_list = []
+        i = 0
+        while i < len(modules):
+            candidates: set = set(OP_LIST_TO_FUSER_METHOD.keys())
+            j = i
+            end_index = None
+            while j < len(modules):
+                module = modules[j][1]
+                new_candidates = set()
+                for candidate in candidates:
+                    if isinstance(module, candidate[0]):
+                        if len(candidate) == 1:
+                            end_index = j
+                        else:
+                            new_candidates.add(candidate[1:])
+                if not new_candidates:
+                    break
+                candidates = new_candidates
+                j += 1
+            if end_index is not None:
+                module_name_list = []
+                while i <= end_index:
+                    module_name_list.append(modules[i][0])
+                    i += 1
+                list_of_list.append(module_name_list)
+            else:
+                i += 1
+        get_logger().debug("list_of_list is %s", list_of_list)
+        return list_of_list
