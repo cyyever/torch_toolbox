@@ -25,7 +25,7 @@ class BasicTrainer:
         self,
         model_with_loss: ModelWithLoss,
         training_dataset,
-        hyper_parameter: Optional[HyperParameter],
+        hyper_parameter: HyperParameter,
     ):
         self.__model_with_loss = copy.deepcopy(model_with_loss)
         self.__training_dataset = training_dataset
@@ -150,8 +150,6 @@ class BasicTrainer:
         return BasicTrainer.__repeated_training(repeated_num, self, training_callback)
 
     def train(self, **kwargs):
-        assert self.hyper_parameter is not None
-
         training_set_size = len(self.training_dataset)
         get_logger().info("training_set_size is %s", training_set_size)
         get_logger().info("use device %s", self.device)
