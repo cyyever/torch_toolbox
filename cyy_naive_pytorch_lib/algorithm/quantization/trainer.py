@@ -6,7 +6,8 @@ from cyy_naive_lib.log import get_logger
 # from cyy_naive_pytorch_lib.model_loss import ModelWithLoss
 from cyy_naive_pytorch_lib.model_util import ModelUtil
 from cyy_naive_pytorch_lib.trainer import Trainer
-from torch.quantization.fuser_method_mappings import OP_LIST_TO_FUSER_METHOD
+from torch.quantization.fuser_method_mappings import \
+    DEFAULT_OP_LIST_TO_FUSER_METHOD
 
 # from typing import Optional
 
@@ -87,7 +88,7 @@ class QuantizationTrainer:
         list_of_list = []
         i = 0
         while i < len(modules):
-            candidates: set = set(OP_LIST_TO_FUSER_METHOD.keys())
+            candidates: set = set(DEFAULT_OP_LIST_TO_FUSER_METHOD.keys())
             j = i
             end_index = None
             while j < len(modules):
