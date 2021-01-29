@@ -20,8 +20,23 @@ class QuantizationTrainer(Trainer):
         model_with_loss: ModelWithLoss,
         training_dataset,
         hyper_parameter: Optional[HyperParameter],
+        replace_layer=True,
     ):
         super().__init__(model_with_loss, training_dataset, hyper_parameter)
+        if replace_layer:
+            model_util = ModelUtil(copy.deepcopy(self.model))
+            # change ReLU6 to ReLU
+            if model_util.has_sub_module(torch.nn.modules.activation.ReLU6):
+                get_logger().info(
+                    "replace torch.nn.modules.activation.ReLU6 to torch.nn.modules.activation.ReLU"
+                )
+                model_util.change_sub_modules(
+                    torch.nn.modules.activation.ReLU6,
+                    lambda name, sub_module: torch.nn.modules.activation.ReLU(
+                        inplace=sub_module.inplace
+                    ),
+                )
+
         self.original_model = self.model
         self.quantized_model = None
 
