@@ -77,14 +77,20 @@ class HyperParameter:
         return isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR)
 
     @staticmethod
-    def get_lr_scheduler_factory(name):
+    def get_lr_scheduler_factory(name, dataset_name=None):
         if name == "ReduceLROnPlateau":
-            return lambda hyper_parameter, optimizer, **kwargs: optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer,
-                verbose=True,
-                factor=0.1,
-                patience=min(10, hyper_parameter.epoch + 9 // 10),
-            )
+
+            def callback(hyper_parameter, optimizer, **kwargs):
+                nonlocal dataset_name
+                patience = min(10, hyper_parameter.epoch + 9 // 10)
+                if dataset_name == "CIFAR10":
+                    patience = 2
+                get_logger().info("ReduceLROnPlateau patience is %s", patience)
+                return optim.lr_scheduler.ReduceLROnPlateau(
+                    optimizer, verbose=True, factor=0.1, patience=patience
+                )
+
+            return callback
         raise RuntimeError("unknown learning rate scheduler:" + name)
 
     def set_optimizer_factory(self, optimizer_factory: Callable):
@@ -146,10 +152,6 @@ class HyperParameter:
         return s
 
 
-# def get_default_lr_scheduler(
-#     optimizer, hyper_parameter: HyperParameter, training_dataset_size: int
-# ):
-#     return optim.lr_scheduler.ReduceLROnPlateau(
 #         optimizer,
 #         verbose=True,
 #         factor=0.1,
@@ -190,7 +192,7 @@ def get_recommended_hyper_parameter(
         )
     elif dataset_name == "CIFAR10":
         hyper_parameter = HyperParameter(
-            epoch=350, batch_size=128, learning_rate=0.1, weight_decay=1
+            epoch=350, batch_size=64, learning_rate=0.1, weight_decay=1
         )
     elif dataset_name == "WebankStreet":
         hyper_parameter = HyperParameter(
@@ -206,7 +208,7 @@ def get_recommended_hyper_parameter(
         )
         return None
     hyper_parameter.set_lr_scheduler_factory(
-        HyperParameter.get_lr_scheduler_factory("ReduceLROnPlateau")
+        HyperParameter.get_lr_scheduler_factory("ReduceLROnPlateau", dataset_name)
     )
     if model_name == "FasterRCNN":
         hyper_parameter.set_dataloader_collate_fn(
