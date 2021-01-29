@@ -2,7 +2,6 @@
 import argparse
 import copy
 import json
-import logging
 import os
 import uuid
 
@@ -23,6 +22,7 @@ def get_arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_name", type=str, required=True)
     parser.add_argument("--model_name", type=str, required=True)
+    parser.add_argument("--learning_rate_scheduler", type=str, default=None)
     parser.add_argument("--epoch", type=int, default=None)
     parser.add_argument("--batch_size", type=int, default=None)
     parser.add_argument("--learning_rate", type=float, default=None)
@@ -93,6 +93,10 @@ def create_trainer_from_args(args) -> Trainer:
     if args.optimizer is not None:
         hyper_parameter.set_optimizer_factory(
             HyperParameter.get_optimizer_factory(args.optimizer)
+        )
+    if args.learning_rate_scheduler is not None:
+        hyper_parameter.set_lr_scheduler_factory(
+            HyperParameter.get_lr_scheduler_factory(args.learning_rate_scheduler)
         )
     trainer.set_hyper_parameter(hyper_parameter)
 
