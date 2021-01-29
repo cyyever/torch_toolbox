@@ -75,7 +75,13 @@ class ModelWithLoss:
     def __choose_loss_function(self) -> Optional[torch.nn.modules.loss._Loss]:
         if isinstance(self.__model, GeneralizedRCNN):
             return None
-        last_layer = list(self.__model.modules())[-1]
+        last_layer = [
+            m
+            for m in self.__model.modules()
+            if not isinstance(
+                m, (torch.quantization.QuantStub, torch.quantization.DeQuantStub)
+            )
+        ][-1]
         if isinstance(last_layer, nn.LogSoftmax):
             return nn.NLLLoss()
         if isinstance(last_layer, nn.Linear):
