@@ -73,6 +73,9 @@ class QuantizationTrainer(Trainer):
             self.quantized_model = torch.quantization.convert(self.model)
         return self.quantized_model
 
+    def reset_quantized_model(self):
+        self.quantized_model = None
+
     @staticmethod
     def get_fused_modules(model):
         modules = list(model.named_modules())
