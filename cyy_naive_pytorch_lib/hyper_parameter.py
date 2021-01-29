@@ -78,10 +78,10 @@ class HyperParameter:
 
     @staticmethod
     def get_lr_scheduler_factory(name, dataset_name=None):
-        if name == "ReduceLROnPlateau":
-
-            def callback(hyper_parameter, optimizer, **kwargs):
-                nonlocal dataset_name
+        def callback(hyper_parameter, optimizer, training_dataset_size):
+            nonlocal dataset_name
+            nonlocal name
+            if name == "ReduceLROnPlateau":
                 patience = min(10, hyper_parameter.epoch + 9 // 10)
                 if dataset_name == "CIFAR10":
                     patience = 2
@@ -89,9 +89,25 @@ class HyperParameter:
                 return optim.lr_scheduler.ReduceLROnPlateau(
                     optimizer, verbose=True, factor=0.1, patience=patience
                 )
+            if name == "OneCycleLR":
+                return optim.lr_scheduler.OneCycleLR(
+                    optimizer,
+                    pct_start=0.4,
+                    max_lr=0.5,
+                    total_steps=(
+                        hyper_parameter.epoch
+                        * (
+                            (training_dataset_size + hyper_parameter.batch_size - 1)
+                            // hyper_parameter.batch_size
+                        )
+                    ),
+                    anneal_strategy="linear",
+                    three_phase=True,
+                    div_factor=10,
+                )
+            raise RuntimeError("unknown learning rate scheduler:" + name)
 
-            return callback
-        raise RuntimeError("unknown learning rate scheduler:" + name)
+        return callback
 
     def set_optimizer_factory(self, optimizer_factory: Callable):
         self.__optimizer_factory = optimizer_factory
@@ -150,28 +166,6 @@ class HyperParameter:
         #     s += str(self.lr_scheduler_factory)
 
         return s
-
-
-#         optimizer,
-#         verbose=True,
-#         factor=0.1,
-#         patience=min(10, hyper_parameter.epoch + 9 // 10),
-#     )
-# return optim.lr_scheduler.OneCycleLR(
-#     optimizer,
-#     pct_start=0.4,
-#     max_lr=0.5,
-#     total_steps=(
-#         hyper_parameter.epoch
-#         * (
-#             (training_dataset_size + hyper_parameter.batch_size - 1)
-#             // hyper_parameter.batch_size
-#         )
-#     ),
-#     anneal_strategy="linear",
-#     three_phase=True,
-#     div_factor=10,
-# )
 
 
 def get_recommended_hyper_parameter(
