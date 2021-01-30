@@ -1,347 +1,40 @@
-import copy
 import datetime
-import logging
-import os
 import threading
-from typing import Callable, Optional
 
-import torch
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
 
-from algorithm.per_sample_gradient import get_per_sample_gradient
-from device import get_device, put_data_to_device
+from basic_trainer import BasicTrainer
 from hyper_parameter import HyperParameter
-from inference import ClassificationInferencer, DetectionInferencer, Inferencer
-from ml_types import MachineLearningPhase, ModelType
+from ml_types import MachineLearningPhase
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
 from tensor import get_batch_size
 from visualization import EpochWindow, Window
 
 
-class BasicTrainer:
+class Trainer(BasicTrainer):
+    """
+    This trainer is designed to add logging to BasicTrainer
+    """
+
     def __init__(
         self,
         model_with_loss: ModelWithLoss,
         training_dataset,
         hyper_parameter: HyperParameter,
     ):
-        self.__model_with_loss = copy.deepcopy(model_with_loss)
-        self.__training_dataset = training_dataset
-        self.__validation_dataset: Optional[torch.utils.data.Dataset] = None
-        self.__test_dataset: Optional[torch.utils.data.Dataset] = None
-        self.__stop_criterion: Optional[Callable] = None
-        self.__hyper_parameter = hyper_parameter
-        self.__reset_hyper_parameter = False
-        self.visdom_env = None
-        self.__device = get_device()
-        self.__reset_loss()
-
-    @property
-    def model_with_loss(self):
-        return self.__model_with_loss
-
-    @property
-    def model(self) -> torch.nn.Module:
-        return self.model_with_loss.model
-
-    @property
-    def training_dataset(self):
-        return self.__training_dataset
-
-    def set_training_dataset(self, training_dataset: torch.utils.data.Dataset):
-        self.__training_dataset = training_dataset
-
-    def set_stop_criterion(self, stop_criterion: Callable):
-        self.__stop_criterion = stop_criterion
-
-    @property
-    def validation_dataset(self):
-        return self.__validation_dataset
-
-    def set_validation_dataset(self, validation_dataset: torch.utils.data.Dataset):
-        self.__validation_dataset = validation_dataset
-
-    @property
-    def test_dataset(self):
-        return self.__test_dataset
-
-    def set_test_dataset(self, test_dataset: torch.utils.data.Dataset):
-        self.__test_dataset = test_dataset
-
-    @property
-    def device(self):
-        return self.__device
-
-    def set_device(self, device):
-        self.__device = device
-
-    def get_inferencer(
-        self, phase: MachineLearningPhase, copy_model=True
-    ) -> Inferencer:
-        assert phase != MachineLearningPhase.Training
-
-        dataset = self.validation_dataset
-        if phase == MachineLearningPhase.Test:
-            dataset = self.test_dataset
-        if self.model_with_loss.model_type == ModelType.Classification:
-            return ClassificationInferencer(
-                self.model_with_loss,
-                dataset,
-                phase=phase,
-                hyper_parameter=self.hyper_parameter,
-                copy_model=copy_model,
-                device=self.device,
-            )
-        if self.model_with_loss.model_type == ModelType.Detection:
-            return DetectionInferencer(
-                self.model_with_loss,
-                dataset,
-                phase=phase,
-                hyper_parameter=self.hyper_parameter,
-                iou_threshold=0.6,
-                copy_model=copy_model,
-                device=self.device,
-            )
-        assert False
-        return None
-
-    def set_hyper_parameter(self, hyper_parameter):
-        self.__hyper_parameter = hyper_parameter
-        self.__reset_hyper_parameter = True
-
-    @property
-    def hyper_parameter(self):
-        return self.__hyper_parameter
-
-    def get_optimizer(self):
-        return self.hyper_parameter.get_optimizer(
-            self.model.parameters(), len(self.training_dataset)
+        super().__init__(
+            model_with_loss=model_with_loss,
+            training_dataset=training_dataset,
+            hyper_parameter=hyper_parameter,
         )
+        self.visdom_env = None
+        self.add_callback("pre_training_callbacks", self.__pre_training_callback)
+        self.add_callback("after_batch_callbacks", Trainer.__after_batch_callback)
+        self.add_callback("after_epoch_callbacks", Trainer.__plot_after_epoch)
 
-    def set_model(self, model: torch.nn.Module):
-        self.model_with_loss.set_model(model)
-
-    def load_model(self, model_path):
-        self.set_model(torch.load(model_path, map_location=self.device))
-
-    def save_model(self, save_dir, model_name="model.pt"):
-        os.makedirs(save_dir, exist_ok=True)
-        torch.save(self.model, os.path.join(save_dir, model_name))
-
-    def repeated_train(self, repeated_num, save_dir=None, **kwargs):
-        def training_callback(_, trainer: BasicTrainer):
-            nonlocal save_dir, kwargs
-            get_logger().setLevel(logging.ERROR)
-            kwargs["test_epoch_interval"] = 1
-            trainer.train(**kwargs)
-            if save_dir is not None:
-                trainer.save_model(save_dir)
-            get_logger().setLevel(logging.DEBUG)
-            return {
-                "training_loss": trainer.training_loss,
-                "validation_loss": trainer.validation_loss,
-                "validation_accuracy": trainer.validation_accuracy,
-                "test_loss": trainer.test_loss,
-                "test_accuracy": trainer.test_accuracy,
-            }
-
-        return BasicTrainer.__repeated_training(repeated_num, self, training_callback)
-
-    def train(self, **kwargs):
-        training_set_size = len(self.training_dataset)
-        get_logger().info("training_set_size is %s", training_set_size)
-        get_logger().info("use device %s", self.device)
-        self.__reset_hyper_parameter = True
-        self.__reset_loss()
-        optimizer = None
-        lr_scheduler = None
-
-        for epoch in range(1, self.hyper_parameter.epoch + 1):
-            if self.__reset_hyper_parameter:
-                self.__reset_hyper_parameter = False
-                optimizer = self.get_optimizer()
-                lr_scheduler = self.__hyper_parameter.get_lr_scheduler(
-                    optimizer, training_set_size
-                )
-                if epoch != 1:
-                    get_logger().warning("use new hyper-parameters")
-                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                    get_logger().info("adjust lr after batch")
-            if epoch == 1:
-                for callback in kwargs.get("pre_training_callbacks", []):
-                    callback(self, optimizer, lr_scheduler)
-            training_loss = 0.0
-            cur_learning_rates = [group["lr"] for group in optimizer.param_groups]
-            for batch_index, batch in enumerate(
-                self.__hyper_parameter.get_dataloader(
-                    self.training_dataset, phase=MachineLearningPhase.Training
-                )
-            ):
-                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                    cur_learning_rates = [
-                        group["lr"] for group in optimizer.param_groups
-                    ]
-                self.model_with_loss.set_model_mode(MachineLearningPhase.Training)
-                self.model.to(self.device)
-                optimizer.zero_grad()
-
-                for callback in kwargs.get("pre_batch_callbacks", []):
-                    callback(self, batch, batch_index)
-
-                instance_inputs = put_data_to_device(batch[0], self.device)
-                instance_targets = put_data_to_device(batch[1], self.device)
-                instance_indices = None
-                if len(batch) >= 3:
-                    instance_indices = [idx.data.item() for idx in batch[2]]
-
-                real_batch_size = get_batch_size(instance_inputs)
-
-                if "per_sample_gradient_callback" in kwargs:
-                    assert instance_indices is not None
-                    per_sample_gradient_callback, computed_indices = kwargs[
-                        "per_sample_gradient_callback"
-                    ]
-                    sample_gradient_inputs = []
-                    sample_gradient_targets = []
-                    sample_gradient_indices = []
-                    for (instance_input, instance_target, instance_index) in zip(
-                        instance_inputs, instance_targets, instance_indices
-                    ):
-                        if (
-                            computed_indices is not None
-                            and instance_index not in computed_indices
-                        ):
-                            continue
-                        sample_gradient_inputs.append(instance_input)
-                        sample_gradient_targets.append(instance_target)
-                        sample_gradient_indices.append(instance_index)
-                    if sample_gradient_indices:
-                        gradient_list = get_per_sample_gradient(
-                            self.model_with_loss,
-                            sample_gradient_inputs,
-                            sample_gradient_targets,
-                        )
-
-                        assert len(gradient_list) == len(sample_gradient_indices)
-                        for (sample_gradient, index) in zip(
-                            gradient_list, sample_gradient_indices
-                        ):
-                            per_sample_gradient_callback(
-                                self,
-                                index,
-                                sample_gradient,
-                                optimizer=optimizer,
-                            )
-                optimizer.zero_grad()
-                result = self.model_with_loss(
-                    instance_inputs,
-                    instance_targets,
-                    phase=MachineLearningPhase.Training,
-                )
-                loss = result["loss"]
-                batch_loss = loss.data.item()
-                loss.backward()
-
-                normalized_batch_loss = batch_loss
-                if self.model_with_loss.is_averaged_loss():
-                    normalized_batch_loss *= real_batch_size
-                normalized_batch_loss /= training_set_size
-                training_loss += normalized_batch_loss
-
-                callbacks = kwargs.get("optimizer_step_callbacks", [])
-                if callbacks:
-                    for callback in callbacks:
-                        callback(optimizer, trainer=self, device=self.device)
-                else:
-                    optimizer.step()
-                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                    lr_scheduler.step()
-
-                for callback in kwargs.get("after_batch_callbacks", []):
-                    callback(
-                        self,
-                        batch_index,
-                        epoch=epoch,
-                        cur_learning_rates=cur_learning_rates,
-                        batch_loss=batch_loss,
-                        cur_batch_size=real_batch_size,
-                        instance_indices=instance_indices,
-                        optimizer=optimizer,
-                        training_set_size=training_set_size,
-                    )
-
-            self.training_loss.append(training_loss)
-            for callback in kwargs.get("after_epoch_callbacks", []):
-                callback(
-                    self,
-                    epoch,
-                    cur_learning_rates=cur_learning_rates,
-                    optimizer=optimizer,
-                    **kwargs,
-                )
-
-            if self.__stop_criterion is not None and self.__stop_criterion(
-                self, epoch, cur_learning_rates
-            ):
-                get_logger().warning("early stop")
-                break
-
-            if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    get_logger().debug(
-                        "call ReduceLROnPlateau for training loss %s",
-                        self.training_loss[-1],
-                    )
-                    lr_scheduler.step(self.training_loss[-1])
-                else:
-                    lr_scheduler.step()
-
-    def __reset_loss(self):
-        self.training_loss = []
-        self.validation_loss = {}
-        self.validation_accuracy = {}
-        self.test_loss = {}
-        self.test_accuracy = {}
-
-    @staticmethod
-    def __repeated_training(number: int, trainer, training_callback: Callable):
-        results: dict = dict()
-        for idx in range(number):
-            statistics = training_callback(idx, trainer)
-            assert isinstance(statistics, dict)
-            for k, v in statistics.items():
-                tensor = None
-                if isinstance(v, list):
-                    tensor = torch.Tensor(v)
-                elif isinstance(v, dict):
-                    tensor = torch.Tensor([v[k] for k in sorted(v.keys())])
-                else:
-                    raise RuntimeError("unsupported value" + str(v))
-                if k in results:
-                    results[k] += tensor
-                else:
-                    results[k] = tensor
-        for k, v in results.items():
-            results[k] = v / number
-        return results
-
-    @staticmethod
-    def prepend_callback(kwargs, name, new_fun):
-        callbacks = kwargs.get(name, [])
-        callbacks.insert(0, new_fun)
-        kwargs[name] = callbacks
-        return kwargs
-
-
-class Trainer(BasicTrainer):
-    """
-    This trainer is designed to add logging to BasicTrainer
-
-    """
-
-    def train(self, **kwargs):
+    def __pre_training_callback(self, trainer):
         self.visdom_env = (
             "training_"
             + str(self.model.__class__.__name__)
@@ -349,125 +42,114 @@ class Trainer(BasicTrainer):
             + str(threading.get_native_id())
             + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
         )
-
-        def pre_training_callback(trainer, optimizer, lr_scheduler):
-            model_util = ModelUtil(trainer.model)
-            get_logger().info(
-                "begin training, hyper_parameter is %s, optimizer is %s ,lr_scheduler is %s, %s, parameter number is %s",
-                trainer.hyper_parameter,
-                optimizer,
-                lr_scheduler,
-                trainer.model_with_loss,
-                len(model_util.get_parameter_list()),
-            )
-
-        kwargs = BasicTrainer.prepend_callback(
-            kwargs, "pre_training_callbacks", pre_training_callback
+        model_util = ModelUtil(trainer.model)
+        get_logger().info(
+            "begin training, hyper_parameter is %s, optimizer is %s ,lr_scheduler is %s, %s, parameter number is %s",
+            trainer.hyper_parameter,
+            trainer.get_optimizer(),
+            trainer.get_lr_scheduler(),
+            trainer.model_with_loss,
+            len(model_util.get_parameter_list()),
         )
 
-        def after_batch_callback(_, batch_index, **kwargs):
-            training_set_size = kwargs["training_set_size"]
-            ten_batches = training_set_size // (10 * kwargs["cur_batch_size"])
-            if ten_batches == 0 or batch_index % ten_batches == 0:
-                get_logger().info(
-                    "epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
-                    kwargs["epoch"],
-                    batch_index,
-                    kwargs["cur_learning_rates"],
-                    kwargs["batch_loss"],
+    @staticmethod
+    def __after_batch_callback(trainer: BasicTrainer, batch_index, batch, **kwargs):
+        training_set_size = trainer.get_data("training_set_size")
+        ten_batches = training_set_size // (10 * get_batch_size(batch[0]))
+        if ten_batches == 0 or batch_index % ten_batches == 0:
+            get_logger().info(
+                "epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
+                kwargs["epoch"],
+                batch_index,
+                trainer.get_data("cur_learning_rates"),
+                kwargs["batch_loss"],
+            )
+
+    @staticmethod
+    def __plot_after_epoch(trainer: BasicTrainer, epoch, **kwargs):
+        learning_rates = trainer.get_data("cur_learning_rates")
+        assert len(learning_rates) == 1
+        EpochWindow("learning rate", env=trainer.visdom_env).plot_learning_rate(
+            epoch, learning_rates[0]
+        )
+        optimizer = kwargs.get("optimizer", None)
+        for group in optimizer.param_groups:
+            if "momentum" in group:
+                momentum = group["momentum"]
+                EpochWindow("momentum", env=trainer.visdom_env).plot_scalar(
+                    epoch, momentum, y_label="Momentum"
                 )
 
-        kwargs = BasicTrainer.prepend_callback(
-            kwargs, "after_batch_callbacks", after_batch_callback
+        loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
+        get_logger().info(
+            "epoch: %s, training loss: %s",
+            epoch,
+            trainer.training_loss[-1],
+        )
+        loss_win.plot_loss(epoch, trainer.training_loss[-1], "training loss")
+
+        (
+            validation_loss,
+            accuracy,
+            other_data,
+        ) = trainer.get_inferencer(phase=MachineLearningPhase.Validation).inference()
+        validation_loss = validation_loss.data.item()
+        trainer.validation_loss[epoch] = validation_loss
+        trainer.validation_accuracy[epoch] = accuracy
+        get_logger().info(
+            "epoch: %s, learning_rate: %s, validation loss: %s, accuracy = %s",
+            epoch,
+            learning_rates,
+            validation_loss,
+            accuracy,
+        )
+        loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
+        loss_win.plot_loss(epoch, validation_loss, "validation loss")
+        EpochWindow("validation accuracy", env=trainer.visdom_env).plot_accuracy(
+            epoch, accuracy, "accuracy"
         )
 
-        def plot_after_epoch(trainer: BasicTrainer, epoch, **kwargs):
-            learning_rates = kwargs["cur_learning_rates"]
-            EpochWindow("learning rate", env=trainer.visdom_env).plot_learning_rate(
-                epoch, learning_rates[0]
-            )
-            optimizer = kwargs.get("optimizer", None)
-            for group in optimizer.param_groups:
-                if "momentum" in group:
-                    momentum = group["momentum"]
-                    EpochWindow("momentum", env=trainer.visdom_env).plot_scalar(
-                        epoch, momentum, y_label="Momentum"
+        plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
+        if plot_class_accuracy and "per_class_accuracy" in other_data:
+            class_accuracy = other_data["per_class_accuracy"]
+            for idx, sub_list in enumerate(
+                split_list_to_chunks(list(class_accuracy.keys()), 2)
+            ):
+                class_accuracy_win = EpochWindow(
+                    "class accuracy part " + str(idx), env=trainer.visdom_env
+                )
+                for k in sub_list:
+                    get_logger().info(
+                        "epoch: %s, learning_rate: %s, class %s accuracy = %s",
+                        epoch,
+                        learning_rates,
+                        k,
+                        class_accuracy[k],
+                    )
+                    class_accuracy_win.plot_accuracy(
+                        epoch,
+                        class_accuracy[k],
+                        "class_" + str(k) + "_accuracy",
                     )
 
-            loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
-            get_logger().info(
-                "epoch: %s, training loss: %s",
-                epoch,
-                trainer.training_loss[-1],
-            )
-            loss_win.plot_loss(epoch, trainer.training_loss[-1], "training loss")
-
-            (validation_loss, accuracy, other_data,) = trainer.get_inferencer(
-                phase=MachineLearningPhase.Validation
-            ).inference()
-            validation_loss = validation_loss.data.item()
-            trainer.validation_loss[epoch] = validation_loss
-            trainer.validation_accuracy[epoch] = accuracy
-            get_logger().info(
-                "epoch: %s, learning_rate: %s, validation loss: %s, accuracy = %s",
-                epoch,
-                learning_rates,
-                validation_loss,
-                accuracy,
-            )
-            loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
-            loss_win.plot_loss(epoch, validation_loss, "validation loss")
-            EpochWindow("validation accuracy", env=trainer.visdom_env).plot_accuracy(
+        test_epoch_interval = int(kwargs.get("test_epoch_interval", 2))
+        if trainer.test_dataset is not None and (
+            epoch % test_epoch_interval == 0 or epoch == trainer.hyper_parameter.epoch
+        ):
+            (test_loss, accuracy, _) = trainer.get_inferencer(
+                phase=MachineLearningPhase.Test
+            ).inference(per_class_accuracy=False)
+            test_loss = test_loss.data.item()
+            trainer.test_loss[epoch] = test_loss
+            trainer.test_accuracy[epoch] = accuracy
+            EpochWindow("test accuracy", env=trainer.visdom_env).plot_accuracy(
                 epoch, accuracy, "accuracy"
             )
-
-            plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
-            if plot_class_accuracy and "per_class_accuracy" in other_data:
-                class_accuracy = other_data["per_class_accuracy"]
-                for idx, sub_list in enumerate(
-                    split_list_to_chunks(list(class_accuracy.keys()), 2)
-                ):
-                    class_accuracy_win = EpochWindow(
-                        "class accuracy part " + str(idx), env=trainer.visdom_env
-                    )
-                    for k in sub_list:
-                        get_logger().info(
-                            "epoch: %s, learning_rate: %s, class %s accuracy = %s",
-                            epoch,
-                            learning_rates,
-                            k,
-                            class_accuracy[k],
-                        )
-                        class_accuracy_win.plot_accuracy(
-                            epoch,
-                            class_accuracy[k],
-                            "class_" + str(k) + "_accuracy",
-                        )
-
-            test_epoch_interval = int(kwargs.get("test_epoch_interval", 2))
-            if trainer.test_dataset is not None and (
-                epoch % test_epoch_interval == 0
-                or epoch == trainer.hyper_parameter.epoch
-            ):
-                (test_loss, accuracy, _) = trainer.get_inferencer(
-                    phase=MachineLearningPhase.Test
-                ).inference(per_class_accuracy=False)
-                test_loss = test_loss.data.item()
-                trainer.test_loss[epoch] = test_loss
-                trainer.test_accuracy[epoch] = accuracy
-                EpochWindow("test accuracy", env=trainer.visdom_env).plot_accuracy(
-                    epoch, accuracy, "accuracy"
-                )
-                get_logger().info(
-                    "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
-                    epoch,
-                    learning_rates,
-                    test_loss,
-                    accuracy,
-                )
-            Window.save_envs()
-
-        kwargs = BasicTrainer.prepend_callback(
-            kwargs, "after_epoch_callbacks", plot_after_epoch
-        )
-        return super().train(**kwargs)
+            get_logger().info(
+                "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
+                epoch,
+                learning_rates,
+                test_loss,
+                accuracy,
+            )
+        Window.save_envs()

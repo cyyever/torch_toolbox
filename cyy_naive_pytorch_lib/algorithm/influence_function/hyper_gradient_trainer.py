@@ -1,4 +1,3 @@
-import copy
 import os
 import shutil
 import uuid
@@ -11,6 +10,7 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.time_counter import TimeCounter
 
 from algorithm.hessian_vector_product import get_hessian_vector_product_func
+from algorithm.per_sample_gradient import get_per_sample_gradient
 from model_util import ModelUtil
 
 
@@ -106,6 +106,9 @@ class HyperGradientTrainer:
         else:
             self.approx_hyper_gradient_mom_dict = None
 
+        self.trainer.add_callback("pre_batch_callbacks", self.__pre_batch_callback)
+        self.trainer.add_callback("after_batch_callbacks", self.__after_batch_callback)
+
     def set_computed_indices(self, computed_indices):
         get_logger().info("only compute %s indices", len(computed_indices))
         self.computed_indices = set(computed_indices)
@@ -119,22 +122,11 @@ class HyperGradientTrainer:
         else:
             self.delayed_approximation_computations = None
 
-        def after_epoch_callback(trainer, epoch, **callback_kwargs):
-            nonlocal kwargs
-            # self.__after_epoch_callback(
-            #     trainer, epoch, cur_learning_rates, **callback_kwargs
-            # )
-            for callback in kwargs.get("after_epoch_callbacks", []):
-                callback(self, epoch)
-
         self.trainer.train(
             per_sample_gradient_callback=(
                 self.__per_sample_gradient_callback,
                 self.computed_indices,
             ),
-            pre_batch_callbacks=[self.__pre_batch_callback],
-            after_batch_callbacks=[self.__after_batch_callback],
-            after_epoch_callbacks=[after_epoch_callback],
         )
         self.trainer.save_model(self.save_dir)
         if self.use_approximation:
@@ -346,12 +338,40 @@ class HyperGradientTrainer:
         m.set_logging(False)
         return m
 
-    def __pre_batch_callback(self, trainer, batch, batch_index):
-        batch_gradient_indices = {i.data.item() for i in batch[2]}
-
+    def __pre_batch_callback(self, trainer, batch_index, batch):
+        assert len(batch) >= 3
+        batch_gradient_indices = [idx.data.item() for idx in batch[2]]
         if self.computed_indices is not None:
             batch_gradient_indices &= self.computed_indices
+
         self.batch_gradients.clear()
+
+        instance_inputs, instance_targets, instance_indices = trainer.decode_batch(
+            batch
+        )
+        sample_gradient_inputs = []
+        sample_gradient_targets = []
+        sample_gradient_indices = []
+        for (instance_input, instance_target, instance_index) in zip(
+            instance_inputs, instance_targets, instance_indices
+        ):
+            if (
+                batch_gradient_indices is not None
+                and instance_index not in batch_gradient_indices
+            ):
+                continue
+            sample_gradient_inputs.append(instance_input)
+            sample_gradient_targets.append(instance_target)
+            sample_gradient_indices.append(instance_index)
+        gradient_list = get_per_sample_gradient(
+            trainer.model_with_loss,
+            sample_gradient_inputs,
+            sample_gradient_targets,
+        )
+
+        assert len(gradient_list) == len(sample_gradient_indices)
+        for (sample_gradient, index) in zip(gradient_list, sample_gradient_indices):
+            self.batch_gradients[str(index)] = sample_gradient
 
         if self.use_approximation:
             self.approx_hyper_gradient_mom_dict.prefetch(
@@ -374,7 +394,6 @@ class HyperGradientTrainer:
         **kwargs,
     ):
         assert instance_index in self.__get_computed_indices()
-        self.batch_gradients[str(instance_index)] = instance_gradient
 
     def __get_computed_indices(self):
         if self.computed_indices is not None:
@@ -388,13 +407,14 @@ class HyperGradientTrainer:
         **kwargs,
     ):
 
-        optimizer = kwargs["optimizer"]
+        optimizer = trainer.get_optimizer()
         if not isinstance(optimizer, torch.optim.SGD):
             raise RuntimeError("not SGD")
 
-        assert len(kwargs["cur_learning_rates"]) == 1
-        cur_learning_rate = kwargs["cur_learning_rates"][0]
-        batch_size = kwargs["cur_batch_size"]
+        cur_learning_rates = trainer.get_data("cur_learning_rates")
+        assert len(cur_learning_rates) == 1
+        cur_learning_rate = cur_learning_rates[0]
+        batch_size = trainer.get_data("cur_batch_size")
 
         momentums = [group["momentum"] for group in optimizer.param_groups]
         if len(momentums) != 1:
@@ -402,8 +422,7 @@ class HyperGradientTrainer:
 
         momentum = momentums[0]
         weight_decay = trainer.hyper_parameter.weight_decay
-
-        training_set_size = kwargs["training_set_size"]
+        training_set_size = trainer.get_data("training_set_size")
 
         for idx in self.__get_computed_indices():
             idx = str(idx)
@@ -497,30 +516,3 @@ class HyperGradientTrainer:
         hyper_gradient_dict.flush_all(True)
         hyper_gradient_dict.release()
         hyper_gradient_dict = None
-
-    def __after_epoch_callback(self, trainer, epoch, **kwargs):
-        total_epoch = trainer.hyper_parameter.epoch
-        if epoch == total_epoch:
-            return
-        if epoch % 10 != 0:
-            return
-        cur_accurary = trainer.validation_accuracy[epoch]
-        validation_accuracy = copy.deepcopy(trainer.validation_accuracy)
-        validation_accuracy.pop(epoch)
-        max_accuracy = max(validation_accuracy.values())
-        if cur_accurary < max_accuracy + 0.01:
-            return
-        if self.use_approximation:
-            self.__save_hyper_gradients(
-                self.approx_hyper_gradient_mom_dict.get_storage_dir()
-                + "_epoch_"
-                + str(epoch),
-                use_approximation=True,
-            )
-        if self.use_hessian:
-            self.__save_hyper_gradients(
-                self.hessian_hyper_gradient_mom_dict.get_storage_dir()
-                + "_epoch_"
-                + str(epoch),
-                use_approximation=False,
-            )
