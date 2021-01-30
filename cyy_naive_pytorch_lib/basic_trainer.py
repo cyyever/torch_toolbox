@@ -260,6 +260,7 @@ class BasicTrainer:
                 else:
                     lr_scheduler.step()
 
+    # TODO:drop it and merge to dataset code
     def decode_batch(self, batch):
         instance_inputs = put_data_to_device(batch[0], self.device)
         instance_targets = put_data_to_device(batch[1], self.device)
