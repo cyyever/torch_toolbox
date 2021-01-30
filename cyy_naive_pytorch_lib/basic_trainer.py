@@ -204,9 +204,7 @@ class BasicTrainer:
                 for callback in self.get_callbacks("pre_batch_callbacks"):
                     callback(self, batch_index, batch)
 
-                instance_inputs, instance_targets, instance_indices = self.decode_batch(
-                    batch
-                )
+                instance_inputs, instance_targets, _ = self.decode_batch(batch)
                 optimizer.zero_grad()
                 result = self.model_with_loss(
                     instance_inputs,
@@ -241,9 +239,6 @@ class BasicTrainer:
                         batch=batch,
                         epoch=epoch,
                         batch_loss=batch_loss,
-                        instance_indices=instance_indices,
-                        optimizer=optimizer,
-                        training_set_size=training_set_size,
                     )
 
             self.training_loss.append(training_loss)
@@ -301,10 +296,3 @@ class BasicTrainer:
         for k, v in results.items():
             results[k] = v / number
         return results
-
-    # @staticmethod
-    # def prepend_callback(kwargs, name, new_fun):
-    #     callbacks = kwargs.get(name, [])
-    #     callbacks.insert(0, new_fun)
-    #     kwargs[name] = callbacks
-    #     return kwargs
