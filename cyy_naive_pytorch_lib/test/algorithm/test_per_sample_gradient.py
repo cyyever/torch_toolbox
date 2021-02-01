@@ -5,7 +5,7 @@ from cyy_naive_lib.time_counter import TimeCounter
 from cyy_naive_lib.profiling import Profile
 
 from configuration import get_trainer_from_configuration
-from algorithm.per_sample_gradient import get_per_sample_gradient
+from algorithm.per_sample_gradient import get_per_sample_gradient,stop_task_queue
 from device import get_device
 
 
@@ -34,3 +34,4 @@ def test_get_per_sample_gradient():
             get_per_sample_gradient(
                 trainer.model_with_loss, batch[0], batch[1])
             break
+    stop_task_queue()

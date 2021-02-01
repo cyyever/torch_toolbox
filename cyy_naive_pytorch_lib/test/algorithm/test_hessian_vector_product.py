@@ -1,8 +1,9 @@
 import torch
 from cyy_naive_lib.time_counter import TimeCounter
 
+from algorithm.hessian_vector_product import (get_hessian_vector_product_func,
+                                              stop_task_queue)
 from configuration import get_trainer_from_configuration
-from algorithm.hessian_vector_product import get_hessian_vector_product_func
 from model_util import ModelUtil
 
 # from cyy_naive_lib.profiling import Profile
@@ -18,8 +19,7 @@ def test_hessian_vector_product():
     parameter_vector = ModelUtil(trainer.model).get_parameter_list()
     v = torch.ones(parameter_vector.shape)
     for batch in training_data_loader:
-        hvp_function = get_hessian_vector_product_func(
-            trainer.model_with_loss, batch)
+        hvp_function = get_hessian_vector_product_func(trainer.model_with_loss, batch)
         a = hvp_function([v, 2 * v, 3 * v])
         assert len(a) == 3
         assert torch.linalg.norm(a[1] - 2 * a[0], ord=2).data.item() < 0.0005
@@ -63,3 +63,4 @@ def test_hessian_vector_product():
             #     a = hvp_function([v] * 100)
             #     print("100 use time ", c.elapsed_milliseconds())
         break
+    stop_task_queue()
