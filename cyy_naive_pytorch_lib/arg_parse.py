@@ -84,6 +84,10 @@ def create_trainer_from_args(args) -> Trainer:
         hyper_parameter.set_epoch(args.epoch)
     if args.batch_size is not None:
         hyper_parameter.set_batch_size(args.batch_size)
+    if args.learning_rate is not None and args.find_learning_rate:
+        raise RuntimeError(
+            "can't not specify a learning_rate and find a learning_rate at the same time"
+        )
     if args.learning_rate is not None:
         hyper_parameter.set_learning_rate(args.learning_rate)
     if args.momentum is not None:
