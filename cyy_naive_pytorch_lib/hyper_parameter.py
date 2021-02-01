@@ -68,6 +68,7 @@ class HyperParameter:
                 # opt_func=self.__optimizer_factory,
             )
             suggesstion_lrs = learner.lr_find(show_plot=False)
+            get_logger().info("suggesstion_lrs is %s", suggesstion_lrs)
             self.__learning_rate = max(suggesstion_lrs.lr_min, suggesstion_lrs.lr_steep)
         return self.__learning_rate
 
