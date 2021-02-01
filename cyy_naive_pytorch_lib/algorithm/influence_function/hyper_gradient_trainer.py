@@ -11,6 +11,7 @@ from cyy_naive_lib.time_counter import TimeCounter
 
 from algorithm.hessian_vector_product import get_hessian_vector_product_func
 from algorithm.per_sample_gradient import get_per_sample_gradient
+from basic_trainer import TrainerCallbackPoint
 from model_util import ModelUtil
 
 
@@ -106,8 +107,12 @@ class HyperGradientTrainer:
         else:
             self.approx_hyper_gradient_mom_dict = None
 
-        self.trainer.add_callback("pre_batch_callbacks", self.__pre_batch_callback)
-        self.trainer.add_callback("after_batch_callbacks", self.__after_batch_callback)
+        self.trainer.add_callback(
+            TrainerCallbackPoint.BEFORE_BATCH, self.__pre_batch_callback
+        )
+        self.trainer.add_callback(
+            TrainerCallbackPoint.AFTER_BATCH, self.__after_batch_callback
+        )
 
     def set_computed_indices(self, computed_indices):
         get_logger().info("only compute %s indices", len(computed_indices))
