@@ -49,7 +49,7 @@ class BasicTrainer:
         self.__clear_loss()
         self.add_callback(
             TrainerCallbackPoint.BEFORE_BATCH,
-            lambda trainer, batch, batch_index: self.set_data(
+            lambda trainer, batch, batch_index: trainer.set_data(
                 "cur_learning_rates",
                 [group["lr"] for group in trainer.get_optimizer().param_groups],
             ),
@@ -64,6 +64,7 @@ class BasicTrainer:
         return self.model_with_loss.model
 
     def get_data(self, key: str):
+        assert key in self.__data
         return self.__data.get(key)
 
     def set_data(self, key: str, value):
@@ -231,10 +232,6 @@ class BasicTrainer:
                     self.model_with_loss.set_model_mode(MachineLearningPhase.Training)
                     self.model.to(self.device)
                     optimizer.zero_grad()
-                    self.set_data(
-                        "learning_rates",
-                        [group["lr"] for group in optimizer.param_groups],
-                    )
                     self.__exec_callbacks(
                         TrainerCallbackPoint.BEFORE_BATCH, self, batch_index, batch
                     )
