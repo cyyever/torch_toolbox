@@ -69,11 +69,6 @@ class BasicTrainer:
     def set_data(self, key: str, value):
         self.__data[key] = value
 
-    def __get_callbacks(
-        self, cb_point: TrainerCallbackPoint
-    ) -> List[Union[Callable, Dict[str, Callable]]]:
-        return self.__callbacks.get(cb_point, [])
-
     def __exec_callbacks(self, cb_point: TrainerCallbackPoint, *args, **kwargs):
         for o in self.__callbacks(cb_point, []):
             cbs = [o]
