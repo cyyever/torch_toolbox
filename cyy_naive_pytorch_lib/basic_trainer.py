@@ -70,7 +70,7 @@ class BasicTrainer:
         self.__data[key] = value
 
     def __exec_callbacks(self, cb_point: TrainerCallbackPoint, *args, **kwargs):
-        for o in self.__callbacks(cb_point, []):
+        for o in self.__callbacks.get(cb_point, []):
             cbs = [o]
             if isinstance(o, dict):
                 cbs = o.values()
