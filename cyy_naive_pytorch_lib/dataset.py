@@ -237,11 +237,8 @@ __datasets: dict = dict()
 
 def get_dataset(name: str, phase: MachineLearningPhase):
     root_dir = os.path.join(__dataset_dir, name)
-    for_training = phase in (
-        MachineLearningPhase.Training,
-        MachineLearningPhase.Validation,
-    )
-    training_dataset_parts = None
+    for_training = phase in (MachineLearningPhase.Training,)
+    test_dataset_parts = None
     by_label = True
     if name == "MNIST":
         dataset = torchvision.datasets.MNIST(
@@ -256,7 +253,7 @@ def get_dataset(name: str, phase: MachineLearningPhase):
                 ]
             ),
         )
-        training_dataset_parts = [5, 1]
+        test_dataset_parts = [1, 1]
     elif name == "FashionMNIST":
         transform = [
             transforms.Resize((32, 32)),
@@ -273,7 +270,7 @@ def get_dataset(name: str, phase: MachineLearningPhase):
             download=True,
             transform=transforms.Compose(transform),
         )
-        training_dataset_parts = [5, 1]
+        test_dataset_parts = [1, 1]
     elif name == "CIFAR10":
         transform = []
 
@@ -295,7 +292,30 @@ def get_dataset(name: str, phase: MachineLearningPhase):
             download=True,
             transform=transforms.Compose(transform),
         )
-        training_dataset_parts = [4, 1]
+        test_dataset_parts = [1, 1]
+    elif name == "CIFAR100":
+        transform = []
+
+        if phase == MachineLearningPhase.Training:
+            transform += [
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+            ]
+
+        transform += [
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[0.5071, 0.4866, 0.4409], std=[0.2673, 0.2564, 0.2762]
+            ),
+        ]
+        dataset = torchvision.datasets.CIFAR100(
+            root=root_dir,
+            train=for_training,
+            download=True,
+            transform=transforms.Compose(transform),
+        )
+        mean, std = DatasetUtil(dataset).get_mean_and_std()
+        test_dataset_parts = [1, 1]
     elif name == "SVHN":
         dataset = torchvision.datasets.SVHN(
             root=root_dir,
@@ -321,44 +341,47 @@ def get_dataset(name: str, phase: MachineLearningPhase):
             download=True,
             transform=transforms.Compose(transform),
         )
-        training_dataset_parts = [4, 1]
-    elif name == "WebankStreet":
-        dataset = WebankStreetDataset(
-            "/home/cyy/Street_Dataset/Street_Dataset",
-            train=True,
-            transform=transforms.ToTensor(),
-        )
-        mean, std = DatasetUtil(dataset).get_mean_and_std()
-        transform = []
-        if phase == MachineLearningPhase.Training:
-            transform += [
-                transforms.RandomHorizontalFlip(),
-            ]
+        test_dataset_parts = [1, 1]
+    # elif name == "WebankStreet":
+    #     dataset = WebankStreetDataset(
+    #         "/home/cyy/Street_Dataset/Street_Dataset",
+    #         train=True,
+    #         transform=transforms.ToTensor(),
+    #     )
+    #     mean, std = DatasetUtil(dataset).get_mean_and_std()
+    #     transform = []
+    #     if phase == MachineLearningPhase.Training:
+    #         transform += [
+    #             transforms.RandomHorizontalFlip(),
+    #         ]
 
-        transform += [
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std),
-        ]
-        dataset = WebankStreetDataset(
-            "/home/cyy/Street_Dataset/Street_Dataset",
-            train=for_training,
-            transform=transforms.Compose(transform),
-        )
-        training_dataset_parts = [4, 1]
-        by_label = False
+    #     transform += [
+    #         transforms.ToTensor(),
+    #         transforms.Normalize(mean=mean, std=std),
+    #     ]
+    #     dataset = WebankStreetDataset(
+    #         "/home/cyy/Street_Dataset/Street_Dataset",
+    #         train=for_training,
+    #         transform=transforms.Compose(transform),
+    #     )
+    #     training_dataset_parts = [4, 1]
+    #     by_label = False
     else:
         raise NotImplementedError(name)
     if not for_training:
         return dataset
 
     if name not in __datasets:
-        dataset_util = DatasetUtil(dataset)
-        training_dataset, validation_dataset = tuple(
-            dataset_util.split_by_ratio(training_dataset_parts, by_label=by_label)
-        )
         __datasets[name] = dict()
-        __datasets[name][MachineLearningPhase.Training] = training_dataset
-        __datasets[name][MachineLearningPhase.Validation] = validation_dataset
+        if phase == MachineLearningPhase.Training:
+            __datasets[name][phase] = dataset
+        else:
+            dataset_util = DatasetUtil(dataset)
+            validation_dataset, test_dataset = tuple(
+                dataset_util.split_by_ratio(test_dataset_parts, by_label=by_label)
+            )
+            __datasets[name][MachineLearningPhase.Validation] = validation_dataset
+            __datasets[name][MachineLearningPhase.Test] = test_dataset
     return __datasets[name][phase]
 
 
