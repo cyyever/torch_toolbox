@@ -54,8 +54,8 @@ def get_parsed_args(parser=None):
 
 
 def affect_global_process_from_args(args):
-    if args.logger_level is not None:
-        get_logger().setLevel(args.logger_level)
+    if args.log_level is not None:
+        get_logger().setLevel(args.log_level)
     set_reproducible_env_from_args(args)
 
 
