@@ -1,13 +1,21 @@
 import inspect
 import multiprocessing
-from typing import Callable, Optional
+from enum import Enum, auto
+from typing import Callable, Optional, Union
 
+import fastai
+import fastai.callback.schedule
 import torch
 import torch.optim as optim
 from cyy_naive_lib.log import get_logger
+from fastai.learner import Learner
 
 from dataset import dataset_with_indices
 from ml_types import MachineLearningPhase
+
+
+class HyperParameterAction(Enum):
+    FIND_LR = auto()
 
 
 class HyperParameter:
@@ -15,7 +23,7 @@ class HyperParameter:
         self,
         epoch: int,
         batch_size: int,
-        learning_rate: float,
+        learning_rate: Union[float, HyperParameterAction],
         weight_decay: float,
         momentum: float = 0.9,
     ):
@@ -42,11 +50,28 @@ class HyperParameter:
     def set_batch_size(self, batch_size):
         self.__batch_size = batch_size
 
-    @property
-    def learning_rate(self):
+    def get_learning_rate(self, trainer):
+        if isinstance(self.__learning_rate, HyperParameterAction):
+            get_logger().info("use fastai to guess lr")
+            dls = fastai.data.core.DataLoaders(
+                self.get_dataloader(
+                    trainer.training_dataset, MachineLearningPhase.Training
+                ),
+                self.get_dataloader(
+                    trainer.validation_dataset, MachineLearningPhase.Validation
+                ),
+            )
+            learner: Learner = Learner(
+                dls=dls,
+                model=trainer.model,
+                loss_func=trainer.model_with_loss.loss_fun,
+                # opt_func=self.__optimizer_factory,
+            )
+            suggesstion_lrs = learner.lr_find(show_plot=False)
+            self.__learning_rate = max(suggesstion_lrs.lr_min, suggesstion_lrs.lr_steep)
         return self.__learning_rate
 
-    def set_learning_rate(self, learning_rate):
+    def set_learning_rate(self, learning_rate: Union[float, HyperParameterAction]):
         self.__learning_rate = learning_rate
 
     @property
@@ -71,11 +96,9 @@ class HyperParameter:
             return training_dataset_size
         return (training_dataset_size + self.batch_size - 1) // self.batch_size
 
-    def get_lr_scheduler(self, optimizer, training_dataset_size: int):
+    def get_lr_scheduler(self, trainer):
         assert self.__lr_scheduler_factory is not None
-        return self.__lr_scheduler_factory(
-            self, optimizer, training_dataset_size=training_dataset_size
-        )
+        return self.__lr_scheduler_factory(self, trainer)
 
     @staticmethod
     def lr_scheduler_step_after_batch(lr_scheduler):
@@ -83,9 +106,11 @@ class HyperParameter:
 
     @staticmethod
     def get_lr_scheduler_factory(name, dataset_name=None):
-        def callback(hyper_parameter, optimizer, training_dataset_size):
+        def callback(hyper_parameter, trainer):
             nonlocal dataset_name
             nonlocal name
+            optimizer = trainer.get_optimizer()
+            training_dataset_size = trainer.get_data("training_set_size")
             if name == "ReduceLROnPlateau":
                 patience = min(10, hyper_parameter.epoch + 9 // 10)
                 if dataset_name == "CIFAR10":
@@ -101,7 +126,7 @@ class HyperParameter:
                 return optim.lr_scheduler.OneCycleLR(
                     optimizer,
                     pct_start=0.4,
-                    max_lr=hyper_parameter.learning_rate * 5,
+                    max_lr=10 * hyper_parameter.get_learning_rate(trainer),
                     total_steps=hyper_parameter.epoch
                     * hyper_parameter.get_iterations_per_epoch(training_dataset_size),
                     anneal_strategy="linear",
@@ -123,13 +148,13 @@ class HyperParameter:
             return optim.Adam
         raise RuntimeError("unknown optimizer:" + name)
 
-    def get_optimizer(self, params, training_dataset_size: int):
+    def get_optimizer(self, trainer):
         assert self.__optimizer_factory is not None
         kwargs: dict = {
-            "params": params,
-            "lr": self.learning_rate,
+            "params": trainer.model.parameters(),
+            "lr": self.get_learning_rate(trainer),
             "momentum": self.momentum,
-            "weight_decay": self.weight_decay / training_dataset_size,
+            "weight_decay": self.weight_decay / trainer.get_data("training_set_size"),
         }
 
         sig = inspect.signature(self.__optimizer_factory)
@@ -143,9 +168,11 @@ class HyperParameter:
     def set_dataloader_collate_fn(self, collate_fn):
         self.__collate_fn = collate_fn
 
-    def get_dataloader(self, dataset, phase: MachineLearningPhase):
+    def get_dataloader(self, dataset, phase: MachineLearningPhase, with_indices=False):
+        if with_indices:
+            dataset = dataset_with_indices(dataset)
         return torch.utils.data.DataLoader(
-            dataset_with_indices(dataset),
+            dataset,
             batch_size=self.batch_size,
             shuffle=(phase == MachineLearningPhase.Training),
             collate_fn=self.__collate_fn,
@@ -159,15 +186,14 @@ class HyperParameter:
             + " batch_size:"
             + str(self.batch_size)
             + " learning_rate:"
-            + str(self.learning_rate)
+            + str(self.__learning_rate)
             + " weight_decay:"
             + str(self.weight_decay)
         )
         if self.__optimizer_factory is not None:
-            s += " optimizer:" + str(self.__optimizer_factory)
-        # if self.lr_scheduler_factory is not None:
-        #     s += str(self.lr_scheduler_factory)
-
+            s += " optimizer factory:" + str(self.__optimizer_factory)
+        if self.__lr_scheduler_factory is not None:
+            s += " lr scheduler factory:" + str(self.__lr_scheduler_factory)
         return s
 
 

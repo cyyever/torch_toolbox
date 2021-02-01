@@ -167,9 +167,7 @@ class BasicTrainer:
         if "optimizer" not in self.__data:
             self.set_data(
                 "optimizer",
-                self.hyper_parameter.get_optimizer(
-                    self.model.parameters(), self.get_data("training_set_size")
-                ),
+                self.hyper_parameter.get_optimizer(self),
             )
         return self.get_data("optimizer")
 
@@ -177,9 +175,7 @@ class BasicTrainer:
         if "lr_scheduler" not in self.__data:
             self.set_data(
                 "lr_scheduler",
-                self.hyper_parameter.get_lr_scheduler(
-                    self.get_optimizer(), self.get_data("training_set_size")
-                ),
+                self.hyper_parameter.get_lr_scheduler(self),
             )
         return self.get_data("lr_scheduler")
 
