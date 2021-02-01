@@ -22,14 +22,14 @@ def get_arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_name", type=str, required=True)
     parser.add_argument("--model_name", type=str, required=True)
-    parser.add_argument("--learning_rate_scheduler", type=str, default=None)
     parser.add_argument("--epoch", type=int, default=None)
     parser.add_argument("--batch_size", type=int, default=None)
     parser.add_argument("--learning_rate", type=float, default=None)
-    parser.add_argument("--optimizer", type=str, default=None)
+    parser.add_argument("--learning_rate_scheduler", type=str, default=None)
+    parser.add_argument("--find_learning_rate", action="store_true", default=False)
     parser.add_argument("--momentum", type=float, default=None)
     parser.add_argument("--weight_decay", type=float, default=None)
-    parser.add_argument("--stop_accuracy", type=float, default=None)
+    parser.add_argument("--optimizer", type=str, default=None)
     parser.add_argument("--model_path", type=str, default=None)
     parser.add_argument("--save_dir", type=str, default=None)
     parser.add_argument("--reproducible_env_load_path", type=str, default=None)
@@ -99,12 +99,6 @@ def create_trainer_from_args(args) -> Trainer:
             HyperParameter.get_lr_scheduler_factory(args.learning_rate_scheduler)
         )
     trainer.set_hyper_parameter(hyper_parameter)
-
-    if args.stop_accuracy is not None:
-        trainer.set_stop_criterion(
-            lambda trainer, epoch, __: trainer.validation_accuracy[epoch]
-            >= args.stop_accuracy
-        )
     return trainer
 
 

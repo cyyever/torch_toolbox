@@ -1,7 +1,8 @@
 import copy
 import logging
 import os
-from typing import Callable, List, Optional
+from enum import Enum, auto
+from typing import Callable, Dict, List, Optional, Union
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -12,6 +13,15 @@ from inference import ClassificationInferencer, DetectionInferencer, Inferencer
 from ml_types import MachineLearningPhase, ModelType
 from model_loss import ModelWithLoss
 from tensor import get_batch_size
+
+
+class TrainerCallbackPoint(Enum):
+    BEFORE_TRAINING = auto()
+    AFTER_TRAINING = auto()
+    BEFORE_EPOCH = auto()
+    AFTER_EPOCH = auto()
+    BEFORE_BATCH = auto()
+    AFTER_BATCH = auto()
 
 
 class BasicTrainer:
@@ -28,10 +38,12 @@ class BasicTrainer:
         self.__hyper_parameter = hyper_parameter
         self.__device = get_device()
         self.__data: dict = dict()
-        self.__callbacks: dict[str, List[Callable]] = dict()
+        self.__callbacks: Dict[
+            TrainerCallbackPoint, List[Union[Callable, Dict[str, Callable]]]
+        ] = dict()
         self.__clear_loss()
         self.add_callback(
-            "pre_batch_callbacks",
+            TrainerCallbackPoint.BEFORE_BATCH,
             lambda trainer, batch, batch_index: self.set_data(
                 "cur_learning_rates",
                 [group["lr"] for group in trainer.get_optimizer().param_groups],
@@ -52,14 +64,23 @@ class BasicTrainer:
     def set_data(self, key: str, value):
         self.__data[key] = value
 
-    def get_callbacks(self, name: str) -> List[Callable]:
-        return self.__callbacks.get(name, [])
+    def __get_callbacks(
+        self, cb_point: TrainerCallbackPoint
+    ) -> List[Union[Callable, Dict[str, Callable]]]:
+        return self.__callbacks.get(cb_point, [])
 
-    def add_callback(self, name: str, cb: Callable):
-        if name not in self.__callbacks:
-            self.__callbacks[name] = [cb]
+    def add_callback(
+        self, cb_point: TrainerCallbackPoint, cb: Union[Callable, Dict[str, Callable]]
+    ):
+        if cb_point not in self.__callbacks:
+            self.__callbacks[cb_point] = [cb]
         else:
-            self.__callbacks[name].append(cb)
+            self.__callbacks[cb_point].append(cb)
+
+    def add_named_callback(
+        self, cb_point: TrainerCallbackPoint, name: str, cb: Callable
+    ):
+        self.add_callback(cb_point, {name: cb})
 
     @property
     def training_dataset(self):
@@ -182,7 +203,7 @@ class BasicTrainer:
         get_logger().info("use device %s", self.device)
         self.__clear_loss()
 
-        for callback in self.get_callbacks("pre_training_callbacks"):
+        for callback in self.__get_callbacks(TrainerCallbackPoint.BEFORE_TRAINING):
             callback(self)
         for epoch in range(1, self.hyper_parameter.epoch + 1):
             optimizer = self.get_optimizer()
@@ -201,7 +222,7 @@ class BasicTrainer:
                 self.set_data(
                     "learning_rates", [group["lr"] for group in optimizer.param_groups]
                 )
-                for callback in self.get_callbacks("pre_batch_callbacks"):
+                for callback in self.__get_callbacks(TrainerCallbackPoint.BEFORE_BATCH):
                     callback(self, batch_index, batch)
 
                 instance_inputs, instance_targets, _ = self.decode_batch(batch)
@@ -232,7 +253,7 @@ class BasicTrainer:
                     get_logger().debug("adjust lr after batch")
                     lr_scheduler.step()
 
-                for callback in self.get_callbacks("after_batch_callbacks"):
+                for callback in self.__get_callbacks(TrainerCallbackPoint.AFTER_BATCH):
                     callback(
                         self,
                         batch_index,
@@ -242,7 +263,7 @@ class BasicTrainer:
                     )
 
             self.training_loss.append(training_loss)
-            for callback in self.get_callbacks("after_epoch_callbacks"):
+            for callback in self.__get_callbacks(TrainerCallbackPoint.AFTER_EPOCH):
                 callback(
                     self,
                     epoch,
