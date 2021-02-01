@@ -4,7 +4,7 @@ import threading
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
 
-from basic_trainer import BasicTrainer
+from basic_trainer import BasicTrainer, TrainerCallbackPoint
 from hyper_parameter import HyperParameter
 from ml_types import MachineLearningPhase
 from model_loss import ModelWithLoss
@@ -30,9 +30,11 @@ class Trainer(BasicTrainer):
             hyper_parameter=hyper_parameter,
         )
         self.visdom_env = None
-        self.add_callback("pre_training_callbacks", self.__pre_training_callback)
-        self.add_callback("after_batch_callbacks", Trainer.__after_batch_callback)
-        self.add_callback("after_epoch_callbacks", Trainer.__plot_after_epoch)
+        self.add_callback(
+            TrainerCallbackPoint.BEFORE_TRAINING, self.__pre_training_callback
+        )
+        self.add_callback(TrainerCallbackPoint.AFTER_BATCH, Trainer.__log_after_batch)
+        self.add_callback(TrainerCallbackPoint.AFTER_EPOCH, Trainer.__plot_after_epoch)
 
     def __pre_training_callback(self, trainer):
         self.visdom_env = (
@@ -53,7 +55,7 @@ class Trainer(BasicTrainer):
         )
 
     @staticmethod
-    def __after_batch_callback(trainer: BasicTrainer, batch_index, batch, **kwargs):
+    def __log_after_batch(trainer: BasicTrainer, batch_index, batch, **kwargs):
         training_set_size = trainer.get_data("training_set_size")
         ten_batches = training_set_size // (10 * get_batch_size(batch[0]))
         if ten_batches == 0 or batch_index % ten_batches == 0:
