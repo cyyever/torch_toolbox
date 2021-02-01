@@ -66,6 +66,11 @@ class HyperParameter:
     def set_lr_scheduler_factory(self, lr_scheduler_factory: Callable):
         self.__lr_scheduler_factory = lr_scheduler_factory
 
+    def get_iterations_per_epoch(self, training_dataset_size):
+        if self.batch_size == 1:
+            return training_dataset_size
+        return (training_dataset_size + self.batch_size - 1) // self.batch_size
+
     def get_lr_scheduler(self, optimizer, training_dataset_size: int):
         assert self.__lr_scheduler_factory is not None
         return self.__lr_scheduler_factory(
@@ -97,13 +102,8 @@ class HyperParameter:
                     optimizer,
                     pct_start=0.4,
                     max_lr=hyper_parameter.learning_rate * 5,
-                    total_steps=(
-                        hyper_parameter.epoch
-                        * (
-                            (training_dataset_size + hyper_parameter.batch_size - 1)
-                            // hyper_parameter.batch_size
-                        )
-                    ),
+                    total_steps=hyper_parameter.epoch
+                    * hyper_parameter.get_iterations_per_epoch(training_dataset_size),
                     anneal_strategy="linear",
                     three_phase=True,
                     div_factor=10,
