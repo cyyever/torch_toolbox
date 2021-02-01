@@ -90,6 +90,14 @@ class BasicTrainer:
     ):
         self.add_callback(cb_point, {name: cb})
 
+    def remove_callback(self, cb_point: TrainerCallbackPoint, name: str):
+        if cb_point not in self.__callbacks:
+            return
+        for idx, cb in enumerate(self.__callbacks[cb_point]):
+            if isinstance(cb, dict):
+                cb.pop(name, None)
+                self.__callbacks[cb_point][idx] = cb
+
     @property
     def training_dataset(self):
         return self.__training_dataset
