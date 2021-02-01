@@ -113,16 +113,16 @@ def worker_fun(task, args):
     return (idx, products)
 
 
-task_queue = None
+__task_queue = None
 
 
-def __exit_handler():
-    global task_queue
-    if task_queue is not None:
-        task_queue.force_stop()
+def stop_task_queue():
+    global __task_queue
+    if __task_queue is not None:
+        __task_queue.force_stop()
 
 
-atexit.register(__exit_handler)
+atexit.register(stop_task_queue)
 
 
 def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
@@ -155,7 +155,7 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
         parameter_dict[str(device)] = copy.deepcopy(parameter_snapshot).to(device)
 
     def vhp_func(v):
-        global task_queue
+        global __task_queue
         v_is_tensor = False
         if isinstance(v, list):
             vectors = v
@@ -172,11 +172,11 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
         )
         assert len(vector_chunks) <= len(devices)
 
-        if task_queue is None:
-            task_queue = CUDAProcessTaskQueue(worker_fun)
-        task_queue.start()
+        if __task_queue is None:
+            __task_queue = CUDAProcessTaskQueue(worker_fun)
+        __task_queue.start()
         for idx, vector_chunk in enumerate(vector_chunks):
-            task_queue.add_task(
+            __task_queue.add_task(
                 (
                     idx,
                     vector_chunk,
@@ -190,7 +190,7 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
 
         total_products = dict()
         for _ in range(len(vector_chunks)):
-            idx, gradient_list = task_queue.get_result()
+            idx, gradient_list = __task_queue.get_result()
             total_products[idx] = gradient_list
 
         products = []

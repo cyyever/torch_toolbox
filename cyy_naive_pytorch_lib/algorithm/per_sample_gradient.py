@@ -38,13 +38,13 @@ def __worker_fun(task, args):
 __task_queue = None
 
 
-def __exit_handler():
+def stop_task_queue():
     global __task_queue
     if __task_queue is not None:
         __task_queue.force_stop()
 
 
-atexit.register(__exit_handler)
+atexit.register(stop_task_queue)
 
 
 def get_per_sample_gradient(model_with_loss: ModelWithLoss, inputs, targets):
