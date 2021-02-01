@@ -22,6 +22,11 @@ class TrainerCallbackPoint(Enum):
     AFTER_EPOCH = auto()
     BEFORE_BATCH = auto()
     AFTER_BATCH = auto()
+    OPTIMIZER_STEP = auto()
+
+
+class StopTrainingException(Exception):
+    pass
 
 
 class BasicTrainer:
@@ -68,6 +73,14 @@ class BasicTrainer:
         self, cb_point: TrainerCallbackPoint
     ) -> List[Union[Callable, Dict[str, Callable]]]:
         return self.__callbacks.get(cb_point, [])
+
+    def __exec_callbacks(self, cb_point: TrainerCallbackPoint, *args, **kwargs):
+        for o in self.__callbacks(cb_point, []):
+            cbs = [o]
+            if isinstance(o, dict):
+                cbs = o.values()
+            for cb in cbs:
+                cb(*args, **kwargs)
 
     def add_callback(
         self, cb_point: TrainerCallbackPoint, cb: Union[Callable, Dict[str, Callable]]
@@ -203,58 +216,60 @@ class BasicTrainer:
         get_logger().info("use device %s", self.device)
         self.__clear_loss()
 
-        for callback in self.__get_callbacks(TrainerCallbackPoint.BEFORE_TRAINING):
-            callback(self)
-        for epoch in range(1, self.hyper_parameter.epoch + 1):
-            optimizer = self.get_optimizer()
-            lr_scheduler = self.get_lr_scheduler()
-            assert optimizer is not None
-            assert lr_scheduler is not None
-            training_loss = 0.0
-            for batch_index, batch in enumerate(
-                self.__hyper_parameter.get_dataloader(
-                    self.training_dataset, phase=MachineLearningPhase.Training
-                )
-            ):
-                self.model_with_loss.set_model_mode(MachineLearningPhase.Training)
-                self.model.to(self.device)
-                optimizer.zero_grad()
-                self.set_data(
-                    "learning_rates", [group["lr"] for group in optimizer.param_groups]
-                )
-                for callback in self.__get_callbacks(TrainerCallbackPoint.BEFORE_BATCH):
-                    callback(self, batch_index, batch)
+        self.__exec_callbacks(TrainerCallbackPoint.BEFORE_TRAINING, self)
+        try:
+            for epoch in range(1, self.hyper_parameter.epoch + 1):
+                optimizer = self.get_optimizer()
+                lr_scheduler = self.get_lr_scheduler()
+                assert optimizer is not None
+                assert lr_scheduler is not None
+                training_loss = 0.0
+                for batch_index, batch in enumerate(
+                    self.__hyper_parameter.get_dataloader(
+                        self.training_dataset, phase=MachineLearningPhase.Training
+                    )
+                ):
+                    self.model_with_loss.set_model_mode(MachineLearningPhase.Training)
+                    self.model.to(self.device)
+                    optimizer.zero_grad()
+                    self.set_data(
+                        "learning_rates",
+                        [group["lr"] for group in optimizer.param_groups],
+                    )
+                    self.__exec_callbacks(
+                        TrainerCallbackPoint.BEFORE_BATCH, self, batch_index, batch
+                    )
+                    instance_inputs, instance_targets, _ = self.decode_batch(batch)
+                    optimizer.zero_grad()
+                    result = self.model_with_loss(
+                        instance_inputs,
+                        instance_targets,
+                        phase=MachineLearningPhase.Training,
+                    )
+                    loss = result["loss"]
+                    loss.backward()
+                    batch_loss = loss.data.item()
 
-                instance_inputs, instance_targets, _ = self.decode_batch(batch)
-                optimizer.zero_grad()
-                result = self.model_with_loss(
-                    instance_inputs,
-                    instance_targets,
-                    phase=MachineLearningPhase.Training,
-                )
-                loss = result["loss"]
-                loss.backward()
-                batch_loss = loss.data.item()
+                    normalized_batch_loss = batch_loss
+                    if self.model_with_loss.is_averaged_loss():
+                        real_batch_size = get_batch_size(instance_inputs)
+                        normalized_batch_loss *= real_batch_size
+                    normalized_batch_loss /= training_set_size
+                    training_loss += normalized_batch_loss
 
-                normalized_batch_loss = batch_loss
-                if self.model_with_loss.is_averaged_loss():
-                    real_batch_size = get_batch_size(instance_inputs)
-                    normalized_batch_loss *= real_batch_size
-                normalized_batch_loss /= training_set_size
-                training_loss += normalized_batch_loss
+                    if TrainerCallbackPoint.OPTIMIZER_STEP in self.__callbacks:
+                        self.__exec_callbacks(
+                            TrainerCallbackPoint.OPTIMIZER_STEP, optimizer, self
+                        )
+                    else:
+                        optimizer.step()
 
-                callbacks = kwargs.get("optimizer_step_callbacks", [])
-                if callbacks:
-                    for callback in callbacks:
-                        callback(optimizer, trainer=self, device=self.device)
-                else:
-                    optimizer.step()
-                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                    get_logger().debug("adjust lr after batch")
-                    lr_scheduler.step()
+                    if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+                        get_logger().debug("adjust lr after batch")
+                        lr_scheduler.step()
 
-                for callback in self.__get_callbacks(TrainerCallbackPoint.AFTER_BATCH):
-                    callback(
+                    self.__exec_callbacks(
+                        TrainerCallbackPoint.AFTER_BATCH,
                         self,
                         batch_index,
                         batch=batch,
@@ -262,24 +277,27 @@ class BasicTrainer:
                         batch_loss=batch_loss,
                     )
 
-            self.training_loss.append(training_loss)
-            for callback in self.__get_callbacks(TrainerCallbackPoint.AFTER_EPOCH):
-                callback(
+                self.training_loss.append(training_loss)
+                self.__exec_callbacks(
+                    TrainerCallbackPoint.AFTER_EPOCH,
                     self,
                     epoch,
                     optimizer=optimizer,
-                    **kwargs,
                 )
 
-            if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    get_logger().debug(
-                        "call ReduceLROnPlateau for training loss %s",
-                        self.training_loss[-1],
-                    )
-                    lr_scheduler.step(self.training_loss[-1])
-                else:
-                    lr_scheduler.step()
+                if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+                    if isinstance(
+                        lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau
+                    ):
+                        get_logger().debug(
+                            "call ReduceLROnPlateau for training loss %s",
+                            self.training_loss[-1],
+                        )
+                        lr_scheduler.step(self.training_loss[-1])
+                    else:
+                        lr_scheduler.step()
+        except StopTrainingException as e:
+            get_logger().warning("stop training:%s", e)
 
     # TODO:drop it and merge to dataset code
     def decode_batch(self, batch):
