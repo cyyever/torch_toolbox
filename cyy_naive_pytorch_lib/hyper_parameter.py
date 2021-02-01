@@ -127,12 +127,11 @@ class HyperParameter:
                 return optim.lr_scheduler.OneCycleLR(
                     optimizer,
                     pct_start=0.4,
-                    max_lr=10 * hyper_parameter.get_learning_rate(trainer),
+                    max_lr=hyper_parameter.get_learning_rate(trainer),
                     total_steps=hyper_parameter.epoch
                     * hyper_parameter.get_iterations_per_epoch(training_dataset_size),
                     anneal_strategy="linear",
                     three_phase=True,
-                    div_factor=10,
                 )
             raise RuntimeError("unknown learning rate scheduler:" + name)
 
@@ -217,6 +216,13 @@ def get_recommended_hyper_parameter(
     elif dataset_name == "CIFAR10":
         hyper_parameter = HyperParameter(
             epoch=350, batch_size=64, learning_rate=0.1, weight_decay=1
+        )
+    elif dataset_name == "CIFAR100":
+        hyper_parameter = HyperParameter(
+            epoch=350,
+            batch_size=64,
+            learning_rate=HyperParameterAction.FIND_LR,
+            weight_decay=1,
         )
     elif dataset_name == "WebankStreet":
         hyper_parameter = HyperParameter(
