@@ -11,7 +11,7 @@ from cyy_naive_lib.log import get_logger
 from configuration import get_trainer_from_configuration
 from dataset import (DatasetUtil, get_dataset, replace_dataset_labels,
                      sub_dataset)
-from hyper_parameter import HyperParameter
+from hyper_parameter import HyperParameter, HyperParameterAction
 from inference import Inferencer
 from ml_types import MachineLearningPhase
 from reproducible_env import global_reproducible_env
@@ -90,6 +90,8 @@ def create_trainer_from_args(args) -> Trainer:
         )
     if args.learning_rate is not None:
         hyper_parameter.set_learning_rate(args.learning_rate)
+    if args.find_learning_rate:
+        hyper_parameter.set_learning_rate(HyperParameterAction.FIND_LR)
     if args.momentum is not None:
         hyper_parameter.set_momentum(args.momentum)
     if args.weight_decay is not None:
