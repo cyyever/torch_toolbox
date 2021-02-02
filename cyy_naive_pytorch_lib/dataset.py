@@ -368,11 +368,10 @@ def get_dataset(name: str, phase: MachineLearningPhase):
     #     by_label = False
     else:
         raise NotImplementedError(name)
-    if not for_training:
-        return dataset
-
     if name not in __datasets:
         __datasets[name] = dict()
+
+    if phase not in __datasets[name]:
         if phase == MachineLearningPhase.Training:
             __datasets[name][phase] = dataset
         else:

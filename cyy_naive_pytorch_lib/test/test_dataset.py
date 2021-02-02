@@ -9,7 +9,7 @@ def test_dataset():
     mnist_validation_dataset = dataset.get_dataset(
         "MNIST", dataset.MachineLearningPhase.Validation
     )
-    assert abs(len(mnist_dataset) / len(mnist_validation_dataset) - 5) < 0.01
+    assert abs(len(mnist_dataset) / len(mnist_validation_dataset) - 12) < 0.01
     dataset.sub_dataset(mnist_dataset, [1])
     assert dataset.DatasetUtil(mnist_dataset).channel == 1
     cifar10_dataset = dataset.get_dataset(
