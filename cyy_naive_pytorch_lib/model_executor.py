@@ -1,7 +1,7 @@
 import copy
 # import logging
 # import os
-from enum import Enum, auto
+from enum import IntEnum, auto
 from typing import Callable, Dict, List, Union
 
 import torch
@@ -12,7 +12,7 @@ from hyper_parameter import HyperParameter
 from model_loss import ModelWithLoss
 
 
-class ModelExecutorCallbackPoint(Enum):
+class ModelExecutorCallbackPoint(IntEnum):
     BEFORE_TRAINING = auto()
     AFTER_TRAINING = auto()
     BEFORE_EPOCH = auto()

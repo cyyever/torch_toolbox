@@ -1,7 +1,7 @@
-from enum import Enum, auto
+from enum import Enum, IntEnum, auto
 
 
-class MachineLearningPhase(Enum):
+class MachineLearningPhase(IntEnum):
     Training = auto()
     Validation = auto()
     Test = auto()
