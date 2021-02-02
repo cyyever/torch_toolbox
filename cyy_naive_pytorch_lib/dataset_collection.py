@@ -19,6 +19,9 @@ class DatasetCollection:
         test_dataset: torch.utils.data.Dataset,
         name=None,
     ):
+        assert training_dataset is not None
+        assert validation_dataset is not None
+        assert test_dataset is not None
         self.__datasets: Dict[MachineLearningPhase, torch.utils.data.Dataset] = dict()
         self.__datasets[MachineLearningPhase.Training] = training_dataset
         self.__datasets[MachineLearningPhase.Validation] = validation_dataset
@@ -29,6 +32,7 @@ class DatasetCollection:
         self.__datasets[MachineLearningPhase.Training] = training_dataset
 
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
+        assert phase in self.__datasets
         return self.__datasets.get(phase)
 
     def get_dataloader(
