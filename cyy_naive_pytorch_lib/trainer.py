@@ -4,10 +4,11 @@ import threading
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
 
-from basic_trainer import BasicTrainer, TrainerCallbackPoint
+from basic_trainer import BasicTrainer
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from ml_types import MachineLearningPhase
+from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
 from tensor import get_batch_size
@@ -32,10 +33,14 @@ class Trainer(BasicTrainer):
         )
         self.visdom_env = None
         self.add_callback(
-            TrainerCallbackPoint.BEFORE_TRAINING, self.__pre_training_callback
+            ModelExecutorCallbackPoint.BEFORE_TRAINING, self.__pre_training_callback
         )
-        self.add_callback(TrainerCallbackPoint.AFTER_BATCH, Trainer.__log_after_batch)
-        self.add_callback(TrainerCallbackPoint.AFTER_EPOCH, Trainer.__plot_after_epoch)
+        self.add_callback(
+            ModelExecutorCallbackPoint.AFTER_BATCH, Trainer.__log_after_batch
+        )
+        self.add_callback(
+            ModelExecutorCallbackPoint.AFTER_EPOCH, Trainer.__plot_after_epoch
+        )
 
     def __pre_training_callback(self, trainer):
         self.visdom_env = (
@@ -136,9 +141,7 @@ class Trainer(BasicTrainer):
                     )
 
         test_epoch_interval = int(kwargs.get("test_epoch_interval", 2))
-        if (
-            epoch % test_epoch_interval == 0 or epoch == trainer.hyper_parameter.epoch
-        ):
+        if epoch % test_epoch_interval == 0 or epoch == trainer.hyper_parameter.epoch:
             (test_loss, accuracy, _) = trainer.get_inferencer(
                 phase=MachineLearningPhase.Test
             ).inference(per_class_accuracy=False)
