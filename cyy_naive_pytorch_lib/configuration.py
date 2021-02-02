@@ -1,4 +1,4 @@
-from dataset import get_dataset
+from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter, get_recommended_hyper_parameter
 from ml_types import MachineLearningPhase
 from model_factory import get_model
@@ -12,11 +12,7 @@ def get_trainer_from_configuration(
         hyper_parameter = get_recommended_hyper_parameter(dataset_name, model_name)
         assert hyper_parameter is not None
 
-    training_dataset = get_dataset(dataset_name, MachineLearningPhase.Training)
-    validation_dataset = get_dataset(dataset_name, MachineLearningPhase.Validation)
-    test_dataset = get_dataset(dataset_name, MachineLearningPhase.Test)
-    model_with_loss = get_model(model_name, training_dataset)
-    trainer = Trainer(model_with_loss, training_dataset, hyper_parameter)
-    trainer.set_validation_dataset(validation_dataset)
-    trainer.set_test_dataset(test_dataset)
+    dc = DatasetCollection.get_by_name(dataset_name)
+    model_with_loss = get_model(model_name, dc)
+    trainer = Trainer(model_with_loss, dc, hyper_parameter)
     return trainer

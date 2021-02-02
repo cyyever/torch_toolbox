@@ -1,19 +1,19 @@
 from inspect import signature
 
-import torch
 from cyy_naive_lib.algorithm.mapping_op import change_mapping_keys
 from torchvision.models import MobileNetV2, resnet50
 from torchvision.models.detection.faster_rcnn import fasterrcnn_resnet50_fpn
 from torchvision.models.quantization.mobilenet import QuantizableMobileNetV2
 
 from dataset import DatasetUtil
-from ml_types import ModelType
+from dataset_collection import DatasetCollection
+from ml_types import MachineLearningPhase, ModelType
 from model_loss import ModelWithLoss
 from models.densenet import DenseNet40
 from models.lenet import LeNet5
 
 
-def get_model(name: str, dataset: torch.utils.data.Dataset) -> ModelWithLoss:
+def get_model(name: str, dataset_collection: DatasetCollection) -> ModelWithLoss:
     name_to_model_mapping: dict = {
         "LeNet5": LeNet5,
         "MobileNetV2": MobileNetV2,
@@ -29,7 +29,9 @@ def get_model(name: str, dataset: torch.utils.data.Dataset) -> ModelWithLoss:
     if model_constructor is None:
         raise RuntimeError("unknown model name:", name)
 
-    dataset_util = DatasetUtil(dataset)
+    dataset_util = DatasetUtil(
+        dataset_collection.get_dataset(MachineLearningPhase.Training)
+    )
     sig = signature(model_constructor)
     kwargs = dict()
     for param in sig.parameters:

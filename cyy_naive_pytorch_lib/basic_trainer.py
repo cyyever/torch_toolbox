@@ -2,11 +2,12 @@ import copy
 import logging
 import os
 from enum import Enum, auto
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Union
 
 import torch
 from cyy_naive_lib.log import get_logger
 
+from dataset_collection import DatasetCollection
 from device import get_device, put_data_to_device
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
@@ -33,13 +34,14 @@ class BasicTrainer:
     def __init__(
         self,
         model_with_loss: ModelWithLoss,
-        training_dataset,
+        dataset_collection: DatasetCollection,
         hyper_parameter: HyperParameter,
     ):
         self.__model_with_loss = copy.deepcopy(model_with_loss)
-        self.__training_dataset = training_dataset
-        self.__validation_dataset: Optional[torch.utils.data.Dataset] = None
-        self.__test_dataset: Optional[torch.utils.data.Dataset] = None
+        self.__dataset_collection: DatasetCollection = dataset_collection
+        # self.__training_dataset = training_dataset
+        # self.__validation_dataset: Optional[torch.utils.data.Dataset] = None
+        # self.__test_dataset: Optional[torch.utils.data.Dataset] = None
         self.__hyper_parameter = hyper_parameter
         self.__device = get_device()
         self.__data: dict = dict()
@@ -100,25 +102,25 @@ class BasicTrainer:
                 self.__callbacks[cb_point][idx] = cb
 
     @property
-    def training_dataset(self):
-        return self.__training_dataset
+    def training_dataset(self) -> torch.utils.data.Dataset:
+        return self.__dataset_collection.get_dataset(MachineLearningPhase.Training)
 
-    def set_training_dataset(self, training_dataset: torch.utils.data.Dataset):
-        self.__training_dataset = training_dataset
+    # def set_training_dataset(self, training_dataset: torch.utils.data.Dataset):
+    #     self.__training_dataset = training_dataset
 
-    @property
-    def validation_dataset(self):
-        return self.__validation_dataset
+    # @property
+    # def validation_dataset(self):
+    #     return self.__dataset_collection.get_dataset(MachineLearningPhase.Validation)
 
-    def set_validation_dataset(self, validation_dataset: torch.utils.data.Dataset):
-        self.__validation_dataset = validation_dataset
+    # # def set_validation_dataset(self, validation_dataset: torch.utils.data.Dataset):
+    # #     self.__validation_dataset = validation_dataset
 
-    @property
-    def test_dataset(self):
-        return self.__test_dataset
+    # @property
+    # def test_dataset(self):
+    #     return self.__dataset_collection.get_dataset(MachineLearningPhase.Test)
 
-    def set_test_dataset(self, test_dataset: torch.utils.data.Dataset):
-        self.__test_dataset = test_dataset
+    # def set_test_dataset(self, test_dataset: torch.utils.data.Dataset):
+    #     self.__test_dataset = test_dataset
 
     @property
     def device(self):
@@ -132,9 +134,7 @@ class BasicTrainer:
     ) -> Inferencer:
         assert phase != MachineLearningPhase.Training
 
-        dataset = self.validation_dataset
-        if phase == MachineLearningPhase.Test:
-            dataset = self.test_dataset
+        dataset = self.__dataset_collection.get_dataset(phase)
         if self.model_with_loss.model_type == ModelType.Classification:
             return ClassificationInferencer(
                 self.model_with_loss,
@@ -225,8 +225,9 @@ class BasicTrainer:
                 assert lr_scheduler is not None
                 training_loss = 0.0
                 for batch_index, batch in enumerate(
-                    self.__hyper_parameter.get_dataloader(
-                        self.training_dataset, phase=MachineLearningPhase.Training
+                    self.__dataset_collection.get_dataloader(
+                        phase=MachineLearningPhase.Training,
+                        hyper_parameter=self.hyper_parameter,
                     )
                 ):
                     self.model_with_loss.set_model_mode(MachineLearningPhase.Training)

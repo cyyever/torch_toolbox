@@ -5,6 +5,7 @@ from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
 
 from basic_trainer import BasicTrainer, TrainerCallbackPoint
+from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from ml_types import MachineLearningPhase
 from model_loss import ModelWithLoss
@@ -21,12 +22,12 @@ class Trainer(BasicTrainer):
     def __init__(
         self,
         model_with_loss: ModelWithLoss,
-        training_dataset,
+        dataset_collection: DatasetCollection,
         hyper_parameter: HyperParameter,
     ):
         super().__init__(
             model_with_loss=model_with_loss,
-            training_dataset=training_dataset,
+            dataset_collection=dataset_collection,
             hyper_parameter=hyper_parameter,
         )
         self.visdom_env = None
