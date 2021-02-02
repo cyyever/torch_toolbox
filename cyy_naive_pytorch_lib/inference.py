@@ -6,6 +6,7 @@ from cyy_naive_lib.log import get_logger
 from torchvision.ops.boxes import box_iou
 
 from dataset import DatasetUtil
+from dataset_collection import DatasetCollection
 from device import get_device, put_data_to_device
 from hyper_parameter import HyperParameter
 from ml_types import MachineLearningPhase
@@ -25,7 +26,7 @@ class Inferencer:
     def __init__(
         self,
         model_with_loss: ModelWithLoss,
-        dataset,
+        dataset_collection: DatasetCollection,
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
         copy_model=True,
@@ -36,7 +37,7 @@ class Inferencer:
         if copy_model:
             get_logger().debug("copy model in inferencer")
             self.__model_with_loss = copy.deepcopy(model_with_loss)
-        self.__dataset = dataset
+        self.__dataset_collection = dataset_collection
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
         if device is not None:
@@ -54,12 +55,9 @@ class Inferencer:
     def load_model(self, model_path):
         self.set_model(torch.load(model_path, map_location=self.device))
 
-    @property
+    # @property
     def dataset(self):
-        return self.__dataset
-
-    def set_dataset(self, dataset):
-        self.__dataset = dataset
+        return self.__dataset_collection.get_dataset(phase=self.__phase)
 
     @property
     def device(self):
@@ -69,10 +67,6 @@ class Inferencer:
         self.__device = device
 
     def inference(self, **kwargs):
-        data_loader = self.__hyper_parameter.get_dataloader(
-            self.__dataset, self.__phase
-        )
-
         use_grad = kwargs.get("use_grad", False)
         with torch.set_grad_enabled(use_grad):
             get_logger().debug("use device %s", self.device)
@@ -81,7 +75,10 @@ class Inferencer:
             self.model.to(self.device)
             total_loss = torch.zeros(1)
             total_loss = total_loss.to(self.device)
-            for batch in data_loader:
+            for batch in self.__dataset_collection.get_dataloader(
+                self.__phase,
+                self.__hyper_parameter,
+            ):
                 inputs = put_data_to_device(batch[0], self.device)
                 targets = put_data_to_device(batch[1], self.device)
                 real_batch_size = get_batch_size(inputs)
@@ -95,7 +92,7 @@ class Inferencer:
                 normalized_batch_loss = batch_loss
                 if self.__model_with_loss.is_averaged_loss():
                     normalized_batch_loss *= real_batch_size
-                normalized_batch_loss /= len(self.__dataset)
+                normalized_batch_loss /= len(self.dataset)
                 if use_grad:
                     normalized_batch_loss.backward()
                 total_loss += normalized_batch_loss
