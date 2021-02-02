@@ -25,6 +25,9 @@ class DatasetCollection:
         self.__datasets[MachineLearningPhase.Test] = test_dataset
         self.__name = name
 
+    def set_training_dataset(self, training_dataset):
+        self.__datasets[MachineLearningPhase.Training] = training_dataset
+
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
         return self.__datasets.get(phase)
 
