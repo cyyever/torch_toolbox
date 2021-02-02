@@ -7,22 +7,15 @@ from torchvision.ops.boxes import box_iou
 
 from dataset import DatasetUtil
 from dataset_collection import DatasetCollection
-from device import get_device, put_data_to_device
 from hyper_parameter import HyperParameter
 from ml_types import MachineLearningPhase
+from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
 from tensor import get_batch_size
 
 
-class Inferencer:
-    @staticmethod
-    def prepend_callback(kwargs, name, new_fun):
-        callbacks = kwargs.get(name, [])
-        callbacks.insert(0, new_fun)
-        kwargs[name] = callbacks
-        return kwargs
-
+class Inferencer(ModelExecutor):
     def __init__(
         self,
         model_with_loss: ModelWithLoss,
@@ -30,67 +23,45 @@ class Inferencer:
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
         copy_model=True,
-        device=None,
     ):
         assert phase != MachineLearningPhase.Training
-        self.__model_with_loss = model_with_loss
+        super().__init__(model_with_loss, dataset_collection, hyper_parameter)
         if copy_model:
             get_logger().debug("copy model in inferencer")
-            self.__model_with_loss = copy.deepcopy(model_with_loss)
-        self.__dataset_collection = dataset_collection
+            self.model_with_loss.set_model(copy.deepcopy(model_with_loss.model))
         self.__phase = phase
-        self.__hyper_parameter = hyper_parameter
-        if device is not None:
-            self.__device = device
-        else:
-            self.__device = get_device()
-
-    @property
-    def model(self):
-        return self.__model_with_loss.model
-
-    def set_model(self, model: torch.nn.Module):
-        self.__model_with_loss.set_model(model)
-
-    def load_model(self, model_path):
-        self.set_model(torch.load(model_path, map_location=self.device))
 
     @property
     def dataset(self):
-        return self.__dataset_collection.get_dataset(phase=self.__phase)
-
-    @property
-    def device(self):
-        return self.__device
-
-    def set_device(self, device):
-        self.__device = device
+        return self.dataset_collection.get_dataset(phase=self.__phase)
 
     def inference(self, **kwargs):
         use_grad = kwargs.get("use_grad", False)
         with torch.set_grad_enabled(use_grad):
             get_logger().debug("use device %s", self.device)
-            self.__model_with_loss.set_model_mode(self.__phase)
+            self.model_with_loss.set_model_mode(self.__phase)
             self.model.zero_grad()
             self.model.to(self.device)
             total_loss = torch.zeros(1)
             total_loss = total_loss.to(self.device)
-            for batch in self.__dataset_collection.get_dataloader(
+            for batch in self.dataset_collection.get_dataloader(
                 self.__phase,
-                self.__hyper_parameter,
+                self.hyper_parameter,
             ):
-                inputs = put_data_to_device(batch[0], self.device)
-                targets = put_data_to_device(batch[1], self.device)
+                inputs, targets = self.decode_batch(batch)
+                # inputs = put_data_to_device(batch[0], self.device)
+                # targets = put_data_to_device(batch[1], self.device)
                 real_batch_size = get_batch_size(inputs)
 
-                result = self.__model_with_loss(inputs, targets, phase=self.__phase)
+                result = self.model_with_loss(inputs, targets, phase=self.__phase)
                 batch_loss = result["loss"]
 
-                for callback in kwargs.get("after_batch_callbacks", []):
-                    callback(batch, result, targets)
+                self.exec_callbacks(
+                    ModelExecutorCallbackPoint.AFTER_BATCH, batch, result, targets
+                )
 
                 normalized_batch_loss = batch_loss
-                if self.__model_with_loss.is_averaged_loss():
+                if self.model_with_loss.is_averaged_loss():
                     normalized_batch_loss *= real_batch_size
                 normalized_batch_loss /= len(self.dataset)
                 if use_grad:
@@ -134,10 +105,11 @@ class ClassificationInferencer(Inferencer):
                     correct[targets == label]
                 ).item()
 
-        kwargs = Inferencer.prepend_callback(
-            kwargs, "after_batch_callbacks", after_batch_callback
+        self.add_named_callback(
+            ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc", after_batch_callback
         )
         loss = super().inference(**kwargs)
+        self.remove_callback(ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc")
 
         if per_sample_prob:
             last_layer = list(self.model.modules())[-1]
@@ -227,10 +199,11 @@ class DetectionInferencer(Inferencer):
                         label = target["labels"][box_idx].data.item()
                         detection_correct_count_per_label[label] += 1
 
-        kwargs = Inferencer.prepend_callback(
-            kwargs, "after_batch_callbacks", after_batch_callback
+        self.add_named_callback(
+            ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc", after_batch_callback
         )
         loss = super().inference(**kwargs)
+        self.remove_callback(ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc")
 
         accuracy = sum(detection_correct_count_per_label.values()) / sum(
             detection_count_per_label.values()

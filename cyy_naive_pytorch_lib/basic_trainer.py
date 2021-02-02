@@ -8,7 +8,6 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from dataset_collection import DatasetCollection
-from device import put_data_to_device
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
 from ml_types import MachineLearningPhase, ModelType
@@ -54,7 +53,6 @@ class BasicTrainer(ModelExecutor):
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
                 copy_model=copy_model,
-                device=self.device,
             )
         if self.model_with_loss.model_type == ModelType.Detection:
             return DetectionInferencer(
@@ -64,7 +62,6 @@ class BasicTrainer(ModelExecutor):
                 hyper_parameter=self.hyper_parameter,
                 iou_threshold=0.6,
                 copy_model=copy_model,
-                device=self.device,
             )
         assert False
         return None
