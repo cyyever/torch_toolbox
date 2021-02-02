@@ -48,7 +48,7 @@ class Inferencer(ModelExecutor):
                 self.__phase,
                 self.hyper_parameter,
             ):
-                inputs, targets = self.decode_batch(batch)
+                inputs, targets, _ = self.decode_batch(batch)
                 # inputs = put_data_to_device(batch[0], self.device)
                 # targets = put_data_to_device(batch[1], self.device)
                 real_batch_size = get_batch_size(inputs)

@@ -117,7 +117,6 @@ class ModelExecutor:
     def load_model(self, model_path):
         self.set_model(torch.load(model_path, map_location=self.device))
 
-    # TODO:drop it and merge to dataset code
     def decode_batch(self, batch):
         instance_inputs = put_data_to_device(batch[0], self.device)
         instance_targets = put_data_to_device(batch[1], self.device)
