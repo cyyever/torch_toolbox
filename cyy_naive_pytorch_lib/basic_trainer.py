@@ -74,6 +74,9 @@ class BasicTrainer(ModelExecutor):
             )
         return self.get_data("optimizer")
 
+    def remove_optimizer(self):
+        self.remove_data("optimizer")
+
     def get_lr_scheduler(self):
         if not self.has_data("lr_scheduler"):
             self.set_data(
@@ -81,6 +84,9 @@ class BasicTrainer(ModelExecutor):
                 self.hyper_parameter.get_lr_scheduler(self),
             )
         return self.get_data("lr_scheduler")
+
+    def remove_lr_scheduler(self):
+        self.remove_data("lr_scheduler")
 
     def set_model(self, model: torch.nn.Module):
         self.model_with_loss.set_model(model)

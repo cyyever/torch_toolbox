@@ -53,6 +53,9 @@ class ModelExecutor:
     def set_data(self, key: str, value):
         self.__data[key] = value
 
+    def remove_data(self, key: str):
+        self.__data.pop(key, None)
+
     def has_data(self, key: str):
         return key in self.__data
 
