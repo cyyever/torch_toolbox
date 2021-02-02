@@ -39,9 +39,6 @@ class BasicTrainer:
     ):
         self.__model_with_loss = copy.deepcopy(model_with_loss)
         self.__dataset_collection: DatasetCollection = dataset_collection
-        # self.__training_dataset = training_dataset
-        # self.__validation_dataset: Optional[torch.utils.data.Dataset] = None
-        # self.__test_dataset: Optional[torch.utils.data.Dataset] = None
         self.__hyper_parameter = hyper_parameter
         self.__device = get_device()
         self.__data: dict = dict()
@@ -102,25 +99,12 @@ class BasicTrainer:
                 self.__callbacks[cb_point][idx] = cb
 
     @property
+    def dataset_collection(self):
+        return self.__dataset_collection
+
+    @property
     def training_dataset(self) -> torch.utils.data.Dataset:
         return self.__dataset_collection.get_dataset(MachineLearningPhase.Training)
-
-    # def set_training_dataset(self, training_dataset: torch.utils.data.Dataset):
-    #     self.__training_dataset = training_dataset
-
-    # @property
-    # def validation_dataset(self):
-    #     return self.__dataset_collection.get_dataset(MachineLearningPhase.Validation)
-
-    # # def set_validation_dataset(self, validation_dataset: torch.utils.data.Dataset):
-    # #     self.__validation_dataset = validation_dataset
-
-    # @property
-    # def test_dataset(self):
-    #     return self.__dataset_collection.get_dataset(MachineLearningPhase.Test)
-
-    # def set_test_dataset(self, test_dataset: torch.utils.data.Dataset):
-    #     self.__test_dataset = test_dataset
 
     @property
     def device(self):
@@ -134,11 +118,10 @@ class BasicTrainer:
     ) -> Inferencer:
         assert phase != MachineLearningPhase.Training
 
-        dataset = self.__dataset_collection.get_dataset(phase)
         if self.model_with_loss.model_type == ModelType.Classification:
             return ClassificationInferencer(
                 self.model_with_loss,
-                dataset,
+                self.dataset_collection,
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
                 copy_model=copy_model,
@@ -147,7 +130,7 @@ class BasicTrainer:
         if self.model_with_loss.model_type == ModelType.Detection:
             return DetectionInferencer(
                 self.model_with_loss,
-                dataset,
+                self.dataset_collection,
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
                 iou_threshold=0.6,
