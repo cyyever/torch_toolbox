@@ -136,7 +136,7 @@ class Trainer(BasicTrainer):
                     )
 
         test_epoch_interval = int(kwargs.get("test_epoch_interval", 2))
-        if trainer.test_dataset is not None and (
+        if (
             epoch % test_epoch_interval == 0 or epoch == trainer.hyper_parameter.epoch
         ):
             (test_loss, accuracy, _) = trainer.get_inferencer(

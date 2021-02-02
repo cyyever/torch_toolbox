@@ -55,7 +55,7 @@ class Inferencer:
     def load_model(self, model_path):
         self.set_model(torch.load(model_path, map_location=self.device))
 
-    # @property
+    @property
     def dataset(self):
         return self.__dataset_collection.get_dataset(phase=self.__phase)
 

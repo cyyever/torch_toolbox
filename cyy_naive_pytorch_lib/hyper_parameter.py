@@ -54,11 +54,11 @@ class HyperParameter:
         if isinstance(self.__learning_rate, HyperParameterAction):
             get_logger().info("use fastai to guess lr")
             dls = fastai.data.core.DataLoaders(
-                self.get_dataloader(
-                    trainer.training_dataset, MachineLearningPhase.Training
+                trainer.dataset_collection.get_dataloader(
+                    MachineLearningPhase.Training, self
                 ),
-                self.get_dataloader(
-                    trainer.validation_dataset, MachineLearningPhase.Validation
+                trainer.dataset_collection.get_dataloader(
+                    MachineLearningPhase.Validation, self
                 ),
             )
             learner: Learner = Learner(
