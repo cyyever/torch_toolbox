@@ -2,14 +2,10 @@ import copy
 
 import torch
 from cyy_naive_lib.log import get_logger
-# from cyy_naive_pytorch_lib.hyper_parameter import HyperParameter
-# from cyy_naive_pytorch_lib.model_loss import ModelWithLoss
 from cyy_naive_pytorch_lib.model_util import ModelUtil
 from cyy_naive_pytorch_lib.trainer import Trainer
 from torch.quantization.fuser_method_mappings import \
     DEFAULT_OP_LIST_TO_FUSER_METHOD
-
-# from typing import Optional
 
 
 class QuantizationTrainer:
@@ -77,6 +73,7 @@ class QuantizationTrainer:
             self.trainer.model.cpu()
             self.trainer.model.eval()
             self.quantized_model = torch.quantization.convert(self.trainer.model)
+        assert self.quantized_model is not None
         return self.quantized_model
 
     def reset_quantized_model(self):

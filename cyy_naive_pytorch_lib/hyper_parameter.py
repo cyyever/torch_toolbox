@@ -69,7 +69,8 @@ class HyperParameter:
             )
             suggesstion_lrs = learner.lr_find(show_plot=False)
             get_logger().info("suggesstion_lrs is %s", suggesstion_lrs)
-            self.__learning_rate = max(suggesstion_lrs.lr_min, suggesstion_lrs.lr_steep)
+            self.__learning_rate = suggesstion_lrs.lr_min
+            # self.__learning_rate = max(suggesstion_lrs.lr_min), suggesstion_lrs.lr_steep)
         return self.__learning_rate
 
     def set_learning_rate(self, learning_rate: Union[float, HyperParameterAction]):
@@ -127,7 +128,7 @@ class HyperParameter:
                 return optim.lr_scheduler.OneCycleLR(
                     optimizer,
                     pct_start=0.4,
-                    max_lr=hyper_parameter.get_learning_rate(trainer),
+                    max_lr=10 * hyper_parameter.get_learning_rate(trainer),
                     total_steps=hyper_parameter.epoch
                     * hyper_parameter.get_iterations_per_epoch(training_dataset_size),
                     anneal_strategy="linear",
