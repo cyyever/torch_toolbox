@@ -7,12 +7,13 @@ from torchvision.ops.boxes import box_iou
 
 from dataset import DatasetUtil
 from dataset_collection import DatasetCollection
+from device import get_cpu_device
 from hyper_parameter import HyperParameter
 from ml_types import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
-from tensor import get_batch_size
+from tensor import get_batch_size, put_data_to_device
 
 
 class Inferencer(ModelExecutor):
@@ -49,15 +50,13 @@ class Inferencer(ModelExecutor):
                 self.hyper_parameter,
             ):
                 inputs, targets, _ = self.decode_batch(batch)
-                # inputs = put_data_to_device(batch[0], self.device)
-                # targets = put_data_to_device(batch[1], self.device)
                 real_batch_size = get_batch_size(inputs)
 
                 result = self.model_with_loss(inputs, targets, phase=self.__phase)
                 batch_loss = result["loss"]
 
                 self.exec_callbacks(
-                    ModelExecutorCallbackPoint.AFTER_BATCH, batch, result, targets
+                    ModelExecutorCallbackPoint.AFTER_BATCH, batch, result
                 )
 
                 normalized_batch_loss = batch_loss
@@ -87,9 +86,10 @@ class ClassificationInferencer(Inferencer):
             classification_correct_count_per_label[label] = 0
             classification_count_per_label[label] = 0
 
-        def after_batch_callback(batch, result, targets):
+        def after_batch_callback(batch, result):
             nonlocal per_sample_prob
             nonlocal instance_output
+            targets = put_data_to_device(batch[1], get_cpu_device())
             output = result["output"]
             for target in targets:
                 label = DatasetUtil.get_label_from_target(target)
@@ -166,7 +166,8 @@ class DetectionInferencer(Inferencer):
             detection_correct_count_per_label[label] = 0
             detection_count_per_label[label] = 0
 
-        def after_batch_callback(_, result, targets):
+        def after_batch_callback(batch, result):
+            targets = put_data_to_device(batch[1], get_cpu_device())
             for target in targets:
                 for label in target["labels"]:
                     label = label.data.item()
