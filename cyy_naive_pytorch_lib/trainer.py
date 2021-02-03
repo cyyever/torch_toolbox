@@ -11,7 +11,6 @@ from ml_types import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
-from tensor import get_batch_size
 from visualization import EpochWindow, Window
 
 
@@ -63,7 +62,7 @@ class Trainer(BasicTrainer):
     @staticmethod
     def __log_after_batch(trainer: BasicTrainer, batch_index, batch, **kwargs):
         training_set_size = trainer.get_data("training_set_size")
-        ten_batches = training_set_size // (10 * get_batch_size(batch[0]))
+        ten_batches = training_set_size // (10 * ModelExecutor.get_batch_size(batch[0]))
         if ten_batches == 0 or batch_index % ten_batches == 0:
             get_logger().info(
                 "epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
