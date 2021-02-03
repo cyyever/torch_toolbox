@@ -123,10 +123,20 @@ class ModelExecutor:
         os.makedirs(save_dir, exist_ok=True)
         torch.save(self.model, os.path.join(save_dir, model_name))
 
-    def decode_batch(self, batch):
-        instance_inputs = put_data_to_device(batch[0], self.device)
-        instance_targets = put_data_to_device(batch[1], self.device)
-        instance_indices = None
+    def decode_batch(self, batch, device=None):
+        if device is None:
+            device = self.device
+        sample_inputs = put_data_to_device(batch[0], device)
+        sample_targets = put_data_to_device(batch[1], device)
+        sample_indices = None
         if len(batch) >= 3:
-            instance_indices = [idx.data.item() for idx in batch[2]]
-        return (instance_inputs, instance_targets, instance_indices)
+            sample_indices = [idx.data.item() for idx in batch[2]]
+        return (sample_inputs, sample_targets, sample_indices)
+
+    @staticmethod
+    def get_batch_size(batch):
+        if isinstance(batch, torch.Tensor):
+            return batch.shape[0]
+        if isinstance(batch, list):
+            return len(batch)
+        raise RuntimeError("invalid tensors:" + str(batch))

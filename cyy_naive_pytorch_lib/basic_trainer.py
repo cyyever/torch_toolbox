@@ -134,11 +134,11 @@ class BasicTrainer(ModelExecutor):
                         batch_index,
                         batch,
                     )
-                    instance_inputs, instance_targets, _ = self.decode_batch(batch)
+                    sample_inputs, sample_targets, _ = self.decode_batch(batch)
                     optimizer.zero_grad()
                     result = self.model_with_loss(
-                        instance_inputs,
-                        instance_targets,
+                        sample_inputs,
+                        sample_targets,
                         phase=MachineLearningPhase.Training,
                     )
                     loss = result["loss"]
@@ -147,7 +147,7 @@ class BasicTrainer(ModelExecutor):
 
                     normalized_batch_loss = batch_loss
                     if self.model_with_loss.is_averaged_loss():
-                        real_batch_size = get_batch_size(instance_inputs)
+                        real_batch_size = get_batch_size(sample_inputs)
                         normalized_batch_loss *= real_batch_size
                     normalized_batch_loss /= training_set_size
                     training_loss += normalized_batch_loss

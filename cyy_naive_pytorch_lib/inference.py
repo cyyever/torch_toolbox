@@ -13,7 +13,6 @@ from ml_types import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
-from tensor import get_batch_size
 
 
 class Inferencer(ModelExecutor):
@@ -50,7 +49,7 @@ class Inferencer(ModelExecutor):
                 self.hyper_parameter,
             ):
                 inputs, targets, _ = self.decode_batch(batch)
-                real_batch_size = get_batch_size(inputs)
+                real_batch_size = ModelExecutor.get_batch_size(inputs)
 
                 result = self.model_with_loss(inputs, targets, phase=self.__phase)
                 batch_loss = result["loss"]
@@ -77,8 +76,8 @@ class ClassificationInferencer(Inferencer):
     def inference(self, **kwargs):
         classification_count_per_label = dict()
         classification_correct_count_per_label = dict()
-        instance_output = dict()
-        instance_prob = dict()
+        sample_output = dict()
+        sample_prob = dict()
         per_sample_prob = kwargs.get("per_sample_prob", False)
 
         dataset_util = DatasetUtil(self.dataset)
@@ -88,16 +87,16 @@ class ClassificationInferencer(Inferencer):
 
         def after_batch_callback(batch, result):
             nonlocal per_sample_prob
-            nonlocal instance_output
-            targets = put_data_to_device(batch[1], get_cpu_device())
-            output = result["output"]
+            nonlocal sample_output
+            targets = batch[1]
+            output = put_data_to_device(result["output"], get_cpu_device())
             for target in targets:
                 label = DatasetUtil.get_label_from_target(target)
                 classification_count_per_label[label] += 1
             if per_sample_prob:
-                for i, instance_index in enumerate(batch[2]):
-                    instance_index = instance_index.data.item()
-                    instance_output[instance_index] = output[i]
+                for i, sample_index in enumerate(batch[2]):
+                    sample_index = sample_index.data.item()
+                    sample_output[sample_index] = output[i]
             correct = torch.eq(torch.max(output, dim=1)[1], targets).view(-1)
 
             for label in classification_correct_count_per_label:
@@ -114,18 +113,18 @@ class ClassificationInferencer(Inferencer):
         if per_sample_prob:
             last_layer = list(self.model.modules())[-1]
             if isinstance(last_layer, nn.LogSoftmax):
-                for k, v in instance_output.items():
+                for k, v in sample_output.items():
                     probs = torch.exp(v)
                     max_prob_index = torch.argmax(probs).data.item()
-                    instance_prob[k] = (
+                    sample_prob[k] = (
                         max_prob_index,
                         probs[max_prob_index].data.item(),
                     )
             elif isinstance(last_layer, nn.Linear):
-                for k, v in instance_output.items():
+                for k, v in sample_output.items():
                     prob_v = nn.Softmax()(v)
                     max_prob_index = torch.argmax(prob_v).data.item()
-                    instance_prob[k] = (
+                    sample_prob[k] = (
                         max_prob_index,
                         prob_v[max_prob_index].data.item(),
                     )
@@ -145,7 +144,7 @@ class ClassificationInferencer(Inferencer):
             accuracy,
             {
                 "per_class_accuracy": per_class_accuracy,
-                "per_sample_prob": instance_prob,
+                "per_sample_prob": sample_prob,
             },
         )
 
@@ -167,7 +166,7 @@ class DetectionInferencer(Inferencer):
             detection_count_per_label[label] = 0
 
         def after_batch_callback(batch, result):
-            targets = put_data_to_device(batch[1], get_cpu_device())
+            targets = batch[1]
             for target in targets:
                 for label in target["labels"]:
                     label = label.data.item()
