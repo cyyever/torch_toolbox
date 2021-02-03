@@ -9,8 +9,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from configuration import get_trainer_from_configuration
-from dataset import (DatasetUtil, get_dataset, replace_dataset_labels,
-                     sub_dataset)
+from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
 from hyper_parameter import HyperParameter, HyperParameterAction
 from inference import Inferencer
 from ml_types import MachineLearningPhase
