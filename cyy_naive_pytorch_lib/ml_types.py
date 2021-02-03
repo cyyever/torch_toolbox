@@ -1,4 +1,4 @@
-from enum import Enum, IntEnum, auto
+from enum import IntEnum, auto
 
 
 class MachineLearningPhase(IntEnum):
@@ -7,6 +7,6 @@ class MachineLearningPhase(IntEnum):
     Test = auto()
 
 
-class ModelType(Enum):
+class ModelType(IntEnum):
     Classification = auto()
     Detection = auto()
