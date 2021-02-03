@@ -7,13 +7,13 @@ from torchvision.ops.boxes import box_iou
 
 from dataset import DatasetUtil
 from dataset_collection import DatasetCollection
-from device import get_cpu_device
+from device import get_cpu_device, put_data_to_device
 from hyper_parameter import HyperParameter
 from ml_types import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_loss import ModelWithLoss
 from model_util import ModelUtil
-from tensor import get_batch_size, put_data_to_device
+from tensor import get_batch_size
 
 
 class Inferencer(ModelExecutor):
