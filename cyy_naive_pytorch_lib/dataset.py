@@ -384,36 +384,36 @@ def get_dataset(name: str, phase: MachineLearningPhase):
     return __datasets[name][phase]
 
 
-def get_dataset_label_names(name: str) -> List[str]:
-    if name == "MNIST":
-        return [str(a) for a in range(10)]
-    if name == "FashionMNIST":
-        return [
-            "T-shirt",
-            "Trouser",
-            "Pullover",
-            "Dress",
-            "Coat",
-            "Sandal",
-            "Shirt",
-            "Sneaker",
-            "Bag",
-            "Ankle boot",
-        ]
-    if name == "CIFAR10":
-        return [
-            "Airplane",
-            "Automobile",
-            "Bird",
-            "Cat",
-            "Deer",
-            "Dog",
-            "Frog",
-            "Horse",
-            "Ship",
-            "Truck",
-        ]
-    raise NotImplementedError(name)
+# def get_dataset_label_names(name: str) -> List[str]:
+#     if name == "MNIST":
+#         return [str(a) for a in range(10)]
+#     if name == "FashionMNIST":
+#         return [
+#             "T-shirt",
+#             "Trouser",
+#             "Pullover",
+#             "Dress",
+#             "Coat",
+#             "Sandal",
+#             "Shirt",
+#             "Sneaker",
+#             "Bag",
+#             "Ankle boot",
+#         ]
+#     if name == "CIFAR10":
+#         return [
+#             "Airplane",
+#             "Automobile",
+#             "Bird",
+#             "Cat",
+#             "Deer",
+#             "Dog",
+#             "Frog",
+#             "Horse",
+#             "Ship",
+#             "Truck",
+#         ]
+#     raise NotImplementedError(name)
 
 
 def dataset_append_transform(dataset, transform_fun):

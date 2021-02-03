@@ -1,6 +1,6 @@
 import inspect
 import multiprocessing
-from enum import Enum, auto
+from enum import IntEnum, auto
 from typing import Callable, Optional, Union
 
 import fastai
@@ -14,7 +14,7 @@ from dataset import dataset_with_indices
 from ml_types import MachineLearningPhase
 
 
-class HyperParameterAction(Enum):
+class HyperParameterAction(IntEnum):
     FIND_LR = auto()
 
 
