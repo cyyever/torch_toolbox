@@ -48,8 +48,8 @@ class DatasetCollection:
             dataset,
             batch_size=hyper_parameter.batch_size,
             shuffle=(phase == MachineLearningPhase.Training),
-            num_workers=multiprocessing.cpu_count(),
         )
+            # num_workers=multiprocessing.cpu_count(),
 
         # collate_fn=hyper_parameter.__collate_fn,
 

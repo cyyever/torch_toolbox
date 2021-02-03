@@ -12,5 +12,4 @@ class CUDAProcessPool(ExecutorPool):
             concurrent.futures.ProcessPoolExecutor(
                 mp_context=torch.multiprocessing.get_context("spawn")
             ),
-            torch.multiprocessing.Event(),
         )
