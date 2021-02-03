@@ -13,9 +13,11 @@ from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_loss import ModelWithLoss
 from tensor import get_batch_size
 
-
-class StopTrainingException(Exception):
-    pass
+try:
+    from cyy_naive_pytorch_lib.basic_trainer import StopTrainingException
+except ImportError:
+    class StopTrainingException(Exception):
+        pass
 
 
 class BasicTrainer(ModelExecutor):
