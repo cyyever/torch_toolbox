@@ -1,6 +1,5 @@
 import copy
-# import logging
-# import os
+import os
 from enum import IntEnum, auto
 from typing import Callable, Dict, List, Union
 
@@ -119,6 +118,10 @@ class ModelExecutor:
 
     def load_model(self, model_path):
         self.set_model(torch.load(model_path, map_location=self.device))
+
+    def save_model(self, save_dir, model_name="model.pt"):
+        os.makedirs(save_dir, exist_ok=True)
+        torch.save(self.model, os.path.join(save_dir, model_name))
 
     def decode_batch(self, batch):
         instance_inputs = put_data_to_device(batch[0], self.device)

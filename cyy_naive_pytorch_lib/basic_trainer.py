@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Callable, Dict, List, Union
+from typing import Callable
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -85,16 +85,6 @@ class BasicTrainer(ModelExecutor):
 
     def remove_lr_scheduler(self):
         self.remove_data("lr_scheduler")
-
-    def set_model(self, model: torch.nn.Module):
-        self.model_with_loss.set_model(model)
-
-    def load_model(self, model_path):
-        self.set_model(torch.load(model_path, map_location=self.device))
-
-    def save_model(self, save_dir, model_name="model.pt"):
-        os.makedirs(save_dir, exist_ok=True)
-        torch.save(self.model, os.path.join(save_dir, model_name))
 
     def repeated_train(self, repeated_num, save_dir=None, **kwargs):
         def training_callback(_, trainer: BasicTrainer):
