@@ -163,7 +163,6 @@ class BasicTrainer(ModelExecutor):
                         if self.has_callback(ModelExecutorCallbackPoint.OPTIMIZER_STEP):
                             self.exec_callbacks(
                                 ModelExecutorCallbackPoint.OPTIMIZER_STEP,
-                                optimizer,
                                 self,
                             )
                         else:
@@ -187,7 +186,6 @@ class BasicTrainer(ModelExecutor):
                     ModelExecutorCallbackPoint.AFTER_EPOCH,
                     self,
                     epoch,
-                    optimizer=optimizer,
                 )
 
                 if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
