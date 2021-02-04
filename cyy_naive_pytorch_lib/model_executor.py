@@ -32,6 +32,7 @@ class ModelExecutor:
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__hyper_parameter = hyper_parameter
         self.__device = get_device()
+        self.__cuda_stream = None
         self.__data: dict = dict()
         self.__callbacks: Dict[
             ModelExecutorCallbackPoint, List[Union[Callable, Dict[str, Callable]]]
@@ -105,6 +106,14 @@ class ModelExecutor:
 
     def set_device(self, device):
         self.__device = device
+        self.__cuda_stream = None
+
+    @property
+    def cuda_stream(self):
+        if self.__cuda_stream is None:
+            if self.device.type.lower() == "cuda":
+                self.__cuda_stream = torch.cuda.Stream(device=self.device)
+        return self.__cuda_stream
 
     def set_hyper_parameter(self, hyper_parameter):
         self.__hyper_parameter = hyper_parameter
