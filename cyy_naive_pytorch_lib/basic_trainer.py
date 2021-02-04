@@ -1,5 +1,4 @@
 import logging
-import os
 from typing import Callable
 
 import torch
@@ -16,6 +15,7 @@ from tensor import get_batch_size
 try:
     from cyy_naive_pytorch_lib.basic_trainer import StopTrainingException
 except ImportError:
+
     class StopTrainingException(Exception):
         pass
 
@@ -116,63 +116,71 @@ class BasicTrainer(ModelExecutor):
         self.exec_callbacks(ModelExecutorCallbackPoint.BEFORE_TRAINING, self)
         try:
             for epoch in range(1, self.hyper_parameter.epoch + 1):
-                optimizer = self.get_optimizer()
-                lr_scheduler = self.get_lr_scheduler()
-                assert optimizer is not None
-                assert lr_scheduler is not None
                 training_loss = 0.0
-                for batch_index, batch in enumerate(
-                    self.dataset_collection.get_dataloader(
-                        phase=MachineLearningPhase.Training,
-                        hyper_parameter=self.hyper_parameter,
-                    )
-                ):
-                    self.model_with_loss.set_model_mode(MachineLearningPhase.Training)
-                    self.model.to(self.device)
-                    optimizer.zero_grad()
-                    self.exec_callbacks(
-                        ModelExecutorCallbackPoint.BEFORE_BATCH,
-                        self,
-                        batch_index,
-                        batch,
-                    )
-                    sample_inputs, sample_targets, _ = self.decode_batch(batch)
-                    optimizer.zero_grad()
-                    result = self.model_with_loss(
-                        sample_inputs,
-                        sample_targets,
-                        phase=MachineLearningPhase.Training,
-                    )
-                    loss = result["loss"]
-                    loss.backward()
-                    batch_loss = loss.data.item()
+                if self.cuda_stream is not None:
+                    get_logger().debug("use cuda stream %s", self.cuda_stream)
 
-                    normalized_batch_loss = batch_loss
-                    if self.model_with_loss.is_averaged_loss():
-                        real_batch_size = get_batch_size(sample_inputs)
-                        normalized_batch_loss *= real_batch_size
-                    normalized_batch_loss /= training_set_size
-                    training_loss += normalized_batch_loss
-
-                    if self.has_callback(ModelExecutorCallbackPoint.OPTIMIZER_STEP):
-                        self.exec_callbacks(
-                            ModelExecutorCallbackPoint.OPTIMIZER_STEP, optimizer, self
+                with torch.cuda.stream(self.cuda_stream):
+                    for batch_index, batch in enumerate(
+                        self.dataset_collection.get_dataloader(
+                            phase=MachineLearningPhase.Training,
+                            hyper_parameter=self.hyper_parameter,
                         )
-                    else:
-                        optimizer.step()
+                    ):
+                        optimizer = self.get_optimizer()
+                        lr_scheduler = self.get_lr_scheduler()
+                        assert optimizer is not None
+                        assert lr_scheduler is not None
+                        self.model_with_loss.set_model_mode(
+                            MachineLearningPhase.Training
+                        )
+                        self.model.to(self.device)
+                        optimizer.zero_grad()
+                        self.exec_callbacks(
+                            ModelExecutorCallbackPoint.BEFORE_BATCH,
+                            self,
+                            batch_index,
+                            batch,
+                        )
+                        sample_inputs, sample_targets, _ = self.decode_batch(batch)
+                        optimizer.zero_grad()
+                        result = self.model_with_loss(
+                            sample_inputs,
+                            sample_targets,
+                            phase=MachineLearningPhase.Training,
+                        )
+                        loss = result["loss"]
+                        loss.backward()
+                        batch_loss = loss.data.item()
 
-                    if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                        get_logger().debug("adjust lr after batch")
-                        lr_scheduler.step()
+                        normalized_batch_loss = batch_loss
+                        if self.model_with_loss.is_averaged_loss():
+                            real_batch_size = get_batch_size(sample_inputs)
+                            normalized_batch_loss *= real_batch_size
+                        normalized_batch_loss /= training_set_size
+                        training_loss += normalized_batch_loss
 
-                    self.exec_callbacks(
-                        ModelExecutorCallbackPoint.AFTER_BATCH,
-                        self,
-                        batch_index,
-                        batch=batch,
-                        epoch=epoch,
-                        batch_loss=batch_loss,
-                    )
+                        if self.has_callback(ModelExecutorCallbackPoint.OPTIMIZER_STEP):
+                            self.exec_callbacks(
+                                ModelExecutorCallbackPoint.OPTIMIZER_STEP,
+                                optimizer,
+                                self,
+                            )
+                        else:
+                            optimizer.step()
+
+                        if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+                            get_logger().debug("adjust lr after batch")
+                            lr_scheduler.step()
+
+                        self.exec_callbacks(
+                            ModelExecutorCallbackPoint.AFTER_BATCH,
+                            self,
+                            batch_index,
+                            batch=batch,
+                            epoch=epoch,
+                            batch_loss=batch_loss,
+                        )
 
                 self.training_loss.append(training_loss)
                 self.exec_callbacks(
@@ -193,8 +201,8 @@ class BasicTrainer(ModelExecutor):
                         lr_scheduler.step(self.training_loss[-1])
                     else:
                         lr_scheduler.step()
-        except StopTrainingException as e:
-            get_logger().warning("stop training:%s", e)
+        except StopTrainingException:
+            get_logger().warning("stop training")
 
     def __clear_loss(self):
         self.training_loss = []
