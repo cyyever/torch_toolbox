@@ -40,6 +40,10 @@ class Trainer(BasicTrainer):
         self.add_callback(
             ModelExecutorCallbackPoint.AFTER_EPOCH, Trainer.__plot_after_epoch
         )
+        self.set_data("plot_class_accuracy", False)
+
+    def enable_class_accuracy_plot(self):
+        self.set_data("plot_class_accuracy", True)
 
     def __pre_training_callback(self, trainer):
         self.visdom_env = (
@@ -73,13 +77,13 @@ class Trainer(BasicTrainer):
             )
 
     @staticmethod
-    def __plot_after_epoch(trainer: BasicTrainer, epoch, **kwargs):
+    def __plot_after_epoch(trainer: BasicTrainer, epoch):
         learning_rates = trainer.get_data("cur_learning_rates")
         assert len(learning_rates) == 1
         EpochWindow("learning rate", env=trainer.visdom_env).plot_learning_rate(
             epoch, learning_rates[0]
         )
-        optimizer = kwargs.get("optimizer", None)
+        optimizer = trainer.get_optimizer()
         for group in optimizer.param_groups:
             if "momentum" in group:
                 momentum = group["momentum"]
@@ -116,7 +120,7 @@ class Trainer(BasicTrainer):
             epoch, accuracy, "accuracy"
         )
 
-        plot_class_accuracy = kwargs.get("plot_class_accuracy", False)
+        plot_class_accuracy = trainer.get_data("plot_class_accuracy")
         if plot_class_accuracy and "per_class_accuracy" in other_data:
             class_accuracy = other_data["per_class_accuracy"]
             for idx, sub_list in enumerate(
@@ -139,7 +143,7 @@ class Trainer(BasicTrainer):
                         "class_" + str(k) + "_accuracy",
                     )
 
-        test_epoch_interval = int(kwargs.get("test_epoch_interval", 2))
+        test_epoch_interval = 2
         if epoch % test_epoch_interval == 0 or epoch == trainer.hyper_parameter.epoch:
             (test_loss, accuracy, _) = trainer.get_inferencer(
                 phase=MachineLearningPhase.Test
