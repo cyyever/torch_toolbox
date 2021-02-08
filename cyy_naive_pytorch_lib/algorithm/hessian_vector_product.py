@@ -10,8 +10,8 @@ from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 
 from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
 from device import get_cuda_devices
-from model_loss import ModelWithLoss
 from model_util import ModelUtil
+from model_with_loss import ModelWithLoss
 from tensor import cat_tensors_to_vector
 
 
@@ -57,7 +57,7 @@ def load_model_parameters(model, parameters: torch.Tensor, param_shape_dict, dev
     assert bias == len(parameters)
 
 
-def __get_f(device, inputs, targets, model_with_loss, param_shape_dict):
+def __get_f(device, inputs, targets, model_with_loss: ModelWithLoss, param_shape_dict):
     def f(*args):
         nonlocal inputs, targets, model_with_loss, param_shape_dict, device
         model_snapshots = ModelSnapshot.resize_and_get(
