@@ -11,7 +11,10 @@ from cyy_naive_lib.time_counter import TimeCounter
 
 from algorithm.hessian_vector_product import get_hessian_vector_product_func
 from algorithm.per_sample_gradient import get_per_sample_gradient
-from basic_trainer import TrainerCallbackPoint
+from basic_trainer import BasicTrainer
+from dataset import dataset_with_indices
+from ml_types import MachineLearningPhase
+from model_executor import ModelExecutorCallbackPoint
 from model_util import ModelUtil
 
 
@@ -106,12 +109,15 @@ class HyperGradientTrainer:
             )
         else:
             self.approx_hyper_gradient_mom_dict = None
+        self.trainer.add_callback(
+            ModelExecutorCallbackPoint.BEFORE_TRAINING, self.__add_indices_to_dataset
+        )
 
         self.trainer.add_callback(
-            TrainerCallbackPoint.BEFORE_BATCH, self.__pre_batch_callback
+            ModelExecutorCallbackPoint.BEFORE_BATCH, self.__pre_batch_callback
         )
         self.trainer.add_callback(
-            TrainerCallbackPoint.AFTER_BATCH, self.__after_batch_callback
+            ModelExecutorCallbackPoint.AFTER_BATCH, self.__after_batch_callback
         )
 
     def set_computed_indices(self, computed_indices):
@@ -342,6 +348,11 @@ class HyperGradientTrainer:
         get_logger().info("gradient matrix use cache size %s", cache_size)
         m.set_logging(False)
         return m
+
+    def __add_indices_to_dataset(self, trainer: BasicTrainer):
+        trainer.dataset_collection.transform_dataset(
+            MachineLearningPhase.Training, dataset_with_indices
+        )
 
     def __pre_batch_callback(self, trainer, batch_index, batch):
         assert len(batch) >= 3
