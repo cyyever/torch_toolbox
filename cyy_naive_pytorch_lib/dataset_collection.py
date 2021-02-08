@@ -1,4 +1,4 @@
-import multiprocessing
+# import multiprocessing
 import os
 from typing import Callable, Dict, List
 
@@ -6,7 +6,7 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 
-from dataset import DatasetUtil, dataset_with_indices
+from dataset import DatasetUtil
 from hyper_parameter import HyperParameter
 from ml_types import MachineLearningPhase
 
@@ -40,11 +40,8 @@ class DatasetCollection:
         self,
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
-        with_indices=False,
     ):
         dataset = self.get_dataset(phase)
-        if with_indices:
-            dataset = dataset_with_indices(dataset)
         return torch.utils.data.DataLoader(
             dataset,
             batch_size=hyper_parameter.batch_size,
