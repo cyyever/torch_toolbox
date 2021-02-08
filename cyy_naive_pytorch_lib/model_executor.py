@@ -97,7 +97,7 @@ class ModelExecutor:
                 self.__callbacks[cb_point][idx] = cb
 
     @property
-    def dataset_collection(self):
+    def dataset_collection(self) -> DatasetCollection:
         return self.__dataset_collection
 
     @property

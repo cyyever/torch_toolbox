@@ -1,6 +1,6 @@
 import multiprocessing
 import os
-from typing import Dict, List
+from typing import Callable, Dict, List
 
 import torch
 import torchvision
@@ -28,8 +28,9 @@ class DatasetCollection:
         self.__datasets[MachineLearningPhase.Test] = test_dataset
         self.__name = name
 
-    def set_training_dataset(self, training_dataset):
-        self.__datasets[MachineLearningPhase.Training] = training_dataset
+    def transform_dataset(self, phase: MachineLearningPhase, transformer: Callable):
+        dataset = self.get_dataset(phase)
+        self.__datasets[phase] = transformer(dataset)
 
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
         assert phase in self.__datasets
@@ -49,7 +50,7 @@ class DatasetCollection:
             batch_size=hyper_parameter.batch_size,
             shuffle=(phase == MachineLearningPhase.Training),
         )
-            # num_workers=multiprocessing.cpu_count(),
+        # num_workers=multiprocessing.cpu_count(),
 
         # collate_fn=hyper_parameter.__collate_fn,
 

@@ -73,8 +73,9 @@ def create_trainer_from_args(args) -> Trainer:
     get_logger().info("use dataset %s and model %s", args.dataset_name, args.model_name)
     trainer = get_trainer_from_configuration(args.dataset_name, args.model_name)
 
-    trainer.dataset_collection.set_training_dataset(
-        __transform_training_dataset(args, trainer.training_dataset)
+    trainer.dataset_collection.transform_dataset(
+        MachineLearningPhase.Training,
+        lambda dataset: __transform_training_dataset(args, dataset),
     )
     if args.model_path is not None:
         trainer.load_model(args.model_path)
