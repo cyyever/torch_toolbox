@@ -431,7 +431,7 @@ class HyperGradientTrainer:
         cur_learning_rates = trainer.get_data("cur_learning_rates")
         assert len(cur_learning_rates) == 1
         cur_learning_rate = cur_learning_rates[0]
-        batch_size = get_batch_size(kwargs.get_data("batch"))
+        batch_size = get_batch_size(kwargs.get("batch"))
 
         momentums = [group["momentum"] for group in optimizer.param_groups]
         if len(momentums) != 1:
