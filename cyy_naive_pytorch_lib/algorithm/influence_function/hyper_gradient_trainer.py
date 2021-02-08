@@ -425,7 +425,7 @@ class HyperGradientTrainer:
 
         optimizer = trainer.get_optimizer()
         if not isinstance(optimizer, torch.optim.SGD):
-            raise RuntimeError("not SGD")
+            raise RuntimeError("optimizer is not SGD")
 
         cur_learning_rates = trainer.get_data("cur_learning_rates")
         assert len(cur_learning_rates) == 1
