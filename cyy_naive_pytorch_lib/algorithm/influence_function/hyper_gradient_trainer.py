@@ -16,6 +16,7 @@ from dataset import dataset_with_indices
 from ml_types import MachineLearningPhase
 from model_executor import ModelExecutorCallbackPoint
 from model_util import ModelUtil
+from tensor import get_batch_size
 
 
 class HyperGradientTrainer:
@@ -430,7 +431,7 @@ class HyperGradientTrainer:
         cur_learning_rates = trainer.get_data("cur_learning_rates")
         assert len(cur_learning_rates) == 1
         cur_learning_rate = cur_learning_rates[0]
-        batch_size = trainer.get_data("cur_batch_size")
+        batch_size = get_batch_size(kwargs.get_data("batch"))
 
         momentums = [group["momentum"] for group in optimizer.param_groups]
         if len(momentums) != 1:
