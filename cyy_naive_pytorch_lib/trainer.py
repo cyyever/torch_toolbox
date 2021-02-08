@@ -9,7 +9,7 @@ from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from ml_types import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
-from model_loss import ModelWithLoss
+from model_with_loss import ModelWithLoss
 from model_util import ModelUtil
 from visualization import EpochWindow, Window
 
