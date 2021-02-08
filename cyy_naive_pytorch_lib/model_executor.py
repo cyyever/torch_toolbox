@@ -8,7 +8,7 @@ import torch
 from dataset_collection import DatasetCollection
 from device import get_device, put_data_to_device
 from hyper_parameter import HyperParameter
-from model_loss import ModelWithLoss
+from model_with_loss import ModelWithLoss
 
 
 class ModelExecutorCallbackPoint(IntEnum):

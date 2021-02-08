@@ -9,7 +9,7 @@ from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
 from ml_types import MachineLearningPhase, ModelType
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
-from model_loss import ModelWithLoss
+from model_with_loss import ModelWithLoss
 from tensor import get_batch_size
 
 try:

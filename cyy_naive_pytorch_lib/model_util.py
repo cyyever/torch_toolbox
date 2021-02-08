@@ -14,7 +14,7 @@ class ModelUtil:
     def __init__(self, model: torch.nn.Module):
         self.__model = model
         self.__is_pruned = None
-        self.__parameter_dict = None
+        self.__parameter_dict: dict = None
 
     @property
     def model(self):
@@ -180,7 +180,7 @@ class ModelUtil:
     def get_parameter_dict(self) -> dict:
         if self.__parameter_dict is not None:
             return self.__parameter_dict
-        res = dict()
+        res: dict = dict()
         for name, parameter in self.model.named_parameters():
             if self.is_pruned and name.endswith("_orig"):
                 res[name[:-5]] = parameter

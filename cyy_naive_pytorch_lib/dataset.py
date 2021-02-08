@@ -1,7 +1,7 @@
 import functools
 import os
 import random
-from typing import Callable, Generator, Iterable, List
+from typing import Callable, Generator, Iterable
 
 import PIL
 import torch
@@ -9,43 +9,44 @@ import torchvision
 import torchvision.transforms as transforms
 from cyy_naive_lib.log import get_logger
 
-# from datasets.webank_street_dataset import WebankStreetDataset
-# from ml_types import MachineLearningPhase
-
 
 class DatasetFilter:
     def __init__(self, dataset: torch.utils.data.Dataset, filters: Iterable[Callable]):
-        self.dataset = dataset
-        self.filters = filters
-        self.indices = self.__get_indices()
+        self.__dataset = dataset
+        self.__filters = filters
+        self.__indices = None
 
     def __getitem__(self, index):
-        return self.dataset.__getitem__(self.indices[index])
+        return self.__dataset.__getitem__(self.indices[index])
 
     def __len__(self):
         return len(self.indices)
 
-    def __get_indices(self):
+    @property
+    def indices(self):
+        if self.__indices is not None:
+            return self.__indices
         indices = []
-        for index, item in enumerate(self.dataset):
-            if all(f(index, item) for f in self.filters):
+        for index, item in enumerate(self.__dataset):
+            if all(f(index, item) for f in self.__filters):
                 indices.append(index)
-        return indices
+        self.__indices = indices
+        return self.__indices
 
 
 class DatasetMapper:
     def __init__(self, dataset: torch.utils.data.Dataset, mappers: Iterable[Callable]):
-        self.dataset = dataset
-        self.mappers = mappers
+        self.__dataset = dataset
+        self.__mappers = mappers
 
     def __getitem__(self, index):
-        item = self.dataset.__getitem__(index)
-        for mapper in self.mappers:
+        item = self.__dataset.__getitem__(index)
+        for mapper in self.__mappers:
             item = mapper(index, item)
         return item
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.__dataset)
 
 
 def sub_dataset(dataset: torch.utils.data.Dataset, indices: Iterable):
@@ -132,7 +133,7 @@ class DatasetUtil:
         return DatasetUtil.get_label_from_target(self.dataset[index][1])
 
     def get_labels(self) -> set:
-        def count_instance(container, instance):
+        def count_instance(container: set, instance):
             labels = DatasetUtil.get_labels_from_target(instance[1])
             container.update(labels)
             return container
