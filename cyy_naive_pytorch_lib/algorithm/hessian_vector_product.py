@@ -82,7 +82,7 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
     model.zero_grad()
     model.share_memory()
 
-    parameter_list = model_util.get_parameter_list()
+    parameter_list = model_util.get_parameter_list(detach=True)
 
     inputs_dict = dict()
     targets_dict = dict()
