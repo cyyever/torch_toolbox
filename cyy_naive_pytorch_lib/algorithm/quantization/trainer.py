@@ -2,10 +2,11 @@ import copy
 
 import torch
 from cyy_naive_lib.log import get_logger
-from cyy_naive_pytorch_lib.model_util import ModelUtil
-from cyy_naive_pytorch_lib.trainer import Trainer
 from torch.quantization.fuser_method_mappings import \
     DEFAULT_OP_LIST_TO_FUSER_METHOD
+
+from model_util import ModelUtil
+from trainer import Trainer
 
 
 class QuantizationTrainer:

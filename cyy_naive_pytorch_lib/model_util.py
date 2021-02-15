@@ -20,8 +20,8 @@ class ModelUtil:
     def model(self):
         return self.__model
 
-    def get_parameter_list(self):
-        return cat_tensors_to_vector(self.__get_parameter_seq())
+    def get_parameter_list(self, detach=False):
+        return cat_tensors_to_vector(self.__get_parameter_seq(detach=detach))
 
     def load_parameter_list(self, parameter_list: torch.Tensor, as_parameter=True):
         parameter_dict = self.get_parameter_dict()
@@ -186,7 +186,7 @@ class ModelUtil:
         else:
             self.__parameter_dict = None
 
-    def get_parameter_dict(self, detach=True) -> dict:
+    def get_parameter_dict(self, detach=False) -> dict:
         assert not self.is_pruned
         if self.__parameter_dict is not None:
             return self.__parameter_dict
@@ -201,6 +201,6 @@ class ModelUtil:
         self.__parameter_dict = res
         return self.__parameter_dict
 
-    def __get_parameter_seq(self):
-        res = self.get_parameter_dict()
+    def __get_parameter_seq(self, detach=False):
+        res = self.get_parameter_dict(detach=detach)
         return get_mapping_values_by_order(res)
