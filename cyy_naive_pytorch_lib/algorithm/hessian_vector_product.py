@@ -137,10 +137,8 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
     model.zero_grad()
     model.share_memory()
 
-    model_snapshot = ModelSnapshot.resize_and_get(model, devices[0], 1)[0]
-
     for name, param in model.named_parameters():
-        params.append(copy.deepcopy(param).detach())
+        params.append(param.detach())
         param_shape_dict[name] = param.shape
 
     parameter_snapshot = cat_tensors_to_vector(params)
@@ -180,7 +178,7 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
                 (
                     idx,
                     vector_chunk,
-                    ModelWithLoss(model_snapshot, model_with_loss.loss_fun),
+                    model_with_loss,
                     parameter_dict,
                     inputs_dict,
                     targets_dict,
