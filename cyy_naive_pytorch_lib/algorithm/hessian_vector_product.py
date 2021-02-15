@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
 import atexit
-import copy
 
-import numpy as np
-import torch
 import torch.autograd as autograd
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 
@@ -12,66 +9,18 @@ from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
 from device import get_cuda_devices
 from model_util import ModelUtil
 from model_with_loss import ModelWithLoss
-from tensor import cat_tensors_to_vector
 
 
-class ModelSnapshot:
-    data: dict = dict()
-    prototypes: dict = dict()
+def __get_f(device, inputs, targets, model_with_loss: ModelWithLoss):
+    model_util = ModelUtil(model_with_loss.model)
 
-    @staticmethod
-    def get(model, device):
-        model_class = model.__class__.__name__
-        device_str = str(device)
-        if model_class not in ModelSnapshot.data:
-            ModelSnapshot.data[model_class] = dict()
-        if device_str not in ModelSnapshot.data[model_class]:
-            ModelSnapshot.data[model_class][device_str] = []
-        return ModelSnapshot.data[model_class][device_str]
-
-    @staticmethod
-    def get_prototype(model):
-        model_class = model.__class__.__name__
-        if model_class not in ModelSnapshot.prototypes:
-            ModelSnapshot.prototypes[model_class] = copy.deepcopy(model)
-        return ModelSnapshot.prototypes[model_class]
-
-    @staticmethod
-    def resize_and_get(model, device, new_number):
-        snapshots = ModelSnapshot.get(model, device)
-        if len(snapshots) >= new_number:
-            return snapshots
-        prototype = ModelSnapshot.get_prototype(model)
-        while len(snapshots) < new_number:
-            snapshots.append(copy.deepcopy(prototype))
-        return snapshots
-
-
-def load_model_parameters(model, parameters: torch.Tensor, param_shape_dict, device):
-    bias = 0
-    for name, shape in param_shape_dict.items():
-        param_element_num = np.prod(shape)
-        param = parameters.narrow(0, bias, param_element_num).view(*shape).to(device)
-        ModelUtil(model).set_attr(name, param, as_parameter=False)
-        bias += param_element_num
-    assert bias == len(parameters)
-
-
-def __get_f(device, inputs, targets, model_with_loss: ModelWithLoss, param_shape_dict):
     def f(*args):
-        nonlocal inputs, targets, model_with_loss, param_shape_dict, device
-        model_snapshots = ModelSnapshot.resize_and_get(
-            model_with_loss.model, device, len(args)
-        )
-        assert len(model_snapshots) >= len(args)
+        nonlocal inputs, targets, model_with_loss, device, model_util
         total_loss = None
-        temp_model_with_loss: ModelWithLoss = copy.deepcopy(model_with_loss)
-        for i, arg in enumerate(args):
-            cur_model_snapshot = model_snapshots[i]
-            load_model_parameters(cur_model_snapshot, arg, param_shape_dict, device)
-            cur_model_snapshot.to(device)
-            temp_model_with_loss.set_model(cur_model_snapshot)
-            loss = temp_model_with_loss(inputs, targets)["loss"]
+        for parameter_list in args:
+            model_util.load_parameter_list(parameter_list, as_parameter=False)
+            model_with_loss.model.to(device)
+            loss = model_with_loss(inputs, targets)["loss"]
             if total_loss is None:
                 total_loss = loss
             else:
@@ -89,14 +38,13 @@ def worker_fun(task, args):
         parameter_dict,
         input_dict,
         target_dict,
-        param_shape_dict,
     ) = task
     worker_device = args[0]
     for index, vector in enumerate(vector_chunk):
         vector_chunk[index] = vector.to(worker_device)
-    inputs = input_dict.get(str(worker_device))
-    targets = target_dict.get(str(worker_device))
-    parameter_vector = parameter_dict.get(str(worker_device))
+    inputs = input_dict.get(str(worker_device)).to(worker_device)
+    targets = target_dict.get(str(worker_device)).to(worker_device)
+    parameter_list = parameter_dict.get(str(worker_device)).to(worker_device)
     vector_chunk = tuple(vector_chunk)
     products = autograd.functional.vhp(
         __get_f(
@@ -104,9 +52,8 @@ def worker_fun(task, args):
             inputs,
             targets,
             model_with_loss,
-            param_shape_dict,
         ),
-        tuple([parameter_vector] * len(vector_chunk)),
+        tuple([parameter_list] * len(vector_chunk)),
         vector_chunk,
         strict=True,
     )[1]
@@ -126,31 +73,25 @@ atexit.register(stop_task_queue)
 
 
 def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
-    # get all parameters and names
-    params = []
-    param_shape_dict = dict()
     devices = get_cuda_devices()
 
     model = ModelUtil(model_with_loss.model).deepcopy()
-    if ModelUtil(model).is_pruned:
-        ModelUtil(model).merge_and_remove_masks()
+    model_util = ModelUtil(model)
+    if model_util.is_pruned:
+        model_util.merge_and_remove_masks()
     model.zero_grad()
     model.share_memory()
 
-    for name, param in model.named_parameters():
-        params.append(param.detach())
-        param_shape_dict[name] = param.shape
-
-    parameter_snapshot = cat_tensors_to_vector(params)
+    parameter_list = model_util.get_parameter_list()
 
     inputs_dict = dict()
     targets_dict = dict()
     parameter_dict = dict()
 
     for device in devices:
-        inputs_dict[str(device)] = copy.deepcopy(batch[0]).to(device)
-        targets_dict[str(device)] = copy.deepcopy(batch[1]).to(device)
-        parameter_dict[str(device)] = copy.deepcopy(parameter_snapshot).to(device)
+        inputs_dict[str(device)] = batch[0]
+        targets_dict[str(device)] = batch[1]
+        parameter_dict[str(device)] = parameter_list
 
     def vhp_func(v):
         global __task_queue
@@ -182,7 +123,6 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
                     parameter_dict,
                     inputs_dict,
                     targets_dict,
-                    param_shape_dict,
                 )
             )
 

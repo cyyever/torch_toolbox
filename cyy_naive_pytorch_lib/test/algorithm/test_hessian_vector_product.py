@@ -62,5 +62,6 @@ def test_hessian_vector_product():
             #     c.reset_start_time()
             #     a = hvp_function([v] * 100)
             #     print("100 use time ", c.elapsed_milliseconds())
+        del a
         break
     stop_task_queue()
