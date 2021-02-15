@@ -23,8 +23,9 @@ class ModelUtil:
     def get_parameter_list(self):
         return cat_tensors_to_vector(self.__get_parameter_seq())
 
-    def load_parameter_list(self, parameter_list: torch.Tensor):
+    def load_parameter_list(self, parameter_list: torch.Tensor, as_parameter=True):
         parameter_dict = self.get_parameter_dict()
+        assert parameter_dict is not None
         bias = 0
         for name in sorted(parameter_dict.keys()):
             parameter = parameter_dict[name]
@@ -33,9 +34,8 @@ class ModelUtil:
             parameter = parameter_list.narrow(0, bias, param_element_num).view(*shape)
             parameter_dict[name] = parameter
             bias += param_element_num
-
         assert bias == parameter_list.shape[0]
-        self.load_parameter_dict(parameter_dict)
+        self.load_parameter_dict(parameter_dict, as_parameter=as_parameter)
 
     def get_gradient_list(self):
         if self.is_pruned:
@@ -169,19 +169,31 @@ class ModelUtil:
             self.__is_pruned = prune.is_pruned(self.model)
         return self.__is_pruned
 
-    def load_parameter_dict(self, parameter_dict: dict, check_parameter: bool = False):
+    def load_parameter_dict(
+        self,
+        parameter_dict: dict,
+        check_parameter: bool = False,
+        as_parameter: bool = True,
+    ):
         assert not self.is_pruned
-        self.__parameter_dict = None
+        assert parameter_dict
         for name, parameter in parameter_dict.items():
             if check_parameter:
                 assert self.has_attr(name)
-            self.set_attr(name, parameter)
+            self.set_attr(name, parameter, as_parameter=as_parameter)
+        if not as_parameter:
+            self.__parameter_dict = parameter_dict
+        else:
+            self.__parameter_dict = None
 
-    def get_parameter_dict(self) -> dict:
+    def get_parameter_dict(self, detach=True) -> dict:
+        assert not self.is_pruned
         if self.__parameter_dict is not None:
             return self.__parameter_dict
         res: dict = dict()
         for name, parameter in self.model.named_parameters():
+            if detach:
+                parameter = parameter.detach()
             if self.is_pruned and name.endswith("_orig"):
                 res[name[:-5]] = parameter
                 continue
