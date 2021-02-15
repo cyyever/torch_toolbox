@@ -9,8 +9,8 @@ from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
 from device import get_cuda_devices
 from ml_types import MachineLearningPhase
-from model_with_loss import ModelWithLoss
 from model_util import ModelUtil
+from model_with_loss import ModelWithLoss
 
 
 def __worker_fun(task, args):
