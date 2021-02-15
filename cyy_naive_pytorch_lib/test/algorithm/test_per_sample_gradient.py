@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 import torch
-from cyy_naive_lib.time_counter import TimeCounter
 from cyy_naive_lib.profiling import Profile
+from cyy_naive_lib.time_counter import TimeCounter
 
+from algorithm.per_sample_gradient import (get_per_sample_gradient,
+                                           stop_task_queue)
 from configuration import get_trainer_from_configuration
-from algorithm.per_sample_gradient import get_per_sample_gradient,stop_task_queue
 from device import get_device
 
 
@@ -26,12 +27,12 @@ def test_get_per_sample_gradient():
             )
             if cnt == 0:
                 print("per_sample_gradient result", gradients)
+            del gradients
         if cnt > 3:
             break
 
     with Profile():
         for batch in training_data_loader:
-            get_per_sample_gradient(
-                trainer.model_with_loss, batch[0], batch[1])
+            get_per_sample_gradient(trainer.model_with_loss, batch[0], batch[1])
             break
     stop_task_queue()
