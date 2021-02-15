@@ -1,9 +1,12 @@
 import shutil
-import torch
-import cyy_pytorch_cpp
-from data_structure.synced_tensor_dict_util import iterate_over_synced_tensor_dict
 
-tensor_dict = cyy_pytorch_cpp.data_structure.SyncedTensorDict("")
+import cyy_naive_cpp_extension
+import torch
+
+from data_structure.synced_tensor_dict_util import \
+    iterate_over_synced_tensor_dict
+
+tensor_dict = cyy_naive_cpp_extension.data_structure.SyncedTensorDict("")
 tensor_dict.set_in_memory_number(10)
 tensor_dict.set_storage_dir("tensor_dict_dir")
 
