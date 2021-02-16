@@ -1,5 +1,4 @@
 import torch
-from cyy_naive_lib.log import get_logger
 
 from ml_types import ModelExecutorCallbackPoint, StopExecutingException
 from visualization import BatchWindow
@@ -15,11 +14,12 @@ class LRFinder:
         self.best_loss = float("inf")
         self.losses = []
         self.learning_rates = []
+        self.batch_index = 0
         self.total_batch_num = None
         self.suggested_learning_rate = None
 
     def add_callbacks(self, trainer):
-        trainer.add_callback(
+        trainer.prepend_callback(
             ModelExecutorCallbackPoint.BEFORE_TRAINING,
             self.before_training,
         )
@@ -35,36 +35,43 @@ class LRFinder:
     def before_training(self, trainer):
         trainer.remove_optimizer()
         trainer.remove_lr_scheduler()
-        self.total_batch_num = (
-            len(trainer.training_dataset) + trainer.hyper_parameter.batch_size - 1
-        ) // trainer.hyper_parameter.batch_size
+        trainer.hyper_parameter.set_epoch(self.epoch)
+        trainer.hyper_parameter.set_learning_rate(1)
+        self.total_batch_num = self.epoch * (
+            (len(trainer.training_dataset) + trainer.hyper_parameter.batch_size - 1)
+            // trainer.hyper_parameter.batch_size
+        )
 
-    def before_batch(self, trainer, batch_index, _):
-        learning_rate = self.lr_getter(batch_index / self.total_batch_num - 1)
+    def before_batch(self, trainer, _, __):
+        learning_rate = self.lr_getter(self.batch_index / (self.total_batch_num - 1))
         self.learning_rates.append(learning_rate)
         BatchWindow(
             "LRFinder learning rate", env=trainer.visdom_env
-        ).plot_learning_rate(batch_index, learning_rate)
+        ).plot_learning_rate(self.batch_index, learning_rate)
         optimizer = trainer.get_optimizer()
         for group in optimizer.param_groups:
             group["lr"] = learning_rate
 
-    def after_batch(self, trainer, batch_index, **kwargs):
+    def after_batch(self, trainer, _, **kwargs):
         batch_loss = kwargs["batch_loss"]
-        BatchWindow("LRFinder batch loss", env=trainer.visdom_env).plot_learning_rate(
-            batch_index, batch_loss
+        if self.losses:
+            batch_loss = batch_loss + 0.98 * (self.losses[-1] - batch_loss)
+        BatchWindow("LRFinder smooth batch loss", env=trainer.visdom_env).plot_loss(
+            self.batch_index, batch_loss
         )
+
         self.losses.append(batch_loss)
 
         if batch_loss < self.best_loss:
             self.best_loss = batch_loss
 
         stop_training = False
-        if batch_loss > 4 * self.best_loss and self.stop_div:
+        if batch_loss > 10 * self.best_loss and kwargs["epoch"] > 1 and self.stop_div:
             stop_training = True
-        if batch_index + 1 == self.total_batch_num:
+        if self.batch_index + 1 == self.total_batch_num:
             stop_training = True
 
+        self.batch_index += 1
         if stop_training:
             self.learning_rates = torch.Tensor(
                 self.learning_rates[self.total_batch_num // 10:]

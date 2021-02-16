@@ -63,6 +63,16 @@ class ModelExecutor:
     ):
         return cb_point in self.__callbacks
 
+    def prepend_callback(
+        self,
+        cb_point: ModelExecutorCallbackPoint,
+        cb: Union[Callable, Dict[str, Callable]],
+    ):
+        if cb_point not in self.__callbacks:
+            self.__callbacks[cb_point] = [cb]
+        else:
+            self.__callbacks[cb_point].insert(0, cb)
+
     def add_callback(
         self,
         cb_point: ModelExecutorCallbackPoint,
@@ -77,6 +87,11 @@ class ModelExecutor:
         self, cb_point: ModelExecutorCallbackPoint, name: str, cb: Callable
     ):
         self.add_callback(cb_point, {name: cb})
+
+    def prepend_named_callback(
+        self, cb_point: ModelExecutorCallbackPoint, name: str, cb: Callable
+    ):
+        self.prepend_callback(cb_point, {name: cb})
 
     def remove_callback(self, cb_point: ModelExecutorCallbackPoint, name: str):
         if cb_point not in self.__callbacks:
