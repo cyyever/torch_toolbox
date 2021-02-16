@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import atexit
-import copy
 
 import torch
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
@@ -78,7 +77,7 @@ def get_per_sample_gradient(model_with_loss: ModelWithLoss, inputs, targets):
                 idx,
                 input_chunk,
                 target_chunk,
-                ModelWithLoss(copy.deepcopy(model), model_with_loss.loss_fun),
+                ModelWithLoss(model, model_with_loss.loss_fun),
                 master_device,
             )
         )
