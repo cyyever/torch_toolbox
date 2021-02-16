@@ -10,3 +10,21 @@ class MachineLearningPhase(IntEnum):
 class ModelType(IntEnum):
     Classification = auto()
     Detection = auto()
+
+
+class ModelExecutorCallbackPoint(IntEnum):
+    BEFORE_TRAINING = auto()
+    AFTER_TRAINING = auto()
+    BEFORE_EPOCH = auto()
+    AFTER_EPOCH = auto()
+    OPTIMIZER_STEP = auto()
+    BEFORE_BATCH = auto()
+    AFTER_BATCH = auto()
+
+
+try:
+    from cyy_naive_pytorch_lib.ml_types import StopExecutingException
+except ImportError:
+
+    class StopExecutingException(Exception):
+        pass

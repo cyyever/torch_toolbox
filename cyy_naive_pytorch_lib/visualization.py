@@ -10,7 +10,7 @@ class Window:
     def save_envs():
         visdom.Visdom().save(list(Window.__envs.keys()))
 
-    def __init__(self, title, env=None, x_label="", y_label=""):
+    def __init__(self, title, env=None):
         if env is None:
             env = "main"
         if env not in Window.__sessions:
@@ -21,8 +21,8 @@ class Window:
         self.win = None
         if env in Window.__envs:
             self.win = Window.__envs[env].get(title, None)
-        self.x_label = x_label
-        self.y_label = y_label
+        self.x_label = None
+        self.y_label = None
         self.extra_opts = dict(ytick=True)
         self.showlegend = True
 
@@ -34,12 +34,9 @@ class Window:
         opts.update(self.extra_opts)
         return opts
 
-    def plot_line(self, x, y, x_label=None, y_label=None, name=None):
-        if x_label is None:
-            x_label = self.x_label
-
-        if y_label is None:
-            y_label = self.y_label
+    def plot_line(self, x, y, name=None):
+        assert self.x_label
+        assert self.y_label
 
         update = None
         if self.win is not None:
@@ -48,11 +45,11 @@ class Window:
             else:
                 update = "replace"
         if name is None:
-            name = y_label
+            name = self.y_label
 
         opts = dict(
-            xlabel=x_label,
-            ylabel=y_label,
+            xlabel=self.x_label,
+            ylabel=self.y_label,
         )
         opts.update(self.get_opts())
         self.win = self.vis.line(
@@ -88,26 +85,34 @@ class Window:
         Window.__envs[self.vis.env][self.title] = self.win
 
 
-class EpochWindow(Window):
-    def __init__(self, title, env=None, y_label=""):
-        super().__init__(title, env=env, x_label="Epoch", y_label=y_label)
-
+class IterationWindow(Window):
     def plot_learning_rate(self, epoch, learning_rate):
-        self.plot_scalar(epoch, learning_rate, y_label="Learning Rate")
+        self.y_label = "Learning Rate"
+        self.plot_scalar(epoch, learning_rate)
 
     def plot_loss(self, epoch, loss, name=None):
-        return self.plot_scalar(epoch, loss, y_label="Loss", name=name)
+        self.y_label = "Loss"
+        return self.plot_scalar(epoch, loss, name=name)
 
     def plot_accuracy(self, epoch, accuracy, name=None):
-        return self.plot_scalar(epoch, accuracy, y_label="Accuracy", name=name)
+        self.y_label = "Accuracy"
+        return self.plot_scalar(epoch, accuracy, name=name)
 
-    def plot_scalar(self, epoch, scalar, y_label=None, name=None):
-        if y_label is None:
-            y_label = self.y_label
-
+    def plot_scalar(self, epoch, scalar, name=None):
         super().plot_line(
             torch.LongTensor([epoch]),
             torch.Tensor([scalar]),
-            y_label=y_label,
             name=name,
         )
+
+
+class EpochWindow(IterationWindow):
+    def __init__(self, title, env=None):
+        super().__init__(title, env=env)
+        self.x_label = "Epoch"
+
+
+class BatchWindow(IterationWindow):
+    def __init__(self, title, env=None):
+        super().__init__(title, env=env)
+        self.x_label = "Batch"

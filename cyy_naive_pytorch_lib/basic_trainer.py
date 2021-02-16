@@ -7,17 +7,10 @@ from cyy_naive_lib.log import get_logger
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
-from ml_types import MachineLearningPhase, ModelType
+from ml_types import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_with_loss import ModelWithLoss
 from tensor import get_batch_size
-
-try:
-    from cyy_naive_pytorch_lib.basic_trainer import StopTrainingException
-except ImportError:
-
-    class StopTrainingException(Exception):
-        pass
 
 
 class BasicTrainer(ModelExecutor):
@@ -199,7 +192,7 @@ class BasicTrainer(ModelExecutor):
                         lr_scheduler.step(self.training_loss[-1])
                     else:
                         lr_scheduler.step()
-        except StopTrainingException:
+        except StopExecutingException:
             get_logger().warning("stop training")
 
     def __clear_loss(self):
