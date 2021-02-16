@@ -1,15 +1,14 @@
+import copy
 import inspect
 import multiprocessing
 from enum import IntEnum, auto
 from typing import Callable, Optional, Union
 
-import fastai
-import fastai.callback.schedule
 import torch
 import torch.optim as optim
 from cyy_naive_lib.log import get_logger
-from fastai.learner import Learner
 
+from algorithm.lr_finder import LRFinder
 from dataset import dataset_with_indices
 from ml_types import MachineLearningPhase
 
@@ -52,24 +51,15 @@ class HyperParameter:
 
     def get_learning_rate(self, trainer):
         if isinstance(self.__learning_rate, HyperParameterAction):
-            get_logger().info("use fastai to guess lr")
-            dls = fastai.data.core.DataLoaders(
-                trainer.dataset_collection.get_dataloader(
-                    MachineLearningPhase.Training, self
-                ),
-                trainer.dataset_collection.get_dataloader(
-                    MachineLearningPhase.Validation, self
-                ),
+            get_logger().info("guess lr")
+            tmp_trainer = copy.deepcopy(trainer)
+            lr_finder = LRFinder()
+            lr_finder.add_callback(tmp_trainer)
+            tmp_trainer.train()
+            get_logger().info(
+                "suggested_learning_rate is %s", lr_finder.suggested_learning_rate
             )
-            learner: Learner = Learner(
-                dls=dls,
-                model=trainer.model,
-                loss_func=trainer.model_with_loss.loss_fun,
-                # opt_func=self.__optimizer_factory,
-            )
-            suggesstion_lrs = learner.lr_find(show_plot=False)
-            get_logger().info("suggesstion_lrs is %s", suggesstion_lrs)
-            self.__learning_rate = suggesstion_lrs.lr_min
+            self.__learning_rate = lr_finder.suggested_learning_rate
             # self.__learning_rate = max(suggesstion_lrs.lr_min), suggesstion_lrs.lr_steep)
         return self.__learning_rate
 

@@ -1,6 +1,5 @@
 import copy
 import os
-from enum import IntEnum, auto
 from typing import Callable, Dict, List, Union
 
 import torch
@@ -8,17 +7,8 @@ import torch
 from dataset_collection import DatasetCollection
 from device import get_device, put_data_to_device
 from hyper_parameter import HyperParameter
+from ml_types import ModelExecutorCallbackPoint
 from model_with_loss import ModelWithLoss
-
-
-class ModelExecutorCallbackPoint(IntEnum):
-    BEFORE_TRAINING = auto()
-    AFTER_TRAINING = auto()
-    BEFORE_EPOCH = auto()
-    AFTER_EPOCH = auto()
-    OPTIMIZER_STEP = auto()
-    BEFORE_BATCH = auto()
-    AFTER_BATCH = auto()
 
 
 class ModelExecutor:

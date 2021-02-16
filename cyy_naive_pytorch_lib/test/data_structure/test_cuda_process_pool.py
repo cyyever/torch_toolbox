@@ -1,13 +1,13 @@
 from cyy_naive_lib.log import get_logger
 
-from basic_trainer import StopTrainingException
 from configuration import get_trainer_from_configuration
 from data_structure.cuda_process_pool import CUDAProcessPool
+from ml_types import StopExecutingException
 from model_executor import ModelExecutorCallbackPoint
 
 
 def stop_training(*args, **kwargs):
-    raise StopTrainingException()
+    raise StopExecutingException()
 
 
 def train(worker_id):

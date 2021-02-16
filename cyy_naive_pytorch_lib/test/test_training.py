@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-from basic_trainer import StopTrainingException
 from configuration import get_trainer_from_configuration
 from hyper_parameter import HyperParameterAction
+from ml_types import StopExecutingException
 from model_executor import ModelExecutorCallbackPoint
 
 
 def stop_training(*args, **kwargs):
-    raise StopTrainingException()
+    raise StopExecutingException()
 
 
 def test_training():
