@@ -1,4 +1,5 @@
 import torch
+from cyy_naive_lib.log import get_logger
 
 from ml_types import ModelExecutorCallbackPoint, StopExecutingException
 from visualization import BatchWindow
@@ -17,7 +18,7 @@ class LRFinder:
         self.total_batch_num = None
         self.suggested_learning_rate = None
 
-    def add_callback(self, trainer):
+    def add_callbacks(self, trainer):
         trainer.add_callback(
             ModelExecutorCallbackPoint.BEFORE_TRAINING,
             self.before_training,
@@ -34,27 +35,25 @@ class LRFinder:
     def before_training(self, trainer):
         trainer.remove_optimizer()
         trainer.remove_lr_scheduler()
-        trainer.hyper_parameter.set_learning_rate(1)
-        print("prepare finding")
         self.total_batch_num = (
             len(trainer.training_dataset) + trainer.hyper_parameter.batch_size - 1
         ) // trainer.hyper_parameter.batch_size
 
-    def before_batch(self, trainer, batch_index, **kwargs):
-        optimizer = trainer.get_optimizer()
-        for group in optimizer.param_groups:
-            group["lr"] = self.lr_getter(batch_index / self.total_batch_num - 1)
-
-    def after_batch(self, trainer, batch_index, **kwargs):
-        batch_loss = kwargs["batch_loss"]
-        learning_rate = trainer.get_data("cur_learning_rates")[0]
+    def before_batch(self, trainer, batch_index, _):
+        learning_rate = self.lr_getter(batch_index / self.total_batch_num - 1)
+        self.learning_rates.append(learning_rate)
         BatchWindow(
             "LRFinder learning rate", env=trainer.visdom_env
         ).plot_learning_rate(batch_index, learning_rate)
+        optimizer = trainer.get_optimizer()
+        for group in optimizer.param_groups:
+            group["lr"] = learning_rate
+
+    def after_batch(self, trainer, batch_index, **kwargs):
+        batch_loss = kwargs["batch_loss"]
         BatchWindow("LRFinder batch loss", env=trainer.visdom_env).plot_learning_rate(
             batch_index, batch_loss
         )
-        self.learning_rates.append(learning_rate)
         self.losses.append(batch_loss)
 
         if batch_loss < self.best_loss:

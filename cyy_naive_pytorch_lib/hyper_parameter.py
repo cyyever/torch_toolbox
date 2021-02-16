@@ -51,12 +51,15 @@ class HyperParameter:
 
     def get_learning_rate(self, trainer):
         if isinstance(self.__learning_rate, HyperParameterAction):
-            get_logger().info("guess lr")
+            get_logger().warning("guess lr")
             tmp_trainer = copy.deepcopy(trainer)
+            tmp_trainer.hyper_parameter.set_learning_rate(1)
+            tmp_trainer.remove_lr_scheduler()
+            tmp_trainer.remove_optimizer()
             lr_finder = LRFinder()
-            lr_finder.add_callback(tmp_trainer)
+            lr_finder.add_callbacks(tmp_trainer)
             tmp_trainer.train()
-            get_logger().info(
+            get_logger().warning(
                 "suggested_learning_rate is %s", lr_finder.suggested_learning_rate
             )
             self.__learning_rate = lr_finder.suggested_learning_rate
