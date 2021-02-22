@@ -3,11 +3,12 @@ import os
 import random
 from typing import Callable, Generator, Iterable
 
-import PIL
 import torch
 import torchvision
 import torchvision.transforms as transforms
 from cyy_naive_lib.log import get_logger
+
+import PIL
 
 
 class DatasetFilter:
@@ -223,166 +224,6 @@ def replace_dataset_labels(dataset, label_map: dict):
         return item
 
     return DatasetMapper(dataset, [mapper])
-
-
-# __dataset_dir = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
-
-
-# def set_dataset_dir(new_dataset_dir):
-#     global __dataset_dir
-#     __dataset_dir = new_dataset_dir
-
-
-# __datasets: dict = dict()
-
-
-# def get_dataset(name: str, phase: MachineLearningPhase):
-#     root_dir = os.path.join(__dataset_dir, name)
-#     for_training = phase in (MachineLearningPhase.Training,)
-#     test_dataset_parts = None
-#     by_label = True
-#     if name == "MNIST":
-#         dataset = torchvision.datasets.MNIST(
-#             root=root_dir,
-#             train=for_training,
-#             download=True,
-#             transform=transforms.Compose(
-#                 [
-#                     transforms.Resize((32, 32)),
-#                     transforms.ToTensor(),
-#                     transforms.Normalize(mean=[0.1307], std=[0.3081]),
-#                 ]
-#             ),
-#         )
-#         test_dataset_parts = [1, 1]
-#     elif name == "FashionMNIST":
-#         transform = [
-#             transforms.Resize((32, 32)),
-#         ]
-#         if phase == MachineLearningPhase.Training:
-#             transform.append(transforms.RandomHorizontalFlip())
-#         transform += [
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean=[0.2860], std=[0.3530]),
-#         ]
-#         dataset = torchvision.datasets.FashionMNIST(
-#             root=root_dir,
-#             train=for_training,
-#             download=True,
-#             transform=transforms.Compose(transform),
-#         )
-#         test_dataset_parts = [1, 1]
-#     elif name == "CIFAR10":
-#         transform = []
-
-#         if phase == MachineLearningPhase.Training:
-#             transform += [
-#                 transforms.RandomCrop(32, padding=4),
-#                 transforms.RandomHorizontalFlip(),
-#             ]
-
-#         transform += [
-#             transforms.ToTensor(),
-#             transforms.Normalize(
-#                 mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616]
-#             ),
-#         ]
-#         dataset = torchvision.datasets.CIFAR10(
-#             root=root_dir,
-#             train=for_training,
-#             download=True,
-#             transform=transforms.Compose(transform),
-#         )
-#         test_dataset_parts = [1, 1]
-#     elif name == "CIFAR100":
-#         transform = []
-
-#         if phase == MachineLearningPhase.Training:
-#             transform += [
-#                 transforms.RandomCrop(32, padding=4),
-#                 transforms.RandomHorizontalFlip(),
-#             ]
-
-#         transform += [
-#             transforms.ToTensor(),
-#             transforms.Normalize(
-#                 mean=[0.5071, 0.4866, 0.4409], std=[0.2673, 0.2564, 0.2762]
-#             ),
-#         ]
-#         dataset = torchvision.datasets.CIFAR100(
-#             root=root_dir,
-#             train=for_training,
-#             download=True,
-#             transform=transforms.Compose(transform),
-#         )
-#         mean, std = DatasetUtil(dataset).get_mean_and_std()
-#         test_dataset_parts = [1, 1]
-#     elif name == "SVHN":
-#         dataset = torchvision.datasets.SVHN(
-#             root=root_dir,
-#             split="extra",
-#             download=True,
-#             transform=transforms.ToTensor(),
-#         )
-#         mean, std = DatasetUtil(dataset).get_mean_and_std()
-
-#         transform = []
-#         if phase == MachineLearningPhase.Training:
-#             transform += [
-#                 transforms.RandomCrop(32, padding=4),
-#             ]
-
-#         transform += [
-#             transforms.ToTensor(),
-#             transforms.Normalize(mean=mean, std=std),
-#         ]
-#         dataset = torchvision.datasets.SVHN(
-#             root=root_dir,
-#             split=("extra" if for_training else "test"),
-#             download=True,
-#             transform=transforms.Compose(transform),
-#         )
-#         test_dataset_parts = [1, 1]
-#     # elif name == "WebankStreet":
-#     #     dataset = WebankStreetDataset(
-#     #         "/home/cyy/Street_Dataset/Street_Dataset",
-#     #         train=True,
-#     #         transform=transforms.ToTensor(),
-#     #     )
-#     #     mean, std = DatasetUtil(dataset).get_mean_and_std()
-#     #     transform = []
-#     #     if phase == MachineLearningPhase.Training:
-#     #         transform += [
-#     #             transforms.RandomHorizontalFlip(),
-#     #         ]
-
-#     #     transform += [
-#     #         transforms.ToTensor(),
-#     #         transforms.Normalize(mean=mean, std=std),
-#     #     ]
-#     #     dataset = WebankStreetDataset(
-#     #         "/home/cyy/Street_Dataset/Street_Dataset",
-#     #         train=for_training,
-#     #         transform=transforms.Compose(transform),
-#     #     )
-#     #     training_dataset_parts = [4, 1]
-#     #     by_label = False
-#     else:
-#         raise NotImplementedError(name)
-#     if name not in __datasets:
-#         __datasets[name] = dict()
-
-#     if phase not in __datasets[name]:
-#         if phase == MachineLearningPhase.Training:
-#             __datasets[name][phase] = dataset
-#         else:
-#             dataset_util = DatasetUtil(dataset)
-#             validation_dataset, test_dataset = tuple(
-#                 dataset_util.split_by_ratio(test_dataset_parts, by_label=by_label)
-#             )
-#             __datasets[name][MachineLearningPhase.Validation] = validation_dataset
-#             __datasets[name][MachineLearningPhase.Test] = test_dataset
-#     return __datasets[name][phase]
 
 
 def dataset_append_transform(dataset, transform_fun):
