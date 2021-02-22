@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
 import torch
-
 from cyy_naive_lib.log import get_logger
 
-from device import get_device
-from algorithm.hessian_vector_product import get_hessian_vector_product_func
 from algorithm.conjugate_gradient import conjugate_gradient_general
-from model_loss import ModelWithLoss
+from algorithm.hessian_vector_product import get_hessian_vector_product_func
+from device import get_device
+from model_with_loss import ModelWithLoss
 
 
 def stochastic_inverse_hessian_vector_product(
@@ -47,8 +46,7 @@ def stochastic_inverse_hessian_vector_product(
         looping = True
         while looping:
             for batch in data_loader:
-                hvp_function = get_hessian_vector_product_func(
-                    model_with_loss, batch)
+                hvp_function = get_hessian_vector_product_func(model_with_loss, batch)
 
                 next_product = (
                     v
@@ -65,8 +63,7 @@ def stochastic_inverse_hessian_vector_product(
                 )
                 cur_product = next_product
                 iteration += 1
-                if (diff <= epsilon or iteration >=
-                        max_iteration) and epoch > 1:
+                if (diff <= epsilon or iteration >= max_iteration) and epoch > 1:
                     product_list.append(cur_product / scale)
                     looping = False
                     break
