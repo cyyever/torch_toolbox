@@ -7,8 +7,8 @@ import torch.nn.utils.prune
 
 from cyy_naive_lib.log import get_logger
 
-from .visualization import EpochWindow
-from .model_util import ModelUtil
+from visualization import EpochWindow
+from model_util import ModelUtil
 
 
 def lottery_ticket_prune(
