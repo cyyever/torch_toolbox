@@ -1,6 +1,5 @@
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter, get_recommended_hyper_parameter
-from ml_types import MachineLearningPhase
 from model_factory import get_model
 from trainer import Trainer
 
