@@ -31,8 +31,8 @@ class TensorUtil:
     def load_dict_values(self, values: torch.Tensor):
         bias = 0
         for name in sorted(self.data.keys()):
-            shape = self.data[name].shape
+            shape = self.__data[name].shape
             param_element_num = np.prod(shape)
-            self.data[name] = values.narrow(0, bias, param_element_num).view(*shape)
+            self.__data[name] = values.narrow(0, bias, param_element_num).view(*shape)
             bias += param_element_num
         assert bias == values.shape[0]
