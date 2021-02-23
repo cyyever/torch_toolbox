@@ -1,11 +1,13 @@
+from typing import Callable, Tuple
+
 import torch
 
 
-def stochastic_quantization(tensor: torch.Tensor, quantization_level: int):
+def stochastic_quantization(quantization_level: int) -> Tuple[Callable, Callable]:
     """Implement Stochastic Quantization as described in QSGD: Communication-Efficient SGDvia Gradient Quantization and Encoding (https://arxiv.org/pdf/1610.02132.pdf)"""
 
-    def quant():
-        nonlocal tensor, quantization_level
+    def quant(tensor: torch.Tensor):
+        nonlocal quantization_level
         tensor = tensor.reshape(-1)
         assert len(tensor.shape) == 1
         l2_norm = torch.norm(tensor)
