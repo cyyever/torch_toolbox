@@ -1,20 +1,19 @@
 import copy
-from typing import Callable, Type
+from typing import Callable, Optional, Type
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.utils.prune as prune
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_order
 
-from tensor import cat_tensors_to_vector
+from tensor import TensorUtil, cat_tensors_to_vector
 
 
 class ModelUtil:
     def __init__(self, model: torch.nn.Module):
         self.__model = model
         self.__is_pruned = None
-        self.__parameter_dict: dict = None
+        self.__parameter_dict: Optional[dict] = None
 
     @property
     def model(self):
@@ -26,15 +25,7 @@ class ModelUtil:
     def load_parameter_list(self, parameter_list: torch.Tensor, as_parameter=True):
         parameter_dict = self.get_parameter_dict()
         assert parameter_dict is not None
-        bias = 0
-        for name in sorted(parameter_dict.keys()):
-            parameter = parameter_dict[name]
-            shape = parameter.shape
-            param_element_num = np.prod(shape)
-            parameter = parameter_list.narrow(0, bias, param_element_num).view(*shape)
-            parameter_dict[name] = parameter
-            bias += param_element_num
-        assert bias == parameter_list.shape[0]
+        TensorUtil(parameter_dict).load_dict_values(parameter_list)
         self.load_parameter_dict(parameter_dict, as_parameter=as_parameter)
 
     def get_gradient_list(self):

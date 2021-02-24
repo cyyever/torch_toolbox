@@ -9,7 +9,6 @@ def stochastic_quantization(
     """Implement Stochastic Quantization as described in QSGD: Communication-Efficient SGDvia Gradient Quantization and Encoding (https://arxiv.org/pdf/1610.02132.pdf)"""
 
     def quant(tensor: torch.Tensor):
-        nonlocal quantization_level, use_l2_norm
         tensor_shape = tensor.shape
         tensor = tensor.reshape(-1)
         assert len(tensor.shape) == 1
