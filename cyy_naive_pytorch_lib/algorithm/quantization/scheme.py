@@ -40,7 +40,7 @@ def stochastic_quantization(
 
         return (
             norm,
-            sign_tensor,
+            sign_tensor.char(),
             normalized_abs_tensor.int(),
             quantization_level,
             tensor_shape,
@@ -57,7 +57,6 @@ def stochastic_quantization(
         quantized_tensor = quantized_tensor.float()
         quantized_tensor *= norm
         res = quantized_tensor * sign_tensor / quantization_level
-        res.reshape(tensor_shape)
-        return res
+        return res.reshape(tensor_shape)
 
     return (quant, dequant)
