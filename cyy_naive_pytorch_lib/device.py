@@ -22,7 +22,9 @@ def get_device():
     return torch.device("cpu")
 
 
-def put_data_to_device(data, device):
+def put_data_to_device(data, device=None):
+    if device is None:
+        device = get_cuda_devices()[0]
     if isinstance(data, torch.Tensor):
         return data.to(device)
     if isinstance(data, list):

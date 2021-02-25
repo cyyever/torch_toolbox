@@ -1,8 +1,9 @@
 from typing import Generator
 
-import cyy_naive_cpp_extension
 import torch
 import torch.nn.utils.prune as prune
+from cyy_naive_cpp_extension.data_structure import (SyncedSparseTensorDict,
+                                                    SyncedTensorDict)
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
 
@@ -10,7 +11,7 @@ from model_util import ModelUtil
 
 
 def iterate_over_synced_tensor_dict(
-    tensor_dict: cyy_naive_cpp_extension.data_structure.SyncedTensorDict,
+    tensor_dict: SyncedTensorDict,
     keys: set = None,
 ) -> Generator:
     if keys is None:
@@ -52,11 +53,9 @@ def create_tensor_dict(
         if concat_momentum:
             mask = torch.cat((mask, mask))
             gradient_shape[1] *= 2
-        m = cyy_naive_cpp_extension.data_structure.SyncedSparseTensorDict(
-            mask, gradient_shape, storage_dir
-        )
+        m = SyncedSparseTensorDict(mask, gradient_shape, storage_dir)
     else:
-        m = cyy_naive_cpp_extension.data_structure.SyncedTensorDict(storage_dir)
+        m = SyncedTensorDict(storage_dir)
     m.set_permanent_storage()
     m.set_in_memory_number(cache_size)
     get_logger().info("gradient matrix use cache size %s", cache_size)
