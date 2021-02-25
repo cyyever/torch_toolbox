@@ -5,7 +5,7 @@ from algorithm.quantization.scheme import stochastic_quantization
 
 
 def test_stochastic_quantization():
-    a = torch.rand(2, 2)
+    a = torch.rand(2, 100000)
     res = stochastic_quantization(256)
     pair = res[0](a)
     recovered_tensor = res[1](pair)

@@ -1,6 +1,9 @@
 from typing import Callable, Tuple
 
+import cyy_naive_cpp_extension
 import torch
+
+from device import put_data_to_device
 
 
 def stochastic_quantization(
@@ -9,7 +12,9 @@ def stochastic_quantization(
     """Implement Stochastic Quantization as described in QSGD: Communication-Efficient SGDvia Gradient Quantization and Encoding (https://arxiv.org/pdf/1610.02132.pdf)"""
 
     def quant(tensor: torch.Tensor):
-        tensor_shape = tensor.shape
+        old_tensor_shape = tensor.shape
+        old_device = tensor.device
+        tensor = put_data_to_device(tensor)
         tensor = tensor.reshape(-1)
         assert len(tensor.shape) == 1
 
@@ -21,29 +26,26 @@ def stochastic_quantization(
         assert norm > 0
         sign_tensor = torch.sign(tensor)
         normalized_abs_tensor = tensor.abs() / norm
-        for idx, element in enumerate(normalized_abs_tensor):
-            assert element <= 1
-            for slot in range(quantization_level):
-                if (
-                    (slot / quantization_level)
-                    <= element
-                    <= ((slot + 1) / quantization_level)
-                ):
-                    prob = element * quantization_level - slot
-                    assert 0 <= prob <= 1
-                    m = torch.distributions.Bernoulli(prob)
-                    if m.sample() == 1:
-                        normalized_abs_tensor[idx] = slot + 1
-                    else:
-                        normalized_abs_tensor[idx] = slot
-                    break
+        slot_tensor = cyy_naive_cpp_extension.torch.stochastic_quantization(
+            normalized_abs_tensor, quantization_level
+        )
+        prob_tensor = normalized_abs_tensor * quantization_level - slot_tensor
+        random_vector = torch.distributions.Bernoulli(prob_tensor).sample()
+        slot_tensor += random_vector
+
+        norm = put_data_to_device(norm, old_device)
+        sign_tensor = put_data_to_device(sign_tensor.char(), old_device).reshape(
+            old_tensor_shape
+        )
+        slot_tensor = put_data_to_device(slot_tensor.int(), old_device).reshape(
+            old_tensor_shape
+        )
 
         return (
             norm,
-            sign_tensor.char(),
-            normalized_abs_tensor.int(),
+            sign_tensor,
+            slot_tensor,
             quantization_level,
-            tensor_shape,
         )
 
     def dequant(quantized_pair):
@@ -52,11 +54,10 @@ def stochastic_quantization(
             sign_tensor,
             quantized_tensor,
             quantization_level,
-            tensor_shape,
         ) = quantized_pair
         quantized_tensor = quantized_tensor.float()
         quantized_tensor *= norm
         res = quantized_tensor * sign_tensor / quantization_level
-        return res.reshape(tensor_shape)
+        return res
 
     return (quant, dequant)
