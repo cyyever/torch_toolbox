@@ -8,14 +8,15 @@ def test_stochastic_quantization():
     a = torch.rand(2, 100000)
     res = stochastic_quantization(256)
     pair = res[0](a)
+    print(pair)
     recovered_tensor = res[1](pair)
     print(
         "recovered_tensor",
         recovered_tensor,
         "tensor",
         a,
-        "norm",
-        torch.linalg.norm(recovered_tensor - a),
+        "relative diff",
+        torch.linalg.norm(recovered_tensor - a) / torch.linalg.norm(a),
     )
     res = stochastic_quantization(256, use_l2_norm=True)
     pair = res[0](a)
@@ -25,6 +26,6 @@ def test_stochastic_quantization():
         recovered_tensor,
         "tensor",
         a,
-        "norm",
-        torch.linalg.norm(recovered_tensor - a),
+        "relative diff",
+        torch.linalg.norm(recovered_tensor - a) / torch.linalg.norm(a),
     )

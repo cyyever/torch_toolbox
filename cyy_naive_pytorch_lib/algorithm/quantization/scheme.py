@@ -37,7 +37,7 @@ def stochastic_quantization(
         sign_tensor = put_data_to_device(sign_tensor.char(), old_device).reshape(
             old_tensor_shape
         )
-        slot_tensor = put_data_to_device(slot_tensor.int(), old_device).reshape(
+        slot_tensor = put_data_to_device(slot_tensor.byte(), old_device).reshape(
             old_tensor_shape
         )
 
