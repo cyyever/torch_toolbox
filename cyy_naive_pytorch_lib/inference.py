@@ -9,10 +9,11 @@ from dataset import DatasetUtil
 from dataset_collection import DatasetCollection
 from device import get_cpu_device, put_data_to_device
 from hyper_parameter import HyperParameter
+from metric import LossMetric
 from ml_type import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
-from model_with_loss import ModelWithLoss
 from model_util import ModelUtil
+from model_with_loss import ModelWithLoss
 
 
 class Inferencer(ModelExecutor):
@@ -30,42 +31,62 @@ class Inferencer(ModelExecutor):
             get_logger().debug("copy model in inferencer")
             self.model_with_loss.set_model(copy.deepcopy(model_with_loss.model))
         self.__phase = phase
+        self.__loss_metric = LossMetric(self)
 
     @property
     def dataset(self):
         return self.dataset_collection.get_dataset(phase=self.__phase)
 
+    @property
+    def loss(self):
+        return self.__loss_metric.loss
+
     def inference(self, **kwargs):
+        self.set_data("dataset_size", len(self.dataset))
         use_grad = kwargs.get("use_grad", False)
         with torch.set_grad_enabled(use_grad):
             get_logger().debug("use device %s", self.device)
             self.model_with_loss.set_model_mode(self.__phase)
             self.model.zero_grad()
             self.model.to(self.device)
-            total_loss = torch.zeros(1)
-            total_loss = total_loss.to(self.device)
-            for batch in self.dataset_collection.get_dataloader(
-                self.__phase,
-                self.hyper_parameter,
+            # total_loss = torch.zeros(1)
+            # total_loss = total_loss.to(self.device)
+            self.exec_callbacks(
+                ModelExecutorCallbackPoint.BEFORE_EPOCH,
+                self,
+                1,
+            )
+            for batch_index, batch in enumerate(
+                self.dataset_collection.get_dataloader(
+                    self.__phase,
+                    self.hyper_parameter,
+                )
             ):
                 inputs, targets, _ = self.decode_batch(batch)
-                real_batch_size = ModelExecutor.get_batch_size(inputs)
+                # real_batch_size = ModelExecutor.get_batch_size(inputs)
 
                 result = self.model_with_loss(inputs, targets, phase=self.__phase)
                 batch_loss = result["loss"]
+                if use_grad:
+                    batch_loss.backward()
 
                 self.exec_callbacks(
-                    ModelExecutorCallbackPoint.AFTER_BATCH, batch, result
+                    ModelExecutorCallbackPoint.AFTER_BATCH,
+                    batch=batch,
+                    batch_loss=batch_loss,
+                    batch_index=batch_index,
+                    epoch=1,
                 )
 
-                normalized_batch_loss = batch_loss
-                if self.model_with_loss.is_averaged_loss():
-                    normalized_batch_loss *= real_batch_size
-                normalized_batch_loss /= len(self.dataset)
-                if use_grad:
-                    normalized_batch_loss.backward()
-                total_loss += normalized_batch_loss
-            return total_loss
+                # normalized_batch_loss = batch_loss
+                # if self.model_with_loss.is_averaged_loss():
+                #     normalized_batch_loss *= real_batch_size
+                # normalized_batch_loss /= len(self.dataset)
+                # if use_grad:
+                #     normalized_batch_loss.backward()
+                # # total_loss += normalized_batch_loss
+            # return total_loss
+            return
 
     def get_gradient(self):
         self.inference(use_grad=True)
@@ -107,8 +128,9 @@ class ClassificationInferencer(Inferencer):
         self.add_named_callback(
             ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc", after_batch_callback
         )
-        loss = super().inference(**kwargs)
-        self.remove_callback(ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc")
+        super().inference(**kwargs)
+        loss = self.loss
+        self.remove_callback("compute_acc", ModelExecutorCallbackPoint.AFTER_BATCH)
 
         if per_sample_prob:
             last_layer = list(self.model.modules())[-1]
@@ -202,8 +224,9 @@ class DetectionInferencer(Inferencer):
         self.add_named_callback(
             ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc", after_batch_callback
         )
-        loss = super().inference(**kwargs)
-        self.remove_callback(ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc")
+        super().inference(**kwargs)
+        loss = self.loss
+        self.remove_callback("compute_acc", ModelExecutorCallbackPoint.AFTER_BATCH)
 
         accuracy = sum(detection_correct_count_per_label.values()) / sum(
             detection_count_per_label.values()

@@ -93,13 +93,14 @@ class ModelExecutor:
     ):
         self.prepend_callback(cb_point, {name: cb})
 
-    def remove_callback(self, cb_point: ModelExecutorCallbackPoint, name: str):
-        if cb_point not in self.__callbacks:
-            return
-        for idx, cb in enumerate(self.__callbacks[cb_point]):
-            if isinstance(cb, dict):
-                cb.pop(name, None)
-                self.__callbacks[cb_point][idx] = cb
+    def remove_callback(self, name: str, cb_point: ModelExecutorCallbackPoint = None):
+        for cur_cb_point, callbacks in self.__callbacks.items():
+            if cb_point is not None and cur_cb_point != cb_point:
+                continue
+            for idx, cb in enumerate(callbacks):
+                if isinstance(cb, dict):
+                    cb.pop(name, None)
+                    self.__callbacks[cur_cb_point][idx] = cb
 
     @property
     def dataset_collection(self) -> DatasetCollection:
