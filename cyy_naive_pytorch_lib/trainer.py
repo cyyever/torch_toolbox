@@ -9,8 +9,8 @@ from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from ml_types import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
-from model_with_loss import ModelWithLoss
 from model_util import ModelUtil
+from model_with_loss import ModelWithLoss
 from visualization import EpochWindow, Window
 
 
@@ -88,7 +88,7 @@ class Trainer(BasicTrainer):
             if "momentum" in group:
                 momentum = group["momentum"]
                 EpochWindow("momentum", env=trainer.visdom_env).plot_scalar(
-                    epoch, momentum, y_label="Momentum"
+                    epoch, momentum, name="Momentum"
                 )
 
         loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
