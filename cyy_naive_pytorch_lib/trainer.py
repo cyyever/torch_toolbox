@@ -7,7 +7,7 @@ from cyy_naive_lib.log import get_logger
 from basic_trainer import BasicTrainer
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
-from ml_types import MachineLearningPhase
+from ml_type import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_util import ModelUtil
 from model_with_loss import ModelWithLoss

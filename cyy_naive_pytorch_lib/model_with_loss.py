@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
 
-from ml_types import MachineLearningPhase, ModelType
+from ml_type import MachineLearningPhase, ModelType
 
 
 class ModelWithLoss:

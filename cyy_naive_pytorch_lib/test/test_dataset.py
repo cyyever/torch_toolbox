@@ -2,7 +2,7 @@
 
 import dataset
 from dataset_collection import DatasetCollection
-from ml_types import MachineLearningPhase
+from ml_type import MachineLearningPhase
 
 
 def test_dataset():

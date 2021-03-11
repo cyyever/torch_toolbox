@@ -9,7 +9,7 @@ from dataset import DatasetUtil
 from dataset_collection import DatasetCollection
 from device import get_cpu_device, put_data_to_device
 from hyper_parameter import HyperParameter
-from ml_types import MachineLearningPhase
+from ml_type import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_with_loss import ModelWithLoss
 from model_util import ModelUtil

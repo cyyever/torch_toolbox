@@ -10,7 +10,7 @@ from cyy_naive_lib.log import get_logger
 
 from algorithm.lr_finder import LRFinder
 from dataset import dataset_with_indices
-from ml_types import MachineLearningPhase
+from ml_type import MachineLearningPhase
 
 
 class HyperParameterAction(IntEnum):

@@ -7,7 +7,7 @@ from torchvision.models.quantization.mobilenet import QuantizableMobileNetV2
 
 from dataset import DatasetUtil
 from dataset_collection import DatasetCollection
-from ml_types import MachineLearningPhase, ModelType
+from ml_type import MachineLearningPhase, ModelType
 from model_with_loss import ModelWithLoss
 from models.densenet import DenseNet40
 from models.lenet import LeNet5

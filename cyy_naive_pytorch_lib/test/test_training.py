@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from configuration import get_trainer_from_configuration
 from hyper_parameter import HyperParameterAction
-from ml_types import StopExecutingException
+from ml_type import StopExecutingException
 from model_executor import ModelExecutorCallbackPoint
 
 

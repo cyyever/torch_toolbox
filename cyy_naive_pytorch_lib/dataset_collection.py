@@ -8,7 +8,7 @@ import torchvision.transforms as transforms
 
 from dataset import DatasetUtil
 from hyper_parameter import HyperParameter
-from ml_types import MachineLearningPhase
+from ml_type import MachineLearningPhase
 
 
 class DatasetCollection:

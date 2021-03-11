@@ -23,7 +23,7 @@ class ModelExecutorCallbackPoint(IntEnum):
 
 
 try:
-    from cyy_naive_pytorch_lib.ml_types import StopExecutingException
+    from cyy_naive_pytorch_lib.ml_type import StopExecutingException
 except ImportError:
 
     class StopExecutingException(Exception):

@@ -7,7 +7,7 @@ import torch
 from dataset_collection import DatasetCollection
 from device import get_device, put_data_to_device
 from hyper_parameter import HyperParameter
-from ml_types import ModelExecutorCallbackPoint
+from ml_type import ModelExecutorCallbackPoint
 from model_with_loss import ModelWithLoss
 
 

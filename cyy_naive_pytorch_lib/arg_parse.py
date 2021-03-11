@@ -12,7 +12,7 @@ from configuration import get_trainer_from_configuration
 from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
 from hyper_parameter import HyperParameter, HyperParameterAction
 from inference import Inferencer
-from ml_types import MachineLearningPhase
+from ml_type import MachineLearningPhase
 from reproducible_env import global_reproducible_env
 from trainer import Trainer
 
