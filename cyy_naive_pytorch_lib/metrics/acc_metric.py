@@ -1,6 +1,7 @@
 import torch
 
 from dataset import DatasetUtil
+from device import put_data_to_device
 from ml_type import ModelExecutorCallbackPoint
 from model_executor import ModelExecutor
 
@@ -45,12 +46,12 @@ class AccuracyMetric(Metric):
         for target in targets:
             label = DatasetUtil.get_label_from_target(target)
             self.__classification_count_per_label[label] += 1
-        correct = torch.eq(torch.max(output, dim=1)[1], targets).view(-1)
+        correct = torch.eq(torch.max(output, dim=1)[1].cpu(), targets).view(-1)
 
         for label, count in self.__classification_correct_count_per_label.items():
             count += torch.sum(correct[targets == label]).item()
 
-    def __save_acc(self, epoch):
+    def __save_acc(self, model_exetutor, epoch):
         accuracy = sum(self.__classification_correct_count_per_label.values()) / sum(
             self.__classification_count_per_label.values()
         )
