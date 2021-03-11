@@ -44,5 +44,5 @@ class ProbabilityMetric(Metric):
             max_prob_index = torch.argmax(probs).data.item()
             self.__cur_probs[sample_index] = probs[max_prob_index].data.item()
 
-    def __save_prob(self, epoch):
+    def __save_prob(self, model_exetutor,epoch):
         self.__probs[epoch] = self.__cur_probs

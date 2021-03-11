@@ -98,30 +98,28 @@ class Trainer(BasicTrainer):
         get_logger().info("epoch: %s, training loss: %s", epoch, training_loss)
         loss_win.plot_loss(epoch, training_loss, "training loss")
 
-        (
-            validation_loss,
-            accuracy,
-            other_data,
-        ) = trainer.get_inferencer(phase=MachineLearningPhase.Validation).inference()
-        validation_loss = validation_loss.data.item()
-        trainer.validation_loss[epoch] = validation_loss
-        trainer.validation_accuracy[epoch] = accuracy
+        inferencer = trainer.get_inferencer(phase=MachineLearningPhase.Validation)
+        inferencer.inference()
+        validation_loss = inferencer.loss.data.item()
+        validation_acc = inferencer.accuracy_metric.get_accuracy(1)
+
         get_logger().info(
             "epoch: %s, learning_rate: %s, validation loss: %s, accuracy = %s",
             epoch,
             learning_rates,
             validation_loss,
-            accuracy,
+            validation_acc,
         )
         loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
         loss_win.plot_loss(epoch, validation_loss, "validation loss")
         EpochWindow("validation accuracy", env=trainer.visdom_env).plot_accuracy(
-            epoch, accuracy, "accuracy"
+            epoch,
+            validation_acc,
         )
 
         plot_class_accuracy = trainer.get_data("plot_class_accuracy")
-        if plot_class_accuracy and "per_class_accuracy" in other_data:
-            class_accuracy = other_data["per_class_accuracy"]
+        if plot_class_accuracy:
+            class_accuracy = inferencer.accuracy_metric.get_class_accuracy(1)
             for idx, sub_list in enumerate(
                 split_list_to_chunks(list(class_accuracy.keys()), 2)
             ):
@@ -144,20 +142,18 @@ class Trainer(BasicTrainer):
 
         test_epoch_interval = 2
         if epoch % test_epoch_interval == 0 or epoch == trainer.hyper_parameter.epoch:
-            (test_loss, accuracy, _) = trainer.get_inferencer(
-                phase=MachineLearningPhase.Test
-            ).inference(per_class_accuracy=False)
-            test_loss = test_loss.data.item()
-            trainer.test_loss[epoch] = test_loss
-            trainer.test_accuracy[epoch] = accuracy
+            inferencer = trainer.get_inferencer(phase=MachineLearningPhase.Test)
+            inferencer.inference(per_class_accuracy=False)
+            test_loss = inferencer.loss.data.item()
+            test_acc = inferencer.accuracy_metric.get_accuracy(1)
             EpochWindow("test accuracy", env=trainer.visdom_env).plot_accuracy(
-                epoch, accuracy, "accuracy"
+                epoch, test_acc, "accuracy"
             )
             get_logger().info(
                 "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
                 epoch,
                 learning_rates,
                 test_loss,
-                accuracy,
+                test_acc,
             )
         Window.save_envs()

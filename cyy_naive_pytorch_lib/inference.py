@@ -82,6 +82,10 @@ class ClassificationInferencer(Inferencer):
         self.__acc_metric = AccuracyMetric(self)
         self.__prob_metric = None
 
+    @property
+    def accuracy_metric(self) -> AccuracyMetric:
+        return self.__acc_metric
+
     def inference(self, *args, **kwargs):
         per_sample_prob = kwargs.get("per_sample_prob", False)
         if per_sample_prob:
