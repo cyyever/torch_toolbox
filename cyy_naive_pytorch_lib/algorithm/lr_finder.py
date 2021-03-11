@@ -52,7 +52,7 @@ class LRFinder:
         for group in optimizer.param_groups:
             group["lr"] = learning_rate
 
-    def after_batch(self, trainer,  **kwargs):
+    def after_batch(self, trainer, **kwargs):
         batch_loss = kwargs["batch_loss"]
         if self.losses:
             batch_loss = batch_loss + 0.98 * (self.losses[-1] - batch_loss)

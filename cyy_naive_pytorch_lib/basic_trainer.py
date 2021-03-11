@@ -183,7 +183,7 @@ class BasicTrainer(ModelExecutor):
                     if isinstance(
                         lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau
                     ):
-                        training_loss = self.__loss_metric.get_loss(epoch)
+                        training_loss = self._loss_metric.get_loss(epoch)
                         get_logger().debug(
                             "call ReduceLROnPlateau for training loss %s", training_loss
                         )

@@ -64,8 +64,10 @@ class Trainer(BasicTrainer):
         )
 
     @staticmethod
-    def __log_after_batch(trainer: BasicTrainer, batch_index, batch, **kwargs):
+    def __log_after_batch(trainer: BasicTrainer, **kwargs):
         training_set_size = trainer.get_data("training_set_size")
+        batch = kwargs["batch"]
+        batch_index = kwargs["batch_index"]
         ten_batches = training_set_size // (10 * ModelExecutor.get_batch_size(batch[0]))
         if ten_batches == 0 or batch_index % ten_batches == 0:
             get_logger().info(
@@ -92,12 +94,9 @@ class Trainer(BasicTrainer):
                 )
 
         loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
-        get_logger().info(
-            "epoch: %s, training loss: %s",
-            epoch,
-            trainer.training_loss[-1],
-        )
-        loss_win.plot_loss(epoch, trainer.training_loss[-1], "training loss")
+        training_loss = trainer._loss_metric.get_loss(epoch)
+        get_logger().info("epoch: %s, training loss: %s", epoch, training_loss)
+        loss_win.plot_loss(epoch, training_loss, "training loss")
 
         (
             validation_loss,
