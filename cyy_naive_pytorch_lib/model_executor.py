@@ -20,6 +20,7 @@ class ModelExecutor:
         hyper_parameter: HyperParameter,
     ):
         self.__model_with_loss = copy.deepcopy(model_with_loss)
+        self.__model_with_loss.set_model_mode(phase)
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
@@ -31,8 +32,19 @@ class ModelExecutor:
         ] = dict()
 
     @property
+    def phase(self):
+        return self.__phase
+
+    @property
     def dataset(self):
         return self.dataset_collection.get_dataset(phase=self.__phase)
+
+    @property
+    def dataloader(self):
+        return self.dataset_collection.get_dataloader(
+            self.__phase,
+            self.__hyper_parameter,
+        )
 
     @property
     def model_with_loss(self):
