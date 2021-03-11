@@ -9,6 +9,7 @@ from dataset import DatasetUtil
 from dataset_collection import DatasetCollection
 from device import get_cpu_device, put_data_to_device
 from hyper_parameter import HyperParameter
+from metrics.acc_metric import AccuracyMetric
 from metrics.loss_metric import LossMetric
 from ml_type import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
@@ -79,43 +80,26 @@ class Inferencer(ModelExecutor):
 class ClassificationInferencer(Inferencer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.__acc_metric = AccuracyMetric(self)
 
     def inference(self, **kwargs):
-        classification_count_per_label = dict()
-        classification_correct_count_per_label = dict()
         sample_output = dict()
         sample_prob = dict()
         per_sample_prob = kwargs.get("per_sample_prob", False)
 
-        dataset_util = DatasetUtil(self.dataset)
-        for label in dataset_util.get_labels():
-            classification_correct_count_per_label[label] = 0
-            classification_count_per_label[label] = 0
-
         def after_batch_callback(_, batch, result):
             nonlocal per_sample_prob
             nonlocal sample_output
-            targets = batch[1]
             output = put_data_to_device(result["output"], get_cpu_device())
-            for target in targets:
-                label = DatasetUtil.get_label_from_target(target)
-                classification_count_per_label[label] += 1
             if per_sample_prob:
                 for i, sample_index in enumerate(batch[2]):
                     sample_index = sample_index.data.item()
                     sample_output[sample_index] = output[i]
-            correct = torch.eq(torch.max(output, dim=1)[1], targets).view(-1)
-
-            for label in classification_correct_count_per_label:
-                classification_correct_count_per_label[label] += torch.sum(
-                    correct[targets == label]
-                ).item()
 
         self.add_named_callback(
             ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc", after_batch_callback
         )
         super().inference(**kwargs)
-        loss = self.loss
         self.remove_callback("compute_acc", ModelExecutorCallbackPoint.AFTER_BATCH)
 
         if per_sample_prob:
@@ -138,20 +122,8 @@ class ClassificationInferencer(Inferencer):
                     )
             else:
                 raise RuntimeError("unsupported layer", type(last_layer))
-        accuracy = sum(classification_correct_count_per_label.values()) / sum(
-            classification_count_per_label.values()
-        )
-        per_class_accuracy = dict()
-        for label in classification_count_per_label:
-            per_class_accuracy[label] = (
-                classification_correct_count_per_label[label]
-                / classification_count_per_label[label]
-            )
         return (
-            loss,
-            accuracy,
             {
-                "per_class_accuracy": per_class_accuracy,
                 "per_sample_prob": sample_prob,
             },
         )
