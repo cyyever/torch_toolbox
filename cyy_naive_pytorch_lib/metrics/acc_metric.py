@@ -19,8 +19,8 @@ class AccuracyMetric(Metric):
         self.add_callback(
             ModelExecutorCallbackPoint.BEFORE_EPOCH, self.__reset_epoch_count
         )
-        self.add_callback(ModelExecutorCallbackPoint.AFTER_BATCH, self.__compute_acc)
-        self.add_callback(ModelExecutorCallbackPoint.AFTER_EPOCH, self.__compute_acc)
+        self.add_callback(ModelExecutorCallbackPoint.AFTER_BATCH, self.__compute_count)
+        self.add_callback(ModelExecutorCallbackPoint.AFTER_EPOCH, self.__save_acc)
 
     def get_accuracy(self, epoch):
         return self.__accuracies.get(epoch)
@@ -50,7 +50,7 @@ class AccuracyMetric(Metric):
         for label, count in self.__classification_correct_count_per_label.items():
             count += torch.sum(correct[targets == label]).item()
 
-    def __compute_acc(self, epoch):
+    def __save_acc(self, epoch):
         accuracy = sum(self.__classification_correct_count_per_label.values()) / sum(
             self.__classification_count_per_label.values()
         )
