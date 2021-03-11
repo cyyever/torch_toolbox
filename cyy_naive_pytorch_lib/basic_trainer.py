@@ -20,7 +20,12 @@ class BasicTrainer(ModelExecutor):
         dataset_collection: DatasetCollection,
         hyper_parameter: HyperParameter,
     ):
-        super().__init__(model_with_loss, dataset_collection, hyper_parameter)
+        super().__init__(
+            model_with_loss,
+            dataset_collection,
+            MachineLearningPhase.Training,
+            hyper_parameter,
+        )
         self.__clear_loss()
         self.add_callback(
             ModelExecutorCallbackPoint.BEFORE_BATCH,
@@ -120,19 +125,11 @@ class BasicTrainer(ModelExecutor):
                     get_logger().debug("use cuda stream %s", self.cuda_stream)
 
                 with torch.cuda.stream(self.cuda_stream):
-                    for batch_index, batch in enumerate(
-                        self.dataset_collection.get_dataloader(
-                            phase=MachineLearningPhase.Training,
-                            hyper_parameter=self.hyper_parameter,
-                        )
-                    ):
+                    for batch_index, batch in enumerate(self.dataloader):
                         optimizer = self.get_optimizer()
                         lr_scheduler = self.get_lr_scheduler()
                         assert optimizer is not None
                         assert lr_scheduler is not None
-                        self.model_with_loss.set_model_mode(
-                            MachineLearningPhase.Training
-                        )
                         self.model.to(self.device)
                         optimizer.zero_grad()
                         self.exec_callbacks(
@@ -144,9 +141,7 @@ class BasicTrainer(ModelExecutor):
                         sample_inputs, sample_targets, _ = self.decode_batch(batch)
                         optimizer.zero_grad()
                         result = self.model_with_loss(
-                            sample_inputs,
-                            sample_targets,
-                            phase=MachineLearningPhase.Training,
+                            sample_inputs, sample_targets, self.phase
                         )
                         loss = result["loss"]
                         loss.backward()

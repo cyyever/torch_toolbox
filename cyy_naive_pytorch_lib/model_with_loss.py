@@ -39,20 +39,8 @@ class ModelWithLoss:
     def set_model(self, model: torch.nn.Module):
         self.__model = model
 
-    def set_model_mode(self, phase: MachineLearningPhase):
-        if isinstance(self.__model, GeneralizedRCNN):
-            if phase == MachineLearningPhase.Training:
-                self.model.train()
-            else:
-                self.model.eval()
-            return
-
-        if phase == MachineLearningPhase.Training:
-            self.model.train()
-            return
-        self.model.eval()
-
-    def __call__(self, inputs, target, phase: MachineLearningPhase = None) -> dict:
+    def __call__(self, inputs, target, phase: MachineLearningPhase) -> dict:
+        self.__set_model_mode(phase)
         if isinstance(self.__model, GeneralizedRCNN):
             detection = None
             assert phase is not None
@@ -98,3 +86,16 @@ class ModelWithLoss:
         return "model: {}, loss_fun: {}".format(
             self.model.__class__.__name__, self.loss_fun
         )
+
+    def __set_model_mode(self, phase: MachineLearningPhase):
+        if isinstance(self.__model, GeneralizedRCNN):
+            if phase == MachineLearningPhase.Training:
+                self.model.train()
+            else:
+                self.model.eval()
+            return
+
+        if phase == MachineLearningPhase.Training:
+            self.model.train()
+            return
+        self.model.eval()
