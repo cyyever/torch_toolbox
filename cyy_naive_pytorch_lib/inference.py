@@ -87,6 +87,11 @@ class Inferencer(ModelExecutor):
                 #     normalized_batch_loss.backward()
                 # # total_loss += normalized_batch_loss
             # return total_loss
+            self.exec_callbacks(
+                ModelExecutorCallbackPoint.AFTER_EPOCH,
+                self,
+                1,
+            )
             return
 
     def get_gradient(self):
