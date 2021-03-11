@@ -9,7 +9,7 @@ from dataset import DatasetUtil
 from dataset_collection import DatasetCollection
 from device import get_cpu_device, put_data_to_device
 from hyper_parameter import HyperParameter
-from metric import LossMetric
+from metrics.loss_metric import LossMetric
 from ml_type import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_util import ModelUtil
@@ -77,6 +77,9 @@ class Inferencer(ModelExecutor):
 
 
 class ClassificationInferencer(Inferencer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def inference(self, **kwargs):
         classification_count_per_label = dict()
         classification_correct_count_per_label = dict()

@@ -7,7 +7,7 @@ from cyy_naive_lib.log import get_logger
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
-from metric import LossMetric
+from metrics.loss_metric import LossMetric
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_with_loss import ModelWithLoss
