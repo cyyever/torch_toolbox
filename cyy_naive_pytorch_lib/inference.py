@@ -31,7 +31,7 @@ class Inferencer(ModelExecutor):
             get_logger().debug("copy model in inferencer")
             self.model_with_loss.set_model(copy.deepcopy(model_with_loss.model))
         self.__phase = phase
-        self.__loss_metric = LossMetric(self)
+        self._loss_metric = LossMetric(self)
 
     @property
     def dataset(self):
@@ -39,7 +39,7 @@ class Inferencer(ModelExecutor):
 
     @property
     def loss(self):
-        return self.__loss_metric.loss
+        return self._loss_metric.loss
 
     def inference(self, **kwargs):
         self.set_data("dataset_size", len(self.dataset))
@@ -49,8 +49,6 @@ class Inferencer(ModelExecutor):
             self.model_with_loss.set_model_mode(self.__phase)
             self.model.zero_grad()
             self.model.to(self.device)
-            # total_loss = torch.zeros(1)
-            # total_loss = total_loss.to(self.device)
             self.exec_callbacks(
                 ModelExecutorCallbackPoint.BEFORE_EPOCH,
                 self,
@@ -63,8 +61,6 @@ class Inferencer(ModelExecutor):
                 )
             ):
                 inputs, targets, _ = self.decode_batch(batch)
-                # real_batch_size = ModelExecutor.get_batch_size(inputs)
-
                 result = self.model_with_loss(inputs, targets, phase=self.__phase)
                 batch_loss = result["loss"]
                 if use_grad:
@@ -78,15 +74,6 @@ class Inferencer(ModelExecutor):
                     batch_index=batch_index,
                     epoch=1,
                 )
-
-                # normalized_batch_loss = batch_loss
-                # if self.model_with_loss.is_averaged_loss():
-                #     normalized_batch_loss *= real_batch_size
-                # normalized_batch_loss /= len(self.dataset)
-                # if use_grad:
-                #     normalized_batch_loss.backward()
-                # # total_loss += normalized_batch_loss
-            # return total_loss
             self.exec_callbacks(
                 ModelExecutorCallbackPoint.AFTER_EPOCH,
                 self,
@@ -193,7 +180,7 @@ class DetectionInferencer(Inferencer):
             detection_correct_count_per_label[label] = 0
             detection_count_per_label[label] = 0
 
-        def after_batch_callback(_,batch, result):
+        def after_batch_callback(_, batch, result):
             targets = batch[1]
             for target in targets:
                 for label in target["labels"]:
