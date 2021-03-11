@@ -38,6 +38,9 @@ class LossMetric(Metric):
             self.__save_loss,
         )
 
+    def clear(self):
+        self.__losses.clear()
+
     def __reset_epoch_loss(self, *args, **kwargs):
         self.__cur_epoch_loss = None
 
@@ -62,6 +65,9 @@ class LossMetric(Metric):
     def losses(self):
         assert self.__losses
         return self.__losses
+
+    def get_loss(self, epoch):
+        return self.__losses.get(epoch)
 
     @property
     def loss(self):

@@ -11,7 +11,6 @@ from metric import LossMetric
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_with_loss import ModelWithLoss
-from tensor import get_batch_size
 
 
 class BasicTrainer(ModelExecutor):
@@ -30,7 +29,7 @@ class BasicTrainer(ModelExecutor):
                 [group["lr"] for group in trainer.get_optimizer().param_groups],
             ),
         )
-        self.__loss_metric = LossMetric(self)
+        self._loss_metric = LossMetric(self)
 
     @property
     def training_dataset(self) -> torch.utils.data.Dataset:
@@ -108,11 +107,10 @@ class BasicTrainer(ModelExecutor):
         self.set_data("dataset_size", training_set_size)
         get_logger().info("training_set_size is %s", training_set_size)
         get_logger().info("use device %s", self.device)
-        self.__clear_loss()
+        self._loss_metric.clear()
         self.exec_callbacks(ModelExecutorCallbackPoint.BEFORE_TRAINING, self)
         try:
             for epoch in range(1, self.hyper_parameter.epoch + 1):
-                training_loss = 0.0
                 self.exec_callbacks(
                     ModelExecutorCallbackPoint.BEFORE_EPOCH,
                     self,
@@ -154,13 +152,6 @@ class BasicTrainer(ModelExecutor):
                         loss.backward()
                         batch_loss = loss.data.item()
 
-                        normalized_batch_loss = batch_loss
-                        if self.model_with_loss.is_averaged_loss():
-                            real_batch_size = get_batch_size(sample_inputs)
-                            normalized_batch_loss *= real_batch_size
-                        normalized_batch_loss /= training_set_size
-                        training_loss += normalized_batch_loss
-
                         if self.has_callback(ModelExecutorCallbackPoint.OPTIMIZER_STEP):
                             self.exec_callbacks(
                                 ModelExecutorCallbackPoint.OPTIMIZER_STEP,
@@ -182,7 +173,6 @@ class BasicTrainer(ModelExecutor):
                             batch_loss=batch_loss,
                         )
 
-                self.training_loss.append(training_loss)
                 self.exec_callbacks(
                     ModelExecutorCallbackPoint.AFTER_EPOCH,
                     self,
@@ -193,18 +183,17 @@ class BasicTrainer(ModelExecutor):
                     if isinstance(
                         lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau
                     ):
+                        training_loss = self.__loss_metric.get_loss(epoch)
                         get_logger().debug(
-                            "call ReduceLROnPlateau for training loss %s",
-                            self.training_loss[-1],
+                            "call ReduceLROnPlateau for training loss %s", training_loss
                         )
-                        lr_scheduler.step(self.training_loss[-1])
+                        lr_scheduler.step(training_loss)
                     else:
                         lr_scheduler.step()
         except StopExecutingException:
             get_logger().warning("stop training")
 
     def __clear_loss(self):
-        self.training_loss = []
         self.validation_loss = {}
         self.validation_accuracy = {}
         self.test_loss = {}
