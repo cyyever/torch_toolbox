@@ -48,8 +48,10 @@ class AccuracyMetric(Metric):
             self.__classification_count_per_label[label] += 1
         correct = torch.eq(torch.max(output, dim=1)[1].cpu(), targets).view(-1)
 
-        for label, count in self.__classification_correct_count_per_label.items():
-            count += torch.sum(correct[targets == label]).item()
+        for label in self.__classification_correct_count_per_label:
+            self.__classification_correct_count_per_label[label] += torch.sum(
+                correct[targets == label]
+            ).item()
 
     def __save_acc(self, model_exetutor, epoch):
         accuracy = sum(self.__classification_correct_count_per_label.values()) / sum(
