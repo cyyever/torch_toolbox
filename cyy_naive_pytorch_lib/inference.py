@@ -72,6 +72,7 @@ class Inferencer(ModelExecutor):
 
                 self.exec_callbacks(
                     ModelExecutorCallbackPoint.AFTER_BATCH,
+                    self,
                     batch=batch,
                     batch_loss=batch_loss,
                     batch_index=batch_index,
@@ -106,7 +107,7 @@ class ClassificationInferencer(Inferencer):
             classification_correct_count_per_label[label] = 0
             classification_count_per_label[label] = 0
 
-        def after_batch_callback(batch, result):
+        def after_batch_callback(_, batch, result):
             nonlocal per_sample_prob
             nonlocal sample_output
             targets = batch[1]
@@ -187,7 +188,7 @@ class DetectionInferencer(Inferencer):
             detection_correct_count_per_label[label] = 0
             detection_count_per_label[label] = 0
 
-        def after_batch_callback(batch, result):
+        def after_batch_callback(_,batch, result):
             targets = batch[1]
             for target in targets:
                 for label in target["labels"]:
