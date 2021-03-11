@@ -1,16 +1,15 @@
 import copy
 
 import torch
-import torch.nn as nn
 from cyy_naive_lib.log import get_logger
 from torchvision.ops.boxes import box_iou
 
 from dataset import DatasetUtil
 from dataset_collection import DatasetCollection
-from device import get_cpu_device, put_data_to_device
 from hyper_parameter import HyperParameter
 from metrics.acc_metric import AccuracyMetric
 from metrics.loss_metric import LossMetric
+from metrics.prob_metric import ProbabilityMetric
 from ml_type import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_util import ModelUtil
@@ -81,52 +80,16 @@ class ClassificationInferencer(Inferencer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__acc_metric = AccuracyMetric(self)
+        self.__prob_metric = None
 
-    def inference(self, **kwargs):
-        sample_output = dict()
-        sample_prob = dict()
+    def inference(self, *args, **kwargs):
         per_sample_prob = kwargs.get("per_sample_prob", False)
-
-        def after_batch_callback(_, batch, result):
-            nonlocal per_sample_prob
-            nonlocal sample_output
-            output = put_data_to_device(result["output"], get_cpu_device())
-            if per_sample_prob:
-                for i, sample_index in enumerate(batch[2]):
-                    sample_index = sample_index.data.item()
-                    sample_output[sample_index] = output[i]
-
-        self.add_named_callback(
-            ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc", after_batch_callback
-        )
-        super().inference(**kwargs)
-        self.remove_callback("compute_acc", ModelExecutorCallbackPoint.AFTER_BATCH)
-
         if per_sample_prob:
-            last_layer = list(self.model.modules())[-1]
-            if isinstance(last_layer, nn.LogSoftmax):
-                for k, v in sample_output.items():
-                    probs = torch.exp(v)
-                    max_prob_index = torch.argmax(probs).data.item()
-                    sample_prob[k] = (
-                        max_prob_index,
-                        probs[max_prob_index].data.item(),
-                    )
-            elif isinstance(last_layer, nn.Linear):
-                for k, v in sample_output.items():
-                    prob_v = nn.Softmax()(v)
-                    max_prob_index = torch.argmax(prob_v).data.item()
-                    sample_prob[k] = (
-                        max_prob_index,
-                        prob_v[max_prob_index].data.item(),
-                    )
-            else:
-                raise RuntimeError("unsupported layer", type(last_layer))
-        return (
-            {
-                "per_sample_prob": sample_prob,
-            },
-        )
+            self.__prob_metric = ProbabilityMetric(self)
+        else:
+            if self.__prob_metric is not None:
+                self.__prob_metric.remove_callbacks()
+        super().inference(*args, **kwargs)
 
 
 class DetectionInferencer(Inferencer):
