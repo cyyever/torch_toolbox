@@ -72,6 +72,7 @@ class Inferencer(ModelExecutor):
                     batch=batch,
                     batch_loss=batch_loss,
                     batch_index=batch_index,
+                    result=result,
                     epoch=1,
                 )
             self.exec_callbacks(
