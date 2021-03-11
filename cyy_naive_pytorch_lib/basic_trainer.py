@@ -103,6 +103,7 @@ class BasicTrainer(ModelExecutor):
     def train(self, **kwargs):
         training_set_size = len(self.training_dataset)
         self.set_data("training_set_size", training_set_size)
+        self.set_data("dataset_size", training_set_size)
         get_logger().info("training_set_size is %s", training_set_size)
         get_logger().info("use device %s", self.device)
         self.__clear_loss()
@@ -110,6 +111,11 @@ class BasicTrainer(ModelExecutor):
         try:
             for epoch in range(1, self.hyper_parameter.epoch + 1):
                 training_loss = 0.0
+                self.exec_callbacks(
+                    ModelExecutorCallbackPoint.BEFORE_EPOCH,
+                    self,
+                    epoch,
+                )
                 if self.cuda_stream is not None:
                     get_logger().debug("use cuda stream %s", self.cuda_stream)
 
@@ -168,7 +174,7 @@ class BasicTrainer(ModelExecutor):
                         self.exec_callbacks(
                             ModelExecutorCallbackPoint.AFTER_BATCH,
                             self,
-                            batch_index,
+                            batch_index=batch_index,
                             batch=batch,
                             epoch=epoch,
                             batch_loss=batch_loss,
