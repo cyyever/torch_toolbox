@@ -1,6 +1,6 @@
 import torch
 
-from ml_types import ModelExecutorCallbackPoint, StopExecutingException
+from ml_type import ModelExecutorCallbackPoint, StopExecutingException
 from visualization import BatchWindow
 
 

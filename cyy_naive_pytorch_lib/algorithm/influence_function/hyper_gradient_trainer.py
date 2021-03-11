@@ -14,7 +14,7 @@ from algorithm.hessian_vector_product import get_hessian_vector_product_func
 from algorithm.per_sample_gradient import get_per_sample_gradient
 from basic_trainer import BasicTrainer
 from dataset import dataset_with_indices
-from ml_types import MachineLearningPhase
+from ml_type import MachineLearningPhase
 from model_executor import ModelExecutorCallbackPoint
 from model_util import ModelUtil
 from tensor import get_batch_size

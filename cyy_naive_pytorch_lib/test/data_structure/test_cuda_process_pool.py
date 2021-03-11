@@ -2,7 +2,7 @@ from cyy_naive_lib.log import get_logger
 
 from configuration import get_trainer_from_configuration
 from data_structure.cuda_process_pool import CUDAProcessPool
-from ml_types import StopExecutingException
+from ml_type import StopExecutingException
 from model_executor import ModelExecutorCallbackPoint
 
 
