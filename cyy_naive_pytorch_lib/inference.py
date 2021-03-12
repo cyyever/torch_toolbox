@@ -50,8 +50,8 @@ class Inferencer(ModelExecutor):
             self.model.to(self.device)
             self.exec_callbacks(
                 ModelExecutorCallbackPoint.BEFORE_EPOCH,
-                self,
-                1,
+                model_executor=self,
+                epoch=1,
             )
             for batch_index, batch in enumerate(self.dataloader):
                 inputs, targets, _ = self.decode_batch(batch)
@@ -75,8 +75,8 @@ class Inferencer(ModelExecutor):
                 )
             self.exec_callbacks(
                 ModelExecutorCallbackPoint.AFTER_EPOCH,
-                self,
-                1,
+                model_executor=self,
+                epoch=1,
             )
             return
 
