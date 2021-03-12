@@ -30,9 +30,9 @@ class BasicTrainer(ModelExecutor):
         self.__clear_loss()
         self.add_callback(
             ModelExecutorCallbackPoint.BEFORE_BATCH,
-            lambda trainer, batch, batch_index: trainer.set_data(
+            lambda *args, **kwargs: self.set_data(
                 "cur_learning_rates",
-                [group["lr"] for group in trainer.get_optimizer().param_groups],
+                [group["lr"] for group in self.get_optimizer().param_groups],
             ),
         )
         self._loss_metric = LossMetric()
@@ -116,7 +116,9 @@ class BasicTrainer(ModelExecutor):
         self.set_data("dataset_size", training_set_size)
         get_logger().info("training_set_size is %s", training_set_size)
         get_logger().info("use device %s", self.device)
-        self.exec_callbacks(ModelExecutorCallbackPoint.BEFORE_EXECUTE, model_executor=self)
+        self.exec_callbacks(
+            ModelExecutorCallbackPoint.BEFORE_EXECUTE, model_executor=self
+        )
         try:
             for epoch in range(1, self.hyper_parameter.epoch + 1):
                 self.exec_callbacks(
@@ -137,9 +139,9 @@ class BasicTrainer(ModelExecutor):
                         optimizer.zero_grad()
                         self.exec_callbacks(
                             ModelExecutorCallbackPoint.BEFORE_BATCH,
-                            self,
-                            batch_index,
-                            batch,
+                            model_executor=self,
+                            batch_index=batch_index,
+                            batch=batch,
                         )
                         sample_inputs, sample_targets, _ = self.decode_batch(batch)
                         optimizer.zero_grad()

@@ -1,13 +1,15 @@
 import torch
 
-from ml_type import ModelExecutorCallbackPoint, StopExecutingException
+from callback import Callback
+from ml_type import StopExecutingException
 from visualization import BatchWindow
 
 
-class LRFinder:
+class LRFinder(Callback):
     "Training with exponentially growing learning rate, coped from fastai"
 
     def __init__(self, start_lr=1e-7, end_lr=10, epoch=2, stop_div=True):
+        super().__init__()
         self.lr_getter = lambda idx: start_lr * (end_lr / start_lr) ** idx
         self.epoch = epoch
         self.stop_div = stop_div
@@ -18,21 +20,8 @@ class LRFinder:
         self.total_batch_num = None
         self.suggested_learning_rate = None
 
-    def add_callbacks(self, trainer):
-        trainer.prepend_callback(
-            ModelExecutorCallbackPoint.BEFORE_EXECUTE,
-            self.before_training,
-        )
-        trainer.add_callback(
-            ModelExecutorCallbackPoint.BEFORE_BATCH,
-            self.before_batch,
-        )
-        trainer.add_callback(
-            ModelExecutorCallbackPoint.AFTER_BATCH,
-            self.after_batch,
-        )
-
-    def before_training(self, trainer):
+    def _before_execute(self, *args, **kwargs):
+        trainer = kwargs["model_executor"]
         trainer.remove_optimizer()
         trainer.remove_lr_scheduler()
         trainer.hyper_parameter.set_epoch(self.epoch)
@@ -42,7 +31,8 @@ class LRFinder:
             // trainer.hyper_parameter.batch_size
         )
 
-    def before_batch(self, trainer, _, __):
+    def _before_batch(self, **kwargs):
+        trainer = kwargs["model_executor"]
         learning_rate = self.lr_getter(self.batch_index / (self.total_batch_num - 1))
         self.learning_rates.append(learning_rate)
         BatchWindow(
@@ -52,7 +42,7 @@ class LRFinder:
         for group in optimizer.param_groups:
             group["lr"] = learning_rate
 
-    def after_batch(self, **kwargs):
+    def _after_batch(self, **kwargs):
         trainer = kwargs["model_executor"]
         batch_loss = kwargs["batch_loss"]
         if self.losses:
