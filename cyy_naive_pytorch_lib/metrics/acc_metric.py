@@ -8,11 +8,9 @@ from .metric import Metric
 class AccuracyMetric(Metric):
     def __init__(self):
         super().__init__()
-        self.__labels = DatasetUtil(self._model_executor.dataset).get_labels()
         self.__classification_count_per_label: dict = dict()
         self.__classification_correct_count_per_label: dict = dict()
-        self.__accuracies: dict = dict()
-        self.__class_accuracies: dict = dict()
+        self.__labels = None
 
     def get_accuracy(self, epoch):
         return self.get_epoch_metric(epoch, "accuracy")
@@ -21,7 +19,8 @@ class AccuracyMetric(Metric):
         return self.get_epoch_metric(epoch, "class_accuracy")
 
     def _before_epoch(self, *args, **kwargs):
-        super()._before_epoch(*args, **kwargs)
+        model_exetutor = kwargs["model_exetutor"]
+        self.__labels = DatasetUtil(model_exetutor.dataset).get_labels()
         for label in self.__labels:
             self.__classification_correct_count_per_label[label] = 0
             self.__classification_count_per_label[label] = 0
@@ -53,5 +52,5 @@ class AccuracyMetric(Metric):
                 / self.__classification_count_per_label[label]
             )
 
-        self.__accuracies[epoch] = accuracy
-        self.__class_accuracies[epoch] = class_accuracy
+        self._set_epoch_metric(epoch, "accuracy", accuracy)
+        self._set_epoch_metric(epoch, "class_accuracy", class_accuracy)

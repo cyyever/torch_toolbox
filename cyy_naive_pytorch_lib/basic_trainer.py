@@ -7,6 +7,7 @@ from cyy_naive_lib.log import get_logger
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
+from metric_visualizers.loss_metric_logger import LossMetricLogger
 from metrics.loss_metric import LossMetric
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
@@ -36,6 +37,8 @@ class BasicTrainer(ModelExecutor):
         )
         self._loss_metric = LossMetric()
         self._loss_metric.append_to_model_executor(self)
+        self._loss_logger = LossMetricLogger()
+        self._loss_logger.append_to_model_executor(self)
 
     @property
     def training_dataset(self) -> torch.utils.data.Dataset:
@@ -113,7 +116,7 @@ class BasicTrainer(ModelExecutor):
         self.set_data("dataset_size", training_set_size)
         get_logger().info("training_set_size is %s", training_set_size)
         get_logger().info("use device %s", self.device)
-        self.exec_callbacks(ModelExecutorCallbackPoint.BEFORE_EXECUTE, self)
+        self.exec_callbacks(ModelExecutorCallbackPoint.BEFORE_EXECUTE, model_executor=self)
         try:
             for epoch in range(1, self.hyper_parameter.epoch + 1):
                 self.exec_callbacks(
