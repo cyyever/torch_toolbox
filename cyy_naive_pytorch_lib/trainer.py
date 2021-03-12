@@ -35,9 +35,6 @@ class Trainer(BasicTrainer):
             ModelExecutorCallbackPoint.BEFORE_EXECUTE, self.__pre_training_callback
         )
         self.add_callback(
-            ModelExecutorCallbackPoint.AFTER_BATCH, Trainer.__log_after_batch
-        )
-        self.add_callback(
             ModelExecutorCallbackPoint.AFTER_EPOCH, Trainer.__plot_after_epoch
         )
         self.set_data("plot_class_accuracy", False)
@@ -45,7 +42,8 @@ class Trainer(BasicTrainer):
     def enable_class_accuracy_plot(self):
         self.set_data("plot_class_accuracy", True)
 
-    def __pre_training_callback(self, trainer):
+    def __pre_training_callback(self, **kwargs):
+        trainer = kwargs["model_executor"]
         self.visdom_env = (
             "training_"
             + str(self.model.__class__.__name__)
@@ -62,21 +60,6 @@ class Trainer(BasicTrainer):
             trainer.model_with_loss,
             len(model_util.get_parameter_list()),
         )
-
-    @staticmethod
-    def __log_after_batch(trainer: BasicTrainer, **kwargs):
-        training_set_size = trainer.get_data("training_set_size")
-        batch = kwargs["batch"]
-        batch_index = kwargs["batch_index"]
-        ten_batches = training_set_size // (10 * ModelExecutor.get_batch_size(batch[0]))
-        if ten_batches == 0 or batch_index % ten_batches == 0:
-            get_logger().info(
-                "epoch: %s, batch: %s, learning rate: %s, batch training loss: %s",
-                kwargs["epoch"],
-                batch_index,
-                trainer.get_data("cur_learning_rates"),
-                kwargs["batch_loss"],
-            )
 
     @staticmethod
     def __plot_after_epoch(trainer: BasicTrainer, epoch):
