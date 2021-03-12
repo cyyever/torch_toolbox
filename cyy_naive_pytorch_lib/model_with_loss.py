@@ -39,15 +39,19 @@ class ModelWithLoss:
     def set_model(self, model: torch.nn.Module):
         self.__model = model
 
-    def __call__(self, inputs, target, phase: MachineLearningPhase) -> dict:
-        self.__set_model_mode(phase)
-        if isinstance(self.__model, GeneralizedRCNN):
+    def __call__(self, inputs, target, phase: MachineLearningPhase = None) -> dict:
+        if phase is not None:
+            self.__set_model_mode(phase)
+        else:
+            if self.model.training:
+                phase = MachineLearningPhase.Training
+        if isinstance(self.model, GeneralizedRCNN):
             detection = None
             assert phase is not None
-            if phase in (MachineLearningPhase.Training,):
-                loss_dict = self.__model(inputs, target)
+            if phase == MachineLearningPhase.Training:
+                loss_dict = self.model(inputs, target)
             else:
-                loss_dict, detection = self.__model(inputs, target)
+                loss_dict, detection = self.model(inputs, target)
 
             result = {"loss": sum(loss for loss in loss_dict.values())}
             if detection is not None:
