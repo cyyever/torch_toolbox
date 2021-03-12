@@ -114,11 +114,10 @@ class BasicTrainer(ModelExecutor):
         training_set_size = len(self.training_dataset)
         self.set_data("training_set_size", training_set_size)
         self.set_data("dataset_size", training_set_size)
-        get_logger().info("training_set_size is %s", training_set_size)
-        get_logger().info("use device %s", self.device)
         self.exec_callbacks(
             ModelExecutorCallbackPoint.BEFORE_EXECUTE, model_executor=self
         )
+
         try:
             for epoch in range(1, self.hyper_parameter.epoch + 1):
                 self.exec_callbacks(
