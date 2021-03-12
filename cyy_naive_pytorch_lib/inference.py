@@ -53,7 +53,11 @@ class Inferencer(ModelExecutor):
                 result = self.model_with_loss(inputs, targets, phase=self.phase)
                 batch_loss = result["loss"]
                 if use_grad:
-                    batch_loss.backward()
+                    real_batch_loss = batch_loss
+                    if self.model_with_loss.is_averaged_loss():
+                        real_batch_loss *= ModelExecutor.get_batch_size(inputs)
+                    real_batch_loss /= len(self.dataset)
+                    real_batch_loss.backward()
 
                 self.exec_callbacks(
                     ModelExecutorCallbackPoint.AFTER_BATCH,
