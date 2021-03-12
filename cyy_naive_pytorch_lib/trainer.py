@@ -32,7 +32,7 @@ class Trainer(BasicTrainer):
         )
         self.visdom_env = None
         self.add_callback(
-            ModelExecutorCallbackPoint.BEFORE_TRAINING, self.__pre_training_callback
+            ModelExecutorCallbackPoint.BEFORE_EXECUTE, self.__pre_training_callback
         )
         self.add_callback(
             ModelExecutorCallbackPoint.AFTER_BATCH, Trainer.__log_after_batch
