@@ -42,7 +42,6 @@ class Trainer(BasicTrainer):
         self.set_data("plot_class_accuracy", True)
 
     def __pre_training_callback(self, **kwargs):
-        trainer = kwargs["model_executor"]
         self.visdom_env = (
             "training_"
             + str(self.model.__class__.__name__)
@@ -68,7 +67,6 @@ class Trainer(BasicTrainer):
 
         loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
         training_loss = trainer._loss_metric.get_loss(epoch)
-        get_logger().info("epoch: %s, training loss: %s", epoch, training_loss)
         loss_win.plot_loss(epoch, training_loss, "training loss")
 
         inferencer = trainer.get_inferencer(phase=MachineLearningPhase.Validation)
@@ -76,13 +74,6 @@ class Trainer(BasicTrainer):
         validation_loss = inferencer.loss.data.item()
         validation_acc = inferencer.accuracy_metric.get_accuracy(1)
 
-        get_logger().info(
-            "epoch: %s, learning_rate: %s, validation loss: %s, accuracy = %s",
-            epoch,
-            learning_rates,
-            validation_loss,
-            validation_acc,
-        )
         loss_win = EpochWindow("training & validation loss", env=trainer.visdom_env)
         loss_win.plot_loss(epoch, validation_loss, "validation loss")
         EpochWindow("validation accuracy", env=trainer.visdom_env).plot_accuracy(
@@ -121,12 +112,5 @@ class Trainer(BasicTrainer):
             test_acc = inferencer.accuracy_metric.get_accuracy(1)
             EpochWindow("test accuracy", env=trainer.visdom_env).plot_accuracy(
                 epoch, test_acc, "accuracy"
-            )
-            get_logger().info(
-                "epoch: %s, learning_rate: %s, test loss: %s, accuracy = %s",
-                epoch,
-                learning_rates,
-                test_loss,
-                test_acc,
             )
         Window.save_envs()

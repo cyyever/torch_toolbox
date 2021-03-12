@@ -27,7 +27,7 @@ class LRFinder(Callback):
         trainer.hyper_parameter.set_epoch(self.epoch)
         trainer.hyper_parameter.set_learning_rate(1)
         self.total_batch_num = self.epoch * (
-            (len(trainer.training_dataset) + trainer.hyper_parameter.batch_size - 1)
+            (len(trainer.dataset) + trainer.hyper_parameter.batch_size - 1)
             // trainer.hyper_parameter.batch_size
         )
 

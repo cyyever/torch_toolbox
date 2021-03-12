@@ -30,9 +30,12 @@ class BasicTrainer(ModelExecutor):
         )
         self.add_callback(
             ModelExecutorCallbackPoint.BEFORE_BATCH,
-            lambda *args, **kwargs: self.set_data(
+            lambda *args, **kwargs: kwargs["model_executor"].set_data(
                 "cur_learning_rates",
-                [group["lr"] for group in self.get_optimizer().param_groups],
+                [
+                    group["lr"]
+                    for group in kwargs["model_executor"].get_optimizer().param_groups
+                ],
             ),
         )
         self.__loss_metric = LossMetric()
@@ -46,6 +49,10 @@ class BasicTrainer(ModelExecutor):
 
     def get_validation_metric(self, phase):
         return self.__validation_metrics.get(phase)
+
+    @property
+    def loss_metric(self):
+        return self.__loss_metric
 
     def get_inferencer(
         self, phase: MachineLearningPhase, copy_model=True
