@@ -9,6 +9,7 @@ from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
 from metric_visualizers.loss_metric_logger import LossMetricLogger
 from metrics.loss_metric import LossMetric
+from metrics.validation_metric import ValidationMetric
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_with_loss import ModelWithLoss
@@ -27,7 +28,6 @@ class BasicTrainer(ModelExecutor):
             MachineLearningPhase.Training,
             hyper_parameter,
         )
-        self.__clear_loss()
         self.add_callback(
             ModelExecutorCallbackPoint.BEFORE_BATCH,
             lambda *args, **kwargs: self.set_data(
@@ -35,14 +35,17 @@ class BasicTrainer(ModelExecutor):
                 [group["lr"] for group in self.get_optimizer().param_groups],
             ),
         )
-        self._loss_metric = LossMetric()
-        self._loss_metric.append_to_model_executor(self)
-        self._loss_logger = LossMetricLogger()
-        self._loss_logger.append_to_model_executor(self)
+        self.__loss_metric = LossMetric()
+        self.__loss_metric.append_to_model_executor(self)
+        self.__validation_metrics = dict()
+        for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
+            self.__validation_metrics[phase] = ValidationMetric(phase)
+            self.__validation_metrics[phase].append_to_model_executor(self)
+        self.__loss_logger = LossMetricLogger()
+        self.__loss_logger.append_to_model_executor(self)
 
-    @property
-    def training_dataset(self) -> torch.utils.data.Dataset:
-        return self.dataset_collection.get_dataset(MachineLearningPhase.Training)
+    def get_validation_metric(self, phase):
+        return self.__validation_metrics.get(phase)
 
     def get_inferencer(
         self, phase: MachineLearningPhase, copy_model=True
@@ -111,7 +114,7 @@ class BasicTrainer(ModelExecutor):
         return BasicTrainer.__repeated_training(repeated_num, self, training_callback)
 
     def train(self, **kwargs):
-        training_set_size = len(self.training_dataset)
+        training_set_size = len(self.dataset)
         self.set_data("training_set_size", training_set_size)
         self.set_data("dataset_size", training_set_size)
         self.exec_callbacks(
@@ -182,7 +185,7 @@ class BasicTrainer(ModelExecutor):
                     if isinstance(
                         lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau
                     ):
-                        training_loss = self._loss_metric.get_loss(epoch)
+                        training_loss = self.__loss_metric.get_loss(epoch)
                         get_logger().debug(
                             "call ReduceLROnPlateau for training loss %s", training_loss
                         )
@@ -191,12 +194,6 @@ class BasicTrainer(ModelExecutor):
                         lr_scheduler.step()
         except StopExecutingException:
             get_logger().warning("stop training")
-
-    def __clear_loss(self):
-        self.validation_loss = {}
-        self.validation_accuracy = {}
-        self.test_loss = {}
-        self.test_accuracy = {}
 
     @staticmethod
     def __repeated_training(number: int, trainer, training_callback: Callable):

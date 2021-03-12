@@ -34,8 +34,8 @@ class Inferencer(ModelExecutor):
         self._loss_metric.append_to_model_executor(self)
 
     @property
-    def loss(self):
-        return self._loss_metric.get_loss(1)
+    def loss_metric(self):
+        return self._loss_metric
 
     def inference(self, **kwargs):
         self.set_data("dataset_size", len(self.dataset))
