@@ -54,7 +54,7 @@ class HyperParameter:
             get_logger().warning("guess lr")
             tmp_trainer = copy.deepcopy(trainer)
             lr_finder = LRFinder()
-            lr_finder.add_callbacks(tmp_trainer)
+            lr_finder.prepend_to_model_executor(tmp_trainer)
             tmp_trainer.train()
             get_logger().warning(
                 "suggested_learning_rate is %s", lr_finder.suggested_learning_rate

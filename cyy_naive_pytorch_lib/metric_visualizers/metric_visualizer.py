@@ -1,6 +1,5 @@
 from callback import Callback
-
-from .metric import Metric
+from metrics.metric import Metric
 
 
 class MetricVisualizer(Callback):
