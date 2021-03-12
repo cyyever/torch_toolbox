@@ -53,9 +53,9 @@ class ModelExecutor:
     def model(self) -> torch.nn.Module:
         return self.model_with_loss.model
 
-    def get_data(self, key: str):
+    def get_data(self, key: str, default_value=None):
         assert key in self.__data
-        return self.__data.get(key)
+        return self.__data.get(key, default_value)
 
     def set_data(self, key: str, value):
         self.__data[key] = value
