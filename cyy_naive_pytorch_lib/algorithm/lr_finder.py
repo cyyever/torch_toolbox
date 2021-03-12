@@ -20,7 +20,7 @@ class LRFinder:
 
     def add_callbacks(self, trainer):
         trainer.prepend_callback(
-            ModelExecutorCallbackPoint.BEFORE_TRAINING,
+            ModelExecutorCallbackPoint.BEFORE_EXECUTE,
             self.before_training,
         )
         trainer.add_callback(

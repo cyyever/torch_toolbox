@@ -10,12 +10,9 @@ class Metric:
         self.__callback_names: list = []
         self.__epoch_metrics: dict = dict()
         self.add_callback(
-            ModelExecutorCallbackPoint.BEFORE_EPOCH, self.__clear_epoch_data
+            ModelExecutorCallbackPoint.BEFORE_EXECUTE,
+            lambda *args, **kwargs: self.clear(),
         )
-
-    def __clear_epoch_data(self, *args, **kwargs):
-        epoch = kwargs["epoch"]
-        self.__epoch_metrics.pop(epoch, None)
 
     def add_callback(self, cb_point: ModelExecutorCallbackPoint, cb: Callable):
         name = self.__class__.__name__ + "." + str(cb)

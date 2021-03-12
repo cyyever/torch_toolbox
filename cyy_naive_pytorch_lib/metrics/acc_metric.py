@@ -1,7 +1,6 @@
 import torch
 
 from dataset import DatasetUtil
-from device import put_data_to_device
 from ml_type import ModelExecutorCallbackPoint
 from model_executor import ModelExecutor
 

@@ -112,7 +112,7 @@ class HyperGradientTrainer:
         else:
             self.approx_hyper_gradient_mom_dict = None
         self.trainer.add_callback(
-            ModelExecutorCallbackPoint.BEFORE_TRAINING, self.__add_indices_to_dataset
+            ModelExecutorCallbackPoint.BEFORE_EXECUTE, self.__add_indices_to_dataset
         )
 
         self.trainer.add_callback(
