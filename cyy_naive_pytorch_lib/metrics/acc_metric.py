@@ -1,43 +1,32 @@
 import torch
 
 from dataset import DatasetUtil
-from ml_type import ModelExecutorCallbackPoint
-from model_executor import ModelExecutor
 
-from .metric import Metric
+from .metric import Metric2
 
 
-class AccuracyMetric(Metric):
-    def __init__(self, model_exetutor: ModelExecutor):
-        super().__init__(model_exetutor=model_exetutor)
+class AccuracyMetric(Metric2):
+    def __init__(self):
+        super().__init__()
         self.__labels = DatasetUtil(self._model_executor.dataset).get_labels()
         self.__classification_count_per_label: dict = dict()
         self.__classification_correct_count_per_label: dict = dict()
         self.__accuracies: dict = dict()
         self.__class_accuracies: dict = dict()
 
-        self.add_callback(
-            ModelExecutorCallbackPoint.BEFORE_EPOCH, self.__reset_epoch_count
-        )
-        self.add_callback(ModelExecutorCallbackPoint.AFTER_BATCH, self.__compute_count)
-        self.add_callback(ModelExecutorCallbackPoint.AFTER_EPOCH, self.__save_acc)
-
     def get_accuracy(self, epoch):
-        return self.__accuracies.get(epoch)
+        return self.get_epoch_metric(epoch, "accuracy")
 
     def get_class_accuracy(self, epoch):
-        return self.__class_accuracies.get(epoch)
+        return self.get_epoch_metric(epoch, "class_accuracy")
 
-    def clear(self):
-        self.__accuracies.clear()
-        self.__class_accuracies.clear()
-
-    def __reset_epoch_count(self, *args, **kwargs):
+    def _before_epoch(self, *args, **kwargs):
+        super()._before_epoch(*args, **kwargs)
         for label in self.__labels:
             self.__classification_correct_count_per_label[label] = 0
             self.__classification_count_per_label[label] = 0
 
-    def __compute_count(self, *args, **kwargs):
+    def _after_batch(self, *args, **kwargs):
         batch = kwargs["batch"]
         targets = batch[1]
         result = kwargs["result"]
@@ -52,7 +41,7 @@ class AccuracyMetric(Metric):
                 correct[targets == label]
             ).item()
 
-    def __save_acc(self, model_exetutor, epoch):
+    def _after_epoch(self, model_exetutor, epoch):
         accuracy = sum(self.__classification_correct_count_per_label.values()) / sum(
             self.__classification_count_per_label.values()
         )

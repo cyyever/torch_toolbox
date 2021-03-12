@@ -1,28 +1,18 @@
-from ml_type import ModelExecutorCallbackPoint
-from model_executor import ModelExecutor
 from tensor import get_batch_size
 
-from .metric import Metric
+from .metric import Metric2
 
 
-class LossMetric(Metric):
-    def __init__(self, model_exetutor: ModelExecutor):
-        super().__init__(model_exetutor=model_exetutor)
-        self.add_callback(
-            ModelExecutorCallbackPoint.AFTER_BATCH,
-            self.__compute_batch_loss,
-        )
-
-    def __compute_batch_loss(self, *args, **kwargs):
+class LossMetric(Metric2):
+    def _after_batch(self, **kwargs):
         batch_loss = kwargs.get("batch_loss")
         batch = kwargs.get("batch")
         epoch = kwargs.get("epoch")
+        model_executor = kwargs.get("model_executor")
         real_batch_loss = batch_loss
-        if self._model_executor.model_with_loss.is_averaged_loss():
-            real_batch_loss *= get_batch_size(
-                self._model_executor.decode_batch(batch)[0]
-            )
-        real_batch_loss /= self._model_executor.get_data("dataset_size")
+        if model_executor.model_with_loss.is_averaged_loss():
+            real_batch_loss *= get_batch_size(model_executor.decode_batch(batch)[0])
+        real_batch_loss /= model_executor.get_data("dataset_size")
         epoch_loss = self.get_epoch_metric(epoch, "loss")
         if epoch_loss is None:
             epoch_loss = real_batch_loss
