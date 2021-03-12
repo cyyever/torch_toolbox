@@ -30,7 +30,8 @@ class Inferencer(ModelExecutor):
         if copy_model:
             get_logger().debug("copy model in inferencer")
             self.model_with_loss.set_model(copy.deepcopy(model_with_loss.model))
-        self._loss_metric = LossMetric(self)
+        self._loss_metric = LossMetric()
+        self._loss_metric.append_to_model_executor(self)
 
     @property
     def loss(self):
@@ -61,7 +62,7 @@ class Inferencer(ModelExecutor):
 
                 self.exec_callbacks(
                     ModelExecutorCallbackPoint.AFTER_BATCH,
-                    self,
+                    model_executor=self,
                     batch=batch,
                     batch_loss=batch_loss,
                     batch_index=batch_index,
@@ -83,7 +84,8 @@ class Inferencer(ModelExecutor):
 class ClassificationInferencer(Inferencer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__acc_metric = AccuracyMetric(self)
+        self.__acc_metric = AccuracyMetric()
+        self.__acc_metric.append_to_model_executor(self)
         self.__prob_metric = None
 
     @property

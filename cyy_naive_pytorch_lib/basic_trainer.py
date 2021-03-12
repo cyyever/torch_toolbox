@@ -34,7 +34,8 @@ class BasicTrainer(ModelExecutor):
                 [group["lr"] for group in trainer.get_optimizer().param_groups],
             ),
         )
-        self._loss_metric = LossMetric(self)
+        self._loss_metric = LossMetric()
+        self._loss_metric.append_to_model_executor(self)
 
     @property
     def training_dataset(self) -> torch.utils.data.Dataset:
@@ -112,7 +113,6 @@ class BasicTrainer(ModelExecutor):
         self.set_data("dataset_size", training_set_size)
         get_logger().info("training_set_size is %s", training_set_size)
         get_logger().info("use device %s", self.device)
-        self._loss_metric.clear()
         self.exec_callbacks(ModelExecutorCallbackPoint.BEFORE_EXECUTE, self)
         try:
             for epoch in range(1, self.hyper_parameter.epoch + 1):
@@ -161,7 +161,7 @@ class BasicTrainer(ModelExecutor):
 
                         self.exec_callbacks(
                             ModelExecutorCallbackPoint.AFTER_BATCH,
-                            self,
+                            model_executor=self,
                             batch_index=batch_index,
                             batch=batch,
                             epoch=epoch,
