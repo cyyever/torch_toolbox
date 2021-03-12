@@ -8,8 +8,7 @@ from basic_trainer import BasicTrainer
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from ml_type import MachineLearningPhase
-from model_executor import ModelExecutor, ModelExecutorCallbackPoint
-from model_util import ModelUtil
+from model_executor import ModelExecutorCallbackPoint
 from model_with_loss import ModelWithLoss
 from visualization import EpochWindow, Window
 
@@ -50,15 +49,6 @@ class Trainer(BasicTrainer):
             + "_"
             + str(threading.get_native_id())
             + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
-        )
-        model_util = ModelUtil(trainer.model)
-        get_logger().info(
-            "begin training, hyper_parameter is %s, optimizer is %s ,lr_scheduler is %s, %s, parameter number is %s",
-            trainer.hyper_parameter,
-            trainer.get_optimizer(),
-            trainer.get_lr_scheduler(),
-            trainer.model_with_loss,
-            len(model_util.get_parameter_list()),
         )
 
     @staticmethod
