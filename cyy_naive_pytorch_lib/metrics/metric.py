@@ -1,7 +1,7 @@
 from callback import Callback
 
 
-class Metric2(Callback):
+class Metric(Callback):
     def __init__(self):
         super().__init__()
         self.__epoch_metrics: dict = dict()
@@ -9,7 +9,7 @@ class Metric2(Callback):
     def clear(self):
         self.__epoch_metrics.clear()
 
-    def _before_execute(self, *args, **kwargs):
+    def _before_execute(self, *_, **__):
         self.clear()
 
     def get_epoch_metric(self, epoch, name):

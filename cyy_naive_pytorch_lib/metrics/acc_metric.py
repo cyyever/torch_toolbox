@@ -2,10 +2,10 @@ import torch
 
 from dataset import DatasetUtil
 
-from .metric import Metric2
+from .metric import Metric
 
 
-class AccuracyMetric(Metric2):
+class AccuracyMetric(Metric):
     def __init__(self):
         super().__init__()
         self.__labels = DatasetUtil(self._model_executor.dataset).get_labels()

@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 
-from .metric import Metric2
+from .metric import Metric
 
 
-class ProbabilityMetric(Metric2):
+class ProbabilityMetric(Metric):
     def get_prob(self, epoch):
         return self.get_epoch_metric(epoch, "prob")
 
