@@ -113,7 +113,7 @@ class BasicTrainer(ModelExecutor):
         get_logger().info("training_set_size is %s", training_set_size)
         get_logger().info("use device %s", self.device)
         self._loss_metric.clear()
-        self.exec_callbacks(ModelExecutorCallbackPoint.BEFORE_TRAINING, self)
+        self.exec_callbacks(ModelExecutorCallbackPoint.BEFORE_EXECUTE, self)
         try:
             for epoch in range(1, self.hyper_parameter.epoch + 1):
                 self.exec_callbacks(

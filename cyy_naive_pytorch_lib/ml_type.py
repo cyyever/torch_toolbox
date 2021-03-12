@@ -13,8 +13,8 @@ class ModelType(IntEnum):
 
 
 class ModelExecutorCallbackPoint(IntEnum):
-    BEFORE_TRAINING = auto()
-    AFTER_TRAINING = auto()
+    BEFORE_EXECUTE = auto()
+    AFTER_EXECUTE = auto()
     BEFORE_EPOCH = auto()
     AFTER_EPOCH = auto()
     OPTIMIZER_STEP = auto()
