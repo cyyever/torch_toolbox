@@ -1,3 +1,6 @@
+import datetime
+import threading
+
 import torch
 
 from callback import Callback
@@ -19,6 +22,7 @@ class LRFinder(Callback):
         self.batch_index = 0
         self.total_batch_num = None
         self.suggested_learning_rate = None
+        self.__visdom_env = None
 
     def _before_execute(self, *args, **kwargs):
         trainer = kwargs["model_executor"]
@@ -30,24 +34,32 @@ class LRFinder(Callback):
             (len(trainer.dataset) + trainer.hyper_parameter.batch_size - 1)
             // trainer.hyper_parameter.batch_size
         )
+        self.__visdom_env = (
+            "training_"
+            + str(trainer.model.__class__.__name__)
+            + "_"
+            + "LRFinder"
+            + "_"
+            + str(threading.get_native_id())
+            + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
+        )
 
     def _before_batch(self, **kwargs):
         trainer = kwargs["model_executor"]
         learning_rate = self.lr_getter(self.batch_index / (self.total_batch_num - 1))
         self.learning_rates.append(learning_rate)
-        BatchWindow(
-            "LRFinder learning rate", env=trainer.visdom_env
-        ).plot_learning_rate(self.batch_index, learning_rate)
+        BatchWindow("LRFinder learning rate", env=self.__visdom_env).plot_learning_rate(
+            self.batch_index, learning_rate
+        )
         optimizer = trainer.get_optimizer()
         for group in optimizer.param_groups:
             group["lr"] = learning_rate
 
     def _after_batch(self, **kwargs):
-        trainer = kwargs["model_executor"]
         batch_loss = kwargs["batch_loss"]
         if self.losses:
             batch_loss = batch_loss + 0.98 * (self.losses[-1] - batch_loss)
-        BatchWindow("LRFinder smooth batch loss", env=trainer.visdom_env).plot_loss(
+        BatchWindow("LRFinder smooth batch loss", env=self.__visdom_env).plot_loss(
             self.batch_index, batch_loss
         )
 

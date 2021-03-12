@@ -19,8 +19,8 @@ class AccuracyMetric(Metric):
         return self.get_epoch_metric(epoch, "class_accuracy")
 
     def _before_epoch(self, *args, **kwargs):
-        model_exetutor = kwargs["model_exetutor"]
-        self.__labels = DatasetUtil(model_exetutor.dataset).get_labels()
+        model_executor = kwargs["model_executor"]
+        self.__labels = DatasetUtil(model_executor.dataset).get_labels()
         for label in self.__labels:
             self.__classification_correct_count_per_label[label] = 0
             self.__classification_count_per_label[label] = 0
@@ -40,7 +40,8 @@ class AccuracyMetric(Metric):
                 correct[targets == label]
             ).item()
 
-    def _after_epoch(self, model_exetutor, epoch):
+    def _after_epoch(self, *args, **kwargs):
+        epoch=kwargs["epoch"]
         accuracy = sum(self.__classification_correct_count_per_label.values()) / sum(
             self.__classification_count_per_label.values()
         )

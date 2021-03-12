@@ -3,7 +3,7 @@ from metrics.metric import Metric
 
 
 class MetricVisualizer(Callback):
-    def __init__(self, metric: Metric):
+    def __init__(self, metric: Metric = None):
         super().__init__()
         self.__metric = metric
 

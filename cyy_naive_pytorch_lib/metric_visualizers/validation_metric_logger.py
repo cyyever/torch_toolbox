@@ -15,14 +15,20 @@ class ValidationMetricLogger(MetricVisualizer):
         get_logger().info(
             "epoch: %s, validation loss: %s, accuracy = %s",
             epoch,
-            model_executor.get_validation_metric(MachineLearningPhase.Validation).loss,
             model_executor.get_validation_metric(
                 MachineLearningPhase.Validation
-            ).accuracy,
+            ).get_epoch_metric(epoch, "loss"),
+            model_executor.get_validation_metric(
+                MachineLearningPhase.Validation
+            ).get_epoch_metric(epoch, "accuracy"),
         )
         get_logger().info(
             "epoch: %s, test loss: %s, accuracy = %s",
             epoch,
-            model_executor.get_validation_metric(MachineLearningPhase.Test).loss,
-            model_executor.get_validation_metric(MachineLearningPhase.Test).accuracy,
+            model_executor.get_validation_metric(
+                MachineLearningPhase.Test
+            ).get_epoch_metric(epoch, "loss"),
+            model_executor.get_validation_metric(
+                MachineLearningPhase.Test
+            ).get_epoch_metric(epoch, "accuracy"),
         )

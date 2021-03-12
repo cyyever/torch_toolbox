@@ -15,4 +15,4 @@ class ValidationMetric(Metric):
         inferencer = model_executor.get_inferencer(self.__phase, copy_model=False)
         inferencer.inference()
         self._set_epoch_metric(epoch, "loss", inferencer.loss_metric.get_loss(1))
-        self._set_epoch_metric(epoch, "acc", inferencer.acc_metric.get_accuracy(1))
+        self._set_epoch_metric(epoch, "accuracy", inferencer.accuracy_metric.get_accuracy(1))
