@@ -79,6 +79,8 @@ class ModelExecutor:
         cb_point: ModelExecutorCallbackPoint,
     ):
         return cb_point in self.__callbacks
+    def callbacks(self):
+        return self.__callbacks
 
     def prepend_callback(
         self,
