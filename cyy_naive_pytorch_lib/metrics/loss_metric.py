@@ -1,9 +1,9 @@
 from tensor import get_batch_size
 
-from .metric import Metric2
+from .metric import Metric
 
 
-class LossMetric(Metric2):
+class LossMetric(Metric):
     def _after_batch(self, **kwargs):
         batch_loss = kwargs.get("batch_loss")
         batch = kwargs.get("batch")
