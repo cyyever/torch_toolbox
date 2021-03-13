@@ -5,23 +5,39 @@ from cyy_naive_lib.log import get_logger
 from torch.quantization.fuser_method_mappings import \
     DEFAULT_OP_LIST_TO_FUSER_METHOD
 
+from callback import Callback
 from model_util import ModelUtil
 from trainer import Trainer
 
 
-class QuantizationTrainer:
+class QuantizationTrainer(Callback):
     """
-    This trainer is used for Training Aware Quantization
+    Training Aware Quantization
     """
 
     def __init__(
         self,
-        trainer: Trainer,
         replace_layer=True,
     ):
-        self.__trainer: Trainer = trainer
-        if replace_layer:
-            model_util = ModelUtil(copy.deepcopy(self.trainer.model))
+        self.__replace_layer = replace_layer
+        self.__original_model = None
+        self.__replace_model = None
+        self.__quantized_model = None
+
+    def _before_execute(self, **kwargs):
+        trainer = kwargs["model_executor"]
+        self.prepare_quantization(trainer)
+
+    def _after_execute(self, **kwargs):
+        trainer = kwargs["model_executor"]
+        trainer.model.cpu()
+        trainer.model.eval()
+        self.__quantized_model = torch.quantization.convert(trainer.model)
+
+    def prepare_quantization(self, trainer: Trainer):
+        self.__original_model = trainer.model
+        if self.__replace_layer:
+            model_util = ModelUtil(copy.deepcopy(self.__original_model))
             # change ReLU6 to ReLU
             if model_util.has_sub_module(torch.nn.modules.activation.ReLU6):
                 get_logger().info(
@@ -33,31 +49,17 @@ class QuantizationTrainer:
                         inplace=sub_module.inplace
                     ),
                 )
-
-        self.original_model = self.__trainer.model
-        self.quantized_model = None
-
-    @property
-    def trainer(self) -> Trainer:
-        return self.__trainer
-
-    def train(self, **kwargs):
-        self.prepare_quantization()
-        self.trainer.train(**kwargs)
-        self.get_quantized_model()
-
-    def prepare_quantization(self):
-        if ModelUtil(self.original_model).has_sub_module(torch.quantization.QuantStub):
-            quant_model = copy.deepcopy(self.original_model)
         else:
-            quant_model = torch.quantization.QuantWrapper(
-                copy.deepcopy(self.original_model)
-            )
+            model_util = ModelUtil(copy.deepcopy(self.__original_model))
+
+        if model_util.has_sub_module(torch.quantization.QuantStub):
+            quant_model = model_util.model
+        else:
+            quant_model = torch.quantization.QuantWrapper(model_util.model)
         quant_model.cpu()
         quant_model.qconfig = torch.quantization.get_default_qat_qconfig("fbgemm")
 
         if hasattr(quant_model, "fuse_model"):
-            get_logger().debug("use fuse_model of %s", type(quant_model))
             quant_model.fuse_model()
         else:
             torch.quantization.fuse_modules(
@@ -67,18 +69,14 @@ class QuantizationTrainer:
             )
         torch.quantization.prepare_qat(quant_model, inplace=True)
         get_logger().debug("quant_model is %s", quant_model)
-        self.trainer.set_model(quant_model)
+        trainer.set_model(quant_model)
 
-    def get_quantized_model(self) -> torch.nn.Module:
-        if self.quantized_model is None:
-            self.trainer.model.cpu()
-            self.trainer.model.eval()
-            self.quantized_model = torch.quantization.convert(self.trainer.model)
-        assert self.quantized_model is not None
-        return self.quantized_model
+    @property
+    def quantized_model(self) -> torch.nn.Module:
+        return self.__quantized_model
 
     def reset_quantized_model(self):
-        self.quantized_model = None
+        self.__quantized_model = None
 
     @staticmethod
     def get_fused_modules(model):
