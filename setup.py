@@ -15,6 +15,8 @@ setuptools.setup(
         "cyy_naive_pytorch_lib",
         "cyy_naive_pytorch_lib/datasets",
         "cyy_naive_pytorch_lib/models",
+        "cyy_naive_pytorch_lib/metrics",
+        "cyy_naive_pytorch_lib/metric_visualizers",
         "cyy_naive_pytorch_lib/data_structure",
         "cyy_naive_pytorch_lib/algorithm",
         "cyy_naive_pytorch_lib/algorithm/quantization",
