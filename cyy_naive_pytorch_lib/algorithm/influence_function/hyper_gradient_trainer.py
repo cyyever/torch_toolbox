@@ -438,7 +438,7 @@ class HyperGradientTrainer:
 
         momentum = momentums[0]
         weight_decay = trainer.hyper_parameter.weight_decay
-        training_set_size = trainer.get_data("training_set_size")
+        training_set_size = len(trainer.dataset)
 
         for idx in self.__get_computed_indices():
             idx = str(idx)

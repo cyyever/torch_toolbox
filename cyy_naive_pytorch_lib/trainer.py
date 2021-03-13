@@ -130,7 +130,6 @@ class Trainer(ModelExecutor):
         training_set_size = len(self.dataset)
         self.remove_optimizer()
         self.remove_lr_scheduler()
-        self.set_data("training_set_size", training_set_size)
         self.set_data("dataset_size", training_set_size)
         self.exec_callbacks(
             ModelExecutorCallbackPoint.BEFORE_EXECUTE, model_executor=self

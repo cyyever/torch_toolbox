@@ -102,7 +102,7 @@ class HyperParameter:
             nonlocal dataset_name
             nonlocal name
             optimizer = trainer.get_optimizer()
-            training_dataset_size = trainer.get_data("training_set_size")
+            training_dataset_size = len(trainer.dataset)
             if name == "ReduceLROnPlateau":
                 patience = min(10, hyper_parameter.epoch + 9 // 10)
                 if dataset_name == "CIFAR10":
@@ -145,7 +145,7 @@ class HyperParameter:
             "params": trainer.model.parameters(),
             "lr": self.get_learning_rate(trainer),
             "momentum": self.momentum,
-            "weight_decay": self.weight_decay / trainer.get_data("training_set_size"),
+            "weight_decay": self.weight_decay / len(trainer.dataset),
         }
 
         sig = inspect.signature(self.__optimizer_factory)
