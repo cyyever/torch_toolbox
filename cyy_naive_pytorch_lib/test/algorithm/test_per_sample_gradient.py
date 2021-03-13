@@ -13,7 +13,7 @@ from device import get_device
 def test_get_per_sample_gradient():
     trainer = get_trainer_from_configuration("MNIST", "LeNet5")
     training_data_loader = torch.utils.data.DataLoader(
-        trainer.training_dataset,
+        trainer.dataset,
         batch_size=64,
         shuffle=True,
     )
