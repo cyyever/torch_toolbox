@@ -68,7 +68,7 @@ class FEMNIST(VisionDataset):
             os.path.join(self.processed_folder, data_file)
         )
 
-    def __getitem__(self, index: int) -> Tuple[Any, Any]:
+    def __getitem__(self, index: int) -> Tuple[Any, Any, Any]:
         """
         Args:
             index (int): Index
@@ -88,7 +88,7 @@ class FEMNIST(VisionDataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return img, [target, {"user": self.users[index]}]
+        return img, target, {"user": self.users[index]}
 
     def __len__(self) -> int:
         return len(self.data)

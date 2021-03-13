@@ -9,7 +9,6 @@ import torch.optim as optim
 from cyy_naive_lib.log import get_logger
 
 from algorithm.lr_finder import LRFinder
-from dataset import dataset_with_indices
 from ml_type import MachineLearningPhase
 
 
@@ -159,9 +158,7 @@ class HyperParameter:
     def set_dataloader_collate_fn(self, collate_fn):
         self.__collate_fn = collate_fn
 
-    def get_dataloader(self, dataset, phase: MachineLearningPhase, with_indices=False):
-        if with_indices:
-            dataset = dataset_with_indices(dataset)
+    def get_dataloader(self, dataset, phase: MachineLearningPhase):
         return torch.utils.data.DataLoader(
             dataset,
             batch_size=self.batch_size,
