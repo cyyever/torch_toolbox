@@ -36,7 +36,8 @@ class QuantizationAwareTraining(Callback):
         self.__quantized_model = torch.quantization.convert(trainer.model)
 
     def prepare_quantization(self, trainer: Trainer):
-        self.__original_model = trainer.model
+        if self.__original_model is None:
+            self.__original_model = trainer.model
         if self.__replace_layer:
             model_util = ModelUtil(copy.deepcopy(self.__original_model))
             # change ReLU6 to ReLU
