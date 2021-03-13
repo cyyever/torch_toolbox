@@ -8,4 +8,3 @@ def test_training():
         "MNIST", "LeNet5", MachineLearningPhase.Test
     )
     inferencer.inference()
-    print(inferencer.loss)
