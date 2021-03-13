@@ -19,6 +19,7 @@ class QuantizationTrainer(Callback):
         self,
         replace_layer=True,
     ):
+        super().__init__()
         self.__replace_layer = replace_layer
         self.__original_model = None
         self.__replace_model = None
