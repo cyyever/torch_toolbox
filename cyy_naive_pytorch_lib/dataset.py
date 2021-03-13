@@ -5,7 +5,6 @@ from typing import Callable, Generator, Iterable
 
 import torch
 import torchvision
-import torchvision.transforms as transforms
 from cyy_naive_lib.log import get_logger
 
 import PIL
@@ -224,9 +223,3 @@ def replace_dataset_labels(dataset, label_map: dict):
         return item
 
     return DatasetMapper(dataset, [mapper])
-
-
-def dataset_append_transform(dataset, transform_fun):
-    assert hasattr(dataset, "transform")
-    dataset.transform = transforms.Compose([dataset.transform, transform_fun])
-    return dataset
