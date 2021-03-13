@@ -77,11 +77,10 @@ class QuantizationAwareTraining(Callback):
         return self.__quantized_model
 
     def get_quantized_parameters(self) -> dict:
-        quantized_model = self.quantized_model
-        get_logger().debug("quantized_model is %s", quantized_model)
+        get_logger().debug("quantized_model is %s", self.quantized_model)
         processed_modules = set()
-        state_dict = quantized_model.state_dict()
-        quantized_model_util = ModelUtil(quantized_model)
+        state_dict = self.quantized_model.state_dict()
+        quantized_model_util = ModelUtil(self.quantized_model)
         parameter_dict: dict = dict()
         for k in state_dict:
             get_logger().debug("attribute is %s", k)
