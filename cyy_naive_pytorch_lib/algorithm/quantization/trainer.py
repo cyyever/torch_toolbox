@@ -76,8 +76,72 @@ class QuantizationTrainer(Callback):
     def quantized_model(self) -> torch.nn.Module:
         return self.__quantized_model
 
-    def reset_quantized_model(self):
-        self.__quantized_model = None
+    def get_quantized_parameters(self) -> dict:
+        quantized_model = self.quantized_model
+        get_logger().debug("quantized_model is %s", quantized_model)
+        processed_modules = set()
+        state_dict = quantized_model.state_dict()
+        quantized_model_util = ModelUtil(quantized_model)
+        parameter_dict: dict = dict()
+        for k in state_dict:
+            get_logger().debug("attribute is %s", k)
+            if k in ("scale", "zero_point", "quant.scale", "quant.zero_point"):
+                continue
+            if "." not in k:
+                get_logger().debug("skip attribute is %s", k)
+                continue
+            module_name = ".".join(k.split(".")[:-1])
+            if module_name in processed_modules:
+                continue
+            if not quantized_model_util.has_attr(module_name):
+                continue
+            sub_module = quantized_model_util.get_attr(module_name)
+            if module_name.startswith("module."):
+                module_name = module_name[len("module."):]
+            if isinstance(
+                sub_module,
+                (
+                    torch.nn.intrinsic.quantized.modules.conv_relu.ConvReLU2d,
+                    torch.nn.quantized.modules.linear.Linear,
+                    torch.nn.quantized.modules.conv.Conv2d,
+                ),
+            ):
+                weight, bias = sub_module._weight_bias()
+                assert weight.is_quantized
+                scale = weight.q_per_channel_scales()
+                zero_point = weight.q_per_channel_zero_points()
+                weight = weight.detach().int_repr()
+                parameter_dict[module_name + ".weight"] = (weight, scale, zero_point)
+                if bias is not None:
+                    bias = bias.detach()
+                    parameter_dict[module_name + ".bias"] = bias
+                processed_modules.add(module_name)
+                continue
+            if isinstance(
+                sub_module,
+                (torch.nn.quantized.modules.batchnorm.BatchNorm2d),
+            ):
+                weight = sub_module.weight.detach()
+                assert not weight.is_quantized
+                bias = sub_module.bias.detach()
+                assert not bias.is_quantized
+                running_mean = sub_module.running_mean.detach()
+                assert not running_mean.is_quantized
+                running_var = sub_module.running_var.detach()
+                assert not running_var.is_quantized
+
+                parameter_dict[module_name + ".weight"] = weight
+                parameter_dict[module_name + ".bias"] = bias
+                parameter_dict[module_name + ".running_mean"] = running_mean
+                parameter_dict[module_name + ".running_var"] = running_var
+                processed_modules.add(module_name)
+                continue
+            if not isinstance(
+                sub_module, torch.nn.quantized.modules.linear.LinearPackedParams
+            ):
+                get_logger().warning("unsupported sub_module type %s", type(sub_module))
+
+        return parameter_dict
 
     @staticmethod
     def get_fused_modules(model):
