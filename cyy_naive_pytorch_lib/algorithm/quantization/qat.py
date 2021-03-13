@@ -10,9 +10,9 @@ from model_util import ModelUtil
 from trainer import Trainer
 
 
-class QuantizationTrainer(Callback):
+class QuantizationAwareTraining(Callback):
     """
-    Training Aware Quantization
+    Quantization-aware training
     """
 
     def __init__(
@@ -65,7 +65,7 @@ class QuantizationTrainer(Callback):
         else:
             torch.quantization.fuse_modules(
                 quant_model,
-                QuantizationTrainer.get_fused_modules(quant_model),
+                QuantizationAwareTraining.get_fused_modules(quant_model),
                 inplace=True,
             )
         torch.quantization.prepare_qat(quant_model, inplace=True)
