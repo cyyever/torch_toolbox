@@ -262,9 +262,3 @@ class DatasetCollection:
         dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
         DatasetCollection.__dataset_collections[name] = dc
         return dc
-
-
-def dataset_append_transform(dataset, transform_fun):
-    assert hasattr(dataset, "transform")
-    dataset.transform = transforms.Compose([dataset.transform, transform_fun])
-    return dataset
