@@ -65,6 +65,17 @@ def dataset_with_indices(dataset: torch.utils.data.Dataset):
     return DatasetMapper(dataset, [lambda index, item: (*item, index)])
 
 
+def dataset_with_indices2(dataset: torch.utils.data.Dataset):
+    def add_index(index, item):
+        other_info = dict()
+        if len(item) == 3:
+            feature, target, other_info = item
+        other_info["index"] = index
+        return (feature, target, other_info)
+
+    return DatasetMapper(dataset, [add_index])
+
+
 def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
     return (torch.utils.data.Subset(dataset, [index]) for index in range(len(dataset)))
 
