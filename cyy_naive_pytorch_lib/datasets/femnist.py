@@ -76,7 +76,7 @@ class FEMNIST(VisionDataset):
         Returns:
             tuple: (image, target) where target is index of the target class.
         """
-        img, target = self.data[index], int(self.targets[index])
+        img, target = self.data[index], FEMNIST.__relabel_class(self.targets[index])
 
         # doing this so that it is consistent with all other datasets
         # to return a PIL Image
@@ -88,7 +88,7 @@ class FEMNIST(VisionDataset):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return img, target
+        return img, [target, {"user": self.users[index]}]
 
     def __len__(self) -> int:
         return len(self.data)
@@ -100,6 +100,21 @@ class FEMNIST(VisionDataset):
     @property
     def processed_folder(self) -> str:
         return os.path.join(self.root, self.__class__.__name__, "processed")
+
+    @staticmethod
+    def __relabel_class(c):
+        """
+        maps hexadecimal class value (string) to a decimal number
+        returns:
+        - 0 through 9 for classes representing respective numbers
+        - 10 through 35 for classes representing respective uppercase letters
+        - 36 through 61 for classes representing respective lowercase letters
+        """
+        if c.isdigit() and int(c) < 40:
+            return int(c) - 30
+        if int(c, 16) <= 90:  # uppercase
+            return int(c, 16) - 55
+        return int(c, 16) - 61
 
     def _check_exists(self) -> bool:
         return os.path.exists(
