@@ -12,7 +12,7 @@ from cyy_naive_lib.time_counter import TimeCounter
 
 from algorithm.hessian_vector_product import get_hessian_vector_product_func
 from algorithm.per_sample_gradient import get_per_sample_gradient
-from dataset import dataset_with_indices
+from dataset import dataset_with_indices2
 from ml_type import MachineLearningPhase
 from model_executor import ModelExecutorCallbackPoint
 from model_util import ModelUtil
@@ -351,7 +351,7 @@ class HyperGradientTrainer:
 
     def __add_indices_to_dataset(self, trainer: Trainer):
         trainer.dataset_collection.transform_dataset(
-            MachineLearningPhase.Training, dataset_with_indices
+            MachineLearningPhase.Training, dataset_with_indices2
         )
 
     def __pre_batch_callback(self, trainer, batch_index, batch):
@@ -362,9 +362,8 @@ class HyperGradientTrainer:
 
         self.batch_gradients.clear()
 
-        instance_inputs, instance_targets, instance_indices = trainer.decode_batch(
-            batch
-        )
+        instance_inputs, instance_targets, instance_info = trainer.decode_batch(batch)
+        instance_indices = instance_info["index"]
         sample_gradient_inputs = []
         sample_gradient_targets = []
         sample_gradient_indices = []
