@@ -107,6 +107,9 @@ class HyperGradientCallback(Callback):
                 "use hyper_gradient_mom_dir:%s",
                 self.approx_hyper_gradient_mom_dict.get_storage_dir(),
             )
+            self.delayed_approximation_computations = dict()
+            for k in self.computed_indices:
+                self.delayed_approximation_computations[str(k)] = []
 
     def set_computed_indices(self, computed_indices):
         get_logger().info("only compute %s indices", len(computed_indices))
@@ -114,12 +117,6 @@ class HyperGradientCallback(Callback):
 
     def _after_execute(self, *args, **kwargs):
         get_logger().info("end hyper-gradient tracking")
-        if self.use_approximation:
-            self.delayed_approximation_computations = dict()
-            for k in self.computed_indices:
-                self.delayed_approximation_computations[str(k)] = []
-        else:
-            self.delayed_approximation_computations = None
         trainer = kwargs["model_executor"]
         trainer.save_model(self.save_dir)
         if self.use_approximation:

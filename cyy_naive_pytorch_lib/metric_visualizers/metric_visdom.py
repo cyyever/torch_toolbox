@@ -37,9 +37,9 @@ class MetricVisdom(MetricVisualizer):
         for group in optimizer.param_groups:
             if "momentum" in group:
                 momentum = group["momentum"]
-                EpochWindow("momentum", env=self.__visdom_env).plot_scalar(
-                    epoch, momentum, name="Momentum"
-                )
+                momentum_win = EpochWindow("momentum", env=self.__visdom_env)
+                momentum_win.y_label = "Momentum"
+                momentum_win.plot_scalar(epoch, momentum)
 
         loss_win = EpochWindow("training & validation loss", env=self.__visdom_env)
         loss_win.plot_loss(epoch, trainer.loss_metric.get_loss(epoch), "training loss")
