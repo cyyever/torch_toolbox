@@ -334,14 +334,15 @@ class HyperGradientCallback(Callback):
     def _before_batch(self, **kwargs):
         trainer = kwargs["model_executor"]
         batch = kwargs["batch"]
+
         assert len(batch) == 3
-        batch_gradient_indices: set = {idx.data.item() for idx in batch[2]["index"]}
-        batch_gradient_indices &= self.computed_indices
-
-        self.sample_gradients.clear()
-
         instance_inputs, instance_targets, instance_info = trainer.decode_batch(batch)
         instance_indices = instance_info["index"]
+        instance_indices = {idx.data.item() for idx in batch[2]["index"]}
+
+        batch_gradient_indices = instance_indices & self.computed_indices
+
+        self.sample_gradients.clear()
         sample_gradient_inputs = []
         sample_gradient_targets = []
         sample_gradient_indices = []
@@ -353,6 +354,8 @@ class HyperGradientCallback(Callback):
             sample_gradient_inputs.append(instance_input)
             sample_gradient_targets.append(instance_target)
             sample_gradient_indices.append(instance_index)
+        if not sample_gradient_indices:
+            return
         gradient_list = get_per_sample_gradient(
             trainer.model_with_loss,
             sample_gradient_inputs,
