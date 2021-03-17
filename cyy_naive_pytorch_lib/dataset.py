@@ -61,11 +61,8 @@ def sample_dataset(dataset: torch.utils.data.Dataset, index: int):
     return sub_dataset(dataset, [index])
 
 
+
 def dataset_with_indices(dataset: torch.utils.data.Dataset):
-    return DatasetMapper(dataset, [lambda index, item: (*item, index)])
-
-
-def dataset_with_indices2(dataset: torch.utils.data.Dataset):
     def add_index(index, item):
         other_info = dict()
         if len(item) == 3:
