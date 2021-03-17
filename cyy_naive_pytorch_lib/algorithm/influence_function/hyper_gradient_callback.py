@@ -19,7 +19,7 @@ from model_util import ModelUtil
 from tensor import get_batch_size
 
 
-class HyperGradientTrainer(Callback):
+class HyperGradientCallback(Callback):
     def __init__(self, cache_size, save_dir, **kwargs):
         super().__init__()
         self.cache_size = cache_size
@@ -56,7 +56,7 @@ class HyperGradientTrainer(Callback):
         if self.use_hessian:
             get_logger().info("use hessian to compute hyper-gradients")
             self.hessian_hyper_gradient_mom_dict = (
-                HyperGradientTrainer.create_gradient_matrix(
+                HyperGradientCallback.create_gradient_matrix(
                     self.cache_size,
                     trainer.model,
                     storage_dir=self.hessian_hyper_gradient_and_momentum_dir,
@@ -83,7 +83,7 @@ class HyperGradientTrainer(Callback):
             )
         if self.use_approximation:
             self.approx_hyper_gradient_mom_dict = (
-                HyperGradientTrainer.create_gradient_matrix(
+                HyperGradientCallback.create_gradient_matrix(
                     self.cache_size,
                     trainer.model,
                     storage_dir=self.approx_hyper_gradient_and_momentum_dir,
@@ -469,7 +469,7 @@ class HyperGradientTrainer(Callback):
             get_logger().info("begin do do_delayed_computation")
             self.do_delayed_computation()
             get_logger().info("end do do_delayed_computation")
-        hyper_gradient_dict = HyperGradientTrainer.create_gradient_matrix(
+        hyper_gradient_dict = HyperGradientCallback.create_gradient_matrix(
             self.cache_size, trainer.model
         )
         hyper_gradient_dict.set_storage_dir(hyper_gradient_dir)
