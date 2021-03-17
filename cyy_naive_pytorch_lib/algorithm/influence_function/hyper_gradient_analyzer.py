@@ -8,7 +8,7 @@ from data_structure.synced_tensor_dict_util import \
 from dataset import sub_dataset
 from inference import Inferencer
 
-from .hyper_gradient_trainer import HyperGradientTrainer
+from .hyper_gradient_callback import HyperGradientCallback
 
 
 class HyperGradientAnalyzer:
@@ -17,7 +17,7 @@ class HyperGradientAnalyzer:
         self.inferencer: Inferencer = inferencer
 
         self.cache_size = cache_size
-        self.hyper_gradient_matrix = HyperGradientTrainer.create_gradient_matrix(
+        self.hyper_gradient_matrix = HyperGradientCallback.create_gradient_matrix(
             self.cache_size, self.inferencer.model, hyper_gradient_dir
         )
 
@@ -43,7 +43,7 @@ class HyperGradientAnalyzer:
     ):
         if training_set_size is None:
             training_set_size = len(self.hyper_gradient_matrix)
-        hyper_gradient_sum_dict = HyperGradientTrainer.create_gradient_matrix(
+        hyper_gradient_sum_dict = HyperGradientCallback.create_gradient_matrix(
             self.cache_size, self.inferencer.model
         )
         hyper_gradient_sum_dict.set_storage_dir(tempfile.gettempdir())
@@ -107,7 +107,7 @@ class HyperGradientAnalyzer:
             yield (test_key, tmp_inferencer.get_gradient() * len(subset))
 
     def get_test_gradient_dict(self, test_subset_dict: dict):
-        test_gredient_dict = HyperGradientTrainer.create_gradient_matrix(
+        test_gredient_dict = HyperGradientCallback.create_gradient_matrix(
             self.cache_size
         )
         test_gredient_dict.set_storage_dir(tempfile.gettempdir())
