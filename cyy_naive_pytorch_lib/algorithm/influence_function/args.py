@@ -47,7 +47,7 @@ def create_hyper_gradient_trainer_from_args(args):
     )
 
     if args.hyper_gradient_sample_percentage is not None:
-        subset_dict = DatasetUtil(trainer.training_dataset).sample_subset(
+        subset_dict = DatasetUtil(trainer.dataset).sample_subset(
             args.hyper_gradient_sample_percentage
         )
         sample_indices = sum(subset_dict.values(), [])

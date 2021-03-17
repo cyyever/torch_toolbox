@@ -13,12 +13,12 @@ def compute_classic_influence_function(
     scale=1,
     epsilon=0.0001,
 ):
-    training_dataset_size = len(trainer.training_dataset)
+    training_dataset_size = len(trainer.dataset)
     if batch_size is None:
         batch_size = trainer.hyper_parameter.batch_size
     product = (
         stochastic_inverse_hessian_vector_product(
-            trainer.training_dataset,
+            trainer.dataset,
             trainer.model_with_loss,
             test_gradient,
             repeated_num=3,
