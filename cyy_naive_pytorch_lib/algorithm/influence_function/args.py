@@ -37,7 +37,6 @@ def create_hyper_gradient_trainer_from_args(args):
     trainer = create_trainer_from_args(args)
 
     hyper_gradient_trainer = HyperGradientTrainer(
-        trainer,
         args.cache_size,
         args.save_dir,
         hessian_hyper_gradient_and_momentum_dir=args.hessian_hyper_gradient_and_momentum_dir,
@@ -45,6 +44,7 @@ def create_hyper_gradient_trainer_from_args(args):
         use_hessian=args.use_hessian,
         use_approximation=args.use_approximation,
     )
+    hyper_gradient_trainer.append_to_model_executor(trainer)
 
     if args.hyper_gradient_sample_percentage is not None:
         subset_dict = DatasetUtil(trainer.dataset).sample_subset(
