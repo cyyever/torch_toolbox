@@ -162,11 +162,9 @@ class ModelExecutor:
             device = self.device
         sample_inputs = put_data_to_device(batch[0], device)
         sample_targets = put_data_to_device(batch[1], device)
-        sample_info = dict()
         if len(batch) == 3:
-            for k in batch[2][0]:
-                sample_info[k] = [b[k] for b in batch[2]]
-        return (sample_inputs, sample_targets, sample_info)
+            return (sample_inputs, sample_targets, batch[2])
+        return (sample_inputs, sample_targets, {})
 
     @staticmethod
     def get_batch_size(batch):
