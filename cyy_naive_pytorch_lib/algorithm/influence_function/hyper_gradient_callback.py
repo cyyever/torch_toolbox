@@ -113,7 +113,7 @@ class HyperGradientCallback(Callback):
         self.computed_indices = set(computed_indices)
 
     def _after_execute(self, *args, **kwargs):
-        get_logger().info("begin train with hyper-gradient tracking")
+        get_logger().info("end hyper-gradient tracking")
         if self.use_approximation:
             self.delayed_approximation_computations = dict()
             for k in self.computed_indices:
@@ -331,11 +331,11 @@ class HyperGradientCallback(Callback):
         m.set_logging(False)
         return m
 
-    def _before_batch_callback(self, **kwargs):
+    def _before_batch(self, **kwargs):
         trainer = kwargs["model_executor"]
         batch = kwargs["batch"]
-        assert len(batch) >= 3
-        batch_gradient_indices: set = {idx.data.item() for idx in batch[2]}
+        assert len(batch) == 3
+        batch_gradient_indices: set = {idx.data.item() for idx in batch[2]["index"]}
         batch_gradient_indices &= self.computed_indices
 
         self.sample_gradients.clear()
@@ -348,10 +348,7 @@ class HyperGradientCallback(Callback):
         for (instance_input, instance_target, instance_index) in zip(
             instance_inputs, instance_targets, instance_indices
         ):
-            if (
-                batch_gradient_indices is not None
-                and instance_index not in batch_gradient_indices
-            ):
+            if instance_index not in batch_gradient_indices:
                 continue
             sample_gradient_inputs.append(instance_input)
             sample_gradient_targets.append(instance_target)
@@ -379,7 +376,7 @@ class HyperGradientCallback(Callback):
         else:
             self.hessian_computation_arguments = None
 
-    def _after_batch_callback(self, **kwargs):
+    def _after_batch(self, **kwargs):
         trainer = kwargs["model_executor"]
         optimizer = trainer.get_optimizer()
         if not isinstance(optimizer, torch.optim.SGD):
