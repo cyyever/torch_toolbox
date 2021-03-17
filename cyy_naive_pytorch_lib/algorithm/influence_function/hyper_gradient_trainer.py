@@ -413,7 +413,7 @@ class HyperGradientTrainer:
     def __get_computed_indices(self):
         if self.computed_indices is not None:
             return self.computed_indices
-        return range(len(self.trainer.training_dataset))
+        return range(len(self.trainer.dataset))
 
     def __after_batch_callback(
         self,
