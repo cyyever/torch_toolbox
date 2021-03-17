@@ -3,11 +3,10 @@ import os
 import random
 from typing import Callable, Generator, Iterable
 
+import PIL
 import torch
 import torchvision
 from cyy_naive_lib.log import get_logger
-
-import PIL
 
 
 class DatasetFilter:
@@ -61,12 +60,15 @@ def sample_dataset(dataset: torch.utils.data.Dataset, index: int):
     return sub_dataset(dataset, [index])
 
 
-
 def dataset_with_indices(dataset: torch.utils.data.Dataset):
     def add_index(index, item):
         other_info = dict()
+        feature = None
+        target = None
         if len(item) == 3:
             feature, target, other_info = item
+        else:
+            feature, target = item
         other_info["index"] = index
         return (feature, target, other_info)
 
