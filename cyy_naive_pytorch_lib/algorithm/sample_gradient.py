@@ -46,7 +46,7 @@ def stop_task_queue():
 atexit.register(stop_task_queue)
 
 
-def get_per_sample_gradient(model_with_loss: ModelWithLoss, inputs, targets):
+def get_sample_gradient(model_with_loss: ModelWithLoss, inputs, targets):
     global __task_queue
     assert model_with_loss.loss_fun.reduction in ("mean", "elementwise_mean")
     assert len(inputs) == len(targets)

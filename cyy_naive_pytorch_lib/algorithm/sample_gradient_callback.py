@@ -1,4 +1,4 @@
-from algorithm.per_sample_gradient import get_per_sample_gradient
+from algorithm.sample_gradient import get_sample_gradient
 from callback import Callback
 
 
@@ -33,7 +33,7 @@ class SampleGradientCallback(Callback):
             sample_gradient_indices.append(instance_index)
         if not sample_gradient_indices:
             return
-        gradient_list = get_per_sample_gradient(
+        gradient_list = get_sample_gradient(
             trainer.model_with_loss,
             sample_gradient_inputs,
             sample_gradient_targets,
