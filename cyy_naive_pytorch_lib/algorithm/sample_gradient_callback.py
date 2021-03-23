@@ -20,8 +20,8 @@ class SampleGradientCallback(Callback):
         batch = kwargs["batch"]
 
         instance_inputs, instance_targets, instance_info = trainer.decode_batch(batch)
+        assert "index" in instance_info
         instance_indices = instance_info["index"]
-        assert instance_indices
         instance_indices = {idx.data.item() for idx in instance_indices}
         batch_gradient_indices: set = instance_indices
         if self.__computed_indices is not None:
