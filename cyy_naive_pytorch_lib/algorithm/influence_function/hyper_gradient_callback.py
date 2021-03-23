@@ -107,7 +107,7 @@ class HyperGradientCallback(SampleGradientCallback):
             )
             self.delayed_approximation_computations = dict()
             for k in self.computed_indices:
-                self.delayed_approximation_computations[str(k)] = []
+                self.delayed_approximation_computations[k] = []
 
     def set_computed_indices(self, computed_indices):
         get_logger().info("only compute %s indices", len(computed_indices))
@@ -256,7 +256,7 @@ class HyperGradientCallback(SampleGradientCallback):
 
         hyper_gradient = None
         mom_gradient = None
-        if index in self.approx_hyper_gradient_mom_dict:
+        if str(index) in self.approx_hyper_gradient_mom_dict:
             hyper_gradient, mom_gradient = self.__get_hyper_gradient_and_momentum(
                 index, use_approximation=True
             )
@@ -373,7 +373,6 @@ class HyperGradientCallback(SampleGradientCallback):
         training_set_size = len(trainer.dataset)
 
         for idx in self.computed_indices:
-            idx = str(idx)
             instance_gradient = None
             if idx in self.sample_gradients:
                 instance_gradient = (
@@ -396,12 +395,12 @@ class HyperGradientCallback(SampleGradientCallback):
             self.__do_computation_with_hessian()
         if self.use_approximation:
             for idx in self.computed_indices:
-                idx = str(idx)
                 if idx in self.sample_gradients:
-                    self.do_delayed_computation(str(idx))
+                    self.do_delayed_computation(idx)
 
     def __get_hyper_gradient_and_momentum(self, index, use_approximation):
         tmp = None
+        index = str(index)
         if use_approximation:
             tmp = self.approx_hyper_gradient_mom_dict[index]
         else:
@@ -425,6 +424,7 @@ class HyperGradientCallback(SampleGradientCallback):
     def __set_hyper_gradient_and_momentum(
         self, index, hyper_gradient, mom_gradient, use_approximation
     ):
+        index = str(index)
         if use_approximation:
             self.approx_hyper_gradient_mom_dict[index] = torch.cat(
                 (hyper_gradient, mom_gradient)
