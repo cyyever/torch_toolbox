@@ -463,3 +463,4 @@ class HyperGradientCallback(SampleGradientCallback):
         hyper_gradient_dict.flush_all(True)
         hyper_gradient_dict.release()
         hyper_gradient_dict = None
+        super()._after_execute()
