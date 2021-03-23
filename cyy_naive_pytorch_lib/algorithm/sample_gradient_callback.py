@@ -5,8 +5,15 @@ from callback import Callback
 class SampleGradientCallback(Callback):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._sample_gradients = dict()
-        self._computed_indices = None
+        self.__sample_gradients = dict()
+        self.__computed_indices = None
+
+    @property
+    def sample_gradients(self):
+        return self.__sample_gradients
+
+    def set_computed_indices(self, computed_indices):
+        self.__computed_indices = set(computed_indices)
 
     def _before_batch(self, **kwargs):
         trainer = kwargs["model_executor"]
@@ -17,9 +24,9 @@ class SampleGradientCallback(Callback):
         assert instance_indices
         instance_indices = {idx.data.item() for idx in instance_indices}
         batch_gradient_indices: set = instance_indices
-        if self._computed_indices is not None:
-            batch_gradient_indices &= self._computed_indices
-        self._sample_gradients.clear()
+        if self.__computed_indices is not None:
+            batch_gradient_indices &= self.__computed_indices
+        self.__sample_gradients.clear()
         sample_gradient_inputs = []
         sample_gradient_targets = []
         sample_gradient_indices = []
@@ -41,4 +48,4 @@ class SampleGradientCallback(Callback):
 
         assert len(gradient_list) == len(sample_gradient_indices)
         for (sample_gradient, index) in zip(gradient_list, sample_gradient_indices):
-            self._sample_gradients[str(index)] = sample_gradient
+            self.__sample_gradients[index] = sample_gradient

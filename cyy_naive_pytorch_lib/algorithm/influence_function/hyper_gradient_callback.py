@@ -11,21 +11,19 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.time_counter import TimeCounter
 
 from algorithm.hessian_vector_product import get_hessian_vector_product_func
-from algorithm.sample_gradient import get_sample_gradient
-from callback import Callback
+from algorithm.sample_gradient_callback import SampleGradientCallback
 from dataset import dataset_with_indices
 from ml_type import MachineLearningPhase
 from model_util import ModelUtil
 from tensor import get_batch_size
 
 
-class HyperGradientCallback(Callback):
+class HyperGradientCallback(SampleGradientCallback):
     def __init__(self, cache_size, save_dir, **kwargs):
         super().__init__()
         self.cache_size = cache_size
         self.save_dir = save_dir
 
-        self.sample_gradients = dict()
         self.computed_indices = None
         self.hessian_computation_arguments = None
         self.delayed_approximation_computations = None
@@ -114,6 +112,7 @@ class HyperGradientCallback(Callback):
     def set_computed_indices(self, computed_indices):
         get_logger().info("only compute %s indices", len(computed_indices))
         self.computed_indices = set(computed_indices)
+        super().set_computed_indices(computed_indices)
 
     def _after_execute(self, *args, **kwargs):
         get_logger().info("end hyper-gradient tracking")
@@ -329,39 +328,17 @@ class HyperGradientCallback(Callback):
         return m
 
     def _before_batch(self, **kwargs):
+        super()._before_batch(**kwargs)
         trainer = kwargs["model_executor"]
         batch = kwargs["batch"]
 
         assert len(batch) == 3
-        instance_inputs, instance_targets, instance_info = trainer.decode_batch(batch)
+        instance_info = trainer.decode_batch(batch)[2]
         instance_indices = instance_info["index"]
         instance_indices = {idx.data.item() for idx in batch[2]["index"]}
 
         batch_gradient_indices = instance_indices & self.computed_indices
-
-        self.sample_gradients.clear()
-        sample_gradient_inputs = []
-        sample_gradient_targets = []
-        sample_gradient_indices = []
-        for (instance_input, instance_target, instance_index) in zip(
-            instance_inputs, instance_targets, instance_indices
-        ):
-            if instance_index not in batch_gradient_indices:
-                continue
-            sample_gradient_inputs.append(instance_input)
-            sample_gradient_targets.append(instance_target)
-            sample_gradient_indices.append(instance_index)
-        if not sample_gradient_indices:
-            return
-        gradient_list = get_sample_gradient(
-            trainer.model_with_loss,
-            sample_gradient_inputs,
-            sample_gradient_targets,
-        )
-
-        assert len(gradient_list) == len(sample_gradient_indices)
-        for (sample_gradient, index) in zip(gradient_list, sample_gradient_indices):
-            self.sample_gradients[str(index)] = sample_gradient
+        assert batch_gradient_indices == self.sample_gradients.keys()
 
         if self.use_approximation:
             self.approx_hyper_gradient_mom_dict.prefetch(
@@ -421,8 +398,7 @@ class HyperGradientCallback(Callback):
             for idx in self.computed_indices:
                 idx = str(idx)
                 if idx in self.sample_gradients:
-                    self.do_delayed_computation(idx)
-        self.sample_gradients.clear()
+                    self.do_delayed_computation(str(idx))
 
     def __get_hyper_gradient_and_momentum(self, index, use_approximation):
         tmp = None
