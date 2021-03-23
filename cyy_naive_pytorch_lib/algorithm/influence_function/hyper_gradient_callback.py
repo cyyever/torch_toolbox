@@ -11,7 +11,7 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.time_counter import TimeCounter
 
 from algorithm.hessian_vector_product import get_hessian_vector_product_func
-from algorithm.per_sample_gradient import get_per_sample_gradient
+from algorithm.sample_gradient import get_sample_gradient
 from callback import Callback
 from dataset import dataset_with_indices
 from ml_type import MachineLearningPhase
@@ -353,7 +353,7 @@ class HyperGradientCallback(Callback):
             sample_gradient_indices.append(instance_index)
         if not sample_gradient_indices:
             return
-        gradient_list = get_per_sample_gradient(
+        gradient_list = get_sample_gradient(
             trainer.model_with_loss,
             sample_gradient_inputs,
             sample_gradient_targets,
