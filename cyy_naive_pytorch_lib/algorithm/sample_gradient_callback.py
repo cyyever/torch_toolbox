@@ -49,3 +49,6 @@ class SampleGradientCallback(Callback):
         assert len(gradient_list) == len(sample_gradient_indices)
         for (sample_gradient, index) in zip(gradient_list, sample_gradient_indices):
             self.__sample_gradients[index] = sample_gradient
+
+    def _after_execute(self, **kwargs):
+        self.__sample_gradients.clear()
