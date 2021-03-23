@@ -3,6 +3,7 @@ import os
 from typing import Callable, Dict, List, Union
 
 import torch
+from cyy_naive_lib.log import get_logger
 
 from dataset_collection import DatasetCollection
 from device import get_device, put_data_to_device
@@ -68,11 +69,12 @@ class ModelExecutor:
 
     def exec_callbacks(self, cb_point: ModelExecutorCallbackPoint, *args, **kwargs):
         for o in self.__callbacks.get(cb_point, []):
-            cbs = [o]
             if isinstance(o, dict):
-                cbs = o.values()
-            for cb in cbs:
-                cb(*args, **kwargs)
+                for name, cb in o.items():
+                    get_logger().debug("call %s", name)
+                    cb(*args, **kwargs)
+            else:
+                o(*args, **kwargs)
 
     def has_callback(
         self,

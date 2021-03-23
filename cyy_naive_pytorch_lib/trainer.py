@@ -208,6 +208,9 @@ class Trainer(ModelExecutor):
                         lr_scheduler.step()
         except StopExecutingException:
             get_logger().warning("stop training")
+        self.exec_callbacks(
+            ModelExecutorCallbackPoint.AFTER_EXECUTE, model_executor=self
+        )
 
     @staticmethod
     def __repeated_training(number: int, trainer, training_callback: Callable):
