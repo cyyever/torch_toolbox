@@ -2,17 +2,36 @@ from typing import Generator
 
 import cyy_naive_cpp_extension.data_structure.SyncedSparseTensorDict as __SyncedSparseTensorDict
 import cyy_naive_cpp_extension.data_structure.SyncedTensorDict as __SyncedTensorDict
-import torch
-import torch.nn.utils.prune as prune
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
 
-from model_util import ModelUtil
-
 
 class SyncedTensorDict:
-    def __init__(self, tensor_dict):
+    def __init__(self, tensor_dict, key_type):
         self.__tensor_dict = tensor_dict
+        self.__key_type = key_type
+
+    def __contains__(self, item):
+        return self.__tensor_dict.__contains__(str(item))
+
+    def __getitem__(self, key):
+        self.__tensor_dict.__getitem__(str(key))
+
+    def __setitem__(self, key, value):
+        self.__tensor_dict.__setitem__(str(key), value)
+
+    def __delitem__(self, key):
+        self.__tensor_dict.__delitem__(str(key))
+
+    def keys(self) -> set:
+        return {self.__key_type(k) for k in self.__tensor_dict.keys()}
+
+    def __getattr__(self, name):
+        return getattr(self.__tensor_dict, name)
+
+    @property
+    def tensor_dict(self):
+        return self.__tensor_dict
 
     def iterate(self, keys: set = None) -> Generator:
         if keys is None:
@@ -27,11 +46,12 @@ class SyncedTensorDict:
         for chunk in split_list_to_chunks(remain_keys, cache_size // 2):
             self.__tensor_dict.prefetch(chunk)
             for k in chunk:
-                yield (k, self.__tensor_dict[k])
+                yield (self.__key_type(k), self.__tensor_dict[k])
 
     @staticmethod
     def create(
-        cache_size,
+        key_type,
+        cache_size=None,
         mask=None,
         tensor_shape=None,
         storage_dir=None,
@@ -44,7 +64,8 @@ class SyncedTensorDict:
         else:
             m = __SyncedTensorDict(storage_dir)
         m.set_permanent_storage()
-        m.set_in_memory_number(cache_size)
+        if cache_size is not None:
+            m.set_in_memory_number(cache_size)
         get_logger().info("tensor_dict use cache size %s", cache_size)
         m.set_logging(False)
-        return SyncedTensorDict(m)
+        return SyncedTensorDict(m, key_type=key_type)
