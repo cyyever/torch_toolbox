@@ -390,8 +390,12 @@ class HyperGradientCallback(SampleGradientCallback):
                     self.do_delayed_computation(idx)
 
     def __get_hyper_gradient_and_momentum(self, index, use_approximation):
-        tmp = self.__get_hyper_gradient_mom_dict(use_approximation)[index]
-        return torch.split(tmp, tmp.shape[0] // 2)
+        return self.__decode_hyper_gradient_and_momentum(
+            self.__get_hyper_gradient_mom_dict(use_approximation)[index]
+        )
+
+    def __decode_hyper_gradient_and_momentum(self, tensor):
+        return torch.split(tensor, tensor.shape[0] // 2)
 
     def __set_hyper_gradient_and_momentum(
         self, index, hyper_gradient, mom_gradient, use_approximation
@@ -420,10 +424,10 @@ class HyperGradientCallback(SampleGradientCallback):
         )
         hyper_gradient_dict.set_storage_dir(hyper_gradient_dir)
 
-        for (index, _) in self.__get_hyper_gradient_mom_dict(
+        for (index, value) in self.__get_hyper_gradient_mom_dict(
             use_approximation
         ).iterate():
-            hyper_gradient = self.get_hyper_gradient(index, use_approximation)
+            hyper_gradient, _ = self.__decode_hyper_gradient_and_momentum(value)
             hyper_gradient_dict[index] = hyper_gradient
         trainer.save_model(os.path.join(hyper_gradient_dir, "model"))
         hyper_gradient_dict.flush_all(True)
