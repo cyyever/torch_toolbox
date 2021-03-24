@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-import os
-import datetime
 import copy
+import datetime
+import os
+
 import torch
 import torch.nn.utils.prune
-
 from cyy_naive_lib.log import get_logger
 
-from visualization import EpochWindow
 from model_util import ModelUtil
+from visualization import EpochWindow
 
 
 def lottery_ticket_prune(
@@ -94,6 +94,7 @@ def lottery_ticket_prune(
         trainer.set_hyper_parameter(copy.deepcopy(init_hyper_parameter))
         trainer.save_model(os.path.join(save_dir, str(epoch)))
 
-    trainer.train(plot_parameter_distribution=True,
-                  after_epoch_callbacks=[after_epoch_callback])
+    trainer.train(
+        plot_parameter_distribution=True, after_epoch_callbacks=[after_epoch_callback]
+    )
     trainer.save_model(save_dir)
