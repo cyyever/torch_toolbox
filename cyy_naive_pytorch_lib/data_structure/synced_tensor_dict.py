@@ -27,8 +27,16 @@ class SyncedTensorDict:
 
     def keys(self) -> set:
         return {self.__key_type(k) for k in self.__tensor_dict.keys()}
+
     def in_memory_keys(self) -> set:
         return {self.__key_type(k) for k in self.__tensor_dict.in_memory_keys()}
+
+    def prefetch(self, keys: set):
+        self.__tensor_dict.prefetch(self.__change_key_type(keys))
+
+    @staticmethod
+    def __change_key_type(keys):
+        return {str(k) for k in keys}
 
     def __getattr__(self, name):
         return getattr(self.__tensor_dict, name)
