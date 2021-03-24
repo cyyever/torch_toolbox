@@ -142,7 +142,7 @@ class HyperGradientCallback(SampleGradientCallback):
 
     def __do_computation_with_hessian(self):
         for chunk in split_list_to_chunks(
-            [str(idx) for idx in sorted(list(self.computed_indices))],
+            list(self.computed_indices),
             self.cache_size // 2,
         ):
             counter = TimeCounter()
@@ -228,15 +228,15 @@ class HyperGradientCallback(SampleGradientCallback):
 
     def do_delayed_computation(self, index=None):
         if index is None:
-            fast_keys = self.approx_hyper_gradient_mom_dict.in_memory_keys()
+            fast_keys = (
+                self.approx_hyper_gradient_mom_dict.in_memory_keys()
+                & self.delayed_approximation_computations.keys()
+            )
             get_logger().info(
                 "begin do do_delayed_computation from fast keys %s", len(fast_keys)
             )
             for k in fast_keys:
-                if (
-                    k in self.delayed_approximation_computations
-                    and self.delayed_approximation_computations[k]
-                ):
+                if self.delayed_approximation_computations[k]:
                     self.do_delayed_computation(k)
             get_logger().info("end do do_delayed_computation from fast keys")
             self.approx_hyper_gradient_mom_dict.flush_all(wait=False)
@@ -246,16 +246,14 @@ class HyperGradientCallback(SampleGradientCallback):
                 if v:
                     unfinished_keys.append(k)
 
-            for chunk in split_list_to_chunks(unfinished_keys, self.cache_size // 2):
-                self.approx_hyper_gradient_mom_dict.prefetch(chunk)
-                for k in chunk:
-                    get_logger().info("do delayed_approximation_computations for %s", k)
-                    self.do_delayed_computation(k)
+            for (k, _) in self.approx_hyper_gradient_mom_dict.iterate(unfinished_keys):
+                get_logger().info("do delayed_approximation_computations for %s", k)
+                self.do_delayed_computation(k)
             return
 
         hyper_gradient = None
         mom_gradient = None
-        if str(index) in self.approx_hyper_gradient_mom_dict:
+        if index in self.approx_hyper_gradient_mom_dict:
             hyper_gradient, mom_gradient = self.__get_hyper_gradient_and_momentum(
                 index, use_approximation=True
             )
@@ -314,6 +312,7 @@ class HyperGradientCallback(SampleGradientCallback):
                 mask = torch.cat((mask, mask))
                 gradient_shape[1] *= 2
         tensor_dict = SyncedTensorDict.create(
+            key_type=int,
             cache_size=cache_size,
             storage_dir=storage_dir,
             mask=mask,
@@ -335,9 +334,7 @@ class HyperGradientCallback(SampleGradientCallback):
         assert batch_gradient_indices == self.sample_gradients.keys()
 
         if self.use_approximation:
-            self.approx_hyper_gradient_mom_dict.prefetch(
-                [str(i) for i in batch_gradient_indices]
-            )
+            self.approx_hyper_gradient_mom_dict.prefetch(batch_gradient_indices)
 
         if self.use_hessian:
             self.hvp_function = get_hessian_vector_product_func(
@@ -393,42 +390,25 @@ class HyperGradientCallback(SampleGradientCallback):
                     self.do_delayed_computation(idx)
 
     def __get_hyper_gradient_and_momentum(self, index, use_approximation):
-        tmp = None
-        if use_approximation:
-            tmp = self.approx_hyper_gradient_mom_dict[index]
-        else:
-            tmp = self.hessian_hyper_gradient_mom_dict[index]
+        tmp = self.__get_hyper_gradient_mom_dict(use_approximation)[index]
         return torch.split(tmp, tmp.shape[0] // 2)
-
-    def foreach_hyper_gradient(self, use_approximation, callback):
-        hyper_gradient_mom_dict = None
-        if use_approximation:
-            hyper_gradient_mom_dict = self.approx_hyper_gradient_mom_dict
-        else:
-            hyper_gradient_mom_dict = self.hessian_hyper_gradient_mom_dict
-        for index in hyper_gradient_mom_dict.keys():
-            if use_approximation:
-                self.do_delayed_computation(index)
-            hyper_gradient, _ = self.__get_hyper_gradient_and_momentum(
-                index, use_approximation
-            )
-            callback(index, hyper_gradient)
 
     def __set_hyper_gradient_and_momentum(
         self, index, hyper_gradient, mom_gradient, use_approximation
     ):
-        index = str(index)
-        if use_approximation:
-            self.approx_hyper_gradient_mom_dict[index] = torch.cat(
-                (hyper_gradient, mom_gradient)
-            )
-        else:
-            self.hessian_hyper_gradient_mom_dict[index] = torch.cat(
-                (hyper_gradient, mom_gradient)
-            )
+        self.__get_hyper_gradient_mom_dict(use_approximation)[index] = torch.cat(
+            (hyper_gradient, mom_gradient)
+        )
 
     def get_hyper_gradient(self, index, use_approximation):
         return self.__get_hyper_gradient_and_momentum(index, use_approximation)[0]
+
+    def __get_hyper_gradient_mom_dict(self, use_approximation):
+        return (
+            self.approx_hyper_gradient_mom_dict
+            if use_approximation
+            else self.hessian_hyper_gradient_mom_dict
+        )
 
     def __save_hyper_gradients(self, trainer, hyper_gradient_dir, use_approximation):
         if use_approximation:
@@ -440,20 +420,27 @@ class HyperGradientCallback(SampleGradientCallback):
         )
         hyper_gradient_dict.set_storage_dir(hyper_gradient_dir)
 
-        hyper_gradient_mom_dict = (
-            self.approx_hyper_gradient_mom_dict
-            if use_approximation
-            else self.hessian_hyper_gradient_mom_dict
-        )
-        for chunk in split_list_to_chunks(
-            hyper_gradient_mom_dict.keys(), self.cache_size // 2
-        ):
-            hyper_gradient_mom_dict.prefetch(chunk)
-            for index in chunk:
-                hyper_gradient = self.get_hyper_gradient(index, use_approximation)
-                hyper_gradient_dict[index] = hyper_gradient
+        for (index, _) in self.__get_hyper_gradient_mom_dict(
+            use_approximation
+        ).iterate():
+            hyper_gradient = self.get_hyper_gradient(index, use_approximation)
+            hyper_gradient_dict[index] = hyper_gradient
         trainer.save_model(os.path.join(hyper_gradient_dir, "model"))
-        hyper_gradient_dict.tensor_dict.flush_all(True)
-        hyper_gradient_dict.tensor_dict.release()
+        hyper_gradient_dict.flush_all(True)
+        hyper_gradient_dict.release()
         hyper_gradient_dict = None
         super()._after_execute()
+
+    # def foreach_hyper_gradient(self, use_approximation, callback):
+    #     hyper_gradient_mom_dict = None
+    #     if use_approximation:
+    #         hyper_gradient_mom_dict = self.approx_hyper_gradient_mom_dict
+    #     else:
+    #         hyper_gradient_mom_dict = self.hessian_hyper_gradient_mom_dict
+    #     for index in hyper_gradient_mom_dict.keys():
+    #         if use_approximation:
+    #             self.do_delayed_computation(index)
+    #         hyper_gradient, _ = self.__get_hyper_gradient_and_momentum(
+    #             index, use_approximation
+    #         )
+    #         callback(index, hyper_gradient)
