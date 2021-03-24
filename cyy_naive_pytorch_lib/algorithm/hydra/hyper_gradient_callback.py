@@ -251,6 +251,11 @@ class HyperGradientCallback(SampleGradientCallback):
                 self.do_delayed_computation(k)
             return
 
+        if index not in self.delayed_approximation_computations:
+            return
+        if not self.delayed_approximation_computations[index]:
+            return
+
         hyper_gradient = None
         mom_gradient = None
         if index in self.approx_hyper_gradient_mom_dict:
@@ -435,16 +440,12 @@ class HyperGradientCallback(SampleGradientCallback):
         hyper_gradient_dict = None
         super()._after_execute()
 
-    # def foreach_hyper_gradient(self, use_approximation, callback):
-    #     hyper_gradient_mom_dict = None
-    #     if use_approximation:
-    #         hyper_gradient_mom_dict = self.approx_hyper_gradient_mom_dict
-    #     else:
-    #         hyper_gradient_mom_dict = self.hessian_hyper_gradient_mom_dict
-    #     for index in hyper_gradient_mom_dict.keys():
-    #         if use_approximation:
-    #             self.do_delayed_computation(index)
-    #         hyper_gradient, _ = self.__get_hyper_gradient_and_momentum(
-    #             index, use_approximation
-    #         )
-    #         callback(index, hyper_gradient)
+    def foreach_hyper_gradient(self, use_approximation, callback):
+        hyper_gradient_mom_dict = self.__get_hyper_gradient_mom_dict(use_approximation)
+        for index in hyper_gradient_mom_dict.keys():
+            if use_approximation:
+                self.do_delayed_computation(index)
+            hyper_gradient, _ = self.__get_hyper_gradient_and_momentum(
+                index, use_approximation
+            )
+            callback(index, hyper_gradient)
