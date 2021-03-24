@@ -4,14 +4,13 @@ import uuid
 
 import torch
 import torch.nn.utils.prune as prune
-from cyy_naive_cpp_extension.data_structure import (SyncedSparseTensorDict,
-                                                    SyncedTensorDict)
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.time_counter import TimeCounter
 
 from algorithm.hessian_vector_product import get_hessian_vector_product_func
 from algorithm.sample_gradient_callback import SampleGradientCallback
+from data_structure.synced_tensor_dict import SyncedTensorDict
 from dataset import dataset_with_indices
 from ml_type import MachineLearningPhase
 from model_util import ModelUtil
@@ -54,14 +53,14 @@ class HyperGradientCallback(SampleGradientCallback):
         if self.use_hessian:
             get_logger().info("use hessian to compute hyper-gradients")
             self.hessian_hyper_gradient_mom_dict = (
-                HyperGradientCallback.create_gradient_matrix(
+                HyperGradientCallback.create_hypergradient_dict(
                     self.cache_size,
                     trainer.model,
                     storage_dir=self.hessian_hyper_gradient_and_momentum_dir,
                 )
             )
             if not self.hessian_hyper_gradient_and_momentum_dir:
-                self.hessian_hyper_gradient_mom_dict.set_storage_dir(
+                self.hessian_hyper_gradient_mom_dict.tensor_dict.set_storage_dir(
                     os.path.join(
                         self.save_dir,
                         "hessian_hyper_gradient_and_momentum_dir",
@@ -77,11 +76,11 @@ class HyperGradientCallback(SampleGradientCallback):
 
             get_logger().info(
                 "use hessian_hyper_gradient_mom_dir:%s",
-                self.hessian_hyper_gradient_mom_dict.get_storage_dir(),
+                self.hessian_hyper_gradient_mom_dict.tensor_dict.get_storage_dir(),
             )
         if self.use_approximation:
             self.approx_hyper_gradient_mom_dict = (
-                HyperGradientCallback.create_gradient_matrix(
+                HyperGradientCallback.create_hypergradient_dict(
                     self.cache_size,
                     trainer.model,
                     storage_dir=self.approx_hyper_gradient_and_momentum_dir,
@@ -293,15 +292,12 @@ class HyperGradientCallback(SampleGradientCallback):
         )
 
     @staticmethod
-    def create_gradient_matrix(
+    def create_hypergradient_dict(
         cache_size,
         model=None,
         storage_dir=None,
         concat_momentum=True,
     ):
-
-        if not storage_dir:
-            storage_dir = ""
         mask = None
         gradient_shape = None
         if model is not None and prune.is_pruned(model):
@@ -313,19 +309,17 @@ class HyperGradientCallback(SampleGradientCallback):
             gradient_shape = parameters.shape
             mask = model_util.get_pruning_mask_list()
             assert len(mask) == len(parameters)
-        m = None
         if mask is not None:
             if concat_momentum:
                 mask = torch.cat((mask, mask))
                 gradient_shape[1] *= 2
-            m = SyncedSparseTensorDict(mask, gradient_shape, storage_dir)
-        else:
-            m = SyncedTensorDict(storage_dir)
-        m.set_permanent_storage()
-        m.set_in_memory_number(cache_size)
-        get_logger().info("gradient matrix use cache size %s", cache_size)
-        m.set_logging(False)
-        return m
+        tensor_dict = SyncedTensorDict.create(
+            cache_size=cache_size,
+            storage_dir=storage_dir,
+            mask=mask,
+            tensor_shape=gradient_shape,
+        )
+        return tensor_dict
 
     def _before_batch(self, **kwargs):
         super()._before_batch(**kwargs)
@@ -400,7 +394,6 @@ class HyperGradientCallback(SampleGradientCallback):
 
     def __get_hyper_gradient_and_momentum(self, index, use_approximation):
         tmp = None
-        index = str(index)
         if use_approximation:
             tmp = self.approx_hyper_gradient_mom_dict[index]
         else:
@@ -442,7 +435,7 @@ class HyperGradientCallback(SampleGradientCallback):
             get_logger().info("begin do do_delayed_computation")
             self.do_delayed_computation()
             get_logger().info("end do do_delayed_computation")
-        hyper_gradient_dict = HyperGradientCallback.create_gradient_matrix(
+        hyper_gradient_dict = HyperGradientCallback.create_hypergradient_dict(
             self.cache_size, trainer.model
         )
         hyper_gradient_dict.set_storage_dir(hyper_gradient_dir)
@@ -460,7 +453,7 @@ class HyperGradientCallback(SampleGradientCallback):
                 hyper_gradient = self.get_hyper_gradient(index, use_approximation)
                 hyper_gradient_dict[index] = hyper_gradient
         trainer.save_model(os.path.join(hyper_gradient_dir, "model"))
-        hyper_gradient_dict.flush_all(True)
-        hyper_gradient_dict.release()
+        hyper_gradient_dict.tensor_dict.flush_all(True)
+        hyper_gradient_dict.tensor_dict.release()
         hyper_gradient_dict = None
         super()._after_execute()

@@ -29,6 +29,25 @@ class SyncedTensorDict:
             for k in chunk:
                 yield (k, self.__tensor_dict[k])
 
+    def __contains__(self, item):
+        return self.__tensor_dict.__contains__(str(item))
+
+    def __getitem__(self, key):
+        self.__tensor_dict.__getitem__(str(key))
+
+    def __setitem__(self, key, value):
+        self.__tensor_dict.__setitem__(str(key), value)
+
+    def __delitem__(self, key):
+        self.__tensor_dict.__delitem__(str(key))
+
+    def prefetch(self, keys: set):
+        self.__tensor_dict.prefetch(self.__change_key_type(keys))
+
+    @staticmethod
+    def __change_key_type(keys):
+        return {str(k) for k in keys}
+
     @staticmethod
     def create(
         cache_size,
