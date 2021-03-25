@@ -226,30 +226,6 @@ class DatasetCollection:
                     training_dataset = dataset
                 else:
                     test_dataset = dataset
-        # elif name == "WebankStreet":
-        #     dataset = WebankStreetDataset(
-        #         "/home/cyy/Street_Dataset/Street_Dataset",
-        #         train=True,
-        #         transform=transforms.ToTensor(),
-        #     )
-        #     mean, std = DatasetUtil(dataset).get_mean_and_std()
-        #     transform = []
-        #     if phase == MachineLearningPhase.Training:
-        #         transform += [
-        #             transforms.RandomHorizontalFlip(),
-        #         ]
-
-        #     transform += [
-        #         transforms.ToTensor(),
-        #         transforms.Normalize(mean=mean, std=std),
-        #     ]
-        #     dataset = WebankStreetDataset(
-        #         "/home/cyy/Street_Dataset/Street_Dataset",
-        #         train=for_training,
-        #         transform=transforms.Compose(transform),
-        #     )
-        #     training_dataset_parts = [4, 1]
-        #     by_label = False
         else:
             raise NotImplementedError(name)
 
