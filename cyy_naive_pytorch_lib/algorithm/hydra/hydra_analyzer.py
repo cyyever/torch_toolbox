@@ -26,7 +26,6 @@ class HyperGradientAnalyzer:
         test_gradient = self.inferencer.get_gradient()
 
         for (sample_index, hyper_gradient) in self.hyper_gradient_matrix.iterate():
-            sample_index = int(sample_index)
             contribution_dict[sample_index] = (
                 -(test_gradient @ hyper_gradient) / training_set_size
             ).data.item()
