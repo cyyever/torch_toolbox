@@ -1,6 +1,6 @@
+import json
 import os
 import shutil
-import uuid
 
 import torch
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
@@ -42,7 +42,7 @@ class HyDRACallback(SampleGradientCallback):
         )
         self.approx_hyper_gradient_mom_dict = None
 
-    def _before_execute(self, *args, **kwargs):
+    def _before_execute(self, **kwargs):
         trainer = kwargs["model_executor"]
         if not self.computed_indices:
             self.computed_indices = set(range(len(trainer.dataset)))
@@ -83,24 +83,22 @@ class HyDRACallback(SampleGradientCallback):
         self.computed_indices = set(computed_indices)
         super().set_computed_indices(computed_indices)
 
-    def _after_execute(self, *args, **kwargs):
+    def _after_execute(self, **kwargs):
         get_logger().info("end hyper-gradient tracking")
         trainer = kwargs["model_executor"]
         trainer.save_model(self.save_dir)
+        tester = trainer.get_inferencer()
+        test_gradient = tester.get_gradient()
         if self.use_approximation:
             self.__save_hyper_gradients(
                 trainer,
-                os.path.join(
-                    self.save_dir, "approximation_hyper_gradient_dir", str(uuid.uuid4())
-                ),
+                test_gradient,
                 use_approximation=True,
             )
         if self.use_hessian:
             self.__save_hyper_gradients(
                 trainer,
-                os.path.join(
-                    self.save_dir, "hessian_hyper_gradient_dir", str(uuid.uuid4())
-                ),
+                test_gradient,
                 use_approximation=False,
             )
         super()._after_execute()
@@ -385,20 +383,43 @@ class HyDRACallback(SampleGradientCallback):
             else self.hessian_hyper_gradient_mom_dict
         )
 
-    def __save_hyper_gradients(self, trainer, hyper_gradient_dir, use_approximation):
+    def __save_hyper_gradients(self, trainer, test_gradient, use_approximation):
+        if use_approximation:
+            hyper_gradient_dir = (
+                os.path.join(self.save_dir, "approximation_hyper_gradient_dir"),
+            )
+        else:
+            hyper_gradient_dir = (
+                os.path.join(self.save_dir, "hessian_hyper_gradient_dir"),
+            )
+        contribution = dict()
         if use_approximation:
             get_logger().info("begin do do_delayed_computation")
             self.do_delayed_computation()
             get_logger().info("end do do_delayed_computation")
         tensor_dict = self.__get_hyper_gradient_mom_dict(use_approximation)
+        training_set_size = len(trainer.dataset)
         for (index, value) in tensor_dict.iterate():
             hyper_gradient, _ = self.__decode_hyper_gradient_and_momentum(value)
+            contribution[index] = (
+                -(test_gradient @ hyper_gradient) / training_set_size
+            ).data.item()
             tensor_dict[index] = hyper_gradient
         tensor_dict.flush_all(True)
         tensor_dict.release()
         if use_approximation:
+            with open(
+                os.path.join(self.save_dir, "approx_hydra_contribution.json"),
+                mode="wt",
+            ) as f:
+                json.dump(contribution, f)
             shutil.move(self.approx_hyper_gradient_and_momentum_dir, hyper_gradient_dir)
         else:
+            with open(
+                os.path.join(self.save_dir, "hessian_hydra_contribution.json"),
+                mode="wt",
+            ) as f:
+                json.dump(contribution, f)
             shutil.move(
                 self.hessian_hyper_gradient_and_momentum_dir, hyper_gradient_dir
             )
