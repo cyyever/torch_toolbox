@@ -303,15 +303,16 @@ class HyDRACallback(SampleGradientCallback):
     ):
         mask = None
         gradient_shape = None
-        if model is not None and prune.is_pruned(model):
+        if model is not None:
             model_util = ModelUtil(model)
-            get_logger().info(
-                "use pruned model, sparsity is %s", model_util.get_sparsity()[0]
-            )
-            parameters = model_util.get_parameter_list()
-            gradient_shape = parameters.shape
-            mask = model_util.get_pruning_mask_list()
-            assert len(mask) == len(parameters)
+            if model_util.is_pruned:
+                get_logger().info(
+                    "use pruned model, sparsity is %s", model_util.get_sparsity()[0]
+                )
+                parameters = model_util.get_parameter_list()
+                gradient_shape = parameters.shape
+                mask = model_util.get_pruning_mask_list()
+                assert len(mask) == len(parameters)
         if mask is not None:
             if concat_momentum:
                 mask = torch.cat((mask, mask))
