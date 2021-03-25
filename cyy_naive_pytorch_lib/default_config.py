@@ -18,7 +18,7 @@ from reproducible_env import global_reproducible_env
 from trainer import Trainer
 
 
-class Config:
+class DefaultConfig:
     def __init__(self, dataset_name=None, model_name=None):
         self.make_reproducible = False
         self.reproducible_env_load_path = None
@@ -31,7 +31,7 @@ class Config:
         self.learning_rate_scheduler = None
         self.momentum = None
         self.weight_decay = None
-        self.optimizer = None
+        self.optimizer_name = None
         self.model_path = None
         self.save_dir = None
         self.training_dataset_percentage = None
@@ -53,7 +53,7 @@ class Config:
             )
             parser.add_argument("--momentum", type=float, default=None)
             parser.add_argument("--weight_decay", type=float, default=None)
-            parser.add_argument("--optimizer", type=str, default=None)
+            parser.add_argument("--optimizer_name", type=str, default=None)
             parser.add_argument("--model_path", type=str, default=None)
             parser.add_argument("--save_dir", type=str, default=None)
             parser.add_argument("--reproducible_env_load_path", type=str, default=None)
@@ -84,6 +84,7 @@ class Config:
             self.save_dir = os.path.join(
                 "session", self.dataset_name, self.model_name, str(uuid.uuid4())
             )
+        os.makedirs(self.save_dir, exist_ok=True)
         return self.save_dir
 
     def create_trainer(self, apply_env_factor=True) -> Trainer:
@@ -129,9 +130,9 @@ class Config:
             hyper_parameter.set_momentum(self.momentum)
         if self.weight_decay is not None:
             hyper_parameter.set_weight_decay(self.weight_decay)
-        if self.optimizer is not None:
+        if self.optimizer_name is not None:
             hyper_parameter.set_optimizer_factory(
-                HyperParameter.get_optimizer_factory(self.optimizer)
+                HyperParameter.get_optimizer_factory(self.optimizer_name)
             )
         if self.learning_rate_scheduler is not None:
             hyper_parameter.set_lr_scheduler_factory(
@@ -148,14 +149,13 @@ class Config:
         self, training_dataset
     ) -> torch.utils.data.Dataset:
         if self.training_dataset_percentage is not None:
-            os.makedirs(self.save_dir, exist_ok=True)
             subset_dict = DatasetUtil(training_dataset).sample_subset(
                 self.training_dataset_percentage
             )
             sample_indices: list = sum(subset_dict.values(), [])
             training_dataset = sub_dataset(training_dataset, sample_indices)
             with open(
-                os.path.join(self.save_dir, "training_dataset_indices.json"),
+                os.path.join(self.get_save_dir(), "training_dataset_indices.json"),
                 mode="wt",
             ) as f:
                 json.dump(sample_indices, f)
@@ -192,4 +192,4 @@ class Config:
 
         if self.make_reproducible:
             global_reproducible_env.enable()
-            global_reproducible_env.save(self.save_dir)
+            global_reproducible_env.save(self.get_save_dir())
