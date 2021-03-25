@@ -56,8 +56,6 @@ class Config:
         )
         if apply_env_factor:
             self.__apply_env_config()
-        # trainer = get_trainer_from_configuration(self.dataset_name, self.model_name)
-
         hyper_parameter = get_recommended_hyper_parameter(
             self.dataset_name, self.model_name
         )
