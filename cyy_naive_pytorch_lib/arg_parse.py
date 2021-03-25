@@ -124,7 +124,6 @@ def __get_randomized_label_map(args):
 
 
 def __transform_training_dataset(args, training_dataset) -> torch.utils.data.Dataset:
-
     assert not (args.training_dataset_percentage and args.training_dataset_indices_path)
     if args.training_dataset_percentage is not None:
         os.makedirs(args.save_dir, exist_ok=True)
