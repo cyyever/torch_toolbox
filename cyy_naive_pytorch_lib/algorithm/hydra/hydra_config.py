@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import os
 
@@ -18,6 +19,15 @@ class HyDRAConfig(DefaultConfig):
         self.hyper_gradient_sample_percentage: float = None
         self.use_hessian: bool = False
         self.use_approximation: bool = True
+
+    # def load_args(self, parser=None):
+    #     if parser is None:
+    #         parser = argparse.ArgumentParser()
+    #     parser.add_argument(
+    #         "--algo.hydra.use_hessian", action="store_true", default=False
+    #     )
+    #     parser.add_argument("--algo.hydra.", type=float, default=None)
+    #     super().load_args(parser=parser)
 
     def create_trainer(self, **kwargs):
         trainer = super().create_trainer(**kwargs)
