@@ -60,11 +60,11 @@ class Config:
                 setattr(config, attr, getattr(args, attr))
         return config
 
-    def __init__(self):
+    def __init__(self, dataset_name=None, model_name=None):
         self.make_reproducible = False
         self.reproducible_env_load_path = None
-        self.dataset_name = None
-        self.model_name = None
+        self.dataset_name = dataset_name
+        self.model_name = model_name
         self.epoch = None
         self.batch_size = None
         self.find_learning_rate = True
