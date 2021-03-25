@@ -19,20 +19,6 @@ class HyperGradientAnalyzer:
             self.cache_size, self.inferencer.model, storage_dir=hyper_gradient_dir
         )
 
-    def get_contributions(self, training_set_size=None):
-        if training_set_size is None:
-            training_set_size = len(self.hyper_gradient_matrix)
-        contribution_dict = dict()
-        test_gradient = self.inferencer.get_gradient()
-
-        for (sample_index, hyper_gradient) in self.hyper_gradient_matrix.iterate():
-            contribution_dict[sample_index] = (
-                -(test_gradient @ hyper_gradient) / training_set_size
-            ).data.item()
-
-        assert len(contribution_dict) == training_set_size
-        return contribution_dict
-
     def get_subset_contributions(
         self, training_subset_dict, test_subset_dict, training_set_size=None
     ):
