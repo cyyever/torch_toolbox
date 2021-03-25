@@ -16,7 +16,8 @@ class HyDRAConfig(DefaultConfig):
         self.cache_size: int = None
         self.approx_hyper_gradient_and_momentum_dir: str = None
         self.hessian_hyper_gradient_and_momentum_dir: str = None
-        self.hyper_gradient_sample_percentage: float = None
+        self.tracking_percentage: float = None
+        self.tracking_indices = None
         self.use_hessian: bool = False
         self.use_approximation: bool = True
 
@@ -25,6 +26,9 @@ class HyDRAConfig(DefaultConfig):
     #         parser = argparse.ArgumentParser()
     #     parser.add_argument(
     #         "--algo.hydra.use_hessian", action="store_true", default=False
+    #     )
+    #     parser.add_argument(
+    #         "--algo.hydra.no_approximation", action="store_true", default=False
     #     )
     #     parser.add_argument("--algo.hydra.", type=float, default=None)
     #     super().load_args(parser=parser)
@@ -42,17 +46,17 @@ class HyDRAConfig(DefaultConfig):
         )
         hydra_callback.append_to_model_executor(trainer)
 
-        if self.hyper_gradient_sample_percentage is not None:
+        if self.tracking_percentage is not None:
             subset_dict = DatasetUtil(trainer.dataset).sample_subset(
-                self.hyper_gradient_sample_percentage
+                self.tracking_percentage
             )
-            sample_indices = sum(subset_dict.values(), [])
-            os.makedirs(self.get_save_dir(), exist_ok=True)
+            self.tracking_indices = sum(subset_dict.values(), [])
+        if self.tracking_indices:
             with open(
                 os.path.join(self.get_save_dir(), "hyper_gradient_indices.json"),
                 mode="wt",
             ) as f:
-                json.dump(sample_indices, f)
-            get_logger().info("track %s samples", len(sample_indices))
-            hydra_callback.set_computed_indices(sample_indices)
+                json.dump(self.tracking_indices, f)
+            get_logger().info("track %s samples", len(self.tracking_indices))
+            hydra_callback.set_computed_indices(self.tracking_indices)
         return trainer
