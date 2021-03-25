@@ -53,6 +53,12 @@ def get_parsed_args(parser=None):
     return args
 
 
+def apply_args(args):
+    if args.log_level is not None:
+        get_logger().setLevel(args.log_level)
+    set_reproducible_env_from_args(args)
+
+
 def affect_global_process_from_args(args):
     if args.log_level is not None:
         get_logger().setLevel(args.log_level)
