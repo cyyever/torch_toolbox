@@ -1,13 +1,12 @@
-from algorithm.inverse_hessian_vector_product import (
-    stochastic_inverse_hessian_vector_product,
-)
-from data_structure.synced_tensor_dict_util import iterate_over_synced_tensor_dict
+from algorithm.inverse_hessian_vector_product import \
+    stochastic_inverse_hessian_vector_product
+from data_structure.synced_tensor_dict import SyncedTensorDict
 
 
 def compute_classic_influence_function(
     trainer,
     test_gradient,
-    training_sample_gradient_dict,
+    training_sample_gradient_dict: SyncedTensorDict,
     batch_size=None,
     dampling_term=0,
     scale=1,
@@ -32,8 +31,6 @@ def compute_classic_influence_function(
     )
     contributions = dict()
 
-    for (sample_index, sample_gradient) in iterate_over_synced_tensor_dict(
-        training_sample_gradient_dict
-    ):
+    for (sample_index, sample_gradient) in training_sample_gradient_dict.iterate():
         contributions[sample_index] = (product @ sample_gradient).data.item()
     return contributions
