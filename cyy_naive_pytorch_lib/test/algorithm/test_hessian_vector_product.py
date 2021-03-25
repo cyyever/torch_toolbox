@@ -3,14 +3,14 @@ from cyy_naive_lib.time_counter import TimeCounter
 
 from algorithm.hessian_vector_product import (get_hessian_vector_product_func,
                                               stop_task_queue)
-from configuration import get_trainer_from_configuration
+from config import Config
 from model_util import ModelUtil
 
 # from cyy_naive_lib.profiling import Profile
 
 
 def test_hessian_vector_product():
-    trainer = get_trainer_from_configuration("MNIST", "LeNet5")
+    trainer = Config("MNIST", "LeNet5").create_trainer()
     training_data_loader = torch.utils.data.DataLoader(
         trainer.dataset,
         batch_size=16,
