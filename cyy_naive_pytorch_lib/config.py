@@ -19,8 +19,27 @@ from trainer import Trainer
 
 
 class Config:
-    @staticmethod
-    def create_by_args(parser=None):
+    def __init__(self, dataset_name=None, model_name=None):
+        self.make_reproducible = False
+        self.reproducible_env_load_path = None
+        self.dataset_name = dataset_name
+        self.model_name = model_name
+        self.epoch = None
+        self.batch_size = None
+        self.find_learning_rate = True
+        self.learning_rate = None
+        self.learning_rate_scheduler = None
+        self.momentum = None
+        self.weight_decay = None
+        self.optimizer = None
+        self.model_path = None
+        self.save_dir = None
+        self.training_dataset_percentage = None
+        self.randomized_label_map_path = None
+        self.training_dataset_indices_path = None
+        self.log_level = None
+
+    def load_args(self, parser=None):
         if parser is None:
             parser = argparse.ArgumentParser()
             parser.add_argument("--dataset_name", type=str, required=True)
@@ -51,34 +70,14 @@ class Config:
             parser.add_argument("--log_level", type=str, default=None)
             parser.add_argument("--config_file", type=str, default=None)
         args = parser.parse_args()
-        config = Config()
         for attr in dir(args):
             if attr.startswith("_"):
                 continue
-            if hasattr(config, attr):
-                print("set attr", attr)
-                setattr(config, attr, getattr(args, attr))
-        return config
-
-    def __init__(self, dataset_name=None, model_name=None):
-        self.make_reproducible = False
-        self.reproducible_env_load_path = None
-        self.dataset_name = dataset_name
-        self.model_name = model_name
-        self.epoch = None
-        self.batch_size = None
-        self.find_learning_rate = True
-        self.learning_rate = None
-        self.learning_rate_scheduler = None
-        self.momentum = None
-        self.weight_decay = None
-        self.optimizer = None
-        self.model_path = None
-        self.save_dir = None
-        self.training_dataset_percentage = None
-        self.randomized_label_map_path = None
-        self.training_dataset_indices_path = None
-        self.log_level = None
+            if hasattr(self, attr):
+                value = getattr(args, attr)
+                if value is not None:
+                    print("set attr", attr)
+                    setattr(self, attr, getattr(args, attr))
 
     def get_save_dir(self):
         if self.save_dir is None:
