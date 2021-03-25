@@ -16,47 +16,43 @@ from ml_type import MachineLearningPhase
 from reproducible_env import global_reproducible_env
 from trainer import Trainer
 
-
-def get_arg_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_name", type=str, required=True)
-    parser.add_argument("--model_name", type=str, required=True)
-    parser.add_argument("--epoch", type=int, default=None)
-    parser.add_argument("--batch_size", type=int, default=None)
-    parser.add_argument("--learning_rate", type=float, default=None)
-    parser.add_argument("--learning_rate_scheduler", type=str, default=None)
-    parser.add_argument("--find_learning_rate", action="store_true", default=False)
-    parser.add_argument("--momentum", type=float, default=None)
-    parser.add_argument("--weight_decay", type=float, default=None)
-    parser.add_argument("--optimizer", type=str, default=None)
-    parser.add_argument("--model_path", type=str, default=None)
-    parser.add_argument("--save_dir", type=str, default=None)
-    parser.add_argument("--reproducible_env_load_path", type=str, default=None)
-    parser.add_argument("--make_reproducible", action="store_true", default=False)
-    parser.add_argument("--training_dataset_percentage", type=float, default=None)
-    parser.add_argument("--randomized_label_map_path", type=str, default=None)
-    parser.add_argument("--training_dataset_indices_path", type=str, default=None)
-    parser.add_argument("--log_level", type=str, default=None)
-    parser.add_argument("--config_file", type=str, default=None)
-    return parser
-
-
-def get_parsed_args(parser=None):
-    pass
+# def get_arg_parser():
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("--dataset_name", type=str, required=True)
+#     parser.add_argument("--model_name", type=str, required=True)
+#     parser.add_argument("--epoch", type=int, default=None)
+#     parser.add_argument("--batch_size", type=int, default=None)
+#     parser.add_argument("--learning_rate", type=float, default=None)
+#     parser.add_argument("--learning_rate_scheduler", type=str, default=None)
+#     parser.add_argument("--find_learning_rate", action="store_true", default=False)
+#     parser.add_argument("--momentum", type=float, default=None)
+#     parser.add_argument("--weight_decay", type=float, default=None)
+#     parser.add_argument("--optimizer", type=str, default=None)
+#     parser.add_argument("--model_path", type=str, default=None)
+#     parser.add_argument("--save_dir", type=str, default=None)
+#     parser.add_argument("--reproducible_env_load_path", type=str, default=None)
+#     parser.add_argument("--make_reproducible", action="store_true", default=False)
+#     parser.add_argument("--training_dataset_percentage", type=float, default=None)
+#     parser.add_argument("--randomized_label_map_path", type=str, default=None)
+#     parser.add_argument("--training_dataset_indices_path", type=str, default=None)
+#     parser.add_argument("--log_level", type=str, default=None)
+#     parser.add_argument("--config_file", type=str, default=None)
+#     return parser
 
 
-#     if parser is None:
-#         parser = get_arg_parser()
-#     args = parser.parse_args()
-#     if args.save_dir is None:
-#         args.save_dir = os.path.join(
-#             "final_models", args.dataset_name, args.model_name, str(uuid.uuid4())
-#         )
+# def get_parsed_args(parser=None):
+# #     if parser is None:
+# #         parser = get_arg_parser()
+# #     args = parser.parse_args()
+# #     if args.save_dir is None:
+# #         args.save_dir = os.path.join(
+# #             "final_models", args.dataset_name, args.model_name, str(uuid.uuid4())
+# #         )
 
-#     return args
+# #     return args
 
 
-# def affect_global_process_from_args(args):
+# # def affect_global_process_from_args(args):
 #     if args.log_level is not None:
 #         get_logger().setLevel(args.log_level)
 #     set_reproducible_env_from_args(args)
