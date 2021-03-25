@@ -42,33 +42,25 @@ class DefaultConfig:
     def load_args(self, parser=None):
         if parser is None:
             parser = argparse.ArgumentParser()
-            parser.add_argument("--dataset_name", type=str, required=True)
-            parser.add_argument("--model_name", type=str, required=True)
-            parser.add_argument("--epoch", type=int, default=None)
-            parser.add_argument("--batch_size", type=int, default=None)
-            parser.add_argument("--learning_rate", type=float, default=None)
-            parser.add_argument("--learning_rate_scheduler", type=str, default=None)
-            parser.add_argument(
-                "--find_learning_rate", action="store_true", default=False
-            )
-            parser.add_argument("--momentum", type=float, default=None)
-            parser.add_argument("--weight_decay", type=float, default=None)
-            parser.add_argument("--optimizer_name", type=str, default=None)
-            parser.add_argument("--model_path", type=str, default=None)
-            parser.add_argument("--save_dir", type=str, default=None)
-            parser.add_argument("--reproducible_env_load_path", type=str, default=None)
-            parser.add_argument(
-                "--make_reproducible", action="store_true", default=False
-            )
-            parser.add_argument(
-                "--training_dataset_percentage", type=float, default=None
-            )
-            parser.add_argument("--randomized_label_map_path", type=str, default=None)
-            parser.add_argument(
-                "--training_dataset_indices_path", type=str, default=None
-            )
-            parser.add_argument("--log_level", type=str, default=None)
-            parser.add_argument("--config_file", type=str, default=None)
+        parser.add_argument("--dataset_name", type=str, required=True)
+        parser.add_argument("--model_name", type=str, required=True)
+        parser.add_argument("--epoch", type=int, default=None)
+        parser.add_argument("--batch_size", type=int, default=None)
+        parser.add_argument("--learning_rate", type=float, default=None)
+        parser.add_argument("--learning_rate_scheduler", type=str, default=None)
+        parser.add_argument("--find_learning_rate", action="store_true", default=False)
+        parser.add_argument("--momentum", type=float, default=None)
+        parser.add_argument("--weight_decay", type=float, default=None)
+        parser.add_argument("--optimizer_name", type=str, default=None)
+        parser.add_argument("--model_path", type=str, default=None)
+        parser.add_argument("--save_dir", type=str, default=None)
+        parser.add_argument("--reproducible_env_load_path", type=str, default=None)
+        parser.add_argument("--make_reproducible", action="store_true", default=False)
+        parser.add_argument("--training_dataset_percentage", type=float, default=None)
+        parser.add_argument("--randomized_label_map_path", type=str, default=None)
+        parser.add_argument("--training_dataset_indices_path", type=str, default=None)
+        parser.add_argument("--log_level", type=str, default=None)
+        parser.add_argument("--config_file", type=str, default=None)
         args = parser.parse_args()
         for attr in dir(args):
             if attr.startswith("_"):
