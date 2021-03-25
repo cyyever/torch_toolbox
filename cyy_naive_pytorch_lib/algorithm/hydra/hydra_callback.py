@@ -3,7 +3,6 @@ import shutil
 import uuid
 
 import torch
-import torch.nn.utils.prune as prune
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.time_counter import TimeCounter
@@ -28,8 +27,8 @@ class HyDRACallback(SampleGradientCallback):
         self.delayed_approximation_computations = None
 
         self.use_hessian = kwargs.get("use_hessian", False)
-        self.hessian_hyper_gradient_and_momentum_dir = kwargs.get(
-            "hessian_hyper_gradient_and_momentum_dir", None
+        self.hessian_hyper_gradient_and_momentum_dir = (
+            "hessian_hyper_gradient_and_momentum_dir"
         )
         self.hvp_function = None
         self.hessian_hyper_gradient_mom_dict = None
@@ -38,8 +37,8 @@ class HyDRACallback(SampleGradientCallback):
         if self.use_approximation is None:
             self.use_approximation = not self.use_hessian
 
-        self.approx_hyper_gradient_and_momentum_dir = kwargs.get(
-            "approx_hyper_gradient_and_momentum_dir", None
+        self.approx_hyper_gradient_and_momentum_dir = (
+            "approx_hyper_gradient_and_momentum_dir"
         )
         self.approx_hyper_gradient_mom_dict = None
 
@@ -59,24 +58,9 @@ class HyDRACallback(SampleGradientCallback):
                     storage_dir=self.hessian_hyper_gradient_and_momentum_dir,
                 )
             )
-            if not self.hessian_hyper_gradient_and_momentum_dir:
-                self.hessian_hyper_gradient_mom_dict.tensor_dict.set_storage_dir(
-                    os.path.join(
-                        self.save_dir,
-                        "hessian_hyper_gradient_and_momentum_dir",
-                        str(uuid.uuid4()),
-                    )
-                )
-            else:
-                model_file = os.path.join(
-                    self.hessian_hyper_gradient_and_momentum_dir, "model", "model.pt"
-                )
-                if os.path.isfile(model_file):
-                    trainer.load_model(model_file)
-
             get_logger().info(
                 "use hessian_hyper_gradient_mom_dir:%s",
-                self.hessian_hyper_gradient_mom_dict.tensor_dict.get_storage_dir(),
+                os.path.abspath(self.hessian_hyper_gradient_and_momentum_dir),
             )
         if self.use_approximation:
             self.approx_hyper_gradient_mom_dict = (
@@ -86,23 +70,9 @@ class HyDRACallback(SampleGradientCallback):
                     storage_dir=self.approx_hyper_gradient_and_momentum_dir,
                 )
             )
-            if not self.approx_hyper_gradient_and_momentum_dir:
-                self.approx_hyper_gradient_mom_dict.set_storage_dir(
-                    os.path.join(
-                        self.save_dir,
-                        "approx_hyper_gradient_and_momentum_dir",
-                        str(uuid.uuid4()),
-                    )
-                )
-            else:
-                model_file = os.path.join(
-                    self.approx_hyper_gradient_and_momentum_dir, "model", "model.pt"
-                )
-                if os.path.isfile(model_file):
-                    trainer.load_model(model_file)
             get_logger().info(
                 "use hyper_gradient_mom_dir:%s",
-                self.approx_hyper_gradient_mom_dict.get_storage_dir(),
+                os.path.abspath(self.approx_hyper_gradient_and_momentum_dir),
             )
             self.delayed_approximation_computations = dict()
             for k in self.computed_indices:
@@ -125,9 +95,6 @@ class HyDRACallback(SampleGradientCallback):
                 ),
                 use_approximation=True,
             )
-            self.approx_hyper_gradient_mom_dict.release()
-            shutil.rmtree(self.approx_hyper_gradient_mom_dict.get_storage_dir())
-            self.approx_hyper_gradient_mom_dict = None
         if self.use_hessian:
             self.__save_hyper_gradients(
                 trainer,
@@ -136,9 +103,7 @@ class HyDRACallback(SampleGradientCallback):
                 ),
                 use_approximation=False,
             )
-            self.hessian_hyper_gradient_mom_dict.release()
-            shutil.rmtree(self.hessian_hyper_gradient_mom_dict.get_storage_dir())
-            self.hessian_hyper_gradient_mom_dict = None
+        super()._after_execute()
 
     def __do_computation_with_hessian(self):
         for chunk in split_list_to_chunks(
@@ -425,21 +390,18 @@ class HyDRACallback(SampleGradientCallback):
             get_logger().info("begin do do_delayed_computation")
             self.do_delayed_computation()
             get_logger().info("end do do_delayed_computation")
-        hyper_gradient_dict = HyDRACallback.create_hypergradient_dict(
-            self.cache_size, trainer.model
-        )
-        hyper_gradient_dict.set_storage_dir(hyper_gradient_dir)
-
-        for (index, value) in self.__get_hyper_gradient_mom_dict(
-            use_approximation
-        ).iterate():
+        tensor_dict = self.__get_hyper_gradient_mom_dict(use_approximation)
+        for (index, value) in tensor_dict.iterate():
             hyper_gradient, _ = self.__decode_hyper_gradient_and_momentum(value)
-            hyper_gradient_dict[index] = hyper_gradient
-        trainer.save_model(os.path.join(hyper_gradient_dir, "model"))
-        hyper_gradient_dict.flush_all(True)
-        hyper_gradient_dict.release()
-        hyper_gradient_dict = None
-        super()._after_execute()
+            tensor_dict[index] = hyper_gradient
+        tensor_dict.flush_all(True)
+        tensor_dict.release()
+        if use_approximation:
+            shutil.move(self.approx_hyper_gradient_and_momentum_dir, hyper_gradient_dir)
+        else:
+            shutil.move(
+                self.hessian_hyper_gradient_and_momentum_dir, hyper_gradient_dir
+            )
 
     def foreach_hyper_gradient(self, use_approximation, callback):
         hyper_gradient_mom_dict = self.__get_hyper_gradient_mom_dict(use_approximation)
