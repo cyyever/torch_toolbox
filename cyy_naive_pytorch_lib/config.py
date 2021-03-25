@@ -7,11 +7,13 @@ import uuid
 import torch
 from cyy_naive_lib.log import get_logger
 
-from configuration import get_trainer_from_configuration
 from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
-from hyper_parameter import HyperParameter, HyperParameterAction
+from dataset_collection import DatasetCollection
+from hyper_parameter import (HyperParameter, HyperParameterAction,
+                             get_recommended_hyper_parameter)
 from inference import Inferencer
 from ml_type import MachineLearningPhase
+from model_factory import get_model
 from reproducible_env import global_reproducible_env
 from trainer import Trainer
 
@@ -54,8 +56,16 @@ class Config:
         )
         if apply_env_factor:
             self.__apply_env_config()
-        trainer = get_trainer_from_configuration(self.dataset_name, self.model_name)
+        # trainer = get_trainer_from_configuration(self.dataset_name, self.model_name)
 
+        hyper_parameter = get_recommended_hyper_parameter(
+            self.dataset_name, self.model_name
+        )
+        assert hyper_parameter is not None
+
+        dc = DatasetCollection.get_by_name(self.dataset_name)
+        model_with_loss = get_model(self.model_name, dc)
+        trainer = Trainer(model_with_loss, dc, hyper_parameter)
         trainer.dataset_collection.transform_dataset(
             MachineLearningPhase.Training,
             self.__transform_training_dataset,
@@ -99,9 +109,6 @@ class Config:
     def __transform_training_dataset(
         self, training_dataset
     ) -> torch.utils.data.Dataset:
-        assert not (
-            self.training_dataset_percentage and self.training_dataset_indices_path
-        )
         if self.training_dataset_percentage is not None:
             os.makedirs(self.save_dir, exist_ok=True)
             subset_dict = DatasetUtil(training_dataset).sample_subset(
