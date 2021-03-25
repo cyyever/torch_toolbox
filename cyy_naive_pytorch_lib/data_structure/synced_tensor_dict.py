@@ -58,7 +58,7 @@ class SyncedTensorDict:
 
     @staticmethod
     def create(
-        key_type,
+        key_type=int,
         cache_size=None,
         mask=None,
         tensor_shape=None,
