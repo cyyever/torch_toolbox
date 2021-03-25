@@ -17,7 +17,7 @@ class SyncedTensorDict:
         return self.__tensor_dict.__contains__(str(item))
 
     def __getitem__(self, key):
-        self.__tensor_dict.__getitem__(str(key))
+        return self.__tensor_dict.__getitem__(str(key))
 
     def __setitem__(self, key, value):
         self.__tensor_dict.__setitem__(str(key), value)
