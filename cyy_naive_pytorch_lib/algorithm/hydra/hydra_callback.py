@@ -27,8 +27,8 @@ class HyDRACallback(SampleGradientCallback):
         self.delayed_approximation_computations = None
 
         self.use_hessian = kwargs.get("use_hessian", False)
-        self.hessian_hyper_gradient_and_momentum_dir = (
-            "hessian_hyper_gradient_and_momentum_dir"
+        self.hessian_hyper_gradient_and_momentum_dir = os.path.join(
+            self.save_dir, "hessian_hyper_gradient_and_momentum_dir"
         )
         self.hvp_function = None
         self.hessian_hyper_gradient_mom_dict = None
@@ -37,8 +37,8 @@ class HyDRACallback(SampleGradientCallback):
         if self.use_approximation is None:
             self.use_approximation = not self.use_hessian
 
-        self.approx_hyper_gradient_and_momentum_dir = (
-            "approx_hyper_gradient_and_momentum_dir"
+        self.approx_hyper_gradient_and_momentum_dir = os.path.join(
+            self.save_dir, "approx_hyper_gradient_and_momentum_dir"
         )
         self.approx_hyper_gradient_mom_dict = None
 
@@ -87,7 +87,7 @@ class HyDRACallback(SampleGradientCallback):
         get_logger().info("end hyper-gradient tracking")
         trainer = kwargs["model_executor"]
         trainer.save_model(self.save_dir)
-        tester = trainer.get_inferencer()
+        tester = trainer.get_inferencer(phase=MachineLearningPhase.Test)
         test_gradient = tester.get_gradient()
         if self.use_approximation:
             self.__save_hyper_gradients(
@@ -385,13 +385,15 @@ class HyDRACallback(SampleGradientCallback):
 
     def __save_hyper_gradients(self, trainer, test_gradient, use_approximation):
         if use_approximation:
-            hyper_gradient_dir = (
-                os.path.join(self.save_dir, "approximation_hyper_gradient_dir"),
+            hyper_gradient_dir = os.path.join(
+                self.save_dir, "approximation_hyper_gradient_dir"
             )
+
         else:
-            hyper_gradient_dir = (
-                os.path.join(self.save_dir, "hessian_hyper_gradient_dir"),
+            hyper_gradient_dir = os.path.join(
+                self.save_dir, "hessian_hyper_gradient_dir"
             )
+
         contribution = dict()
         if use_approximation:
             get_logger().info("begin do do_delayed_computation")
