@@ -10,7 +10,7 @@ from dataset import DatasetUtil
 from .hyper_gradient_callback import HyperGradientCallback
 
 
-class HydraConfig(Config):
+class HyDRAConfig(Config):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cache_size: int = None
