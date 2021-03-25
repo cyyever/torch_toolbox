@@ -78,6 +78,7 @@ class DefaultConfig:
                 if value is not None:
                     print("set attr", attr)
                     setattr(self, attr, getattr(args, attr))
+        return args
 
     def get_save_dir(self):
         if self.save_dir is None:
