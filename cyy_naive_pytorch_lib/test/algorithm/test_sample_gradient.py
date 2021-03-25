@@ -5,12 +5,12 @@ from cyy_naive_lib.profiling import Profile
 from cyy_naive_lib.time_counter import TimeCounter
 
 from algorithm.sample_gradient import get_sample_gradient, stop_task_queue
-from config import Config
+from default_config import DefaultConfig
 from device import get_device
 
 
 def test_get_sample_gradient():
-    trainer = Config("MNIST", "LeNet5").create_trainer()
+    trainer = DefaultConfig("MNIST", "LeNet5").create_trainer()
     training_data_loader = torch.utils.data.DataLoader(
         trainer.dataset,
         batch_size=64,

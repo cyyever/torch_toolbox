@@ -3,14 +3,13 @@ import json
 import os
 
 from cyy_naive_lib.log import get_logger
-
-from config import Config
-from dataset import DatasetUtil
+from cyy_naive_pytorch_lib.dataset import DatasetUtil
+from cyy_naive_pytorch_lib.default_config import DefaultConfig
 
 from .hyper_gradient_callback import HyperGradientCallback
 
 
-class HyDRAConfig(Config):
+class HyDRAConfig(DefaultConfig):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cache_size: int = None
