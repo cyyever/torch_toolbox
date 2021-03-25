@@ -37,6 +37,7 @@ def get_arg_parser():
     parser.add_argument("--randomized_label_map_path", type=str, default=None)
     parser.add_argument("--training_dataset_indices_path", type=str, default=None)
     parser.add_argument("--log_level", type=str, default=None)
+    parser.add_argument("--config_file", type=str, default=None)
     return parser
 
 
