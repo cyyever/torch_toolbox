@@ -19,6 +19,47 @@ from trainer import Trainer
 
 
 class Config:
+    @staticmethod
+    def create_by_args(parser=None):
+        if parser is None:
+            parser = argparse.ArgumentParser()
+            parser.add_argument("--dataset_name", type=str, required=True)
+            parser.add_argument("--model_name", type=str, required=True)
+            parser.add_argument("--epoch", type=int, default=None)
+            parser.add_argument("--batch_size", type=int, default=None)
+            parser.add_argument("--learning_rate", type=float, default=None)
+            parser.add_argument("--learning_rate_scheduler", type=str, default=None)
+            parser.add_argument(
+                "--find_learning_rate", action="store_true", default=False
+            )
+            parser.add_argument("--momentum", type=float, default=None)
+            parser.add_argument("--weight_decay", type=float, default=None)
+            parser.add_argument("--optimizer", type=str, default=None)
+            parser.add_argument("--model_path", type=str, default=None)
+            parser.add_argument("--save_dir", type=str, default=None)
+            parser.add_argument("--reproducible_env_load_path", type=str, default=None)
+            parser.add_argument(
+                "--make_reproducible", action="store_true", default=False
+            )
+            parser.add_argument(
+                "--training_dataset_percentage", type=float, default=None
+            )
+            parser.add_argument("--randomized_label_map_path", type=str, default=None)
+            parser.add_argument(
+                "--training_dataset_indices_path", type=str, default=None
+            )
+            parser.add_argument("--log_level", type=str, default=None)
+            parser.add_argument("--config_file", type=str, default=None)
+        args = parser.parse_args()
+        config = Config()
+        for attr in dir(args):
+            if attr.startswith("_"):
+                continue
+            if hasattr(config, attr):
+                print("set attr", attr)
+                setattr(config, attr, getattr(args, attr))
+        return config
+
     def __init__(self):
         self.make_reproducible = False
         self.reproducible_env_load_path = None
