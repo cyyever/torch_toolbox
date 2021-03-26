@@ -42,6 +42,7 @@ class HyDRACallback(SampleGradientCallback):
             self.save_dir, "approx_hyper_gradient_and_momentum_dir"
         )
         self.approx_hyper_gradient_mom_dict = None
+        os.makedirs(self.save_dir, exist_ok=True)
 
     def _before_execute(self, **kwargs):
         trainer = kwargs["model_executor"]
@@ -86,7 +87,7 @@ class HyDRACallback(SampleGradientCallback):
             os.path.join(self.save_dir, "hyper_gradient_indices.json"),
             mode="wt",
         ) as f:
-            json.dump(self.computed_indices, f)
+            pickle.dump(self.computed_indices, f)
         super().set_computed_indices(computed_indices)
 
     def _after_execute(self, **kwargs):
