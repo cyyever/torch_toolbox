@@ -8,12 +8,13 @@ class ProbabilityMetric(Metric):
     def get_prob(self, epoch):
         return self.get_epoch_metric(epoch, "prob")
 
-    def _after_batch(self, *args, **kwargs):
+    def _after_batch(self, **kwargs):
         batch = kwargs["batch"]
         epoch = kwargs["epoch"]
+        model_executor = kwargs["model_executor"]
         result = kwargs["result"]
         output = result["output"]
-        last_layer = list(self._model_executor.model.modules())[-1]
+        last_layer = list(model_executor.model.modules())[-1]
         epoch_prob = self.get_prob(epoch)
         if epoch_prob is None:
             epoch_prob = dict()
