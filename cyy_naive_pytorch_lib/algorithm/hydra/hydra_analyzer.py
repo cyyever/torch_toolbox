@@ -1,8 +1,6 @@
 import copy
 import tempfile
 
-from cyy_naive_lib.log import get_logger
-
 from dataset import sub_dataset
 from inference import Inferencer
 
@@ -10,19 +8,23 @@ from .hydra_callback import HyDRACallback
 
 
 class HyperGradientAnalyzer:
-    def __init__(self, inferencer: Inferencer, hyper_gradient_dir, cache_size=1024):
+    def __init__(
+        self,
+        inferencer: Inferencer,
+        hyper_gradient_dir,
+        training_set_size,
+        cache_size=1024,
+    ):
         self.inferencer: Inferencer = inferencer
-
-        self.cache_size = cache_size
         self.hyper_gradient_matrix = HyDRACallback.create_hypergradient_dict(
-            self.cache_size, self.inferencer.model, storage_dir=hyper_gradient_dir
+            cache_size, self.inferencer.model, storage_dir=hyper_gradient_dir
         )
+        self.cache_size = cache_size
+        self.training_set_size = training_set_size
 
     def get_subset_contributions(
-        self, training_subset_dict, test_subset_dict, training_set_size=None
-    ):
-        if training_set_size is None:
-            training_set_size = len(self.hyper_gradient_matrix)
+        self, training_subset_dict: dict, test_subset_dict: dict
+    ) -> dict:
         hyper_gradient_sum_dict = HyDRACallback.create_hypergradient_dict(
             self.cache_size, self.inferencer.model
         )
@@ -36,38 +38,27 @@ class HyperGradientAnalyzer:
                 else:
                     hyper_gradient_sum += hyper_gradient
             hyper_gradient_sum_dict[k] = hyper_gradient_sum
-        test_subset_gradient_dict = self.get_test_gradient_dict(test_subset_dict)
-        contribution_dict = dict()
+        test_subset_gradient_dict = self.__get_test_gradient_dict(test_subset_dict)
+        contribution_dict: dict = dict()
         for (training_key, hyper_gradient_sum) in hyper_gradient_sum_dict.iterate():
             contribution_dict[training_key] = dict()
             for (test_key, test_subset_gradient) in test_subset_gradient_dict.iterate():
                 contribution_dict[training_key][test_key] = (
-                    -(test_subset_gradient @ hyper_gradient_sum) / training_set_size
+                    -(test_subset_gradient @ hyper_gradient_sum)
+                    / self.training_set_size
                 ).data.item()
         return contribution_dict
 
     def get_training_sample_contributions(
-        self, test_subset_dict, training_subset_indices=None, training_set_size=None
+        self, test_subset_dict, training_subset_indices=None
     ):
         if training_subset_indices is None:
             training_subset_indices = self.hyper_gradient_matrix.keys()
-        if training_set_size is None:
-            training_set_size = len(self.hyper_gradient_matrix)
-        contribution_dict = dict()
+        return self.get_subset_contributions(
+            {idx: [idx] for idx in training_subset_indices}, test_subset_dict
+        )
 
-        test_subset_gradient_dict = self.get_test_gradient_dict(test_subset_dict)
-        for (sample_index, hyper_gradient) in self.hyper_gradient_matrix.iterate(
-            training_subset_indices
-        ):
-            get_logger().info("use sample %s", sample_index)
-            contribution_dict[sample_index] = dict()
-            for (test_key, test_subset_gradient) in test_subset_gradient_dict.iterate():
-                contribution_dict[sample_index][test_key] = (
-                    -(test_subset_gradient @ hyper_gradient) / training_set_size
-                ).data.item()
-        return contribution_dict
-
-    def get_test_gradients(self, test_subset_dict: dict):
+    def __get_test_gradients(self, test_subset_dict: dict):
         tmp_inferencer = copy.deepcopy(self.inferencer)
         for test_key, indices in test_subset_dict.items():
             subset = sub_dataset(self.inferencer.dataset, indices)
@@ -75,9 +66,9 @@ class HyperGradientAnalyzer:
             tmp_inferencer.set_dataset(subset)
             yield (test_key, tmp_inferencer.get_gradient() * len(subset))
 
-    def get_test_gradient_dict(self, test_subset_dict: dict):
+    def __get_test_gradient_dict(self, test_subset_dict: dict):
         test_gredient_dict = HyDRACallback.create_hypergradient_dict(self.cache_size)
         test_gredient_dict.set_storage_dir(tempfile.gettempdir())
-        for (test_key, gradient) in self.get_test_gradients(test_subset_dict):
+        for (test_key, gradient) in self.__get_test_gradients(test_subset_dict):
             test_gredient_dict[test_key] = gradient
         return test_gredient_dict
