@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-import argparse
-import json
-import os
 
-from cyy_naive_lib.log import get_logger
 from cyy_naive_pytorch_lib.dataset import DatasetUtil
 from cyy_naive_pytorch_lib.default_config import DefaultConfig
 
@@ -52,11 +48,5 @@ class HyDRAConfig(DefaultConfig):
             )
             self.tracking_indices = sum(subset_dict.values(), [])
         if self.tracking_indices:
-            with open(
-                os.path.join(self.get_save_dir(), "hyper_gradient_indices.json"),
-                mode="wt",
-            ) as f:
-                json.dump(self.tracking_indices, f)
-            get_logger().info("track %s samples", len(self.tracking_indices))
             hydra_callback.set_computed_indices(self.tracking_indices)
         return trainer
