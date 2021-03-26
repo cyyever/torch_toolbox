@@ -30,7 +30,7 @@ class ProbabilityMetric(Metric, AddIndexToDataset):
             if isinstance(last_layer, nn.LogSoftmax):
                 probs = torch.exp(output[i])
             elif isinstance(last_layer, nn.Linear):
-                probs = nn.Softmax()(output[i])
+                probs = nn.Softmax(dim=0)(output[i])
             else:
                 raise RuntimeError("unsupported layer", type(last_layer))
             max_prob_index = torch.argmax(probs).data.item()
