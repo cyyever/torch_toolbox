@@ -23,6 +23,10 @@ class DefaultConfig:
         self.make_reproducible = False
         self.reproducible_env_load_path = None
         self.dataset_name = dataset_name
+        self.training_dataset_percentage = None
+        self.training_dataset_indices_path = None
+        self.training_dataset_label_map_path = None
+        self.training_dataset_label_noise_percentage = None
         self.model_name = model_name
         self.epoch = None
         self.batch_size = None
@@ -34,9 +38,6 @@ class DefaultConfig:
         self.optimizer_name = None
         self.model_path = None
         self.save_dir = None
-        self.training_dataset_percentage = None
-        self.randomized_label_map_path = None
-        self.training_dataset_indices_path = None
         self.log_level = None
 
     def load_args(self, parser=None):
@@ -57,8 +58,10 @@ class DefaultConfig:
         parser.add_argument("--reproducible_env_load_path", type=str, default=None)
         parser.add_argument("--make_reproducible", action="store_true", default=False)
         parser.add_argument("--training_dataset_percentage", type=float, default=None)
-        parser.add_argument("--randomized_label_map_path", type=str, default=None)
         parser.add_argument("--training_dataset_indices_path", type=str, default=None)
+        parser.add_argument(
+            "--training_dataset_label_noise_percentage", type=float, default=None
+        )
         parser.add_argument("--log_level", type=str, default=None)
         parser.add_argument("--config_file", type=str, default=None)
         args = parser.parse_args()
@@ -68,7 +71,6 @@ class DefaultConfig:
             if hasattr(self, attr):
                 value = getattr(args, attr)
                 if value is not None:
-                    print("set attr", attr)
                     setattr(self, attr, getattr(args, attr))
         return args
 
@@ -141,36 +143,58 @@ class DefaultConfig:
     def __transform_training_dataset(
         self, training_dataset
     ) -> torch.utils.data.Dataset:
+        subset_indices = None
         if self.training_dataset_percentage is not None:
             subset_dict = DatasetUtil(training_dataset).sample_subset(
                 self.training_dataset_percentage
             )
-            sample_indices: list = sum(subset_dict.values(), [])
-            training_dataset = sub_dataset(training_dataset, sample_indices)
+            subset_indices = sum(subset_dict.values(), [])
             with open(
                 os.path.join(self.get_save_dir(), "training_dataset_indices.json"),
                 mode="wt",
             ) as f:
-                json.dump(sample_indices, f)
+                json.dump(subset_indices, f)
 
         if self.training_dataset_indices_path is not None:
-            get_logger().info("use training_dataset_indices_path")
+            assert subset_indices is None
+            get_logger().info(
+                "use training_dataset_indices_path %s",
+                self.training_dataset_indices_path,
+            )
             with open(self.training_dataset_indices_path, "r") as f:
                 subset_indices = json.load(f)
-                training_dataset = sub_dataset(training_dataset, subset_indices)
-        if self.randomized_label_map_path is not None:
-            get_logger().info("use randomized_label_map_path")
+        if subset_indices is not None:
+            training_dataset = sub_dataset(training_dataset, subset_indices)
+
+        randomized_label_map = None
+        if self.training_dataset_label_noise_percentage:
+            randomized_label_map = DatasetUtil(training_dataset).randomize_subset_label(
+                self.training_dataset_label_noise_percentage
+            )
+            with open(
+                os.path.join(
+                    self.get_save_dir(),
+                    "randomized_label_map.json",
+                ),
+                mode="wt",
+            ) as f:
+                json.dump(randomized_label_map, f)
+
+        if self.training_dataset_label_map_path is not None:
+            assert randomized_label_map is not None
+            get_logger().info(
+                "use training_dataset_label_map_path %s",
+                self.training_dataset_label_map_path,
+            )
+            randomized_label_map = json.load(
+                open(self.training_dataset_label_map_path, "r")
+            )
+
+        if randomized_label_map is not None:
             training_dataset = replace_dataset_labels(
-                training_dataset, self.__get_randomized_label_map()
+                training_dataset, randomized_label_map
             )
         return training_dataset
-
-    def __get_randomized_label_map(self):
-        randomized_label_map: dict = dict()
-        with open(self.randomized_label_map_path, "r") as f:
-            for k, v in json.load(f).items():
-                randomized_label_map[int(k)] = int(v)
-        return randomized_label_map
 
     def __apply_env_config(self):
         if self.log_level is not None:
