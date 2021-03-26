@@ -39,6 +39,9 @@ class ModelExecutor:
     def dataset(self):
         return self.dataset_collection.get_dataset(phase=self.__phase)
 
+    def transform_dataset(self, transformer: Callable):
+        self.dataset_collection.transform_dataset(self.phase, transformer)
+
     @property
     def dataloader(self):
         return self.dataset_collection.get_dataloader(
