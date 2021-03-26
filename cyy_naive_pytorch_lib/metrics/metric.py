@@ -6,11 +6,8 @@ class Metric(Callback):
         super().__init__()
         self.__epoch_metrics: dict = dict()
 
-    def clear(self):
+    def _before_execute(self, **__):
         self.__epoch_metrics.clear()
-
-    def _before_execute(self, *_, **__):
-        self.clear()
 
     def get_epoch_metric(self, epoch, name):
         epoch_data = self.__epoch_metrics.get(epoch, None)
