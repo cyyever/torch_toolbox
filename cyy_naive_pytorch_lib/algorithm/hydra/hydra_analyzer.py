@@ -7,7 +7,7 @@ from inference import Inferencer
 from .hydra_callback import HyDRACallback
 
 
-class HyperGradientAnalyzer:
+class HyDRAAnalyzer:
     def __init__(
         self,
         inferencer: Inferencer,
