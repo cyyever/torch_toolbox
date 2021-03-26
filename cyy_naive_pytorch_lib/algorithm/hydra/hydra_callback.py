@@ -1,5 +1,6 @@
 import json
 import os
+import pickle
 import shutil
 
 import torch
@@ -20,7 +21,7 @@ class HyDRACallback(SampleGradientCallback):
     def __init__(self, cache_size, save_dir, **kwargs):
         super().__init__()
         self.cache_size = cache_size
-        self.save_dir = save_dir
+        self.save_dir = os.path.join(save_dir, "HyDRA")
 
         self.computed_indices = None
         self.hessian_computation_arguments = None
@@ -425,6 +426,8 @@ class HyDRACallback(SampleGradientCallback):
             shutil.move(
                 self.hessian_hyper_gradient_and_momentum_dir, hyper_gradient_dir
             )
+        with open(os.path.join(self.save_dir, "training_set_size"), "wb") as f:
+            pickle.dump(training_set_size, f)
 
     def foreach_hyper_gradient(self, use_approximation, callback):
         hyper_gradient_mom_dict = self.__get_hyper_gradient_mom_dict(use_approximation)
