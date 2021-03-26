@@ -96,15 +96,20 @@ class ClassificationInferencer(Inferencer):
     def accuracy_metric(self) -> AccuracyMetric:
         return self.__acc_metric
 
-    def inference(self, *args, **kwargs):
-        per_sample_prob = kwargs.get("per_sample_prob", False)
-        if per_sample_prob:
+    @property
+    def prob_metric(self) -> ProbabilityMetric:
+        return self.__prob_metric
+
+    def inference(self, **kwargs):
+        sample_prob = kwargs.get("sample_prob", False)
+        if sample_prob:
             self.__prob_metric = ProbabilityMetric()
             self.__prob_metric.append_to_model_executor(self)
         else:
             if self.__prob_metric is not None:
                 self.__prob_metric.remove_from_model_executor(self)
-        super().inference(*args, **kwargs)
+                self.__prob_metric = None
+        super().inference(**kwargs)
 
 
 class DetectionInferencer(Inferencer):
