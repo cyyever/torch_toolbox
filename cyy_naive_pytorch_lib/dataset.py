@@ -211,7 +211,7 @@ class DatasetUtil:
 
     def randomize_subset_label(self, percentage: float) -> dict:
         sample_indices = self.sample_subset(percentage)
-        labels = sample_indices.keys()
+        labels = self.get_labels()
         randomized_label_map = dict()
         for label, indices in sample_indices.items():
             other_labels = list(set(labels) - set([label]))
