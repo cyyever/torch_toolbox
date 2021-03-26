@@ -11,7 +11,6 @@ from .hydra_callback import HyDRACallback
 
 class HyperGradientAnalyzer:
     def __init__(self, inferencer: Inferencer, hyper_gradient_dir, cache_size=1024):
-        assert inferencer.loss_fun.reduction in ("mean", "elementwise_mean")
         self.inferencer: Inferencer = inferencer
 
         self.cache_size = cache_size
@@ -36,7 +35,7 @@ class HyperGradientAnalyzer:
                     hyper_gradient_sum = hyper_gradient
                 else:
                     hyper_gradient_sum += hyper_gradient
-            hyper_gradient_sum_dict[str(k)] = hyper_gradient_sum
+            hyper_gradient_sum_dict[k] = hyper_gradient_sum
         test_subset_gradient_dict = self.get_test_gradient_dict(test_subset_dict)
         contribution_dict = dict()
         for (training_key, hyper_gradient_sum) in hyper_gradient_sum_dict.iterate():
@@ -80,5 +79,5 @@ class HyperGradientAnalyzer:
         test_gredient_dict = HyDRACallback.create_hypergradient_dict(self.cache_size)
         test_gredient_dict.set_storage_dir(tempfile.gettempdir())
         for (test_key, gradient) in self.get_test_gradients(test_subset_dict):
-            test_gredient_dict[str(test_key)] = gradient
+            test_gredient_dict[test_key] = gradient
         return test_gredient_dict
