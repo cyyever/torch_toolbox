@@ -145,7 +145,7 @@ class DefaultConfig:
     ) -> torch.utils.data.Dataset:
         subset_indices = None
         if self.training_dataset_percentage is not None:
-            subset_dict = DatasetUtil(training_dataset).IID_sample(
+            subset_dict = DatasetUtil(training_dataset).iid_sample(
                 self.training_dataset_percentage
             )
             subset_indices = sum(subset_dict.values(), [])
