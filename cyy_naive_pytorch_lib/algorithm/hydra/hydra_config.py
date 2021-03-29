@@ -43,7 +43,7 @@ class HyDRAConfig(DefaultConfig):
         hydra_callback.append_to_model_executor(trainer)
 
         if self.tracking_percentage is not None:
-            subset_dict = DatasetUtil(trainer.dataset).IID_sample(
+            subset_dict = DatasetUtil(trainer.dataset).iid_sample(
                 self.tracking_percentage
             )
             self.tracking_indices = sum(subset_dict.values(), [])

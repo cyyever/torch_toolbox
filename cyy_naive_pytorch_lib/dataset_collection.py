@@ -106,7 +106,6 @@ class DatasetCollection:
         training_dataset = None
         validation_dataset = None
         test_dataset = None
-        by_label = True
         if name == "MNIST":
             for for_training in (True, False):
                 dataset = torchvision.datasets.MNIST(
@@ -233,7 +232,7 @@ class DatasetCollection:
             dataset_util = DatasetUtil(test_dataset)
             test_dataset_parts = [1, 1]
             validation_dataset, test_dataset = tuple(
-                dataset_util.split_by_ratio(test_dataset_parts, by_label=by_label)
+                dataset_util.iid_split(test_dataset_parts)
             )
         dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
         DatasetCollection.__dataset_collections[name] = dc
