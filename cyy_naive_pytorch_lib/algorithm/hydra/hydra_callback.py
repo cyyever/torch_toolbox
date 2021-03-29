@@ -11,13 +11,13 @@ from cyy_naive_lib.time_counter import TimeCounter
 from algorithm.hessian_vector_product import get_hessian_vector_product_func
 from algorithm.sample_gradient_callback import SampleGradientCallback
 from data_structure.synced_tensor_dict import SyncedTensorDict
-from dataset import dataset_with_indices
+from hooks.add_index_to_dataset import AddIndexToDataset
 from ml_type import MachineLearningPhase
 from model_util import ModelUtil
 from tensor import get_batch_size
 
 
-class HyDRACallback(SampleGradientCallback):
+class HyDRACallback(SampleGradientCallback, AddIndexToDataset):
     def __init__(self, cache_size, save_dir, **kwargs):
         super().__init__()
         self.cache_size = cache_size
@@ -45,12 +45,10 @@ class HyDRACallback(SampleGradientCallback):
         os.makedirs(self.save_dir, exist_ok=True)
 
     def _before_execute(self, **kwargs):
+        super()._before_execute(**kwargs)
         trainer = kwargs["model_executor"]
         if not self.computed_indices:
             self.computed_indices = set(range(len(trainer.dataset)))
-        trainer.dataset_collection.transform_dataset(
-            MachineLearningPhase.Training, dataset_with_indices
-        )
         if self.use_hessian:
             get_logger().info("use hessian to compute hyper-gradients")
             self.hessian_hyper_gradient_mom_dict = (
@@ -108,7 +106,7 @@ class HyDRACallback(SampleGradientCallback):
                 test_gradient,
                 use_approximation=False,
             )
-        super()._after_execute()
+        super()._after_execute(**kwargs)
 
     def __do_computation_with_hessian(self):
         for chunk in split_list_to_chunks(
