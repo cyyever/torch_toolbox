@@ -198,7 +198,7 @@ class DatasetUtil:
             sub_dataset(self.dataset, indices) for indices in sub_dataset_indices_list
         ]
 
-    def sample_subset(self, percentage: float) -> dict:
+    def IID_sample(self, percentage: float) -> dict:
         label_map = self.split_by_label()
         sample_indices = dict()
         for label, v in label_map.items():
@@ -210,7 +210,7 @@ class DatasetUtil:
         return sample_indices
 
     def randomize_subset_label(self, percentage: float) -> dict:
-        sample_indices = self.sample_subset(percentage)
+        sample_indices = self.IID_sample(percentage)
         labels = self.get_labels()
         randomized_label_map = dict()
         for label, indices in sample_indices.items():
