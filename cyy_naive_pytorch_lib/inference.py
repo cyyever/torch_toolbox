@@ -166,7 +166,6 @@ class DetectionInferencer(Inferencer):
             ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc", after_batch_callback
         )
         super().inference(**kwargs)
-        loss = self.loss
         self.remove_callback("compute_acc", ModelExecutorCallbackPoint.AFTER_BATCH)
 
         accuracy = sum(detection_correct_count_per_label.values()) / sum(
@@ -178,4 +177,4 @@ class DetectionInferencer(Inferencer):
                 detection_correct_count_per_label[label]
                 / detection_count_per_label[label]
             )
-        return (loss, accuracy, {"per_class_accuracy": per_class_accuracy})
+        return (self.loss, accuracy, {"per_class_accuracy": per_class_accuracy})
