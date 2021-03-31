@@ -23,6 +23,7 @@ class DefaultConfig:
         self.make_reproducible = False
         self.reproducible_env_load_path = None
         self.dataset_name = dataset_name
+        self.dataset_args = dict()
         self.training_dataset_percentage = None
         self.training_dataset_indices_path = None
         self.training_dataset_label_map_path = None
@@ -97,7 +98,7 @@ class DefaultConfig:
         )
         assert hyper_parameter is not None
 
-        dc = DatasetCollection.get_by_name(self.dataset_name)
+        dc = DatasetCollection.get_by_name(self.dataset_name, **self.dataset_args)
         model_with_loss = get_model(self.model_name, dc)
         trainer = Trainer(model_with_loss, dc, hyper_parameter)
         trainer.dataset_collection.transform_dataset(

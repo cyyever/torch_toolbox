@@ -5,6 +5,7 @@ from typing import Callable, Dict, List
 import torch
 import torchvision
 import torchvision.transforms as transforms
+from cyy_naive_lib.log import get_logger
 
 from dataset import DatasetUtil
 from hyper_parameter import HyperParameter
@@ -98,7 +99,7 @@ class DatasetCollection:
         return os.path.join(DatasetCollection.__dataset_root_dir, name)
 
     @staticmethod
-    def get_by_name(name: str):
+    def get_by_name(name: str, **kwargs):
         if name in DatasetCollection.__dataset_collections:
             return DatasetCollection.__dataset_collections[name]
         root_dir = DatasetCollection.get_dataset_dir(name)
@@ -148,18 +149,26 @@ class DatasetCollection:
         elif name == "CIFAR10":
             for for_training in (True, False):
                 transform = []
+                to_grayscale = kwargs.get("to_grayscale", False)
+                if to_grayscale:
+                    get_logger().warning("convert %s to grayscale", name)
+                    transform += [transforms.Grayscale()]
                 if for_training:
                     transform += [
                         transforms.RandomCrop(32, padding=4),
                         transforms.RandomHorizontalFlip(),
                     ]
 
-                transform += [
-                    transforms.ToTensor(),
-                    transforms.Normalize(
-                        mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616]
-                    ),
-                ]
+                transform.append(transforms.ToTensor())
+                # use MNIST mean and std
+                if to_grayscale:
+                    transform.append(transforms.Normalize(mean=[0.1307], std=[0.3081]))
+                else:
+                    transform.append(
+                        transforms.Normalize(
+                            mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616]
+                        )
+                    )
                 dataset = torchvision.datasets.CIFAR10(
                     root=root_dir,
                     train=for_training,
