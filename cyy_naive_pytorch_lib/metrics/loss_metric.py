@@ -12,7 +12,7 @@ class LossMetric(Metric):
         real_batch_loss = batch_loss
         if model_executor.model_with_loss.is_averaged_loss():
             real_batch_loss *= get_batch_size(model_executor.decode_batch(batch)[0])
-        real_batch_loss /= model_executor.get_data("dataset_size")
+        real_batch_loss /= len(model_executor.dataset)
         epoch_loss = self.get_epoch_metric(epoch, "loss")
         if epoch_loss is None:
             epoch_loss = real_batch_loss
