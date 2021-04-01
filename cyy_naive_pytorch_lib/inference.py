@@ -38,7 +38,6 @@ class Inferencer(ModelExecutor):
         return self._loss_metric
 
     def inference(self, **kwargs):
-        self.set_data("dataset_size", len(self.dataset))
         use_grad = kwargs.get("use_grad", False)
         self.exec_callbacks(
             ModelExecutorCallbackPoint.BEFORE_EXECUTE,
