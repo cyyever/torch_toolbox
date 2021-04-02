@@ -1,5 +1,4 @@
 from cyy_naive_lib.log import get_logger
-
 from ml_type import MachineLearningPhase
 
 from .metric_visualizer import MetricVisualizer
@@ -23,6 +22,13 @@ class ValidationMetricLogger(MetricVisualizer):
             ).get_epoch_metric(epoch, "accuracy"),
         )
         get_logger().info(
+            "epoch: %s, validation_class_accuracy = %s",
+            epoch,
+            model_executor.get_validation_metric(
+                MachineLearningPhase.Test
+            ).get_epoch_metric(epoch, "class_accuracy"),
+        )
+        get_logger().info(
             "epoch: %s, test loss: %s, accuracy = %s",
             epoch,
             model_executor.get_validation_metric(
@@ -31,4 +37,11 @@ class ValidationMetricLogger(MetricVisualizer):
             model_executor.get_validation_metric(
                 MachineLearningPhase.Test
             ).get_epoch_metric(epoch, "accuracy"),
+        )
+        get_logger().info(
+            "epoch: %s, test_class_accuracy = %s",
+            epoch,
+            model_executor.get_validation_metric(
+                MachineLearningPhase.Test
+            ).get_epoch_metric(epoch, "class_accuracy"),
         )

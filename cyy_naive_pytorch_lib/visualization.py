@@ -8,8 +8,8 @@ class Window:
 
     @staticmethod
     def save_envs():
-        for env, vis in Window.__envs.items():
-            vis.save([env])
+        for env, visdom_obj in Window.__envs.items():
+            visdom_obj.save([env])
 
     def __init__(self, title, env=None):
         if env is None:
