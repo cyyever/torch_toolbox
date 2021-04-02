@@ -1,5 +1,5 @@
 import torch
-
+from cyy_naive_lib.log import get_logger
 from dataset import DatasetUtil
 
 from .metric import Metric
@@ -41,9 +41,14 @@ class AccuracyMetric(Metric):
             ).item()
 
     def _after_epoch(self, *args, **kwargs):
-        epoch=kwargs["epoch"]
+        epoch = kwargs["epoch"]
         accuracy = sum(self.__classification_correct_count_per_label.values()) / sum(
             self.__classification_count_per_label.values()
+        )
+        get_logger().info(
+            "label count %s %s",
+            sum(self.__classification_correct_count_per_label.values()),
+            sum(self.__classification_count_per_label.values()),
         )
 
         class_accuracy = dict()
