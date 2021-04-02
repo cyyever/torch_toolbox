@@ -8,7 +8,8 @@ class Window:
 
     @staticmethod
     def save_envs():
-        visdom.Visdom().save(list(Window.__envs.keys()))
+        for env, vis in Window.__envs.items():
+            vis.save([env])
 
     def __init__(self, title, env=None):
         if env is None:
@@ -84,7 +85,7 @@ class Window:
         self.__add_window(win)
 
     def save(self):
-        self.vis.save([self.vis.env])
+        self.vis.save([self.env])
 
     def __add_window(self, win):
         if self.win is None:
