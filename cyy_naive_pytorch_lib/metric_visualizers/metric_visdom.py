@@ -3,7 +3,6 @@ import threading
 
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
-
 from ml_type import MachineLearningPhase
 from visualization import EpochWindow, Window
 
@@ -66,13 +65,6 @@ class MetricVisdom(MetricVisualizer):
                     "class accuracy part " + str(idx), env=self.__visdom_env
                 )
                 for k in sub_list:
-                    get_logger().info(
-                        "epoch: %s, learning_rate: %s, class %s accuracy = %s",
-                        epoch,
-                        learning_rates,
-                        k,
-                        class_accuracy[k],
-                    )
                     class_accuracy_win.plot_accuracy(
                         epoch,
                         class_accuracy[k],

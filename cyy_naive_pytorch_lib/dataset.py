@@ -123,11 +123,11 @@ class DatasetUtil:
         return mean, std
 
     @staticmethod
-    def get_labels_from_target(target):
+    def get_labels_from_target(target) -> set:
         if isinstance(target, int):
             return set([target])
         if isinstance(target, torch.Tensor):
-            return set([target.data.item()])
+            return set(target.tolist())
         if isinstance(target, dict):
             if "labels" in target:
                 return set(target["labels"].tolist())

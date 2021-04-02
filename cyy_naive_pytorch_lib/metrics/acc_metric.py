@@ -30,14 +30,21 @@ class AccuracyMetric(Metric):
         targets = batch[1]
         result = kwargs["result"]
         output = result["output"]
-        for label in DatasetUtil.get_labels_from_target(targets):
-            self.__classification_count_per_label[label] += 1
+        assert isinstance(targets, torch.Tensor)
         correct = torch.eq(torch.max(output, dim=1)[1].cpu(), targets).view(-1)
+        assert correct.shape[0] == targets.shape[0]
 
         for label in self.__classification_correct_count_per_label:
+            self.__classification_count_per_label[label] += torch.sum(
+                targets == label
+            ).item()
             self.__classification_correct_count_per_label[label] += torch.sum(
                 correct[targets == label]
             ).item()
+            assert (
+                self.__classification_correct_count_per_label[label]
+                <= self.__classification_count_per_label[label]
+            )
 
     def _after_epoch(self, *args, **kwargs):
         epoch = kwargs["epoch"]
@@ -56,6 +63,7 @@ class AccuracyMetric(Metric):
                 self.__classification_correct_count_per_label[label]
                 / self.__classification_count_per_label[label]
             )
+        get_logger().info("class_accuracy is %s", class_accuracy)
 
         self._set_epoch_metric(epoch, "accuracy", accuracy)
         self._set_epoch_metric(epoch, "class_accuracy", class_accuracy)
