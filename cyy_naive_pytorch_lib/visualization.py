@@ -88,7 +88,7 @@ class Window:
 
     def __add_window(self, win):
         if self.win is None:
-            Window.__envs[self.env][self.title] = win
+            Window.__windows[self.env][self.title] = win
 
 
 class IterationWindow(Window):
