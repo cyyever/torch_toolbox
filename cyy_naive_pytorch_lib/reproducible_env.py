@@ -1,29 +1,26 @@
-import random
-import os
 import copy
+import os
 import pickle
-import torch
-import numpy
+import random
 
+import numpy
+import torch
 from cyy_naive_lib.log import get_logger
 
 
 class ReproducibleEnv:
-    def __init__(self, path: str = None):
+    def __init__(self):
         self.torch_seed = None
         self.randomlib_state = None
         self.numpy_state = None
-        self.initialized = False
-
-        if path is not None:
-            self.load(path)
+        self.enabled = False
 
     def enable(self):
         """
         https://pytorch.org/docs/stable/notes/randomness.html
         """
 
-        if self.initialized:
+        if self.enabled:
             get_logger().warning("use reproducible env")
         else:
             get_logger().warning("initialize and use reproducible env")
@@ -57,7 +54,7 @@ class ReproducibleEnv:
             get_logger().warning("get numpy random lib state")
             self.numpy_state = numpy.random.get_state()
         assert self.numpy_state is not None
-        self.initialized = True
+        self.enabled = True
 
     def disable(self):
         os.environ.pop("CUBLAS_WORKSPACE_CONFIG")
@@ -75,7 +72,7 @@ class ReproducibleEnv:
         self.disable()
 
     def save(self, save_dir: str):
-        assert self.initialized
+        assert self.enabled
         os.makedirs(save_dir, exist_ok=True)
         env_path = os.path.join(save_dir, "reproducible_env")
         get_logger().warning("save reproducible env to %s", env_path)
@@ -90,13 +87,14 @@ class ReproducibleEnv:
             )
 
     def load(self, path: str):
+        assert not self.enabled
         with open(path, "rb") as f:
             get_logger().warning("load reproducible env from %s", path)
             obj: dict = pickle.load(f)
             self.torch_seed = obj["torch_seed"]
             self.randomlib_state = obj["randomlib_state"]
             self.numpy_state = obj["numpy_state"]
-            self.initialized = False
+            self.enabled = False
 
 
 global_reproducible_env: ReproducibleEnv = ReproducibleEnv()
