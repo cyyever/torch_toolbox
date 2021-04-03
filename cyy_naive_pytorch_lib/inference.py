@@ -1,5 +1,3 @@
-import copy
-
 import torch
 from cyy_naive_lib.log import get_logger
 from torchvision.ops.boxes import box_iou
@@ -23,13 +21,9 @@ class Inferencer(ModelExecutor):
         dataset_collection: DatasetCollection,
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
-        copy_model=True,
     ):
         assert phase != MachineLearningPhase.Training
         super().__init__(model_with_loss, dataset_collection, phase, hyper_parameter)
-        if copy_model:
-            get_logger().debug("copy model in inferencer")
-            self.model_with_loss.set_model(copy.deepcopy(model_with_loss.model))
         self._loss_metric = LossMetric()
         self._loss_metric.append_to_model_executor(self)
 

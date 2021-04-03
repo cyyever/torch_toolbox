@@ -1,5 +1,4 @@
 import argparse
-import copy
 import json
 import os
 import uuid
@@ -108,33 +107,30 @@ class DefaultConfig:
         if self.model_path is not None:
             trainer.load_model(self.model_path)
 
-        hyper_parameter = copy.deepcopy(trainer.hyper_parameter)
-        assert hyper_parameter is not None
         if self.epoch is not None:
-            hyper_parameter.set_epoch(self.epoch)
+            trainer.hyper_parameter.set_epoch(self.epoch)
         if self.batch_size is not None:
-            hyper_parameter.set_batch_size(self.batch_size)
+            trainer.hyper_parameter.set_batch_size(self.batch_size)
         if self.learning_rate is not None and self.find_learning_rate:
             raise RuntimeError(
                 "can't not specify a learning_rate and find a learning_rate at the same time"
             )
         if self.learning_rate is not None:
-            hyper_parameter.set_learning_rate(self.learning_rate)
+            trainer.hyper_parameter.set_learning_rate(self.learning_rate)
         if self.find_learning_rate:
-            hyper_parameter.set_learning_rate(HyperParameterAction.FIND_LR)
+            trainer.hyper_parameter.set_learning_rate(HyperParameterAction.FIND_LR)
         if self.momentum is not None:
-            hyper_parameter.set_momentum(self.momentum)
+            trainer.hyper_parameter.set_momentum(self.momentum)
         if self.weight_decay is not None:
-            hyper_parameter.set_weight_decay(self.weight_decay)
+            trainer.hyper_parameter.set_weight_decay(self.weight_decay)
         if self.optimizer_name is not None:
-            hyper_parameter.set_optimizer_factory(
+            trainer.hyper_parameter.set_optimizer_factory(
                 HyperParameter.get_optimizer_factory(self.optimizer_name)
             )
         if self.learning_rate_scheduler is not None:
-            hyper_parameter.set_lr_scheduler_factory(
+            trainer.hyper_parameter.set_lr_scheduler_factory(
                 HyperParameter.get_lr_scheduler_factory(self.learning_rate_scheduler)
             )
-        trainer.set_hyper_parameter(hyper_parameter)
         return trainer
 
     def create_inferencer(self, phase=MachineLearningPhase.Test) -> Inferencer:

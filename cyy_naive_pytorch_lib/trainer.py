@@ -1,3 +1,4 @@
+import copy
 import logging
 from typing import Callable
 
@@ -64,23 +65,25 @@ class Trainer(ModelExecutor):
         self, phase: MachineLearningPhase, copy_model=True
     ) -> Inferencer:
         assert phase != MachineLearningPhase.Training
+        model_with_loss = self.model_with_loss
+        if copy_model:
+            get_logger().debug("copy model in inferencer")
+            model_with_loss = copy.deepcopy(copy_model)
 
         if self.model_with_loss.model_type == ModelType.Classification:
             return ClassificationInferencer(
-                self.model_with_loss,
+                model_with_loss,
                 self.dataset_collection,
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
-                copy_model=copy_model,
             )
         if self.model_with_loss.model_type == ModelType.Detection:
             return DetectionInferencer(
-                self.model_with_loss,
+                model_with_loss,
                 self.dataset_collection,
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
                 iou_threshold=0.6,
-                copy_model=copy_model,
             )
         assert False
         return None
@@ -127,10 +130,8 @@ class Trainer(ModelExecutor):
         return Trainer.__repeated_training(repeated_num, self, training_callback)
 
     def train(self, **kwargs):
-        training_set_size = len(self.dataset)
         self.remove_optimizer()
         self.remove_lr_scheduler()
-        self.set_data("dataset_size", training_set_size)
         self.exec_callbacks(
             ModelExecutorCallbackPoint.BEFORE_EXECUTE, model_executor=self
         )
