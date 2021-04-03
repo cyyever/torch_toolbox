@@ -51,11 +51,6 @@ class AccuracyMetric(Metric):
         accuracy = sum(self.__classification_correct_count_per_label.values()) / sum(
             self.__classification_count_per_label.values()
         )
-        get_logger().info(
-            "label count %s %s",
-            sum(self.__classification_correct_count_per_label.values()),
-            sum(self.__classification_count_per_label.values()),
-        )
 
         class_accuracy = dict()
         for label in self.__classification_correct_count_per_label:
@@ -63,7 +58,6 @@ class AccuracyMetric(Metric):
                 self.__classification_correct_count_per_label[label]
                 / self.__classification_count_per_label[label]
             )
-        get_logger().info("class_accuracy is %s", class_accuracy)
 
         self._set_epoch_metric(epoch, "accuracy", accuracy)
         self._set_epoch_metric(epoch, "class_accuracy", class_accuracy)
