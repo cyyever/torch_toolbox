@@ -1,4 +1,3 @@
-import copy
 import os
 from typing import Callable, Dict, List, Union
 
@@ -20,7 +19,7 @@ class ModelExecutor:
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
     ):
-        self.__model_with_loss = copy.deepcopy(model_with_loss)
+        self.__model_with_loss = model_with_loss
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
