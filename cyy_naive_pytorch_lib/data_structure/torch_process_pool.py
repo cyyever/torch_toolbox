@@ -6,7 +6,7 @@ import torch
 from cyy_naive_lib.data_structure.executor_pool import ExecutorPool
 
 
-class CUDAProcessPool(ExecutorPool):
+class TorchProcessPool(ExecutorPool):
     def __init__(self):
         super().__init__(
             concurrent.futures.ProcessPoolExecutor(

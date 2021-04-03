@@ -1,9 +1,9 @@
 from cyy_naive_lib.log import get_logger
-
 from default_config import DefaultConfig
-from data_structure.cuda_process_pool import CUDAProcessPool
 from ml_type import StopExecutingException
 from model_executor import ModelExecutorCallbackPoint
+
+from data_structure.torch_process_pool import TorchProcessPool
 
 
 def stop_training(*args, **kwargs):
@@ -20,7 +20,7 @@ def train(worker_id):
 
 
 def test_process_task_queue():
-    pool = CUDAProcessPool()
+    pool = TorchProcessPool()
     for worker_id in range(2):
         pool.exec(train, worker_id)
     pool.stop()
