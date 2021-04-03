@@ -1,3 +1,5 @@
+import threading
+
 import torch
 import visdom
 
@@ -5,11 +7,13 @@ import visdom
 class Window:
     __envs: dict = dict()
     __windows: dict = dict()
+    __lock = threading.RLock()
 
     @staticmethod
     def save_envs():
-        for env, visdom_obj in Window.__envs.items():
-            visdom_obj.save([env])
+        with Window.__lock:
+            for env, visdom_obj in Window.__envs.items():
+                visdom_obj.save([env])
 
     def __init__(self, title, env=None):
         if env is None:
@@ -23,15 +27,17 @@ class Window:
 
     @property
     def vis(self):
-        if self.env not in Window.__envs:
-            Window.__envs[self.env] = visdom.Visdom(env=self.env)
-        return Window.__envs[self.env]
+        with Window.__lock:
+            if self.env not in Window.__envs:
+                Window.__envs[self.env] = visdom.Visdom(env=self.env)
+            return Window.__envs[self.env]
 
     @property
     def win(self):
-        if self.env not in Window.__windows:
-            Window.__windows[self.env] = dict()
-        return Window.__windows[self.env].get(self.title, None)
+        with Window.__lock:
+            if self.env not in Window.__windows:
+                Window.__windows[self.env] = dict()
+            return Window.__windows[self.env].get(self.title, None)
 
     def set_opt(self, k: str, v):
         self.extra_opts[k] = v
@@ -89,7 +95,8 @@ class Window:
 
     def __add_window(self, win):
         if self.win is None:
-            Window.__windows[self.env][self.title] = win
+            with Window.__lock:
+                Window.__windows[self.env][self.title] = win
 
 
 class IterationWindow(Window):
