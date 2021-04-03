@@ -204,8 +204,8 @@ class DefaultConfig:
 
     def __set_reproducible_env(self):
         if self.reproducible_env_load_path is not None:
-            assert not global_reproducible_env.initialized
-            global_reproducible_env.load(self.reproducible_env_load_path)
+            if not global_reproducible_env.enabled:
+                global_reproducible_env.load(self.reproducible_env_load_path)
             self.make_reproducible = True
 
         if self.make_reproducible:
