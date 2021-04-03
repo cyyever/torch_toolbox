@@ -12,10 +12,13 @@ class ValidationMetricLogger(MetricVisualizer):
         epoch = kwargs["epoch"]
         model_executor = kwargs.get("model_executor")
         for phase in [MachineLearningPhase.Validation, MachineLearningPhase.Test]:
+            phase_str = "validation"
+            if phase == MachineLearningPhase.Test:
+                phase_str = "test"
             get_logger().info(
                 "epoch: %s, %s loss: %s, accuracy = %s",
                 epoch,
-                str(phase),
+                phase_str,
                 model_executor.get_validation_metric(phase).get_epoch_metric(
                     epoch, "loss"
                 ),
@@ -24,9 +27,9 @@ class ValidationMetricLogger(MetricVisualizer):
                 ),
             )
             get_logger().info(
-                "epoch: %s, %s class_accuracy = %s",
+                "epoch: %s, %s class accuracy = %s",
                 epoch,
-                str(phase),
+                phase_str,
                 model_executor.get_validation_metric(phase).get_epoch_metric(
                     epoch, "class_accuracy"
                 ),
