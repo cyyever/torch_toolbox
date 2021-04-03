@@ -11,37 +11,23 @@ class ValidationMetricLogger(MetricVisualizer):
     def _after_epoch(self, *args, **kwargs):
         epoch = kwargs["epoch"]
         model_executor = kwargs.get("model_executor")
-        get_logger().info(
-            "epoch: %s, validation loss: %s, accuracy = %s",
-            epoch,
-            model_executor.get_validation_metric(
-                MachineLearningPhase.Validation
-            ).get_epoch_metric(epoch, "loss"),
-            model_executor.get_validation_metric(
-                MachineLearningPhase.Validation
-            ).get_epoch_metric(epoch, "accuracy"),
-        )
-        get_logger().info(
-            "epoch: %s, validation_class_accuracy = %s",
-            epoch,
-            model_executor.get_validation_metric(
-                MachineLearningPhase.Test
-            ).get_epoch_metric(epoch, "class_accuracy"),
-        )
-        get_logger().info(
-            "epoch: %s, test loss: %s, accuracy = %s",
-            epoch,
-            model_executor.get_validation_metric(
-                MachineLearningPhase.Test
-            ).get_epoch_metric(epoch, "loss"),
-            model_executor.get_validation_metric(
-                MachineLearningPhase.Test
-            ).get_epoch_metric(epoch, "accuracy"),
-        )
-        get_logger().info(
-            "epoch: %s, test_class_accuracy = %s",
-            epoch,
-            model_executor.get_validation_metric(
-                MachineLearningPhase.Test
-            ).get_epoch_metric(epoch, "class_accuracy"),
-        )
+        for phase in [MachineLearningPhase.Validation, MachineLearningPhase.Test]:
+            get_logger().info(
+                "epoch: %s, %s loss: %s, accuracy = %s",
+                epoch,
+                str(phase),
+                model_executor.get_validation_metric(phase).get_epoch_metric(
+                    epoch, "loss"
+                ),
+                model_executor.get_validation_metric(phase).get_epoch_metric(
+                    epoch, "accuracy"
+                ),
+            )
+            get_logger().info(
+                "epoch: %s, %s class_accuracy = %s",
+                epoch,
+                str(phase),
+                model_executor.get_validation_metric(phase).get_epoch_metric(
+                    epoch, "class_accuracy"
+                ),
+            )
