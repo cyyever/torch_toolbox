@@ -4,8 +4,7 @@ import atexit
 
 import torch.autograd as autograd
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
-
-from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
+from data_structure.torch_process_task_queue import TorchProcessTaskQueue
 from device import get_cuda_devices
 from model_util import ModelUtil
 from model_with_loss import ModelWithLoss
@@ -112,7 +111,7 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
         assert len(vector_chunks) <= len(devices)
 
         if __task_queue is None:
-            __task_queue = CUDAProcessTaskQueue(worker_fun)
+            __task_queue = TorchProcessTaskQueue(worker_fun)
         __task_queue.start()
         for idx, vector_chunk in enumerate(vector_chunks):
             __task_queue.add_task(
