@@ -1,5 +1,5 @@
 from shutil import which
-from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
+from data_structure.torch_process_task_queue import TorchProcessTaskQueue
 
 
 def hello(task, args):
@@ -9,7 +9,7 @@ def hello(task, args):
 
 def test_process_task_queue():
     if which("nvcc"):
-        queue = CUDAProcessTaskQueue(hello)
+        queue = TorchProcessTaskQueue(hello)
         queue.start()
         queue.add_task(())
         devices = queue.get_result()
