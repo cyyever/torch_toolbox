@@ -7,7 +7,7 @@ from cyy_naive_lib.data_structure.task_queue import TaskQueue
 from device import get_cuda_devices
 
 
-class CUDAProcessTaskQueue(TaskQueue):
+class TorchProcessTaskQueue(TaskQueue):
     def __init__(self, worker_fun: Callable):
         self.cuda_devices = get_cuda_devices()
         super().__init__(
