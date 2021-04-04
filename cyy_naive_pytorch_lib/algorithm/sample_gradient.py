@@ -4,8 +4,7 @@ import atexit
 
 import torch
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
-
-from data_structure.cuda_process_task_queue import CUDAProcessTaskQueue
+from data_structure.torch_process_task_queue import TorchProcessTaskQueue
 from device import get_cuda_devices
 from ml_type import MachineLearningPhase
 from model_util import ModelUtil
@@ -69,7 +68,7 @@ def get_sample_gradient(model_with_loss: ModelWithLoss, inputs, targets):
         split_list_to_chunks(targets, (len(targets) + len(devices) - 1) // len(devices))
     )
     if __task_queue is None:
-        __task_queue = CUDAProcessTaskQueue(__worker_fun)
+        __task_queue = TorchProcessTaskQueue(__worker_fun)
     __task_queue.start()
     for idx, (input_chunk, target_chunk) in enumerate(zip(input_chunks, target_chunks)):
         __task_queue.add_task(
