@@ -2,11 +2,11 @@
 
 import torch
 from cyy_naive_lib.log import get_logger
+from device import get_device
+from model_with_loss import ModelWithLoss
 
 from algorithm.conjugate_gradient import conjugate_gradient_general
 from algorithm.hessian_vector_product import get_hessian_vector_product_func
-from device import get_device
-from model_with_loss import ModelWithLoss
 
 
 def stochastic_inverse_hessian_vector_product(
@@ -75,9 +75,9 @@ def stochastic_inverse_hessian_vector_product(
 
 
 def conjugate_gradient_inverse_hessian_vector_product(
-    model_with_loss: ModelWithLoss, dataset, v, max_iteration=None
+    model_with_loss: ModelWithLoss, dataset, batch_size, v, max_iteration=None
 ):
-    data_loader = torch.utils.data.DataLoader(dataset, batch_size=len(dataset))
+    data_loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
     for batch in data_loader:
         hvp_function = get_hessian_vector_product_func(model_with_loss, batch)
         return conjugate_gradient_general(hvp_function, v, max_iteration)
