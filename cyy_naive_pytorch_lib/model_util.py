@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.utils.prune as prune
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_order
 
-from tensor import cat_tensors_to_vector, load_dict_values
+from tensor import cat_tensors_to_vector, load_tensor_dict
 
 
 class ModelUtil:
@@ -25,7 +25,7 @@ class ModelUtil:
     def load_parameter_list(self, parameter_list: torch.Tensor, as_parameter=True):
         parameter_dict = self.get_parameter_dict()
         assert parameter_dict is not None
-        load_dict_values(parameter_dict, parameter_list)
+        load_tensor_dict(parameter_dict, parameter_list)
         self.load_parameter_dict(parameter_dict, as_parameter=as_parameter)
 
     def get_gradient_list(self):

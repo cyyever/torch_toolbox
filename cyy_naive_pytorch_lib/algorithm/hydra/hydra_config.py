@@ -17,18 +17,6 @@ class HyDRAConfig(DefaultConfig):
         self.use_hessian: bool = False
         self.use_approximation: bool = True
 
-    # def load_args(self, parser=None):
-    #     if parser is None:
-    #         parser = argparse.ArgumentParser()
-    #     parser.add_argument(
-    #         "--algo.hydra.use_hessian", action="store_true", default=False
-    #     )
-    #     parser.add_argument(
-    #         "--algo.hydra.no_approximation", action="store_true", default=False
-    #     )
-    #     parser.add_argument("--algo.hydra.", type=float, default=None)
-    #     super().load_args(parser=parser)
-
     def create_trainer(self, **kwargs):
         trainer = super().create_trainer(**kwargs)
 

@@ -4,17 +4,15 @@ import pickle
 import shutil
 
 import torch
+from algorithm.hessian_vector_product import get_hessian_vector_product_func
+from algorithm.sample_gradient_callback import SampleGradientCallback
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.time_counter import TimeCounter
-
-from algorithm.hessian_vector_product import get_hessian_vector_product_func
-from algorithm.sample_gradient_callback import SampleGradientCallback
 from data_structure.synced_tensor_dict import SyncedTensorDict
 from hooks.add_index_to_dataset import AddIndexToDataset
 from ml_type import MachineLearningPhase
 from model_util import ModelUtil
-from tensor import get_batch_size
 
 
 class HyDRACallback(SampleGradientCallback, AddIndexToDataset):
@@ -327,7 +325,7 @@ class HyDRACallback(SampleGradientCallback, AddIndexToDataset):
         cur_learning_rates = trainer.get_data("cur_learning_rates")
         assert len(cur_learning_rates) == 1
         cur_learning_rate = cur_learning_rates[0]
-        batch_size = get_batch_size(kwargs.get("batch"))
+        batch_size = kwargs["batch_size"]
 
         momentums = [group["momentum"] for group in optimizer.param_groups]
         if len(momentums) != 1:

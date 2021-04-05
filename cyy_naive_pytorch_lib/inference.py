@@ -53,7 +53,7 @@ class Inferencer(ModelExecutor):
                 if use_grad:
                     real_batch_loss = batch_loss
                     if self.model_with_loss.is_averaged_loss():
-                        real_batch_loss *= ModelExecutor.get_batch_size(inputs)
+                        real_batch_loss *= self.get_batch_size(targets)
                     real_batch_loss /= len(self.dataset)
                     real_batch_loss.backward()
 

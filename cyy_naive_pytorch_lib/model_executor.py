@@ -170,10 +170,9 @@ class ModelExecutor:
             return (sample_inputs, sample_targets, batch[2])
         return (sample_inputs, sample_targets, {})
 
-    @staticmethod
-    def get_batch_size(batch):
-        if isinstance(batch, torch.Tensor):
-            return batch.shape[0]
-        if isinstance(batch, list):
-            return len(batch)
-        raise RuntimeError("invalid tensors:" + str(batch))
+    def get_batch_size(self, targets):
+        if isinstance(targets, torch.Tensor):
+            return targets.shape[0]
+        if isinstance(targets, list):
+            return len(targets)
+        raise RuntimeError("invalid targets:" + str(targets))
