@@ -1,8 +1,7 @@
-import copy
 import tempfile
 
-from algorithm.sample_gradient.sample_gradient_callback import \
-    SampleGradientCallback
+from algorithm.sample_gradient.sample_gradient_util import \
+    get_sample_gradient_dict
 from data_structure.synced_tensor_dict import SyncedTensorDict
 from inference import Inferencer
 
@@ -61,20 +60,18 @@ class HyDRAAnalyzer:
         )
 
     def __get_test_gradient_dict(self, test_subset_dict: dict):
-        tmp_inferencer = copy.deepcopy(self.inferencer)
         computed_indices: list = sum(test_subset_dict.values(), [])
-        callback = SampleGradientCallback(storage_dir=tempfile.gettempdir())
-        callback.set_computed_indices(computed_indices)
-        callback.append_to_model_executor(tmp_inferencer)
-        tmp_inferencer.inference(use_grad=True)
+        sample_gradient_dict = get_sample_gradient_dict(
+            self.inferencer, computed_indices
+        )
         test_gredient_dict = SyncedTensorDict.create(key_type=str)
         test_gredient_dict.set_storage_dir(tempfile.gettempdir())
         for test_key, indices in test_subset_dict.items():
-            for idx, sample_gradient in callback.sample_gradient_dict.iterate(indices):
+            for idx, sample_gradient in sample_gradient_dict.iterate(indices):
                 assert idx in indices
                 if test_key not in test_gredient_dict:
                     test_gredient_dict[test_key] = sample_gradient
                 else:
                     test_gredient_dict[test_key] += sample_gradient
-        callback.sample_gradient_dict.clear()
+        sample_gradient_dict.clear()
         return test_gredient_dict
