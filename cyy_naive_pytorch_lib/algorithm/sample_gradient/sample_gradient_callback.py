@@ -1,5 +1,6 @@
-from algorithm.sample_gradient import get_sample_gradient
 from callback import Callback
+
+from .sample_gradient import get_sample_gradient
 
 
 class SampleGradientCallback(Callback):
