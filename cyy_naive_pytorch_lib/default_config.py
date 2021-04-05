@@ -68,11 +68,11 @@ class DefaultConfig:
         for attr in dir(args):
             if attr.startswith("_"):
                 continue
-            if hasattr(self, attr):
-                value = getattr(args, attr)
-                if value is not None:
-                    setattr(self, attr, getattr(args, attr))
+            setattr(self, attr, getattr(args, attr))
         return args
+            # if hasattr(self, attr):
+            #     value = getattr(args, attr)
+            #     if value is not None:
 
     def get_save_dir(self):
         if self.save_dir is None:
