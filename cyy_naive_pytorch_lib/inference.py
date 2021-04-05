@@ -63,6 +63,7 @@ class Inferencer(ModelExecutor):
                     batch=batch,
                     batch_loss=batch_loss,
                     batch_index=batch_index,
+                    batch_size=self.get_batch_size(targets),
                     result=result,
                     epoch=1,
                 )

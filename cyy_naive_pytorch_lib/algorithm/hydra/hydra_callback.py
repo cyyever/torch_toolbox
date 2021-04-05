@@ -304,7 +304,7 @@ class HyDRACallback(SampleGradientCallback, AddIndexToDataset):
         instance_indices = {idx.data.item() for idx in batch[2]["index"]}
 
         batch_gradient_indices = instance_indices & self.computed_indices
-        assert batch_gradient_indices == self.sample_gradients.keys()
+        assert batch_gradient_indices == self.sample_gradient_dict.keys()
 
         if self.use_approximation:
             self.approx_hyper_gradient_mom_dict.prefetch(batch_gradient_indices)
@@ -338,9 +338,9 @@ class HyDRACallback(SampleGradientCallback, AddIndexToDataset):
 
         for idx in self.computed_indices:
             instance_gradient = None
-            if idx in self.sample_gradients:
+            if idx in self.sample_gradient_dict:
                 instance_gradient = (
-                    (self.sample_gradients[idx] * training_set_size / batch_size)
+                    (self.sample_gradient_dict[idx] * training_set_size / batch_size)
                     .detach()
                     .clone()
                 )
@@ -359,7 +359,7 @@ class HyDRACallback(SampleGradientCallback, AddIndexToDataset):
             self.__do_computation_with_hessian()
         if self.use_approximation:
             for idx in self.computed_indices:
-                if idx in self.sample_gradients:
+                if idx in self.sample_gradient_dict:
                     self.do_delayed_computation(idx)
 
     def __get_hyper_gradient_and_momentum(self, index, use_approximation):
