@@ -154,13 +154,14 @@ class Trainer(ModelExecutor):
                         assert lr_scheduler is not None
                         self.model.to(self.device)
                         optimizer.zero_grad()
+                        sample_inputs, sample_targets, _ = self.decode_batch(batch)
                         self.exec_callbacks(
                             ModelExecutorCallbackPoint.BEFORE_BATCH,
                             model_executor=self,
                             batch_index=batch_index,
                             batch=batch,
+                            batch_size=self.get_batch_size(sample_targets),
                         )
-                        sample_inputs, sample_targets, _ = self.decode_batch(batch)
                         optimizer.zero_grad()
                         result = self.model_with_loss(
                             sample_inputs, sample_targets, self.phase
@@ -188,6 +189,7 @@ class Trainer(ModelExecutor):
                             batch=batch,
                             epoch=epoch,
                             batch_loss=batch_loss,
+                            batch_size=self.get_batch_size(sample_targets),
                         )
 
                 self.exec_callbacks(
