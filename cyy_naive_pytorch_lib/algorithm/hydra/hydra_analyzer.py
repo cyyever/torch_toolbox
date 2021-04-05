@@ -1,7 +1,9 @@
 import copy
 import tempfile
 
-from dataset import sub_dataset
+from algorithm.sample_gradient.sample_gradient_callback import \
+    SampleGradientCallback
+from data_structure.synced_tensor_dict import SyncedTensorDict
 from inference import Inferencer
 
 from .hydra_callback import HyDRACallback
@@ -16,7 +18,7 @@ class HyDRAAnalyzer:
         cache_size=1024,
     ):
         self.inferencer: Inferencer = inferencer
-        self.hyper_gradient_matrix = HyDRACallback.create_hypergradient_dict(
+        self.hydra_gradient = HyDRACallback.create_hypergradient_dict(
             cache_size, self.inferencer.model, storage_dir=hyper_gradient_dir
         )
         self.cache_size = cache_size
@@ -32,7 +34,7 @@ class HyDRAAnalyzer:
 
         for k, indices in training_subset_dict.items():
             hyper_gradient_sum = None
-            for (_, hyper_gradient) in self.hyper_gradient_matrix.iterate(indices):
+            for (_, hyper_gradient) in self.hydra_gradient.iterate(indices):
                 if hyper_gradient_sum is None:
                     hyper_gradient_sum = hyper_gradient
                 else:
@@ -53,22 +55,26 @@ class HyDRAAnalyzer:
         self, test_subset_dict, training_subset_indices=None
     ):
         if training_subset_indices is None:
-            training_subset_indices = self.hyper_gradient_matrix.keys()
+            training_subset_indices = self.hydra_gradient.keys()
         return self.get_subset_contributions(
             {idx: [idx] for idx in training_subset_indices}, test_subset_dict
         )
 
-    def __get_test_gradients(self, test_subset_dict: dict):
-        tmp_inferencer = copy.deepcopy(self.inferencer)
-        for test_key, indices in test_subset_dict.items():
-            subset = sub_dataset(self.inferencer.dataset, indices)
-            assert len(subset) == len(indices)
-            tmp_inferencer.set_dataset(subset)
-            yield (test_key, tmp_inferencer.get_gradient() * len(subset))
-
     def __get_test_gradient_dict(self, test_subset_dict: dict):
-        test_gredient_dict = HyDRACallback.create_hypergradient_dict(self.cache_size)
+        tmp_inferencer = copy.deepcopy(self.inferencer)
+        computed_indices: list = sum(test_subset_dict.values(), [])
+        callback = SampleGradientCallback(storage_dir=tempfile.gettempdir())
+        callback.set_computed_indices(computed_indices)
+        callback.append_to_model_executor(tmp_inferencer)
+        tmp_inferencer.inference(use_grad=True)
+        test_gredient_dict = SyncedTensorDict.create(key_type=str)
         test_gredient_dict.set_storage_dir(tempfile.gettempdir())
-        for (test_key, gradient) in self.__get_test_gradients(test_subset_dict):
-            test_gredient_dict[test_key] = gradient
+        for test_key, indices in test_subset_dict.items():
+            for idx, sample_gradient in callback.sample_gradient_dict.iterate(indices):
+                assert idx in indices
+                if test_key not in test_gredient_dict:
+                    test_gredient_dict[test_key] = sample_gradient
+                else:
+                    test_gredient_dict[test_key] += sample_gradient
+        callback.sample_gradient_dict.clear()
         return test_gredient_dict

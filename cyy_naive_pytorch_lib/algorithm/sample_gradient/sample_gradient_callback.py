@@ -1,20 +1,28 @@
 from callback import Callback
+from data_structure.synced_tensor_dict import SyncedTensorDict
 
 from .sample_gradient import get_sample_gradient
 
 
 class SampleGradientCallback(Callback):
     def __init__(self, *args, **kwargs):
+        storage_dir = kwargs.pop("storage_dir", None)
         super().__init__(*args, **kwargs)
-        self.__sample_gradients = dict()
         self.__computed_indices = None
+        self.__sample_gradient_dict = SyncedTensorDict.create()
+        self.__storage_dir = storage_dir
+        if storage_dir is not None:
+            self.__sample_gradient_dict.set_storage_dir(storage_dir)
 
     @property
-    def sample_gradients(self):
-        return self.__sample_gradients
+    def sample_gradient_dict(self):
+        return self.__sample_gradient_dict
 
     def set_computed_indices(self, computed_indices):
         self.__computed_indices = set(computed_indices)
+
+    def _before_execute(self, **kwargs):
+        self.sample_gradient_dict.clear()
 
     def _before_batch(self, **kwargs):
         trainer = kwargs["model_executor"]
@@ -27,7 +35,7 @@ class SampleGradientCallback(Callback):
         batch_gradient_indices: set = instance_indices
         if self.__computed_indices is not None:
             batch_gradient_indices &= self.__computed_indices
-        self.__sample_gradients.clear()
+        self.__sample_gradient_dict.clear()
         sample_gradient_inputs = []
         sample_gradient_targets = []
         sample_gradient_indices = []
@@ -49,7 +57,8 @@ class SampleGradientCallback(Callback):
 
         assert len(gradient_list) == len(sample_gradient_indices)
         for (sample_gradient, index) in zip(gradient_list, sample_gradient_indices):
-            self.__sample_gradients[index] = sample_gradient
+            self.sample_gradient_dict[index] = sample_gradient
 
     def _after_execute(self, **kwargs):
-        self.__sample_gradients.clear()
+        if not self.__storage_dir:
+            self.sample_gradient_dict.clear()
