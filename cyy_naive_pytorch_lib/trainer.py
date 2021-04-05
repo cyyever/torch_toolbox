@@ -6,6 +6,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from dataset_collection import DatasetCollection
+from hooks.save_model import SaveModelHook
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
 from metric_visualizers.loss_metric_logger import LossMetricLogger
@@ -24,6 +25,7 @@ class Trainer(ModelExecutor):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         hyper_parameter: HyperParameter,
+        save_dir=None,
     ):
         super().__init__(
             model_with_loss,
@@ -53,6 +55,8 @@ class Trainer(ModelExecutor):
         self.__validation_loss_logger.append_to_model_executor(self)
         self.__metric_visdom = MetricVisdom()
         self.__metric_visdom.append_to_model_executor(self)
+        self.__save_model_hook = SaveModelHook()
+        self.save_dir = save_dir
 
     def get_validation_metric(self, phase):
         return self.__validation_metrics.get(phase)
@@ -132,6 +136,11 @@ class Trainer(ModelExecutor):
     def train(self, **kwargs):
         self.remove_optimizer()
         self.remove_lr_scheduler()
+
+        if kwargs.get("save_model", True):
+            self.__save_model_hook.append_to_model_executor(self)
+        else:
+            self.__save_model_hook.remove_from_model_executor(self)
         self.exec_callbacks(
             ModelExecutorCallbackPoint.BEFORE_EXECUTE, model_executor=self
         )

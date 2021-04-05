@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import json
 import os
 import uuid
@@ -70,14 +71,15 @@ class DefaultConfig:
                 continue
             setattr(self, attr, getattr(args, attr))
         return args
-            # if hasattr(self, attr):
-            #     value = getattr(args, attr)
-            #     if value is not None:
 
     def get_save_dir(self):
         if self.save_dir is None:
             self.save_dir = os.path.join(
-                "session", self.dataset_name, self.model_name, str(uuid.uuid4())
+                "session",
+                self.dataset_name,
+                self.model_name,
+                "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now()),
+                str(uuid.uuid4()),
             )
         os.makedirs(self.save_dir, exist_ok=True)
         return self.save_dir
