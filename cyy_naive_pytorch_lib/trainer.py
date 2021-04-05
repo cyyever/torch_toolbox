@@ -137,7 +137,7 @@ class Trainer(ModelExecutor):
         self.remove_optimizer()
         self.remove_lr_scheduler()
 
-        if kwargs.get("save_model", True):
+        if kwargs.get("save_model", True) and self.save_dir:
             self.__save_model_hook.append_to_model_executor(self)
         else:
             self.__save_model_hook.remove_from_model_executor(self)
