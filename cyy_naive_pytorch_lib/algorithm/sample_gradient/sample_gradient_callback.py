@@ -25,7 +25,7 @@ class SampleGradientCallback(AddIndexToDataset):
         self.__computed_indices = set(computed_indices)
 
     def _before_execute(self, **kwargs):
-        super()._before_execute(kwargs)
+        super()._before_execute(**kwargs)
         self.sample_gradient_dict.clear()
 
     def _before_batch(self, **kwargs):
@@ -68,4 +68,4 @@ class SampleGradientCallback(AddIndexToDataset):
     def _after_execute(self, **kwargs):
         if not self.__storage_dir:
             self.sample_gradient_dict.clear()
-        super()._after_execute(kwargs)
+        super()._after_execute(**kwargs)
