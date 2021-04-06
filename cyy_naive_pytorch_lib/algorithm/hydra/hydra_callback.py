@@ -195,27 +195,17 @@ class HyDRACallback(SampleGradientCallback, AddIndexToDataset):
 
     def do_delayed_computation(self, index=None):
         if index is None:
-            fast_keys = (
-                self.approx_hyper_gradient_mom_dict.in_memory_keys()
-                & self.delayed_approximation_computations.keys()
-            )
-            get_logger().info(
-                "begin do do_delayed_computation from fast keys %s", len(fast_keys)
-            )
-            for k in fast_keys:
-                if self.delayed_approximation_computations[k]:
-                    self.do_delayed_computation(k)
-            get_logger().info("end do do_delayed_computation from fast keys")
-            self.approx_hyper_gradient_mom_dict.flush_all(wait=False)
-
             unfinished_keys = []
             for k, v in self.delayed_approximation_computations.items():
                 if v:
                     unfinished_keys.append(k)
 
-            for (k, _) in self.approx_hyper_gradient_mom_dict.iterate(unfinished_keys):
-                get_logger().info("do delayed_approximation_computations for %s", k)
-                self.do_delayed_computation(k)
+            if unfinished_keys:
+                for (k, _) in self.approx_hyper_gradient_mom_dict.iterate(
+                    unfinished_keys
+                ):
+                    get_logger().info("do delayed_approximation_computations for %s", k)
+                    self.do_delayed_computation(k)
             return
 
         if index not in self.delayed_approximation_computations:
