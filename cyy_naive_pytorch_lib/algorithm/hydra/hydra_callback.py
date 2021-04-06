@@ -80,7 +80,7 @@ class HyDRACallback(SampleGradientCallback):
         get_logger().info("only compute %s indices", len(computed_indices))
         self.computed_indices = set(computed_indices)
         with open(
-            os.path.join(self.save_dir, "hyper_gradient_indices.json"),
+            os.path.join(self.save_dir, "tracking_indices.json"),
             mode="wb",
         ) as f:
             pickle.dump(self.computed_indices, f)
