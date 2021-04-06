@@ -137,7 +137,7 @@ class Trainer(ModelExecutor):
         self.remove_optimizer()
         self.remove_lr_scheduler()
 
-        if kwargs.get("save_model", True) and self.save_dir:
+        if kwargs.get("save_model", self.save_dir is not None):
             self.__save_model_hook.append_to_model_executor(self)
         else:
             self.__save_model_hook.remove_from_model_executor(self)
@@ -161,19 +161,21 @@ class Trainer(ModelExecutor):
                         lr_scheduler = self.get_lr_scheduler()
                         assert optimizer is not None
                         assert lr_scheduler is not None
-                        self.model.to(self.device)
-                        optimizer.zero_grad()
-                        sample_inputs, sample_targets, _ = self.decode_batch(batch)
+                        # self.model.to(self.device)
                         self.exec_callbacks(
                             ModelExecutorCallbackPoint.BEFORE_BATCH,
                             model_executor=self,
                             batch_index=batch_index,
                             batch=batch,
-                            batch_size=self.get_batch_size(sample_targets),
+                            batch_size=self.get_batch_size(batch[0]),
                         )
                         optimizer.zero_grad()
+                        sample_inputs, sample_targets, _ = self.decode_batch(batch)
                         result = self.model_with_loss(
-                            sample_inputs, sample_targets, self.phase
+                            sample_inputs,
+                            sample_targets,
+                            phase=self.phase,
+                            device=self.device,
                         )
                         loss = result["loss"]
                         loss.backward()

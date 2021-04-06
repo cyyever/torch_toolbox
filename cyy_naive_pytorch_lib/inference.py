@@ -40,7 +40,7 @@ class Inferencer(ModelExecutor):
         with torch.set_grad_enabled(use_grad):
             get_logger().debug("use device %s", self.device)
             self.model.zero_grad()
-            self.model.to(self.device)
+            # self.model.to(self.device)
             self.exec_callbacks(
                 ModelExecutorCallbackPoint.BEFORE_EPOCH,
                 model_executor=self,
@@ -48,7 +48,9 @@ class Inferencer(ModelExecutor):
             )
             for batch_index, batch in enumerate(self.dataloader):
                 inputs, targets, _ = self.decode_batch(batch)
-                result = self.model_with_loss(inputs, targets, phase=self.phase)
+                result = self.model_with_loss(
+                    inputs, targets, phase=self.phase, device=self.device
+                )
                 batch_loss = result["loss"]
                 if use_grad:
                     real_batch_loss = batch_loss
