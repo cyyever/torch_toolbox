@@ -1,12 +1,12 @@
 import copy
 
-from callback import Callback
 from data_structure.synced_tensor_dict import SyncedTensorDict
+from hooks.add_index_to_dataset import AddIndexToDataset
 
 from .sample_gradient import get_sample_gradient
 
 
-class SampleGradientCallback(Callback):
+class SampleGradientCallback(AddIndexToDataset):
     def __init__(self, *args, **kwargs):
         storage_dir = kwargs.pop("storage_dir", None)
         super().__init__(*args, **kwargs)

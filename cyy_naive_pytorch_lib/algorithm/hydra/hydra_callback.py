@@ -11,12 +11,11 @@ from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.time_counter import TimeCounter
 from data_structure.synced_tensor_dict import SyncedTensorDict
-from hooks.add_index_to_dataset import AddIndexToDataset
 from ml_type import MachineLearningPhase
 from model_util import ModelUtil
 
 
-class HyDRACallback(SampleGradientCallback, AddIndexToDataset):
+class HyDRACallback(SampleGradientCallback):
     def __init__(self, cache_size, save_dir, **kwargs):
         super().__init__()
         self.cache_size = cache_size
