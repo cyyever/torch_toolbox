@@ -1,3 +1,5 @@
+import copy
+
 from callback import Callback
 from data_structure.synced_tensor_dict import SyncedTensorDict
 
@@ -11,6 +13,7 @@ class SampleGradientCallback(Callback):
         self.__computed_indices = None
         self.__sample_gradient_dict = SyncedTensorDict.create()
         self.__storage_dir = storage_dir
+        self.__model_with_loss = None
         if storage_dir is not None:
             self.__sample_gradient_dict.set_storage_dir(storage_dir)
 
@@ -49,8 +52,10 @@ class SampleGradientCallback(Callback):
             sample_gradient_indices.append(instance_index)
         if not sample_gradient_indices:
             return
+        if self.__model_with_loss is None:
+            self.__model_with_loss = copy.deepcopy(trainer.model_with_loss)
         gradient_list = get_sample_gradient(
-            trainer.model_with_loss,
+            self.__model_with_loss,
             sample_gradient_inputs,
             sample_gradient_targets,
         )

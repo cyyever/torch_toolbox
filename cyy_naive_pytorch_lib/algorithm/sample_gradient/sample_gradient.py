@@ -50,12 +50,12 @@ def get_sample_gradient(model_with_loss: ModelWithLoss, inputs, targets):
     assert model_with_loss.loss_fun.reduction in ("mean", "elementwise_mean")
     assert len(inputs) == len(targets)
 
-    model = ModelUtil(model_with_loss.model).deepcopy(keep_pruning_mask=False)
-    assert not ModelUtil(model).is_pruned
+    # model = ModelUtil(model_with_loss.model).deepcopy(keep_pruning_mask=False)
+    # assert not ModelUtil(model).is_pruned
     # if ModelUtil(model).is_pruned:
     #     ModelUtil(model).merge_and_remove_masks()
-    model.zero_grad()
-    model.share_memory()
+    model_with_loss.model.zero_grad()
+    model_with_loss.model.share_memory()
 
     devices = get_cuda_devices()
     master_device = devices[0]
@@ -76,7 +76,7 @@ def get_sample_gradient(model_with_loss: ModelWithLoss, inputs, targets):
                 idx,
                 input_chunk,
                 target_chunk,
-                ModelWithLoss(model, model_with_loss.loss_fun),
+                model_with_loss,
                 master_device,
             )
         )
