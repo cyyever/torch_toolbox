@@ -18,8 +18,7 @@ def __get_f(device, inputs, targets, model_with_loss: ModelWithLoss):
         total_loss = None
         for parameter_list in args:
             model_util.load_parameter_list(parameter_list, as_parameter=False)
-            model_with_loss.model.to(device)
-            loss = model_with_loss(inputs, targets)["loss"]
+            loss = model_with_loss(inputs, targets,device=device)["loss"]
             if total_loss is None:
                 total_loss = loss
             else:
