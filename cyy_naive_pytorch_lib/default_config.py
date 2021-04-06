@@ -169,34 +169,30 @@ class DefaultConfig:
         if subset_indices is not None:
             training_dataset = sub_dataset(training_dataset, subset_indices)
 
-        randomized_label_map = None
+        label_map = None
         if self.training_dataset_label_noise_percentage:
-            randomized_label_map = DatasetUtil(training_dataset).randomize_subset_label(
+            label_map = DatasetUtil(training_dataset).randomize_subset_label(
                 self.training_dataset_label_noise_percentage
             )
             with open(
                 os.path.join(
                     self.get_save_dir(),
-                    "randomized_label_map.json",
+                    "training_dataset_label_map.json",
                 ),
                 mode="wt",
             ) as f:
-                json.dump(randomized_label_map, f)
+                json.dump(label_map, f)
 
         if self.training_dataset_label_map_path is not None:
-            assert randomized_label_map is not None
+            assert label_map is not None
             get_logger().info(
                 "use training_dataset_label_map_path %s",
                 self.training_dataset_label_map_path,
             )
-            randomized_label_map = json.load(
-                open(self.training_dataset_label_map_path, "r")
-            )
+            label_map = json.load(open(self.training_dataset_label_map_path, "r"))
 
-        if randomized_label_map is not None:
-            training_dataset = replace_dataset_labels(
-                training_dataset, randomized_label_map
-            )
+        if label_map is not None:
+            training_dataset = replace_dataset_labels(training_dataset, label_map)
         return training_dataset
 
     def __apply_env_config(self):
