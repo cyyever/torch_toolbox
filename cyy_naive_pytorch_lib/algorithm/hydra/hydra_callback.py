@@ -89,7 +89,6 @@ class HyDRACallback(SampleGradientCallback):
     def _after_execute(self, **kwargs):
         get_logger().info("end hyper-gradient tracking")
         trainer = kwargs["model_executor"]
-        trainer.save_model(self.save_dir)
         tester = trainer.get_inferencer(phase=MachineLearningPhase.Test)
         test_gradient = tester.get_gradient()
         if self.use_approximation:

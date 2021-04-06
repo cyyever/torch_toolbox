@@ -21,7 +21,6 @@ setuptools.setup(
         "cyy_naive_pytorch_lib/data_structure",
         "cyy_naive_pytorch_lib/algorithm",
         "cyy_naive_pytorch_lib/algorithm/quantization",
-        "cyy_naive_pytorch_lib/algorithm/influence_function",
         "cyy_naive_pytorch_lib/algorithm/sample_gradient",
         "cyy_naive_pytorch_lib/algorithm/hydra",
         "cyy_naive_pytorch_lib/algorithm/shapely_value",

@@ -3,7 +3,7 @@ from algorithm.inverse_hessian_vector_product import \
 from data_structure.synced_tensor_dict import SyncedTensorDict
 
 
-def compute_classic_influence_function(
+def compute_influence_function(
     trainer,
     test_gradient,
     training_sample_gradient_dict: SyncedTensorDict,
