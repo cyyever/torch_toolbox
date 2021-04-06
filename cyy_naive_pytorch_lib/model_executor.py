@@ -164,8 +164,10 @@ class ModelExecutor:
     def decode_batch(self, batch, device=None):
         if device is None:
             device = self.device
-        sample_inputs = put_data_to_device(batch[0], device)
-        sample_targets = put_data_to_device(batch[1], device)
+        sample_inputs = batch[0]
+        # put_data_to_device(batch[0], device)
+        sample_targets = batch[1]
+        # put_data_to_device(batch[1], device)
         if len(batch) == 3:
             return (sample_inputs, sample_targets, batch[2])
         return (sample_inputs, sample_targets, {})
