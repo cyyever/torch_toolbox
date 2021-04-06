@@ -155,9 +155,12 @@ class ModelExecutor:
         self.model_with_loss.set_model(model)
 
     def load_model(self, model_path):
-        self.set_model(torch.load(model_path, map_location=self.device))
+        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
 
-    def save_model(self, save_dir, model_name="model.pt"):
+    def save_model(self, model_path):
+        torch.save(self.model.state_dict(), model_path)
+
+    def save_model2(self, save_dir, model_name="model.pt"):
         os.makedirs(save_dir, exist_ok=True)
         torch.save(self.model, os.path.join(save_dir, model_name))
 

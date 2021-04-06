@@ -1,7 +1,6 @@
 import os
 import shutil
 
-import torch
 from callback import Callback
 from ml_type import MachineLearningPhase
 
@@ -25,7 +24,7 @@ class SaveModelHook(Callback):
         self.__model_dir = os.path.join(trainer.save_dir, "model")
         os.makedirs(self.__model_dir, exist_ok=True)
         model_path = os.path.join(self.__model_dir, "epoch_" + str(epoch) + ".pt")
-        torch.save(trainer.model, model_path)
+        trainer.save_model(model_path)
         self.__model_paths[epoch] = model_path
         acc = trainer.get_validation_metric(
             MachineLearningPhase.Validation
