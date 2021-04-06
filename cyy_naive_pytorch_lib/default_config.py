@@ -103,7 +103,9 @@ class DefaultConfig:
 
         dc = DatasetCollection.get_by_name(self.dataset_name, **self.dataset_args)
         model_with_loss = get_model(self.model_name, dc)
-        trainer = Trainer(model_with_loss, dc, hyper_parameter)
+        trainer = Trainer(
+            model_with_loss, dc, hyper_parameter, save_dir=self.get_save_dir()
+        )
         trainer.dataset_collection.transform_dataset(
             MachineLearningPhase.Training,
             self.__transform_training_dataset,
