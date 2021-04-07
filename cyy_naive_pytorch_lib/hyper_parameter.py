@@ -238,3 +238,62 @@ def get_recommended_hyper_parameter(
         )
     hyper_parameter.set_optimizer_factory(HyperParameter.get_optimizer_factory("Adam"))
     return hyper_parameter
+
+
+class HyperParameterConfig:
+    def __init__(self):
+        self.epoch = None
+        self.batch_size = None
+        self.find_learning_rate = True
+        self.learning_rate = None
+        self.learning_rate_scheduler = None
+        self.momentum = None
+        self.weight_decay = None
+        self.optimizer_name = None
+
+    def add_args(self, parser):
+        parser.add_argument("--epoch", type=int, default=None)
+        parser.add_argument("--batch_size", type=int, default=None)
+        parser.add_argument("--learning_rate", type=float, default=None)
+        parser.add_argument("--learning_rate_scheduler", type=str, default=None)
+        parser.add_argument("--find_learning_rate", action="store_true", default=False)
+        parser.add_argument("--momentum", type=float, default=None)
+        parser.add_argument("--weight_decay", type=float, default=None)
+        parser.add_argument("--optimizer_name", type=str, default=None)
+
+    def load_args(self, args):
+        for attr in dir(args):
+            if attr.startswith("_"):
+                continue
+            if not hasattr(self, attr):
+                continue
+            get_logger().debug("set dataset collection config attr %s", attr)
+            value = getattr(args, attr)
+            if value is not None:
+                setattr(self, attr, value)
+
+    def create_hyper_parameter(self, dataset_name, model_name):
+        hyper_parameter = get_recommended_hyper_parameter(dataset_name, model_name)
+        hyper_parameter.set_epoch(self.epoch)
+        hyper_parameter.set_batch_size(self.batch_size)
+        if self.learning_rate is not None and self.find_learning_rate:
+            raise RuntimeError(
+                "can't not specify a learning_rate and find a learning_rate at the same time"
+            )
+        if self.learning_rate is not None:
+            hyper_parameter.set_learning_rate(self.learning_rate)
+        if self.find_learning_rate:
+            hyper_parameter.set_learning_rate(HyperParameterAction.FIND_LR)
+        if self.momentum is not None:
+            hyper_parameter.set_momentum(self.momentum)
+        if self.weight_decay is not None:
+            hyper_parameter.set_weight_decay(self.weight_decay)
+        if self.optimizer_name is not None:
+            hyper_parameter.set_optimizer_factory(
+                HyperParameter.get_optimizer_factory(self.optimizer_name)
+            )
+        if self.learning_rate_scheduler is not None:
+            hyper_parameter.set_lr_scheduler_factory(
+                HyperParameter.get_lr_scheduler_factory(self.learning_rate_scheduler)
+            )
+        return hyper_parameter
