@@ -274,8 +274,10 @@ class HyperParameterConfig:
 
     def create_hyper_parameter(self, dataset_name, model_name):
         hyper_parameter = get_recommended_hyper_parameter(dataset_name, model_name)
-        hyper_parameter.set_epoch(self.epoch)
-        hyper_parameter.set_batch_size(self.batch_size)
+        if self.epoch is not None:
+            hyper_parameter.set_epoch(self.epoch)
+        if self.batch_size is not None:
+            hyper_parameter.set_batch_size(self.batch_size)
         if self.learning_rate is not None and self.find_learning_rate:
             raise RuntimeError(
                 "can't not specify a learning_rate and find a learning_rate at the same time"
