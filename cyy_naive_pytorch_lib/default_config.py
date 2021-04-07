@@ -1,14 +1,11 @@
 import argparse
 import datetime
-import json
 import os
 import uuid
 
-import torch
 from cyy_naive_lib.log import get_logger
 
-from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
-from dataset_collection import DatasetCollection
+from dataset_collection import DatasetCollectionConfig
 from hyper_parameter import (HyperParameter, HyperParameterAction,
                              get_recommended_hyper_parameter)
 from inference import Inferencer
@@ -19,16 +16,17 @@ from trainer import Trainer
 
 
 class DefaultConfig:
-    def __init__(self, dataset_name=None, model_name=None):
+    def __init__(self, dataset_name, model_name):
         self.make_reproducible = False
         self.reproducible_env_load_path = None
-        self.dataset_name = dataset_name
-        self.dataset_args = dict()
-        self.training_dataset_percentage = None
-        self.training_dataset_indices_path = None
-        self.training_dataset_label_map_path = None
-        self.training_dataset_label_map = None
-        self.training_dataset_label_noise_percentage = None
+        self.dc_config = DatasetCollectionConfig(dataset_name)
+        # self.dataset_name = dataset_name
+        # self.dataset_args = dict()
+        # self.training_dataset_percentage = None
+        # self.training_dataset_indices_path = None
+        # self.training_dataset_label_map_path = None
+        # self.training_dataset_label_map = None
+        # self.training_dataset_label_noise_percentage = None
         self.model_name = model_name
         self.epoch = None
         self.batch_size = None
@@ -45,7 +43,7 @@ class DefaultConfig:
     def load_args(self, parser=None):
         if parser is None:
             parser = argparse.ArgumentParser()
-        parser.add_argument("--dataset_name", type=str, required=True)
+
         parser.add_argument("--model_name", type=str, required=True)
         parser.add_argument("--epoch", type=int, default=None)
         parser.add_argument("--batch_size", type=int, default=None)
@@ -59,14 +57,18 @@ class DefaultConfig:
         parser.add_argument("--save_dir", type=str, default=None)
         parser.add_argument("--reproducible_env_load_path", type=str, default=None)
         parser.add_argument("--make_reproducible", action="store_true", default=False)
-        parser.add_argument("--training_dataset_percentage", type=float, default=None)
-        parser.add_argument("--training_dataset_indices_path", type=str, default=None)
-        parser.add_argument(
-            "--training_dataset_label_noise_percentage", type=float, default=None
-        )
+        self.dc_config.add_args(parser)
+        # parser.add_argument("--dataset_name", type=str, required=True)
+        # parser.add_argument("--training_dataset_percentage", type=float, default=None)
+        # parser.add_argument("--training_dataset_indices_path", type=str, default=None)
+        # parser.add_argument(
+        #     "--training_dataset_label_noise_percentage", type=float, default=None
+        # )
         parser.add_argument("--log_level", type=str, default=None)
         parser.add_argument("--config_file", type=str, default=None)
         args = parser.parse_args()
+        self.dc_config.load_args(args)
+
         for attr in dir(args):
             if attr.startswith("_"):
                 continue
@@ -79,7 +81,7 @@ class DefaultConfig:
         if self.save_dir is None:
             self.save_dir = os.path.join(
                 "session",
-                self.dataset_name,
+                self.dc_config.dataset_name,
                 self.model_name,
                 "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now()),
                 str(uuid.uuid4()),
@@ -88,28 +90,20 @@ class DefaultConfig:
         return self.save_dir
 
     def create_trainer(self, apply_env_factor=True) -> Trainer:
-        if self.dataset_name is None:
-            raise RuntimeError("dataset_name is None")
-        if self.model_name is None:
-            raise RuntimeError("model_name is None")
         get_logger().info(
-            "use dataset %s and model %s", self.dataset_name, self.model_name
+            "use dataset %s and model %s", self.dc_config.dataset_name, self.model_name
         )
         if apply_env_factor:
             self.__apply_env_config()
         hyper_parameter = get_recommended_hyper_parameter(
-            self.dataset_name, self.model_name
+            self.dc_config.dataset_name, self.model_name
         )
         assert hyper_parameter is not None
 
-        dc = DatasetCollection.get_by_name(self.dataset_name, **self.dataset_args)
+        dc = self.dc_config.create_dataset_collection(self.get_save_dir())
         model_with_loss = get_model(self.model_name, dc)
         trainer = Trainer(
             model_with_loss, dc, hyper_parameter, save_dir=self.get_save_dir()
-        )
-        trainer.dataset_collection.transform_dataset(
-            MachineLearningPhase.Training,
-            self.__transform_training_dataset,
         )
         if self.model_path is not None:
             trainer.load_model(self.model_path)
@@ -143,62 +137,6 @@ class DefaultConfig:
     def create_inferencer(self, phase=MachineLearningPhase.Test) -> Inferencer:
         trainer = self.create_trainer()
         return trainer.get_inferencer(phase)
-
-    def __transform_training_dataset(
-        self, training_dataset
-    ) -> torch.utils.data.Dataset:
-        subset_indices = None
-        if self.training_dataset_percentage is not None:
-            subset_dict = DatasetUtil(training_dataset).iid_sample(
-                self.training_dataset_percentage
-            )
-            subset_indices = sum(subset_dict.values(), [])
-            with open(
-                os.path.join(self.get_save_dir(), "training_dataset_indices.json"),
-                mode="wt",
-            ) as f:
-                json.dump(subset_indices, f)
-
-        if self.training_dataset_indices_path is not None:
-            assert subset_indices is None
-            get_logger().info(
-                "use training_dataset_indices_path %s",
-                self.training_dataset_indices_path,
-            )
-            with open(self.training_dataset_indices_path, "r") as f:
-                subset_indices = json.load(f)
-        if subset_indices is not None:
-            training_dataset = sub_dataset(training_dataset, subset_indices)
-
-        label_map = None
-        if self.training_dataset_label_noise_percentage:
-            label_map = DatasetUtil(training_dataset).randomize_subset_label(
-                self.training_dataset_label_noise_percentage
-            )
-            with open(
-                os.path.join(
-                    self.get_save_dir(),
-                    "training_dataset_label_map.json",
-                ),
-                mode="wt",
-            ) as f:
-                json.dump(label_map, f)
-
-        if self.training_dataset_label_map_path is not None:
-            assert label_map is not None
-            get_logger().info(
-                "use training_dataset_label_map_path %s",
-                self.training_dataset_label_map_path,
-            )
-            self.training_dataset_label_map = json.load(
-                open(self.training_dataset_label_map_path, "r")
-            )
-
-        if self.training_dataset_label_map is not None:
-            training_dataset = replace_dataset_labels(
-                training_dataset, self.training_dataset_label_map_path
-            )
-        return training_dataset
 
     def __apply_env_config(self):
         if self.log_level is not None:
