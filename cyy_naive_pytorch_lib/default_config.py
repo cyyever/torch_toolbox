@@ -27,6 +27,7 @@ class DefaultConfig:
         self.training_dataset_percentage = None
         self.training_dataset_indices_path = None
         self.training_dataset_label_map_path = None
+        self.training_dataset_label_map = None
         self.training_dataset_label_noise_percentage = None
         self.model_name = model_name
         self.epoch = None
@@ -189,10 +190,14 @@ class DefaultConfig:
                 "use training_dataset_label_map_path %s",
                 self.training_dataset_label_map_path,
             )
-            label_map = json.load(open(self.training_dataset_label_map_path, "r"))
+            self.training_dataset_label_map = json.load(
+                open(self.training_dataset_label_map_path, "r")
+            )
 
-        if label_map is not None:
-            training_dataset = replace_dataset_labels(training_dataset, label_map)
+        if self.training_dataset_label_map is not None:
+            training_dataset = replace_dataset_labels(
+                training_dataset, self.training_dataset_label_map_path
+            )
         return training_dataset
 
     def __apply_env_config(self):
