@@ -18,8 +18,8 @@ class DefaultConfig:
     def __init__(self, dataset_name, model_name):
         self.make_reproducible = False
         self.reproducible_env_load_path = None
-        self.dc_config = DatasetCollectionConfig(dataset_name)
-        self.hyper_parameter_config = HyperParameterConfig()
+        self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
+        self.hyper_parameter_config: HyperParameterConfig = HyperParameterConfig()
         self.model_name = model_name
         self.model_path = None
         self.save_dir = None

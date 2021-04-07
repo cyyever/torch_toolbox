@@ -34,6 +34,9 @@ class DatasetCollection:
         dataset = self.get_dataset(phase)
         self.__datasets[phase] = transformer(dataset)
 
+    def get_training_dataset(self) -> torch.utils.data.Dataset:
+        return self.get_dataset(MachineLearningPhase.Training)
+
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
         assert phase in self.__datasets
         return self.__datasets[phase]
@@ -287,7 +290,7 @@ class DatasetCollectionConfig:
         return dc
 
     def __transform_training_dataset(
-        self, training_dataset, save_dir
+        self, training_dataset, save_dir=None
     ) -> torch.utils.data.Dataset:
         subset_indices = None
         if self.training_dataset_percentage is not None:
