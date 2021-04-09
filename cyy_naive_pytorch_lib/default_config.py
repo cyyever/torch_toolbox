@@ -15,12 +15,12 @@ from trainer import Trainer
 
 
 class DefaultConfig:
-    def __init__(self):
+    def __init__(self, dataset_name=None, model_name=None):
         self.make_reproducible = False
         self.reproducible_env_load_path = None
-        self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig()
+        self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
         self.hyper_parameter_config: HyperParameterConfig = HyperParameterConfig()
-        self.model_name = None
+        self.model_name = model_name
         self.model_path = None
         self.save_dir = None
         self.log_level = None
