@@ -17,7 +17,7 @@ class HyDRAConfig(DefaultConfig):
         self.use_hessian: bool = False
         self.use_approximation: bool = True
 
-    def create_trainer(self, **kwargs):
+    def create_trainer(self, return_hydra_callback=False, **kwargs):
         trainer = super().create_trainer(**kwargs)
 
         hydra_callback = HyDRACallback(
@@ -37,4 +37,6 @@ class HyDRAConfig(DefaultConfig):
             self.tracking_indices = sum(subset_dict.values(), [])
         if self.tracking_indices:
             hydra_callback.set_computed_indices(self.tracking_indices)
-        return trainer
+        if not return_hydra_callback:
+            return trainer
+        return trainer, hydra_callback
