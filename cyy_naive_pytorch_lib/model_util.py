@@ -4,7 +4,7 @@ from typing import Callable, Optional, Type
 import torch
 import torch.nn as nn
 import torch.nn.utils.prune as prune
-from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_order
+from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 
 from tensor import cat_tensors_to_vector, load_tensor_dict
 
@@ -145,7 +145,7 @@ class ModelUtil:
                 res[real_name] = self.get_attr(real_name + "_mask")
                 continue
             res[name] = torch.ones_like(parameter)
-        return cat_tensors_to_vector(get_mapping_values_by_order(res))
+        return cat_tensors_to_vector(get_mapping_values_by_key_order(res))
 
     def get_sparsity(self):
         parameter_list = self.get_parameter_list()
@@ -194,4 +194,4 @@ class ModelUtil:
 
     def __get_parameter_seq(self, detach=False):
         res = self.get_parameter_dict(detach=detach)
-        return get_mapping_values_by_order(res)
+        return get_mapping_values_by_key_order(res)

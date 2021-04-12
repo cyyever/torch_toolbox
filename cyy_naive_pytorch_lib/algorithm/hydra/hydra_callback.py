@@ -431,7 +431,7 @@ class HyDRACallback(SampleGradientCallback):
             )
             callback(index, hyper_gradient)
 
-    def foreach_approx_and_hession_hyper_gradient(self, callback):
+    def foreach_approx_and_hessian_hyper_gradient(self, callback):
         assert self.use_approximation and self.use_hessian
         self.do_delayed_computation()
         hyper_gradient_mom_dict = self.__get_hyper_gradient_mom_dict(True)
@@ -439,7 +439,7 @@ class HyDRACallback(SampleGradientCallback):
             approx_hyper_gradient, _ = self.__get_hyper_gradient_and_momentum(
                 index, True
             )
-            hession_hyper_gradient, _ = self.__get_hyper_gradient_and_momentum(
+            hessian_hyper_gradient, _ = self.__get_hyper_gradient_and_momentum(
                 index, False
             )
-            callback(index, approx_hyper_gradient, hession_hyper_gradient)
+            callback(index, approx_hyper_gradient, hessian_hyper_gradient)
