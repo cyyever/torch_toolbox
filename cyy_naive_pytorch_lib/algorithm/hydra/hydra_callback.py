@@ -422,11 +422,24 @@ class HyDRACallback(SampleGradientCallback):
             pickle.dump(training_set_size, f)
 
     def foreach_hyper_gradient(self, use_approximation: bool, callback):
+        if use_approximation:
+            self.do_delayed_computation()
         hyper_gradient_mom_dict = self.__get_hyper_gradient_mom_dict(use_approximation)
-        for index in hyper_gradient_mom_dict.keys():
-            if use_approximation:
-                self.do_delayed_computation(index)
+        for (index, _) in hyper_gradient_mom_dict.iterate():
             hyper_gradient, _ = self.__get_hyper_gradient_and_momentum(
                 index, use_approximation
             )
             callback(index, hyper_gradient)
+
+    def foreach_approx_and_hession_hyper_gradient(self, callback):
+        assert self.use_approximation and self.use_hessian
+        self.do_delayed_computation()
+        hyper_gradient_mom_dict = self.__get_hyper_gradient_mom_dict(True)
+        for (index, _) in hyper_gradient_mom_dict.iterate():
+            approx_hyper_gradient, _ = self.__get_hyper_gradient_and_momentum(
+                index, True
+            )
+            hession_hyper_gradient, _ = self.__get_hyper_gradient_and_momentum(
+                index, False
+            )
+            callback(index, approx_hyper_gradient, hession_hyper_gradient)
