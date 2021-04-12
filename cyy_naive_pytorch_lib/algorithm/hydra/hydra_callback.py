@@ -4,12 +4,13 @@ import pickle
 import shutil
 
 import torch
-from algorithm.hessian_vector_product import get_hessian_vector_product_func
-from algorithm.sample_gradient.sample_gradient_callback import \
-    SampleGradientCallback
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.time_counter import TimeCounter
+
+from algorithm.hessian_vector_product import get_hessian_vector_product_func
+from algorithm.sample_gradient.sample_gradient_callback import \
+    SampleGradientCallback
 from data_structure.synced_tensor_dict import SyncedTensorDict
 from ml_type import MachineLearningPhase
 from model_util import ModelUtil
@@ -420,7 +421,7 @@ class HyDRACallback(SampleGradientCallback):
         with open(os.path.join(self.save_dir, "training_set_size"), "wb") as f:
             pickle.dump(training_set_size, f)
 
-    def foreach_hyper_gradient(self, use_approximation, callback):
+    def foreach_hyper_gradient(self, use_approximation: bool, callback):
         hyper_gradient_mom_dict = self.__get_hyper_gradient_mom_dict(use_approximation)
         for index in hyper_gradient_mom_dict.keys():
             if use_approximation:
