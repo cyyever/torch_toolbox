@@ -1,9 +1,8 @@
-from pathlib import Path
+import pickle
 
 import numpy as np
 import torch
 import torch.nn as nn
-from cyy_naive_lib.fs.tempdir import TempDir
 
 
 def cat_tensors_to_vector(tensors) -> torch.Tensor:
@@ -22,6 +21,4 @@ def load_tensor_dict(data: dict, values: torch.Tensor):
 
 
 def get_tensor_serialization_size(data):
-    with TempDir():
-        torch.save(data, "tensor_data")
-        return Path("tensor_data").stat().st_size
+    return len(pickle.dumps(data))
