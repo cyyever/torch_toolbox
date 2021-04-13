@@ -1,5 +1,4 @@
 import torch
-from cyy_naive_lib.log import get_logger
 from dataset import DatasetUtil
 
 from .metric import Metric
