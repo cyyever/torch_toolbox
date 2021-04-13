@@ -21,8 +21,8 @@ class ValidationMetricLogger(MetricVisualizer):
                 phase_str,
                 model_executor.get_validation_metric(phase)
                 .get_epoch_metric(epoch, "loss")
-                .data()
-                .item,
+                .data
+                .item(),
                 model_executor.get_validation_metric(phase).get_epoch_metric(
                     epoch, "accuracy"
                 ),

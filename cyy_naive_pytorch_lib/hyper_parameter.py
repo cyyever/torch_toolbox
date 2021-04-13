@@ -178,10 +178,6 @@ class HyperParameter:
             + " weight_decay:"
             + str(self.weight_decay)
         )
-        if self.__optimizer_factory is not None:
-            s += " optimizer factory:" + str(self.__optimizer_factory)
-        if self.__lr_scheduler_factory is not None:
-            s += " lr scheduler factory:" + str(self.__lr_scheduler_factory)
         return s
 
 
