@@ -1,11 +1,12 @@
 import copy
 
 import torch
-from callback import Callback
 from cyy_naive_lib.log import get_logger
-from model_util import ModelUtil
 from torch.quantization.fuser_method_mappings import \
     DEFAULT_OP_LIST_TO_FUSER_METHOD
+
+from callback import Callback
+from model_util import ModelUtil
 from trainer import Trainer
 
 
@@ -21,9 +22,9 @@ class QuantizationAwareTraining(Callback):
         super().__init__()
         self.__replace_layer = replace_layer
         self.__original_model = None
-        self.__replace_model = None
         self.__quantized_model = None
         self.__trainer = None
+        torch.backends.quantized.engine = "fbgemm"
 
     def _before_execute(self, **kwargs):
         trainer = kwargs["model_executor"]
@@ -34,8 +35,8 @@ class QuantizationAwareTraining(Callback):
             self.__original_model = trainer.model
         self.__quantized_model = None
         self.__trainer = trainer
+        model_util = ModelUtil(copy.deepcopy(self.__original_model))
         if self.__replace_layer:
-            model_util = ModelUtil(copy.deepcopy(self.__original_model))
             # change ReLU6 to ReLU
             if model_util.has_sub_module(torch.nn.modules.activation.ReLU6):
                 get_logger().info(
@@ -47,24 +48,25 @@ class QuantizationAwareTraining(Callback):
                         inplace=sub_module.inplace
                     ),
                 )
-        else:
-            model_util = ModelUtil(copy.deepcopy(self.__original_model))
 
+        model_util.model.train()
+        model_util.model.qconfig = torch.quantization.get_default_qat_qconfig("fbgemm")
         if model_util.has_sub_module(torch.quantization.QuantStub):
             quant_model = model_util.model
         else:
             quant_model = torch.quantization.QuantWrapper(model_util.model)
         quant_model.cpu()
-        quant_model.qconfig = torch.quantization.get_default_qat_qconfig("fbgemm")
 
         if hasattr(quant_model, "fuse_model"):
             quant_model.fuse_model()
         else:
+            modules = QuantizationAwareTraining.get_fused_modules(quant_model)
             torch.quantization.fuse_modules(
                 quant_model,
-                QuantizationAwareTraining.get_fused_modules(quant_model),
+                modules,
                 inplace=True,
             )
+            get_logger().info("fuse modules %s", modules)
         torch.quantization.prepare_qat(quant_model, inplace=True)
         get_logger().debug("quant_model is %s", quant_model)
         trainer.set_model(quant_model)
