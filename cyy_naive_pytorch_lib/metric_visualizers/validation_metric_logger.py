@@ -8,7 +8,7 @@ class ValidationMetricLogger(MetricVisualizer):
     def __init__(self):
         super().__init__(metric=None)
 
-    def _after_epoch(self, *args, **kwargs):
+    def _after_epoch(self, **kwargs):
         epoch = kwargs["epoch"]
         model_executor = kwargs.get("model_executor")
         for phase in [MachineLearningPhase.Validation, MachineLearningPhase.Test]:
@@ -19,18 +19,21 @@ class ValidationMetricLogger(MetricVisualizer):
                 "epoch: %s, %s loss: %s, accuracy = %s",
                 epoch,
                 phase_str,
-                model_executor.get_validation_metric(phase).get_epoch_metric(
-                    epoch, "loss"
-                ),
+                model_executor.get_validation_metric(phase)
+                .get_epoch_metric(epoch, "loss")
+                .data()
+                .item,
                 model_executor.get_validation_metric(phase).get_epoch_metric(
                     epoch, "accuracy"
                 ),
             )
-            get_logger().info(
-                "epoch: %s, %s class accuracy = %s",
-                epoch,
-                phase_str,
-                model_executor.get_validation_metric(phase).get_epoch_metric(
-                    epoch, "class_accuracy"
-                ),
-            )
+            class_accuracy = model_executor.get_validation_metric(
+                phase
+            ).get_epoch_metric(epoch, "class_accuracy")
+            if class_accuracy is not None:
+                get_logger().info(
+                    "epoch: %s, %s class accuracy = %s",
+                    epoch,
+                    phase_str,
+                    class_accuracy,
+                )
