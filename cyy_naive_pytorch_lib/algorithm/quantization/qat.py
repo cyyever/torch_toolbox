@@ -1,12 +1,11 @@
 import copy
 
 import torch
+from callback import Callback
 from cyy_naive_lib.log import get_logger
+from model_util import ModelUtil
 from torch.quantization.fuser_method_mappings import \
     DEFAULT_OP_LIST_TO_FUSER_METHOD
-
-from callback import Callback
-from model_util import ModelUtil
 from trainer import Trainer
 
 
@@ -24,20 +23,17 @@ class QuantizationAwareTraining(Callback):
         self.__original_model = None
         self.__replace_model = None
         self.__quantized_model = None
+        self.__trainer = None
 
     def _before_execute(self, **kwargs):
         trainer = kwargs["model_executor"]
-        self.prepare_quantization(trainer)
+        self.__prepare_quantization(trainer)
 
-    def _after_execute(self, **kwargs):
-        trainer = kwargs["model_executor"]
-        trainer.model.cpu()
-        trainer.model.eval()
-        self.__quantized_model = torch.quantization.convert(trainer.model)
-
-    def prepare_quantization(self, trainer: Trainer):
+    def __prepare_quantization(self, trainer: Trainer):
         if self.__original_model is None:
             self.__original_model = trainer.model
+        self.__quantized_model = None
+        self.__trainer = trainer
         if self.__replace_layer:
             model_util = ModelUtil(copy.deepcopy(self.__original_model))
             # change ReLU6 to ReLU
@@ -75,6 +71,10 @@ class QuantizationAwareTraining(Callback):
 
     @property
     def quantized_model(self) -> torch.nn.Module:
+        if self.__quantized_model is None:
+            self.__trainer.model.cpu()
+            self.__trainer.model.eval()
+            self.__quantized_model = torch.quantization.convert(self.__trainer.model)
         return self.__quantized_model
 
     def get_quantized_parameters(self) -> dict:
@@ -146,8 +146,8 @@ class QuantizationAwareTraining(Callback):
     def load_quantized_parameters(self, parameter_dict: dict) -> dict:
         model_util = ModelUtil(self.__original_model)
         processed_modules = set()
-        state_dict = self.__quantized_model.state_dict()
-        quantized_model_util = ModelUtil(self.__quantized_model)
+        state_dict = self.quantized_model.state_dict()
+        quantized_model_util = ModelUtil(self.quantized_model)
         for name, module in self.__original_model.named_modules():
             if isinstance(module, torch.nn.modules.BatchNorm2d):
                 get_logger().debug("ignore BatchNorm2d %s", name)
