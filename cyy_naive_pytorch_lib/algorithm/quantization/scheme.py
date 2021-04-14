@@ -2,8 +2,10 @@ from typing import Callable, Tuple
 
 import cyy_naive_cpp_extension
 import torch
+from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 
 from device import put_data_to_device
+from tensor import cat_tensors_to_vector, split_tensor_to_dict
 
 
 def stochastic_quantization(
@@ -11,7 +13,14 @@ def stochastic_quantization(
 ) -> Tuple[Callable, Callable]:
     """Implement Stochastic Quantization as described in QSGD: Communication-Efficient SGDvia Gradient Quantization and Encoding (https://arxiv.org/pdf/1610.02132.pdf)"""
 
-    def quant(tensor: torch.Tensor):
+    def quant(tensor):
+        name_and_shapes = None
+        if isinstance(tensor):
+            name_and_shapes = []
+            for k in sorted(tensor.keys()):
+                name_and_shapes.append((k, tensor[k].shape))
+            tensor = cat_tensors_to_vector(get_mapping_values_by_key_order(tensor))
+
         old_tensor_shape = tensor.shape
         old_device = tensor.device
         tensor = put_data_to_device(tensor)
@@ -41,12 +50,7 @@ def stochastic_quantization(
             old_tensor_shape
         )
 
-        return (
-            norm,
-            sign_tensor,
-            slot_tensor,
-            quantization_level,
-        )
+        return (norm, sign_tensor, slot_tensor, quantization_level, name_and_shapes)
 
     def dequant(quantized_pair):
         (
@@ -54,10 +58,15 @@ def stochastic_quantization(
             sign_tensor,
             quantized_tensor,
             quantization_level,
+            name_and_shapes,
         ) = quantized_pair
+
         quantized_tensor = quantized_tensor.float()
         quantized_tensor *= norm
         res = quantized_tensor * sign_tensor / quantization_level
+
+        if name_and_shapes is not None:
+            res = split_tensor_to_dict(name_and_shapes, res)
         return res
 
     return (quant, dequant)
