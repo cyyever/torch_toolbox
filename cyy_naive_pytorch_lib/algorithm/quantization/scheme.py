@@ -15,7 +15,7 @@ def stochastic_quantization(
 
     def quant(tensor):
         name_and_shapes = None
-        if isinstance(tensor):
+        if isinstance(tensor, dict):
             name_and_shapes = []
             for k in sorted(tensor.keys()):
                 name_and_shapes.append((k, tensor[k].shape))

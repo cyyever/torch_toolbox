@@ -7,7 +7,7 @@ from data_structure.synced_tensor_dict import SyncedTensorDict
 tensor_dict = SyncedTensorDict.create(int, 10, storage_dir="tensor_dict_dir")
 
 for i in range(100):
-    tensor_dict[i] = torch.Tensor([i])
+    tensor_dict[i] = torch.tensor([i])
 
 for (key, tensor) in tensor_dict.iterate():
     assert tensor == torch.Tensor([key])
