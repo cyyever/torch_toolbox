@@ -136,6 +136,44 @@ class ModelUtil:
                 return True
         return False
 
+    def get_sub_module_blocks(self, block_types: set):
+        if block_types is None:
+            block_types = {
+                [nn.Conv2d, nn.BatchNorm2d, nn.ReLU],
+                [nn.Conv2d, nn.ReLU],
+                [nn.Conv2d, nn.ReLU, nn.MaxPool2d],
+                [nn.Linear, nn.ReLU],
+            }
+        blocks: list = []
+        i = 0
+        modules = list(self.model.named_modules())
+        while i < len(modules):
+            candidates: set = block_types
+            j = i
+            end_index = None
+            while j < len(modules):
+                module = modules[j][1]
+                new_candidates = set()
+                for candidate in candidates:
+                    if isinstance(module, candidate[0]):
+                        if len(candidate) == 1:
+                            end_index = j
+                        else:
+                            new_candidates.add(candidate[1:])
+                if not new_candidates:
+                    break
+                candidates = new_candidates
+                j += 1
+            if end_index is not None:
+                module_name_list = []
+                while i <= end_index:
+                    module_name_list.append(modules[i])
+                    i += 1
+                blocks.append(module_name_list)
+            else:
+                i += 1
+        return blocks
+
     def get_pruning_mask_list(self):
         assert self.is_pruned
         res = dict()
