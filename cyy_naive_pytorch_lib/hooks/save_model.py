@@ -34,11 +34,12 @@ class SaveModelHook(Callback):
         self.__last_epoch = epoch
 
     def _after_execute(self, **kwargs):
-        shutil.copy(
-            self.__model_paths[self.__last_epoch],
-            os.path.join(self.__model_dir, "last.pt"),
-        )
-        shutil.copy(
-            self.__model_paths[self.__best_epoch[0]],
-            os.path.join(self.__model_dir, "best_acc.pt"),
-        )
+        if self.__last_epoch is not None:
+            shutil.copy(
+                self.__model_paths[self.__last_epoch],
+                os.path.join(self.__model_dir, "last.pt"),
+            )
+            shutil.copy(
+                self.__model_paths[self.__best_epoch[0]],
+                os.path.join(self.__model_dir, "best_acc.pt"),
+            )
