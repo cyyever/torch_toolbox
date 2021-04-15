@@ -22,6 +22,7 @@ class DefaultConfig:
         self.hyper_parameter_config: HyperParameterConfig = HyperParameterConfig()
         self.model_name = model_name
         self.model_path = None
+        self.pretrained = False
         self.save_dir = None
         self.log_level = None
 
@@ -31,6 +32,7 @@ class DefaultConfig:
 
         parser.add_argument("--model_name", type=str, required=True)
         parser.add_argument("--model_path", type=str, default=None)
+        parser.add_argument("--pretrained", action="store_true", default=False)
         parser.add_argument("--save_dir", type=str, default=None)
         parser.add_argument("--reproducible_env_load_path", type=str, default=None)
         parser.add_argument("--make_reproducible", action="store_true", default=False)
@@ -73,7 +75,7 @@ class DefaultConfig:
         )
 
         dc = self.dc_config.create_dataset_collection(self.get_save_dir())
-        model_with_loss = get_model(self.model_name, dc)
+        model_with_loss = get_model(self.model_name, dc, pretrained=self.pretrained)
         trainer = Trainer(
             model_with_loss, dc, hyper_parameter, save_dir=self.get_save_dir()
         )
