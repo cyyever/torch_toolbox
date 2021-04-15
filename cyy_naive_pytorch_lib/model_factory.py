@@ -99,4 +99,8 @@ def get_model(
                     retry = True
                     break
             if not retry:
+                if "pretrained" in str(e) and not kwargs["pretrained"]:
+                    kwargs.pop("pretrained")
+                    retry = True
+            if not retry:
                 raise e
