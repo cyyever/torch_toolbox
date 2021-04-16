@@ -48,7 +48,7 @@ def lottery_ticket_prune(
         nonlocal init_hyper_parameter
         nonlocal model_util
 
-        parameters = model_util.get_parameter_list().detach().clone().cpu()
+        parameters = model_util.get_parameter_list(detach=True).clone().cpu()
 
         abs_parameters = parameters.abs()
         abs_parameters = abs_parameters[abs_parameters.nonzero()]
