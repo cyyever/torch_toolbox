@@ -1,11 +1,10 @@
-import os
 from typing import Callable, Dict, List, Union
 
 import torch
 from cyy_naive_lib.log import get_logger
 
 from dataset_collection import DatasetCollection
-from device import get_device, put_data_to_device
+from device import get_device
 from hyper_parameter import HyperParameter
 from ml_type import MachineLearningPhase, ModelExecutorCallbackPoint
 from model_with_loss import ModelWithLoss
@@ -160,17 +159,11 @@ class ModelExecutor:
     def save_model(self, model_path):
         torch.save(self.model.state_dict(), model_path)
 
-    def save_model2(self, save_dir, model_name="model.pt"):
-        os.makedirs(save_dir, exist_ok=True)
-        torch.save(self.model, os.path.join(save_dir, model_name))
-
     def decode_batch(self, batch, device=None):
         if device is None:
             device = self.device
         sample_inputs = batch[0]
-        # put_data_to_device(batch[0], device)
         sample_targets = batch[1]
-        # put_data_to_device(batch[1], device)
         if len(batch) == 3:
             return (sample_inputs, sample_targets, batch[2])
         return (sample_inputs, sample_targets, {})

@@ -139,10 +139,10 @@ class ModelUtil:
     def get_sub_module_blocks(self, block_types: set = None):
         if block_types is None:
             block_types = {
-                [nn.Conv2d, nn.BatchNorm2d, nn.ReLU],
-                [nn.Conv2d, nn.ReLU],
-                [nn.Conv2d, nn.ReLU, nn.MaxPool2d],
-                [nn.Linear, nn.ReLU],
+                (nn.Conv2d, nn.BatchNorm2d, nn.ReLU),
+                (nn.Conv2d, nn.ReLU),
+                (nn.Conv2d, nn.ReLU, nn.MaxPool2d),
+                (nn.Linear, nn.ReLU),
             }
         blocks: list = []
         i = 0
