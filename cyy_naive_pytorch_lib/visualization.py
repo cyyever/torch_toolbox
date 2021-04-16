@@ -100,21 +100,21 @@ class Window:
 
 
 class IterationWindow(Window):
-    def plot_learning_rate(self, epoch, learning_rate):
+    def plot_learning_rate(self, iteration, learning_rate):
         self.y_label = "Learning Rate"
-        self.plot_scalar(epoch, learning_rate)
+        self.plot_scalar(iteration, learning_rate)
 
-    def plot_loss(self, epoch, loss, name=None):
+    def plot_loss(self, iteration, loss, name=None):
         self.y_label = "Loss"
-        return self.plot_scalar(epoch, loss, name=name)
+        return self.plot_scalar(iteration, loss, name=name)
 
-    def plot_accuracy(self, epoch, accuracy, name=None):
+    def plot_accuracy(self, iteration, accuracy, name=None):
         self.y_label = "Accuracy"
-        return self.plot_scalar(epoch, accuracy, name=name)
+        return self.plot_scalar(iteration, accuracy, name=name)
 
-    def plot_scalar(self, epoch, scalar, name=None):
+    def plot_scalar(self, iteration, scalar, name=None):
         super().plot_line(
-            torch.LongTensor([epoch]),
+            torch.LongTensor([iteration]),
             torch.Tensor([scalar]),
             name=name,
         )
