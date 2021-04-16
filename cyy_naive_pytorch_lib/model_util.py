@@ -167,9 +167,9 @@ class ModelUtil:
             if end_index is not None:
                 module_name_list = []
                 while i <= end_index:
-                    module_name_list.append(modules[i])
+                    module_name_list.append(modules[i][0])
                     i += 1
-                blocks.append(module_name_list)
+                blocks.append(tuple(module_name_list))
             else:
                 i += 1
         return blocks
