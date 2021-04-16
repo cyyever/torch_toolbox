@@ -53,17 +53,21 @@ class Trainer(ModelExecutor):
         self.__loss_logger.append_to_model_executor(self)
         self.__validation_loss_logger = ValidationMetricLogger()
         self.__validation_loss_logger.append_to_model_executor(self)
-        self.__metric_visdom = MetricVisdom()
+        self.__metric_visdom: MetricVisdom = MetricVisdom()
         self.__metric_visdom.append_to_model_executor(self)
         self.__save_model_hook = SaveModelHook()
         self.save_dir = save_dir
 
-    def get_validation_metric(self, phase):
-        return self.__validation_metrics.get(phase)
+    @property
+    def metric_visdom(self):
+        return self.__metric_visdom
 
     @property
     def loss_metric(self):
         return self.__loss_metric
+
+    def get_validation_metric(self, phase):
+        return self.__validation_metrics.get(phase)
 
     def get_inferencer(
         self, phase: MachineLearningPhase, copy_model=False

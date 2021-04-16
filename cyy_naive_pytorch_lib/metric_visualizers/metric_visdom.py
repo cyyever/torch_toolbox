@@ -2,7 +2,7 @@ import datetime
 import threading
 
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
-from cyy_naive_lib.log import get_logger
+
 from ml_type import MachineLearningPhase
 from visualization import EpochWindow, Window
 
@@ -14,15 +14,19 @@ class MetricVisdom(MetricVisualizer):
         super().__init__(*args, **kwargs)
         self.__visdom_env = None
 
+    def set_visdom_env(self, visdom_env: str):
+        self.__visdom_env = visdom_env
+
     def _before_execute(self, **kwargs):
         trainer = kwargs["model_executor"]
-        self.__visdom_env = (
-            "training_"
-            + str(trainer.model.__class__.__name__)
-            + "_"
-            + str(threading.get_native_id())
-            + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
-        )
+        if self.__visdom_env is None:
+            self.__visdom_env = (
+                "training_"
+                + str(trainer.model.__class__.__name__)
+                + "_"
+                + str(threading.get_native_id())
+                + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
+            )
 
     def _after_epoch(self, **kwargs):
         trainer = kwargs["model_executor"]
