@@ -122,7 +122,7 @@ class DenseNet3(nn.Module):
         drop_rate=0.0,
         norm_function=nn.BatchNorm2d,
     ):
-        super(DenseNet3, self).__init__()
+        super().__init__()
         in_planes = 2 * growth_rate
         n = (depth - 4) / 3
         if bottleneck:
