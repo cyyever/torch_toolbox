@@ -136,6 +136,20 @@ class ModelUtil:
                 return True
         return False
 
+    def get_sub_modules(self):
+        modules = list(self.model.named_modules())
+        result = list()
+        for i, prev_module in enumerate(modules):
+            is_container = False
+            for j in range(i + 1, len(modules)):
+                if modules[j][0].startswith(prev_module[0]):
+                    is_container = True
+                    break
+            if not is_container:
+                result.append(modules[i])
+        assert result
+        return result
+
     def get_sub_module_blocks(self, block_types: set = None):
         if block_types is None:
             block_types = {
