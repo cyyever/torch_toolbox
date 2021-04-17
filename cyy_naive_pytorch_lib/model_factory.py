@@ -72,7 +72,7 @@ def get_model(
     )
     added_kwargs = {
         "input_channels": dataset_util.channel,
-        "channel": dataset_util.channel,
+        "channels": dataset_util.channel,
         "num_classes": dataset_util.get_label_number(),
     }
     model_type = ModelType.Classification
