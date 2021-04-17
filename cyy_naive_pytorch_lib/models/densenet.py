@@ -1,4 +1,5 @@
 import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,94 +7,72 @@ import torch.nn.functional as F
 
 class BasicBlock(nn.Module):
     def __init__(
-        self, in_planes, out_planes, dropRate=0.0, norm_function=nn.BatchNorm2d
+        self, in_planes, out_planes, drop_rate=0.0, norm_function=nn.BatchNorm2d
     ):
-        super(BasicBlock, self).__init__()
+        super().__init__()
         self.bn1 = norm_function(in_planes)
         self.relu = nn.ReLU(inplace=True)
         self.conv1 = nn.Conv2d(
-            in_planes,
-            out_planes,
-            kernel_size=3,
-            stride=1,
-            padding=1,
-            bias=False)
-        self.droprate = dropRate
+            in_planes, out_planes, kernel_size=3, stride=1, padding=1, bias=False
+        )
+        self.drop_rate = drop_rate
 
     def forward(self, x):
         out = self.conv1(self.relu(self.bn1(x)))
-        if self.droprate > 0:
-            out = F.dropout(out, p=self.droprate, training=self.training)
+        if self.drop_rate > 0:
+            out = F.dropout(out, p=self.drop_rate, training=self.training)
         return torch.cat([x, out], 1)
 
 
 class BottleneckBlock(nn.Module):
     def __init__(
-        self, in_planes, out_planes, dropRate=0.0, norm_function=nn.BatchNorm2d
+        self, in_planes, out_planes, drop_rate=0.0, norm_function=nn.BatchNorm2d
     ):
         super(BottleneckBlock, self).__init__()
         inter_planes = out_planes * 4
         self.bn1 = norm_function(in_planes)
         self.relu = nn.ReLU(inplace=True)
         self.conv1 = nn.Conv2d(
-            in_planes,
-            inter_planes,
-            kernel_size=1,
-            stride=1,
-            padding=0,
-            bias=False)
+            in_planes, inter_planes, kernel_size=1, stride=1, padding=0, bias=False
+        )
         self.bn2 = norm_function(inter_planes)
         self.conv2 = nn.Conv2d(
-            inter_planes,
-            out_planes,
-            kernel_size=3,
-            stride=1,
-            padding=1,
-            bias=False)
-        self.droprate = dropRate
+            inter_planes, out_planes, kernel_size=3, stride=1, padding=1, bias=False
+        )
+        self.drop_rate = drop_rate
 
     def forward(self, x):
         out = self.conv1(self.relu(self.bn1(x)))
-        if self.droprate > 0:
+        if self.drop_rate > 0:
             out = F.dropout(
-                out,
-                p=self.droprate,
-                inplace=False,
-                training=self.training)
+                out, p=self.drop_rate, inplace=False, training=self.training
+            )
         out = self.conv2(self.relu(self.bn2(out)))
-        if self.droprate > 0:
+        if self.drop_rate > 0:
             out = F.dropout(
-                out,
-                p=self.droprate,
-                inplace=False,
-                training=self.training)
+                out, p=self.drop_rate, inplace=False, training=self.training
+            )
         return torch.cat([x, out], 1)
 
 
 class TransitionBlock(nn.Module):
     def __init__(
-        self, in_planes, out_planes, dropRate=0.0, norm_function=nn.BatchNorm2d
+        self, in_planes, out_planes, drop_rate=0.0, norm_function=nn.BatchNorm2d
     ):
         super(TransitionBlock, self).__init__()
         self.bn1 = norm_function(in_planes)
         self.relu = nn.ReLU(inplace=True)
         self.conv1 = nn.Conv2d(
-            in_planes,
-            out_planes,
-            kernel_size=1,
-            stride=1,
-            padding=0,
-            bias=False)
-        self.droprate = dropRate
+            in_planes, out_planes, kernel_size=1, stride=1, padding=0, bias=False
+        )
+        self.drop_rate = drop_rate
 
     def forward(self, x):
         out = self.conv1(self.relu(self.bn1(x)))
-        if self.droprate > 0:
+        if self.drop_rate > 0:
             out = F.dropout(
-                out,
-                p=self.droprate,
-                inplace=False,
-                training=self.training)
+                out, p=self.drop_rate, inplace=False, training=self.training
+            )
         return F.avg_pool2d(out, 2)
 
 
@@ -104,16 +83,16 @@ class DenseBlock(nn.Module):
         in_planes,
         growth_rate,
         block,
-        dropRate=0.0,
+        drop_rate=0.0,
         norm_function=nn.BatchNorm2d,
     ):
         super(DenseBlock, self).__init__()
         self.layer = self._make_layer(
-            block, in_planes, growth_rate, nb_layers, dropRate, norm_function
+            block, in_planes, growth_rate, nb_layers, drop_rate, norm_function
         )
 
     def _make_layer(
-        self, block, in_planes, growth_rate, nb_layers, dropRate, norm_function
+        self, block, in_planes, growth_rate, nb_layers, drop_rate, norm_function
     ):
         layers = []
         for i in range(nb_layers):
@@ -121,7 +100,7 @@ class DenseBlock(nn.Module):
                 block(
                     in_planes + i * growth_rate,
                     growth_rate,
-                    dropRate,
+                    drop_rate,
                     norm_function=norm_function,
                 )
             )
@@ -140,7 +119,7 @@ class DenseNet3(nn.Module):
         growth_rate=12,
         reduction=0.5,
         bottleneck=True,
-        dropRate=0.0,
+        drop_rate=0.0,
         norm_function=nn.BatchNorm2d,
     ):
         super(DenseNet3, self).__init__()
@@ -158,44 +137,32 @@ class DenseNet3(nn.Module):
         )
         # 1st block
         self.block1 = DenseBlock(
-            n,
-            in_planes,
-            growth_rate,
-            block,
-            dropRate,
-            norm_function=norm_function)
+            n, in_planes, growth_rate, block, drop_rate, norm_function=norm_function
+        )
         in_planes = int(in_planes + n * growth_rate)
         self.trans1 = TransitionBlock(
             in_planes,
             int(math.floor(in_planes * reduction)),
-            dropRate=dropRate,
+            drop_rate=drop_rate,
             norm_function=norm_function,
         )
         in_planes = int(math.floor(in_planes * reduction))
         # 2nd block
         self.block2 = DenseBlock(
-            n,
-            in_planes,
-            growth_rate,
-            block,
-            dropRate,
-            norm_function=norm_function)
+            n, in_planes, growth_rate, block, drop_rate, norm_function=norm_function
+        )
         in_planes = int(in_planes + n * growth_rate)
         self.trans2 = TransitionBlock(
             in_planes,
             int(math.floor(in_planes * reduction)),
-            dropRate=dropRate,
+            drop_rate=drop_rate,
             norm_function=norm_function,
         )
         in_planes = int(math.floor(in_planes * reduction))
         # 3rd block
         self.block3 = DenseBlock(
-            n,
-            in_planes,
-            growth_rate,
-            block,
-            dropRate,
-            norm_function=norm_function)
+            n, in_planes, growth_rate, block, drop_rate, norm_function=norm_function
+        )
         in_planes = int(in_planes + n * growth_rate)
         # global average pooling and classifier
         self.bn1 = norm_function(in_planes)
