@@ -146,7 +146,7 @@ class ModelUtil:
                     is_container = True
                     break
             if not is_container:
-                result.append(modules[i])
+                result.append(prev_module)
         assert result
         return result
 
