@@ -1,6 +1,7 @@
 # import multiprocessing
 import json
 import os
+import pickle
 from typing import Callable, Dict, List
 
 import torch
@@ -66,10 +67,10 @@ class DatasetCollection:
         cache_dir = DatasetCollection.get_dataset_cache_dir(self.name)
         json_file = os.path.join(cache_dir, "labels.json")
         if os.path.isfile(json_file):
-            return json.load(open(json_file, "rt"))
-        with open(json_file, "rt") as f:
+            return pickle.load(open(json_file, "rb"))
+        with open(json_file, "wb") as f:
             labels = self.get_dataset_util().get_labels()
-            json.dump(labels, f)
+            pickle.dump(labels, f)
             return labels
 
     def get_label_names(self) -> List[str]:
@@ -116,7 +117,10 @@ class DatasetCollection:
 
     @staticmethod
     def get_dataset_cache_dir(name: str):
-        return os.path.join(DatasetCollection.get_dataset_dir(name), ".cache")
+        cache_dir = os.path.join(DatasetCollection.get_dataset_dir(name), ".cache")
+        if not os.path.isdir(cache_dir):
+            os.makedirs(cache_dir)
+        return cache_dir
 
     @staticmethod
     def get_by_name(name: str, **kwargs):
