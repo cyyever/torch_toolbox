@@ -4,9 +4,8 @@ import sys
 import torch
 from cyy_naive_lib.log import get_logger
 
-from dataset import DatasetUtil
 from dataset_collection import DatasetCollection
-from ml_type import MachineLearningPhase, ModelType
+from ml_type import ModelType
 from model_with_loss import ModelWithLoss
 
 
@@ -67,13 +66,11 @@ def get_model(
         )
         raise RuntimeError("unknown model name:", name)
 
-    dataset_util = DatasetUtil(
-        dataset_collection.get_dataset(MachineLearningPhase.Training)
-    )
+    dataset_util = dataset_collection.get_dataset_util()
     added_kwargs = {
         "input_channels": dataset_util.channel,
         "channels": dataset_util.channel,
-        "num_classes": dataset_util.get_label_number(),
+        "num_classes": len(dataset_collection.get_labels()),
     }
     model_type = ModelType.Classification
     if "rcnn" in name.lower():

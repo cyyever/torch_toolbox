@@ -41,6 +41,11 @@ class DatasetCollection:
         assert phase in self.__datasets
         return self.__datasets[phase]
 
+    def get_dataset_util(
+        self, phase: MachineLearningPhase = MachineLearningPhase.Test
+    ) -> DatasetUtil:
+        return DatasetUtil(self.get_dataset(phase))
+
     def get_dataloader(
         self,
         phase: MachineLearningPhase,
@@ -56,6 +61,16 @@ class DatasetCollection:
     @property
     def name(self):
         return self.__name
+
+    def get_labels(self) -> set:
+        cache_dir = DatasetCollection.get_dataset_cache_dir(self.name)
+        json_file = os.path.join(cache_dir, "labels.json")
+        if os.path.isfile(json_file):
+            return json.load(open(json_file, "rt"))
+        with open(json_file, "rt") as f:
+            labels = self.get_dataset_util().get_labels()
+            json.dump(labels, f)
+            return labels
 
     def get_label_names(self) -> List[str]:
         if self.name == "MNIST":
@@ -98,6 +113,10 @@ class DatasetCollection:
     @staticmethod
     def get_dataset_dir(name: str):
         return os.path.join(DatasetCollection.__dataset_root_dir, name)
+
+    @staticmethod
+    def get_dataset_cache_dir(name: str):
+        return os.path.join(DatasetCollection.get_dataset_dir(name), ".cache")
 
     @staticmethod
     def get_by_name(name: str, **kwargs):
