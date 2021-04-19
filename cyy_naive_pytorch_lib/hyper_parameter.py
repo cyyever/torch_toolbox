@@ -123,6 +123,10 @@ class HyperParameter:
                     anneal_strategy="linear",
                     three_phase=True,
                 )
+            if name == "CosineAnnealingLR":
+                return optim.lr_scheduler.CosineAnnealingLR(
+                    optimizer, T_max=hyper_parameter.epoch
+                )
             raise RuntimeError("unknown learning rate scheduler:" + name)
 
         return callback
