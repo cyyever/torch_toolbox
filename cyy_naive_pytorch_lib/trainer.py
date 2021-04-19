@@ -16,6 +16,7 @@ from metrics.loss_metric import LossMetric
 from metrics.validation_metric import ValidationMetric
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
+from model_util import ModelUtil
 from model_with_loss import ModelWithLoss
 
 
@@ -117,6 +118,16 @@ class Trainer(ModelExecutor):
 
     def remove_lr_scheduler(self):
         self.remove_data("lr_scheduler")
+
+    def load_model(self, model_path):
+        super().load_model(model_path)
+        self.remove_optimizer()
+
+    def load_parameter_dict(self, parameter_dict: dict, remove_lr_scheduler: bool):
+        ModelUtil(self.model).load_parameter_dict(parameter_dict)
+        self.remove_optimizer()
+        if remove_lr_scheduler:
+            self.remove_lr_scheduler()
 
     def repeated_train(self, repeated_num, save_dir=None, **kwargs):
         def training_callback(_, trainer: Trainer):
