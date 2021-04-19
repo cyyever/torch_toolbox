@@ -250,7 +250,7 @@ class DatasetCollection:
 
 
 class DatasetCollectionConfig:
-    def __init__(self,dataset_name=None):
+    def __init__(self, dataset_name=None):
         self.dataset_name = dataset_name
         self.dataset_args = dict()
         self.training_dataset_percentage = None
