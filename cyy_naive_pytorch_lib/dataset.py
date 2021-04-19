@@ -3,10 +3,11 @@ import os
 import random
 from typing import Callable, Generator, Iterable
 
-import PIL
 import torch
 import torchvision
 from cyy_naive_lib.log import get_logger
+
+import PIL
 
 
 class DatasetFilter:
