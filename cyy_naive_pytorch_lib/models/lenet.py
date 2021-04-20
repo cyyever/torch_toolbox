@@ -20,9 +20,10 @@ class LeNet5(nn.Module):
     F7 - 10 (Output)
     """
 
+    input_size = (32, 32)
+
     def __init__(self, input_channels=1):
         super().__init__()
-
         self.input_channels = input_channels
         self.convnet = nn.Sequential(
             collections.OrderedDict(
