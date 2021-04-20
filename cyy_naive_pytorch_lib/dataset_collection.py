@@ -171,29 +171,6 @@ class DatasetCollection:
         training_dataset = None
         validation_dataset = None
         test_dataset = None
-        # if name == "MNIST":
-        #     pass
-        # # elif name == "FashionMNIST":
-        # #     for for_training in (True, False):
-        # #         # transform = [
-        # #         #     transforms.Resize((32, 32)),
-        # #         # ]
-        # #         # if for_training:
-        # #         #     transform.append(transforms.RandomHorizontalFlip())
-        # #         # transform += [
-        #         #     transforms.ToTensor(),
-        #         #     transforms.Normalize(mean=[0.2860], std=[0.3530]),
-        #         # ]
-        #         dataset = torchvision.datasets.FashionMNIST(
-        #             root=root_dir,
-        #             train=for_training,
-        #             download=True,
-        #             transform=transforms.Compose(transform),
-        #         )
-        #         if for_training:
-        #             training_dataset = dataset
-        #         else:
-        #             test_dataset = dataset
         # elif name == "CIFAR10":
         #     for for_training in (True, False):
         #         transform = []
@@ -234,7 +211,6 @@ class DatasetCollection:
         #                 transforms.RandomCrop(32, padding=4),
         #                 transforms.RandomHorizontalFlip(),
         #             ]
-
         #         transform += [
         #             transforms.ToTensor(),
         #             transforms.Normalize(
