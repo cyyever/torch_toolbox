@@ -1,4 +1,5 @@
 # import multiprocessing
+import inspect
 import json
 import os
 import pickle
@@ -65,10 +66,10 @@ class DatasetCollection:
 
     def get_labels(self) -> set:
         cache_dir = DatasetCollection.get_dataset_cache_dir(self.name)
-        json_file = os.path.join(cache_dir, "labels.json")
-        if os.path.isfile(json_file):
-            return pickle.load(open(json_file, "rb"))
-        with open(json_file, "wb") as f:
+        pickle_file = os.path.join(cache_dir, "labels.pk")
+        if os.path.isfile(pickle_file):
+            return pickle.load(open(pickle_file, "rb"))
+        with open(pickle_file, "wb") as f:
             labels = self.get_dataset_util().get_labels()
             pickle.dump(labels, f)
             return labels
@@ -123,11 +124,30 @@ class DatasetCollection:
         return cache_dir
 
     @staticmethod
+    def get_vision_dataset_cls():
+        datasets = dict()
+        for name in dir(torchvision.datasets):
+            dataset_class = getattr(torchvision.datasets, name)
+            if not inspect.isclass(dataset_class):
+                continue
+            if issubclass(dataset_class, torch.utils.data.Dataset):
+                datasets[name] = dataset_class
+        return datasets
+
+    @staticmethod
     def get_by_name(name: str, **kwargs):
         if name in DatasetCollection.__dataset_collections:
             return DatasetCollection.__dataset_collections[name]
+
+        vision_dataset_cls = DatasetCollection.get_vision_dataset_cls()
+        if name not in vision_dataset_cls:
+            get_logger().error("supported datasets are %s", vision_dataset_cls.keys())
+            raise NotImplementedError(name)
+        return DatasetCollection.__creatr_vision_dataset_collection(
+            name, vision_dataset_cls[name]
+        )
+
         root_dir = DatasetCollection.get_dataset_dir(name)
-        # for_training = phase in (MachineLearningPhase.Training,)
         training_dataset = None
         validation_dataset = None
         test_dataset = None
@@ -268,6 +288,48 @@ class DatasetCollection:
                 dataset_util.iid_split(test_dataset_parts)
             )
         dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
+        DatasetCollection.__dataset_collections[name] = dc
+        return dc
+
+    @staticmethod
+    def __creatr_vision_dataset_collection(name, dataset_cls):
+        root_dir = DatasetCollection.get_dataset_dir(name)
+        training_dataset = None
+        test_dataset = None
+        for for_training in (True, False):
+            dataset = dataset_cls(
+                root=root_dir,
+                train=for_training,
+                download=True,
+                transform=transforms.Compose([transforms.ToTensor()]),
+            )
+            if for_training:
+                training_dataset = dataset
+            else:
+                test_dataset = dataset
+        cache_dir = DatasetCollection.get_dataset_cache_dir(name)
+        pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
+        if os.path.isfile(pickle_file):
+            mean, std = pickle.load(open(pickle_file, "rb"))
+        else:
+            with open(pickle_file, "wb") as f:
+                total_dataset = torch.utils.data.ConcatDataset(
+                    [training_dataset, test_dataset]
+                )
+                mean, std = DatasetUtil(total_dataset).get_mean_and_std()
+                pickle.dump((mean, std), f)
+        DatasetUtil(training_dataset).append_transform(
+            transforms.Normalize(mean=mean, std=std)
+        )
+        DatasetUtil(test_dataset).append_transform(
+            transforms.Normalize(mean=mean, std=std)
+        )
+
+        dataset_util = DatasetUtil(test_dataset)
+        validation_dataset, sub_test_dataset = tuple(dataset_util.iid_split([1, 1]))
+        dc = DatasetCollection(
+            training_dataset, validation_dataset, sub_test_dataset, name
+        )
         DatasetCollection.__dataset_collections[name] = dc
         return dc
 

@@ -123,6 +123,22 @@ class DatasetUtil:
         std = std.div(self.len).sqrt()
         return mean, std
 
+    def append_transform(self, transform):
+        self.dataset.transform = torchvision.transforms.Compose(
+            [self.dataset.transform, transform]
+        )
+        self.dataset.transforms = torchvision.transforms.Compose(
+            [self.dataset.transforms, transform]
+        )
+
+    def prepend_transform(self, transform):
+        self.dataset.transform = torchvision.transforms.Compose(
+            [transform, self.dataset.transform]
+        )
+        self.dataset.transforms = torchvision.transforms.Compose(
+            [transform, self.dataset.transforms]
+        )
+
     @staticmethod
     def get_labels_from_target(target) -> set:
         if isinstance(target, int):

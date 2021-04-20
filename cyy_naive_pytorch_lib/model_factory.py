@@ -2,10 +2,11 @@ import os
 import sys
 
 import torch
+import torchvision
 from cyy_naive_lib.log import get_logger
 
 from dataset_collection import DatasetCollection
-from ml_type import ModelType
+from ml_type import MachineLearningPhase, ModelType
 from model_with_loss import ModelWithLoss
 
 
@@ -81,12 +82,20 @@ def get_model(
 
     while True:
         try:
-            return ModelWithLoss(
+            model_with_loss = ModelWithLoss(
                 torch.hub.load(
                     repo, model_name, source=source, **(added_kwargs | kwargs)
                 ),
                 model_type=model_type,
             )
+            input_size = getattr(model_with_loss.model.__class__, "input_size", None)
+            if input_size is not None:
+                get_logger().warning("use input_size %s", input_size)
+                for phase in MachineLearningPhase:
+                    dataset_collection.get_dataset_util(phase).append_transform(
+                        torchvision.transforms.Resize(input_size)
+                    )
+            return model_with_loss
         except TypeError as e:
             retry = False
             for k in added_kwargs:
