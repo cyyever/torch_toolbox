@@ -30,7 +30,15 @@ class DatasetCollection:
         self.__datasets[MachineLearningPhase.Training] = training_dataset
         self.__datasets[MachineLearningPhase.Validation] = validation_dataset
         self.__datasets[MachineLearningPhase.Test] = test_dataset
+        self.__origin_datasets: Dict[
+            MachineLearningPhase, torch.utils.data.Dataset
+        ] = dict()
+        for k, v in self.__datasets.items():
+            self.__origin_datasets[k] = v
         self.__name = name
+
+    def set_origin_dataset(self, phase: MachineLearningPhase, dataset):
+        self.__origin_datasets[phase] = dataset
 
     def transform_dataset(self, phase: MachineLearningPhase, transformer: Callable):
         dataset = self.get_dataset(phase)
@@ -47,6 +55,18 @@ class DatasetCollection:
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
         return DatasetUtil(self.get_dataset(phase))
+
+    def append_transform(self, transform, phase=None):
+        for k in MachineLearningPhase:
+            if phase is not None and k != phase:
+                continue
+            DatasetUtil(self.__origin_datasets[k]).append_transform(transform)
+
+    def prepend_transform(self, transform, phase=None):
+        for k in MachineLearningPhase:
+            if phase is not None and k != phase:
+                continue
+            DatasetUtil(self.__origin_datasets[k]).prepend_transform(transform)
 
     def get_dataloader(
         self,
@@ -143,112 +163,95 @@ class DatasetCollection:
         if name not in vision_dataset_cls:
             get_logger().error("supported datasets are %s", vision_dataset_cls.keys())
             raise NotImplementedError(name)
-        return DatasetCollection.__creatr_vision_dataset_collection(
-            name, vision_dataset_cls[name]
+        return DatasetCollection.__create_vision_dataset_collection(
+            name, vision_dataset_cls[name], **kwargs
         )
 
         root_dir = DatasetCollection.get_dataset_dir(name)
         training_dataset = None
         validation_dataset = None
         test_dataset = None
-        if name == "MNIST":
-            for for_training in (True, False):
-                dataset = torchvision.datasets.MNIST(
-                    root=root_dir,
-                    train=for_training,
-                    download=True,
-                    transform=transforms.Compose(
-                        [
-                            transforms.Resize((32, 32)),
-                            transforms.ToTensor(),
-                            transforms.Normalize(mean=[0.1307], std=[0.3081]),
-                        ]
-                    ),
-                )
-                if for_training:
-                    training_dataset = dataset
-                else:
-                    test_dataset = dataset
-        elif name == "FashionMNIST":
-            for for_training in (True, False):
-                transform = [
-                    transforms.Resize((32, 32)),
-                ]
-                if for_training:
-                    transform.append(transforms.RandomHorizontalFlip())
-                transform += [
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=[0.2860], std=[0.3530]),
-                ]
-                dataset = torchvision.datasets.FashionMNIST(
-                    root=root_dir,
-                    train=for_training,
-                    download=True,
-                    transform=transforms.Compose(transform),
-                )
-                if for_training:
-                    training_dataset = dataset
-                else:
-                    test_dataset = dataset
-        elif name == "CIFAR10":
-            for for_training in (True, False):
-                transform = []
-                to_grayscale = kwargs.get("to_grayscale", False)
-                if to_grayscale:
-                    get_logger().warning("convert %s to grayscale", name)
-                    transform += [transforms.Grayscale()]
-                if for_training:
-                    transform += [
-                        transforms.RandomCrop(32, padding=4),
-                        transforms.RandomHorizontalFlip(),
-                    ]
+        # if name == "MNIST":
+        #     pass
+        # # elif name == "FashionMNIST":
+        # #     for for_training in (True, False):
+        # #         # transform = [
+        # #         #     transforms.Resize((32, 32)),
+        # #         # ]
+        # #         # if for_training:
+        # #         #     transform.append(transforms.RandomHorizontalFlip())
+        # #         # transform += [
+        #         #     transforms.ToTensor(),
+        #         #     transforms.Normalize(mean=[0.2860], std=[0.3530]),
+        #         # ]
+        #         dataset = torchvision.datasets.FashionMNIST(
+        #             root=root_dir,
+        #             train=for_training,
+        #             download=True,
+        #             transform=transforms.Compose(transform),
+        #         )
+        #         if for_training:
+        #             training_dataset = dataset
+        #         else:
+        #             test_dataset = dataset
+        # elif name == "CIFAR10":
+        #     for for_training in (True, False):
+        #         transform = []
+        #         to_grayscale = kwargs.get("to_grayscale", False)
+        #         if to_grayscale:
+        #             get_logger().warning("convert %s to grayscale", name)
+        #             transform += [transforms.Grayscale()]
+        #         if for_training:
+        #             transform += [
+        #                 transforms.RandomCrop(32, padding=4),
+        #                 # transforms.RandomHorizontalFlip(),
+        #             ]
+        #                 transform.append(transforms.ToTensor())
+        #                 # use MNIST mean and std
+        #                 if to_grayscale:
+        #                     transform.append(transforms.Normalize(mean=[0.1307], std=[0.3081]))
+        #                 else:
+        #                     transform.append(
+        #                         transforms.Normalize(
+        #                             mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616]
+        #                         )
+        #                     )
+        #                 dataset = torchvision.datasets.CIFAR10(
+        #                     root=root_dir,
+        #                     train=for_training,
+        #                     download=True,
+        #                     transform=transforms.Compose(transform),
+        #                 )
+        #                 if for_training:
+        #                     training_dataset = dataset
+        #                 else:
+        #                     test_dataset = dataset
+        # elif name == "CIFAR100":
+        #     for for_training in (True, False):
+        #         transform = []
+        #         if for_training:
+        #             transform += [
+        #                 transforms.RandomCrop(32, padding=4),
+        #                 transforms.RandomHorizontalFlip(),
+        #             ]
 
-                transform.append(transforms.ToTensor())
-                # use MNIST mean and std
-                if to_grayscale:
-                    transform.append(transforms.Normalize(mean=[0.1307], std=[0.3081]))
-                else:
-                    transform.append(
-                        transforms.Normalize(
-                            mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616]
-                        )
-                    )
-                dataset = torchvision.datasets.CIFAR10(
-                    root=root_dir,
-                    train=for_training,
-                    download=True,
-                    transform=transforms.Compose(transform),
-                )
-                if for_training:
-                    training_dataset = dataset
-                else:
-                    test_dataset = dataset
-        elif name == "CIFAR100":
-            for for_training in (True, False):
-                transform = []
-                if for_training:
-                    transform += [
-                        transforms.RandomCrop(32, padding=4),
-                        transforms.RandomHorizontalFlip(),
-                    ]
-
-                transform += [
-                    transforms.ToTensor(),
-                    transforms.Normalize(
-                        mean=[0.5071, 0.4866, 0.4409], std=[0.2673, 0.2564, 0.2762]
-                    ),
-                ]
-                dataset = torchvision.datasets.CIFAR100(
-                    root=root_dir,
-                    train=for_training,
-                    download=True,
-                    transform=transforms.Compose(transform),
-                )
-                if for_training:
-                    training_dataset = dataset
-                else:
-                    test_dataset = dataset
-        elif name == "SVHN":
+        #         transform += [
+        #             transforms.ToTensor(),
+        #             transforms.Normalize(
+        #                 mean=[0.5071, 0.4866, 0.4409], std=[0.2673, 0.2564, 0.2762]
+        #             ),
+        #         ]
+        #         dataset = torchvision.datasets.CIFAR100(
+        #             root=root_dir,
+        #             train=for_training,
+        #             download=True,
+        #             transform=transforms.Compose(transform),
+        #         )
+        #         if for_training:
+        #             training_dataset = dataset
+        #         else:
+        #             test_dataset = dataset
+        if name == "SVHN":
             dataset = torchvision.datasets.SVHN(
                 root=root_dir,
                 split="extra",
@@ -292,7 +295,7 @@ class DatasetCollection:
         return dc
 
     @staticmethod
-    def __creatr_vision_dataset_collection(name, dataset_cls):
+    def __create_vision_dataset_collection(name, dataset_cls, **kwargs):
         root_dir = DatasetCollection.get_dataset_dir(name)
         training_dataset = None
         test_dataset = None
@@ -318,18 +321,19 @@ class DatasetCollection:
                 )
                 mean, std = DatasetUtil(total_dataset).get_mean_and_std()
                 pickle.dump((mean, std), f)
-        DatasetUtil(training_dataset).append_transform(
-            transforms.Normalize(mean=mean, std=std)
-        )
-        DatasetUtil(test_dataset).append_transform(
-            transforms.Normalize(mean=mean, std=std)
-        )
 
         dataset_util = DatasetUtil(test_dataset)
         validation_dataset, sub_test_dataset = tuple(dataset_util.iid_split([1, 1]))
         dc = DatasetCollection(
             training_dataset, validation_dataset, sub_test_dataset, name
         )
+        dc.set_origin_dataset(MachineLearningPhase.Validation, test_dataset)
+        dc.set_origin_dataset(MachineLearningPhase.Test, test_dataset)
+        dc.append_transform(transforms.Normalize(mean=mean, std=std))
+        if name != "MNIST":
+            dc.append_transform(
+                transforms.RandomHorizontalFlip(), phase=MachineLearningPhase.Training
+            )
         DatasetCollection.__dataset_collections[name] = dc
         return dc
 
