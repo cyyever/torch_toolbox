@@ -136,7 +136,7 @@ class ModelUtil:
                 return True
         return False
 
-    def get_sub_modules(self):
+    def get_sub_modules(self) -> list:
         modules = list(self.model.named_modules())
         result = list()
         for i, prev_module in enumerate(modules):
@@ -150,10 +150,11 @@ class ModelUtil:
         assert result
         return result
 
-    def get_sub_module_blocks(self, block_types: set = None):
+    def get_sub_module_blocks(self, block_types: set = None) -> list:
         if block_types is None:
             block_types = {
                 (nn.Conv2d, nn.BatchNorm2d, nn.ReLU),
+                (nn.BatchNorm2d, nn.ReLU, nn.Conv2d),
                 (nn.Conv2d, nn.ReLU),
                 (nn.Conv2d, nn.ReLU, nn.MaxPool2d),
                 (nn.Linear, nn.ReLU),
