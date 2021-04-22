@@ -23,9 +23,7 @@ def test_dataset():
     assert dataset.DatasetUtil(cifar10_training).channel == 3
     assert dataset.DatasetUtil(cifar10_training).get_label_number() == 10
     assert abs(
-        len(
-            cifar10.get_dataset(MachineLearningPhase.Test)
-            - len(cifar10.get_dataset(MachineLearningPhase.Validation))
-        )
+        len(cifar10.get_dataset(MachineLearningPhase.Test))
+        - len(cifar10.get_dataset(MachineLearningPhase.Validation))
         <= 1
     )
