@@ -5,6 +5,7 @@ from cyy_naive_lib.log import get_logger
 
 from dataset_collection import DatasetCollection
 from device import get_device
+from hooks.model_executor_logger import ModelExecutorLogger
 from hyper_parameter import HyperParameter
 from ml_type import MachineLearningPhase, ModelExecutorCallbackPoint
 from model_with_loss import ModelWithLoss
@@ -28,6 +29,8 @@ class ModelExecutor:
         self.__callbacks: Dict[
             ModelExecutorCallbackPoint, List[Union[Callable, Dict[str, Callable]]]
         ] = dict()
+        self.__logger = ModelExecutorLogger()
+        self.__logger.append_to_model_executor(self)
 
     @property
     def phase(self):
