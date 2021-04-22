@@ -289,9 +289,12 @@ class DatasetCollection:
 
         # for for_training in (True, False):
         for phase in MachineLearningPhase:
-            if "train" in sig.parameters():
+            if "train" in sig.parameters:
+                # Some dataset only have train and test parts
+                if phase == MachineLearningPhase.Validation:
+                    continue
                 dataset_kwargs["train"] = phase == MachineLearningPhase.Training
-            if "split" in sig.parameters():
+            if "split" in sig.parameters:
                 if phase == MachineLearningPhase.Training:
                     dataset_kwargs["split"] = "train"
                 elif phase == MachineLearningPhase.Validation:
