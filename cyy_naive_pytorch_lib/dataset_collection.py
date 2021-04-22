@@ -167,10 +167,10 @@ class DatasetCollection:
             name, vision_dataset_cls[name], **kwargs
         )
 
-        root_dir = DatasetCollection.get_dataset_dir(name)
-        training_dataset = None
-        validation_dataset = None
-        test_dataset = None
+        # root_dir = DatasetCollection.get_dataset_dir(name)
+        # training_dataset = None
+        # validation_dataset = None
+        # test_dataset = None
         # elif name == "CIFAR10":
         #     for for_training in (True, False):
         #         transform = []
@@ -227,63 +227,83 @@ class DatasetCollection:
         #             training_dataset = dataset
         #         else:
         #             test_dataset = dataset
-        if name == "SVHN":
-            dataset = torchvision.datasets.SVHN(
-                root=root_dir,
-                split="extra",
-                download=True,
-                transform=transforms.ToTensor(),
-            )
-            mean, std = DatasetUtil(dataset).get_mean_and_std()
+        # if name == "SVHN":
+        #     dataset = torchvision.datasets.SVHN(
+        #         root=root_dir,
+        #         split="extra",
+        #         download=True,
+        #         transform=transforms.ToTensor(),
+        #     )
+        #     mean, std = DatasetUtil(dataset).get_mean_and_std()
 
-            for for_training in (True, False):
-                transform = []
-                if for_training:
-                    transform += [
-                        transforms.RandomCrop(32, padding=4),
-                    ]
+        #     for for_training in (True, False):
+        #         transform = []
+        #         if for_training:
+        #             transform += [
+        #                 transforms.RandomCrop(32, padding=4),
+        #             ]
 
-                transform += [
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=mean, std=std),
-                ]
-                dataset = torchvision.datasets.SVHN(
-                    root=root_dir,
-                    split=("extra" if for_training else "test"),
-                    download=True,
-                    transform=transforms.Compose(transform),
-                )
-                if for_training:
-                    training_dataset = dataset
-                else:
-                    test_dataset = dataset
-        else:
-            raise NotImplementedError(name)
+        #         transform += [
+        #             transforms.ToTensor(),
+        #             transforms.Normalize(mean=mean, std=std),
+        #         ]
+        #         dataset = torchvision.datasets.SVHN(
+        #             root=root_dir,
+        #             split=("extra" if for_training else "test"),
+        #             download=True,
+        #             transform=transforms.Compose(transform),
+        #         )
+        #         if for_training:
+        #             training_dataset = dataset
+        #         else:
+        #             test_dataset = dataset
+        # else:
+        #     raise NotImplementedError(name)
 
-        if validation_dataset is None:
-            dataset_util = DatasetUtil(test_dataset)
-            test_dataset_parts = [1, 1]
-            validation_dataset, test_dataset = tuple(
-                dataset_util.iid_split(test_dataset_parts)
-            )
-        dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
-        DatasetCollection.__dataset_collections[name] = dc
-        return dc
+        # if validation_dataset is None:
+        #     dataset_util = DatasetUtil(test_dataset)
+        #     test_dataset_parts = [1, 1]
+        #     validation_dataset, test_dataset = tuple(
+        #         dataset_util.iid_split(test_dataset_parts)
+        #     )
+        # dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
+        # DatasetCollection.__dataset_collections[name] = dc
+        # return dc
 
     @staticmethod
     def __create_vision_dataset_collection(name, dataset_cls, **kwargs):
         root_dir = DatasetCollection.get_dataset_dir(name)
         training_dataset = None
+        validation_dataset = None
         test_dataset = None
-        for for_training in (True, False):
-            dataset = dataset_cls(
-                root=root_dir,
-                train=for_training,
-                download=True,
-                transform=transforms.Compose([transforms.ToTensor()]),
-            )
-            if for_training:
+        dataset_kwargs = {
+            "root": root_dir,
+            "download": True,
+            "transform": transforms.Compose([transforms.ToTensor()]),
+        }
+        for k, v in kwargs.items():
+            if k in dataset_kwargs:
+                raise RuntimeError("key " + k + " is set by the library")
+            dataset_kwargs[k] = v
+        sig = inspect.signature(dataset_cls)
+
+        # for for_training in (True, False):
+        for phase in MachineLearningPhase:
+            if "train" in sig.parameters():
+                dataset_kwargs["train"] = phase == MachineLearningPhase.Training
+            if "split" in sig.parameters():
+                if phase == MachineLearningPhase.Training:
+                    dataset_kwargs["split"] = "train"
+                elif phase == MachineLearningPhase.Validation:
+                    dataset_kwargs["split"] = "val"
+                else:
+                    dataset_kwargs["split"] = "test"
+
+            dataset = dataset_cls(**dataset_kwargs)
+            if phase == MachineLearningPhase.Training:
                 training_dataset = dataset
+            elif phase == MachineLearningPhase.Validation:
+                validation_dataset = dataset
             else:
                 test_dataset = dataset
         cache_dir = DatasetCollection.get_dataset_cache_dir(name)
@@ -298,13 +318,20 @@ class DatasetCollection:
                 mean, std = DatasetUtil(total_dataset).get_mean_and_std()
                 pickle.dump((mean, std), f)
 
-        dataset_util = DatasetUtil(test_dataset)
-        validation_dataset, sub_test_dataset = tuple(dataset_util.iid_split([1, 1]))
-        dc = DatasetCollection(
-            training_dataset, validation_dataset, sub_test_dataset, name
-        )
-        dc.set_origin_dataset(MachineLearningPhase.Validation, test_dataset)
-        dc.set_origin_dataset(MachineLearningPhase.Test, test_dataset)
+        splited_dataset = None
+        if validation_dataset is None or test_dataset is None:
+            if validation_dataset is not None:
+                splited_dataset = validation_dataset
+                dataset_util = DatasetUtil(validation_dataset)
+            else:
+                splited_dataset = test_dataset
+                dataset_util = DatasetUtil(test_dataset)
+            validation_dataset, test_dataset = tuple(dataset_util.iid_split([1, 1]))
+        dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
+        if splited_dataset is not None:
+            dc.set_origin_dataset(MachineLearningPhase.Validation, splited_dataset)
+            dc.set_origin_dataset(MachineLearningPhase.Test, splited_dataset)
+
         dc.append_transform(transforms.Normalize(mean=mean, std=std))
         if name != "MNIST":
             dc.append_transform(
