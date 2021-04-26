@@ -64,6 +64,10 @@ class Trainer(ModelExecutor):
         return self.__metric_visdom
 
     @property
+    def loss_logger(self):
+        return self.__loss_logger
+
+    @property
     def loss_metric(self):
         return self.__loss_metric
 
