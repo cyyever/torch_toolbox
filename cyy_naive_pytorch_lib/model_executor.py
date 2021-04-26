@@ -37,7 +37,8 @@ class ModelExecutor:
         return self.__phase
 
     def remove_logger(self):
-        self.__logger.remove_from_model_executor(self)
+        if self.__logger is not None:
+            self.__logger.remove_from_model_executor(self)
         self.__logger = None
 
     @property
