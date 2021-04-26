@@ -36,6 +36,10 @@ class ModelExecutor:
     def phase(self):
         return self.__phase
 
+    def remove_logger(self):
+        self.__logger.remove_from_model_executor(self)
+        self.__logger = None
+
     @property
     def dataset(self):
         return self.dataset_collection.get_dataset(phase=self.__phase)
