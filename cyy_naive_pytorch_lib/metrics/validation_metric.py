@@ -13,6 +13,7 @@ class ValidationMetric(Metric):
         model_executor = kwargs.get("model_executor")
         epoch = kwargs.get("epoch")
         inferencer = model_executor.get_inferencer(self.__phase, copy_model=False)
+        inferencer.remove_logger()
         inferencer.inference()
         self._set_epoch_metric(epoch, "loss", inferencer.loss_metric.get_loss(1))
         self._set_epoch_metric(epoch, "accuracy", inferencer.accuracy_metric.get_accuracy(1))
