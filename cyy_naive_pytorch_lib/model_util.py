@@ -155,6 +155,7 @@ class ModelUtil:
             block_types = {
                 (nn.Conv2d, nn.BatchNorm2d, nn.ReLU),
                 (nn.BatchNorm2d, nn.ReLU, nn.Conv2d),
+                (nn.BatchNorm2d, nn.Conv2d),
                 (nn.Conv2d, nn.ReLU),
                 (nn.Conv2d, nn.ReLU, nn.MaxPool2d),
                 (nn.Linear, nn.ReLU),
