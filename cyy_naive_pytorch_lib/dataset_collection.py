@@ -108,21 +108,6 @@ class DatasetCollection:
         get_logger().error("%s has no classes", self.name)
         raise NotImplementedError(self.name)
 
-        if self.name == "CIFAR10":
-            return [
-                "Airplane",
-                "Automobile",
-                "Bird",
-                "Cat",
-                "Deer",
-                "Dog",
-                "Frog",
-                "Horse",
-                "Ship",
-                "Truck",
-            ]
-        raise NotImplementedError(self.name)
-
     __dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
     __dataset_collections: Dict = dict()
 

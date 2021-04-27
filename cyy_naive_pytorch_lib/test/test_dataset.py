@@ -27,3 +27,4 @@ def test_dataset():
         - len(cifar10.get_dataset(MachineLearningPhase.Validation))
         <= 1
     )
+    print("cifar10 labels are", cifar10.get_label_names())
