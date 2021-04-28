@@ -42,6 +42,7 @@ class HyDRACallback(SampleGradientCallback):
         )
         self.approx_hyper_gradient_mom_dict = None
         os.makedirs(self.save_dir, exist_ok=True)
+        self.__batch_gradient_indices = None
 
     def _before_execute(self, **kwargs):
         super()._before_execute(**kwargs)
@@ -284,19 +285,23 @@ class HyDRACallback(SampleGradientCallback):
 
     def _before_batch(self, **kwargs):
         super()._before_batch(**kwargs)
-        trainer = kwargs["model_executor"]
         batch = kwargs["batch"]
 
         assert len(batch) == 3
-        instance_info = trainer.decode_batch(batch)[2]
-        instance_indices = instance_info["index"]
         instance_indices = {idx.data.item() for idx in batch[2]["index"]}
 
         batch_gradient_indices = instance_indices & self.computed_indices
-        assert batch_gradient_indices == self.sample_gradient_dict.keys()
 
         if self.use_approximation:
             self.approx_hyper_gradient_mom_dict.prefetch(batch_gradient_indices)
+        self.__batch_gradient_indices = batch_gradient_indices
+
+    def _after_batch(self, **kwargs):
+        super()._after_batch(**kwargs)
+        trainer = kwargs["model_executor"]
+        batch = kwargs["batch"]
+
+        assert self.__batch_gradient_indices == self.sample_gradient_dict.keys()
 
         if self.use_hessian:
             self.hvp_function = get_hessian_vector_product_func(
@@ -306,7 +311,6 @@ class HyDRACallback(SampleGradientCallback):
         else:
             self.hessian_computation_arguments = None
 
-    def _after_batch(self, **kwargs):
         trainer = kwargs["model_executor"]
         optimizer = trainer.get_optimizer()
         if not isinstance(optimizer, torch.optim.SGD):

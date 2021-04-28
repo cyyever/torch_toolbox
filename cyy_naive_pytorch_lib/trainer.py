@@ -200,6 +200,15 @@ class Trainer(ModelExecutor):
                         loss.backward()
                         batch_loss = loss.data.item()
 
+                        self.exec_callbacks(
+                            ModelExecutorCallbackPoint.AFTER_BATCH,
+                            model_executor=self,
+                            batch_index=batch_index,
+                            batch=batch,
+                            epoch=epoch,
+                            batch_loss=batch_loss,
+                            batch_size=self.get_batch_size(sample_targets),
+                        )
                         if self.has_callback(ModelExecutorCallbackPoint.OPTIMIZER_STEP):
                             self.exec_callbacks(
                                 ModelExecutorCallbackPoint.OPTIMIZER_STEP,
@@ -211,16 +220,6 @@ class Trainer(ModelExecutor):
                         if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                             get_logger().debug("adjust lr after batch")
                             lr_scheduler.step()
-
-                        self.exec_callbacks(
-                            ModelExecutorCallbackPoint.AFTER_BATCH,
-                            model_executor=self,
-                            batch_index=batch_index,
-                            batch=batch,
-                            epoch=epoch,
-                            batch_loss=batch_loss,
-                            batch_size=self.get_batch_size(sample_targets),
-                        )
 
                 self.exec_callbacks(
                     ModelExecutorCallbackPoint.AFTER_EPOCH,
