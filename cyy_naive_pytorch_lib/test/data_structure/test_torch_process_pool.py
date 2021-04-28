@@ -1,9 +1,9 @@
 from cyy_naive_lib.log import get_logger
+
+from data_structure.torch_process_pool import TorchProcessPool
 from default_config import DefaultConfig
 from ml_type import StopExecutingException
 from model_executor import ModelExecutorCallbackPoint
-
-from data_structure.torch_process_pool import TorchProcessPool
 
 
 def stop_training(*args, **kwargs):
@@ -15,7 +15,9 @@ def train(worker_id):
     trainer = DefaultConfig("MNIST", "LeNet5").create_trainer()
     trainer.hyper_parameter.set_epoch(1)
     trainer.hyper_parameter.set_learning_rate(0.01)
-    trainer.add_callback(ModelExecutorCallbackPoint.AFTER_BATCH, stop_training)
+    trainer.add_named_callback(
+        ModelExecutorCallbackPoint.AFTER_BATCH, "stop_training", stop_training
+    )
     trainer.train()
 
 

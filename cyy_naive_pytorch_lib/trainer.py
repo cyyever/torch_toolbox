@@ -6,6 +6,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from dataset_collection import DatasetCollection
+from hooks.learning_rate_hook import LearningRateHook
 from hooks.save_model import SaveModelHook
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
@@ -34,16 +35,7 @@ class Trainer(ModelExecutor):
             MachineLearningPhase.Training,
             hyper_parameter,
         )
-        self.add_callback(
-            ModelExecutorCallbackPoint.BEFORE_BATCH,
-            lambda *args, **kwargs: kwargs["model_executor"].set_data(
-                "cur_learning_rates",
-                [
-                    group["lr"]
-                    for group in kwargs["model_executor"].get_optimizer().param_groups
-                ],
-            ),
-        )
+        LearningRateHook().append_to_model_executor(self)
         self.__loss_metric = LossMetric()
         self.__loss_metric.append_to_model_executor(self)
         self.__validation_metrics = dict()
