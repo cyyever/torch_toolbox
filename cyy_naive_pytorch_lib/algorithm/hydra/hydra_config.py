@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import argparse
+
 from cyy_naive_pytorch_lib.dataset import DatasetUtil
 from cyy_naive_pytorch_lib.default_config import DefaultConfig
 
@@ -16,6 +18,13 @@ class HyDRAConfig(DefaultConfig):
         self.tracking_indices = None
         self.use_hessian: bool = False
         self.use_approximation: bool = True
+
+    def load_args(self, parser=None):
+        if parser is None:
+            parser = argparse.ArgumentParser()
+
+        parser.add_argument("--tracking_percentage", type=float, default=None)
+        super().load_args(parser=parser)
 
     def create_trainer(self, return_hydra_callback=False, **kwargs):
         trainer = super().create_trainer(**kwargs)
