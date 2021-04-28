@@ -212,10 +212,6 @@ def get_recommended_hyper_parameter(
             learning_rate=HyperParameterAction.FIND_LR,
             weight_decay=1,
         )
-    elif dataset_name == "WebankStreet":
-        hyper_parameter = HyperParameter(
-            epoch=50, batch_size=4, learning_rate=0.0001, weight_decay=1
-        )
     elif dataset_name == "SVHN":
         hyper_parameter = HyperParameter(
             epoch=50, batch_size=4, learning_rate=0.0001, weight_decay=1

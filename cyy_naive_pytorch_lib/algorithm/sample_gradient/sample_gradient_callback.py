@@ -29,17 +29,18 @@ class SampleGradientCallback(AddIndexToDataset):
         self.sample_gradient_dict.clear()
 
     def _before_batch(self, **kwargs):
+        self.sample_gradient_dict.clear()
+
+    def _after_batch(self, **kwargs):
         trainer = kwargs["model_executor"]
         batch = kwargs["batch"]
 
         instance_inputs, instance_targets, instance_info = trainer.decode_batch(batch)
         assert "index" in instance_info
-        instance_indices = instance_info["index"]
-        instance_indices = {idx.data.item() for idx in instance_indices}
+        instance_indices = {idx.data.item() for idx in instance_info["index"]}
         batch_gradient_indices: set = instance_indices
         if self.__computed_indices is not None:
             batch_gradient_indices &= self.__computed_indices
-        self.__sample_gradient_dict.clear()
         sample_gradient_inputs = []
         sample_gradient_targets = []
         sample_gradient_indices = []
