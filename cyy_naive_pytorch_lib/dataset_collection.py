@@ -95,21 +95,19 @@ class DatasetCollection:
             return labels
 
     def get_label_names(self) -> List[str]:
-        if self.name == "MNIST":
-            return [str(a) for a in range(10)]
-        if self.name == "FashionMNIST":
-            return [
-                "T-shirt",
-                "Trouser",
-                "Pullover",
-                "Dress",
-                "Coat",
-                "Sandal",
-                "Shirt",
-                "Sneaker",
-                "Bag",
-                "Ankle boot",
-            ]
+        if hasattr(self.get_training_dataset(), "classes"):
+            return getattr(self.get_training_dataset(), "classes")
+
+        vision_dataset_cls = DatasetCollection.get_vision_dataset_cls()
+        if self.name not in vision_dataset_cls:
+            get_logger().error("supported datasets are %s", vision_dataset_cls.keys())
+            raise NotImplementedError(self.name)
+        vision_dataset_cls = vision_dataset_cls[self.name]
+        if hasattr(vision_dataset_cls, "classes"):
+            return getattr(vision_dataset_cls, "classes")
+        get_logger().error("%s has no classes", self.name)
+        raise NotImplementedError(self.name)
+
         if self.name == "CIFAR10":
             return [
                 "Airplane",
