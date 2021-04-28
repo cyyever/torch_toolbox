@@ -3,8 +3,10 @@
 import atexit
 
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
+
 from data_structure.torch_process_task_queue import TorchProcessTaskQueue
 from device import get_cuda_devices
+from ml_type import MachineLearningPhase
 from model_util import ModelUtil
 from model_with_loss import ModelWithLoss
 
@@ -19,7 +21,10 @@ def __worker_fun(task, args):
         model_with_loss.model.zero_grad()
         sample_input.unsqueeze_(0)
         sample_target.unsqueeze_(0)
-        loss = model_with_loss(sample_input, sample_target, device=device)["loss"]
+        # we should set phase to test so that BatchNorm would use running statistics
+        loss = model_with_loss(
+            sample_input, sample_target, phase=MachineLearningPhase.Test, device=device
+        )["loss"]
         loss.backward()
         gradient_lists.append(ModelUtil(model_with_loss.model).get_gradient_list())
     assert len(gradient_lists) == len(input_chunk)
