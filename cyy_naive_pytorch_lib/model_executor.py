@@ -29,6 +29,7 @@ class ModelExecutor:
         self.__callbacks: Dict[
             ModelExecutorCallbackPoint, List[Union[Callable, Dict[str, Callable]]]
         ] = dict()
+        self.__stripable_callbacks: set = set()
         self.__logger = ModelExecutorLogger()
         self.__logger.append_to_model_executor(self)
 
@@ -94,35 +95,52 @@ class ModelExecutor:
     def callbacks(self):
         return self.__callbacks
 
-    def prepend_callback(
-        self,
-        cb_point: ModelExecutorCallbackPoint,
-        cb: Union[Callable, Dict[str, Callable]],
-    ):
-        if cb_point not in self.__callbacks:
-            self.__callbacks[cb_point] = [cb]
-        else:
-            self.__callbacks[cb_point].insert(0, cb)
-
-    def add_callback(
-        self,
-        cb_point: ModelExecutorCallbackPoint,
-        cb: Union[Callable, Dict[str, Callable]],
-    ):
-        if cb_point not in self.__callbacks:
-            self.__callbacks[cb_point] = [cb]
-        else:
-            self.__callbacks[cb_point].append(cb)
-
     def add_named_callback(
-        self, cb_point: ModelExecutorCallbackPoint, name: str, cb: Callable
+        self,
+        cb_point: ModelExecutorCallbackPoint,
+        name: str,
+        cb: Callable,
+        stripable=False,
     ):
-        self.add_callback(cb_point, {name: cb})
+        data = {name: cb}
+        if cb_point not in self.__callbacks:
+            self.__callbacks[cb_point] = [data]
+        else:
+            self.__callbacks[cb_point].append(data)
+        if stripable:
+            self.__stripable_callbacks.add(cb)
 
     def prepend_named_callback(
-        self, cb_point: ModelExecutorCallbackPoint, name: str, cb: Callable
+        self,
+        cb_point: ModelExecutorCallbackPoint,
+        name: str,
+        cb: Callable,
+        stripable=False,
     ):
-        self.prepend_callback(cb_point, {name: cb})
+        data = {name: cb}
+        if cb_point not in self.__callbacks:
+            self.__callbacks[cb_point] = [data]
+        else:
+            self.__callbacks[cb_point].insert(0, data)
+        if stripable:
+            self.__stripable_callbacks.add(cb)
+
+    def strip_callbacks(self):
+        for cur_cb_point, callbacks in self.__callbacks.items():
+            for idx, cb in enumerate(callbacks):
+                if isinstance(cb, dict):
+                    for name, real_cb in cb.items():
+                        if real_cb in self.__stripable_callbacks:
+                            self.__stripable_callbacks.remove(real_cb)
+                            cb.pop(name, None)
+                    self.__callbacks[cur_cb_point][idx] = cb
+                else:
+                    if cb in self.__stripable_callbacks:
+                        self.__stripable_callbacks.remove(cb)
+                        self.__callbacks[cur_cb_point][idx] = None
+            self.__callbacks[cur_cb_point] = [
+                a for a in self.__callbacks[cur_cb_point] if a is not None
+            ]
 
     def remove_callback(self, name: str, cb_point: ModelExecutorCallbackPoint = None):
         for cur_cb_point, callbacks in self.__callbacks.items():
