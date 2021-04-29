@@ -30,20 +30,13 @@ def __get_f(device, inputs, targets, model_with_loss: ModelWithLoss):
 
 
 def worker_fun(task, args):
-    (
-        idx,
-        vector_chunk,
-        model_with_loss,
-        parameter_dict,
-        input_dict,
-        target_dict,
-    ) = task
+    (idx, vector_chunk, model_with_loss, parameter_list, inputs, targets) = task
     worker_device = args[0]
     for index, vector in enumerate(vector_chunk):
         vector_chunk[index] = vector.to(worker_device)
-    inputs = input_dict.get(str(worker_device)).to(worker_device)
-    targets = target_dict.get(str(worker_device)).to(worker_device)
-    parameter_list = parameter_dict.get(str(worker_device)).to(worker_device)
+    inputs = inputs.to(worker_device)
+    targets = targets.to(worker_device)
+    parameter_list = parameter_list.to(worker_device)
     vector_chunk = tuple(vector_chunk)
     products = autograd.functional.vhp(
         __get_f(
@@ -83,15 +76,6 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
 
     parameter_list = model_util.get_parameter_list(detach=True)
 
-    inputs_dict = dict()
-    targets_dict = dict()
-    parameter_dict = dict()
-
-    for device in devices:
-        inputs_dict[str(device)] = batch[0]
-        targets_dict[str(device)] = batch[1]
-        parameter_dict[str(device)] = parameter_list
-
     def vhp_func(v):
         global __task_queue
         v_is_tensor = False
@@ -115,14 +99,7 @@ def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
         __task_queue.start()
         for idx, vector_chunk in enumerate(vector_chunks):
             __task_queue.add_task(
-                (
-                    idx,
-                    vector_chunk,
-                    model_with_loss,
-                    parameter_dict,
-                    inputs_dict,
-                    targets_dict,
-                )
+                (idx, vector_chunk, model_with_loss, parameter_list, batch[0], batch[1])
             )
 
         total_products = dict()
