@@ -12,8 +12,9 @@ class TorchProcessTaskQueue(TaskQueue):
     def __init__(self, worker_fun: Callable, worker_num=None):
         self.devices = get_devices()
         if worker_num is None:
-            worker_num = len(self.devices)
-            if worker_num == 1:
+            if torch.cuda.is_available():
+                worker_num = len(self.devices)
+            else:
                 worker_num = os.cpu_count()
         super().__init__(
             worker_fun=worker_fun,
