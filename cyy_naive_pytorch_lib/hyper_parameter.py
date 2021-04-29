@@ -52,6 +52,8 @@ class HyperParameter:
         if isinstance(self.__learning_rate, HyperParameterAction):
             get_logger().warning("guess lr")
             tmp_trainer = copy.deepcopy(trainer)
+            tmp_trainer.remove_logger()
+            tmp_trainer.disable_stripable_callbacks()
             lr_finder = LRFinder()
             lr_finder.prepend_to_model_executor(tmp_trainer)
             tmp_trainer.train()
