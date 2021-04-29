@@ -22,6 +22,12 @@ def get_device():
     return torch.device("cpu")
 
 
+def get_devices():
+    if torch.cuda.is_available():
+        return get_cuda_devices()
+    return [torch.device("cpu")]
+
+
 def put_data_to_device(data, device=None):
     if device is None:
         device = get_device()

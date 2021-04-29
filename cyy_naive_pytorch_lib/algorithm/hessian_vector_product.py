@@ -4,8 +4,9 @@ import atexit
 
 import torch.autograd as autograd
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
+
 from data_structure.torch_process_task_queue import TorchProcessTaskQueue
-from device import get_cuda_devices
+from device import get_devices
 from model_util import ModelUtil
 from model_with_loss import ModelWithLoss
 
@@ -18,7 +19,7 @@ def __get_f(device, inputs, targets, model_with_loss: ModelWithLoss):
         total_loss = None
         for parameter_list in args:
             model_util.load_parameter_list(parameter_list, as_parameter=False)
-            loss = model_with_loss(inputs, targets,device=device)["loss"]
+            loss = model_with_loss(inputs, targets, device=device)["loss"]
             if total_loss is None:
                 total_loss = loss
             else:
@@ -71,7 +72,7 @@ atexit.register(stop_task_queue)
 
 
 def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
-    devices = get_cuda_devices()
+    devices = get_devices()
 
     model = ModelUtil(model_with_loss.model).deepcopy()
     model_util = ModelUtil(model)
