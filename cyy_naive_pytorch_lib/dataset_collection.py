@@ -272,26 +272,37 @@ class DatasetCollection:
 
         # for for_training in (True, False):
         for phase in MachineLearningPhase:
-            if "train" in sig.parameters:
-                # Some dataset only have train and test parts
-                if phase == MachineLearningPhase.Validation:
-                    continue
-                dataset_kwargs["train"] = phase == MachineLearningPhase.Training
-            if "split" in sig.parameters:
-                if phase == MachineLearningPhase.Training:
-                    dataset_kwargs["split"] = "train"
-                elif phase == MachineLearningPhase.Validation:
-                    dataset_kwargs["split"] = "val"
-                else:
-                    dataset_kwargs["split"] = "test"
+            while True:
+                try:
+                    if "train" in sig.parameters:
+                        # Some dataset only have train and test parts
+                        if phase == MachineLearningPhase.Validation:
+                            continue
+                        dataset_kwargs["train"] = phase == MachineLearningPhase.Training
+                    if "split" in sig.parameters:
+                        if phase == MachineLearningPhase.Training:
+                            dataset_kwargs["split"] = "train"
+                        elif phase == MachineLearningPhase.Validation:
+                            dataset_kwargs["split"] = "val"
+                        else:
+                            dataset_kwargs["split"] = "test"
+                    dataset = dataset_cls(**dataset_kwargs)
+                    if phase == MachineLearningPhase.Training:
+                        training_dataset = dataset
+                    elif phase == MachineLearningPhase.Validation:
+                        validation_dataset = dataset
+                    else:
+                        test_dataset = dataset
+                    break
+                except Exception as e:
+                    split = dataset_kwargs.get("split", None)
+                    if split is None:
+                        raise e
+                    if split == "train":
+                        raise e
+                    # no validation dataset or test dataset
+                    break
 
-            dataset = dataset_cls(**dataset_kwargs)
-            if phase == MachineLearningPhase.Training:
-                training_dataset = dataset
-            elif phase == MachineLearningPhase.Validation:
-                validation_dataset = dataset
-            else:
-                test_dataset = dataset
         cache_dir = DatasetCollection.get_dataset_cache_dir(name)
         pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
         if os.path.isfile(pickle_file):
@@ -309,9 +320,11 @@ class DatasetCollection:
             if validation_dataset is not None:
                 splited_dataset = validation_dataset
                 dataset_util = DatasetUtil(validation_dataset)
+                get_logger().warning("split validation dataset for %s", name)
             else:
                 splited_dataset = test_dataset
                 dataset_util = DatasetUtil(test_dataset)
+                get_logger().warning("split test dataset for %s", name)
             validation_dataset, test_dataset = tuple(dataset_util.iid_split([1, 1]))
         dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
         if splited_dataset is not None:
@@ -319,7 +332,7 @@ class DatasetCollection:
             dc.set_origin_dataset(MachineLearningPhase.Test, splited_dataset)
 
         dc.append_transform(transforms.Normalize(mean=mean, std=std))
-        if name != "MNIST":
+        if name not in ("SVHN", "MNIST"):
             dc.append_transform(
                 transforms.RandomHorizontalFlip(), phase=MachineLearningPhase.Training
             )

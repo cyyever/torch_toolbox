@@ -5,6 +5,7 @@ import torch.nn as nn
 from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
 
 from ml_type import MachineLearningPhase, ModelType
+from model_util import ModelUtil
 
 
 class ModelWithLoss:
@@ -23,10 +24,20 @@ class ModelWithLoss:
         if self.__loss_fun is None:
             self.__loss_fun = self.__choose_loss_function()
         self.__model_type = model_type
+        self.__has_batch_norm = None
 
     @property
     def model(self) -> torch.nn.Module:
         return self.__model
+
+    @property
+    def has_batch_norm(self):
+        if self.__has_batch_norm is None:
+            pass
+        self.__has_batch_norm = ModelUtil(self.model).has_sub_module(
+            torch.nn.BatchNorm2d
+        )
+        return self.__has_batch_norm
 
     @property
     def model_type(self):
