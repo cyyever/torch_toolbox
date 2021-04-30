@@ -172,13 +172,21 @@ class Trainer(ModelExecutor):
                         lr_scheduler = self.get_lr_scheduler()
                         assert optimizer is not None
                         assert lr_scheduler is not None
-                        # self.model.to(self.device)
+                        batch_size = self.get_batch_size(batch[0])
+                        if (
+                            self.model_with_loss.has_batch_norm
+                            and self.hyper_parameter.batch_size != 1
+                            and batch_size == 1
+                        ):
+                            get_logger().debug("drop last one-batch for batchnorm")
+                            continue
+
                         self.exec_callbacks(
                             ModelExecutorCallbackPoint.BEFORE_BATCH,
                             model_executor=self,
                             batch_index=batch_index,
                             batch=batch,
-                            batch_size=self.get_batch_size(batch[0]),
+                            batch_size=batch_size,
                         )
                         optimizer.zero_grad()
                         sample_inputs, sample_targets, _ = self.decode_batch(batch)
@@ -199,7 +207,7 @@ class Trainer(ModelExecutor):
                             batch=batch,
                             epoch=epoch,
                             batch_loss=batch_loss,
-                            batch_size=self.get_batch_size(sample_targets),
+                            batch_size=batch_size,
                         )
                         if self.has_callback(ModelExecutorCallbackPoint.OPTIMIZER_STEP):
                             self.exec_callbacks(
