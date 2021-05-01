@@ -43,9 +43,9 @@ class Inferencer(ModelExecutor):
                 result = self.model_with_loss(
                     inputs, targets, phase=self.phase, device=self.device
                 )
-                batch_loss = result["loss"]
+                batch_loss = result["loss"].data.item()
                 if use_grad:
-                    real_batch_loss = batch_loss
+                    real_batch_loss = result["loss"]
                     if self.model_with_loss.is_averaged_loss():
                         real_batch_loss *= self.get_batch_size(targets)
                     real_batch_loss /= len(self.dataset)
@@ -55,7 +55,7 @@ class Inferencer(ModelExecutor):
                     ModelExecutorCallbackPoint.AFTER_BATCH,
                     model_executor=self,
                     batch=batch,
-                    batch_loss=batch_loss.data.item(),
+                    batch_loss=batch_loss,
                     batch_index=batch_index,
                     batch_size=self.get_batch_size(targets),
                     result=result,
