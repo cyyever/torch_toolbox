@@ -45,9 +45,11 @@ class MetricVisdom(MetricVisualizer):
                 momentum_win.plot_scalar(epoch, momentum)
 
         loss_win = EpochWindow("training & validation loss", env=self.__visdom_env)
-        loss_win.plot_loss(epoch, trainer.loss_metric.get_loss(epoch), "training loss")
+        loss_win.plot_loss(
+            epoch, trainer.performance_metric.get_loss(epoch), "training loss"
+        )
 
-        validation_metric = trainer.get_validation_metric(
+        validation_metric = trainer.get_inferencer_performance_metric(
             MachineLearningPhase.Validation
         )
 
@@ -74,7 +76,9 @@ class MetricVisdom(MetricVisualizer):
                         class_accuracy[k],
                         "class_" + str(k) + "_accuracy",
                     )
-        test_metric = trainer.get_validation_metric(MachineLearningPhase.Test)
+        test_metric = trainer.get_inferencer_performance_metric(
+            MachineLearningPhase.Test
+        )
         loss_win = EpochWindow("test loss", env=self.__visdom_env)
         loss_win.plot_loss(epoch, test_metric.get_epoch_metric(epoch, "loss"))
         EpochWindow("test accuracy", env=self.__visdom_env).plot_accuracy(

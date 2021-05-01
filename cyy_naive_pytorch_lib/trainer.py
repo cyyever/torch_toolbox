@@ -36,37 +36,16 @@ class Trainer(ModelExecutor):
             hyper_parameter,
         )
         LearningRateHook().append_to_model_executor(self)
-        # self.__loss_metric = LossMetric()
-        # self.__loss_metric.append_to_model_executor(self)
-
-        # self.__validation_metrics = dict()
-        # for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
-        #     self.__validation_metrics[phase] = ValidationMetric(phase)
-        #     self.__validation_metrics[phase].append_to_model_executor(self)
         self.__inferencers: dict = dict()
         self.__batch_loss_logger = BatchLossMetricLogger()
         self.__batch_loss_logger.append_to_model_executor(self)
-        # self.__validation_loss_logger = ValidationMetricLogger()
-        # self.__validation_loss_logger.append_to_model_executor(self)
         self.__metric_visdom: MetricVisdom = MetricVisdom()
         self.__metric_visdom.append_to_model_executor(self)
         self.__save_model_hook = SaveModelHook()
         self.save_dir = save_dir
 
-    # @property
-    # def metric_visdom(self):
-    #     return self.__metric_visdom
-
-    # @property
-    # def loss_logger(self):
-    #     return self.__loss_logger
-
-    # @property
-    # def loss_metric(self):
-    #     return self.__loss_metric
-
-    # def get_validation_metric(self, phase):
-    #     return self.__validation_metrics.get(phase)
+    def get_inferencer_performance_metric(self, phase):
+        return self.__inferencers[phase].performance_metric
 
     def get_inferencer(
         self, phase: MachineLearningPhase, copy_model=False
@@ -158,6 +137,7 @@ class Trainer(ModelExecutor):
         self.__inferencers.clear()
         for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
             self.__inferencers[phase] = self.get_inferencer(phase)
+            self.__inferencers[phase].remove_logger()
         self.exec_callbacks(
             ModelExecutorCallbackPoint.BEFORE_EXECUTE, model_executor=self
         )
@@ -212,6 +192,7 @@ class Trainer(ModelExecutor):
                             batch_index=batch_index,
                             batch=batch,
                             epoch=epoch,
+                            result=result,
                             batch_loss=batch_loss,
                             batch_size=batch_size,
                         )
@@ -230,6 +211,7 @@ class Trainer(ModelExecutor):
                 # update model parameters
                 for inferencer in self.__inferencers.values():
                     inferencer.set_model(copy.deepcopy(self.model))
+                    print("inference in try")
                     inferencer.inference(epoch=epoch, use_grad=False)
 
                 self.exec_callbacks(
