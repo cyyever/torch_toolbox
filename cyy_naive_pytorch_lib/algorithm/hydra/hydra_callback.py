@@ -299,8 +299,8 @@ class HyDRACallback(SampleGradientCallback):
             self.approx_hyper_gradient_mom_dict.prefetch(batch_gradient_indices)
         self.__batch_gradient_indices = batch_gradient_indices
 
-    def _after_batch(self, **kwargs):
-        super()._after_batch(**kwargs)
+    def _after_optimizer_step(self, **kwargs):
+        super()._after_optimizer_step(**kwargs)
         trainer = kwargs["model_executor"]
         batch = kwargs["batch"]
 

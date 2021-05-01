@@ -24,14 +24,10 @@ class SampleGradientCallback(AddIndexToDataset):
     def set_computed_indices(self, computed_indices):
         self.__computed_indices = set(computed_indices)
 
-    def _before_execute(self, **kwargs):
-        super()._before_execute(**kwargs)
-        self.sample_gradient_dict.clear()
-
     def _before_batch(self, **kwargs):
         self.sample_gradient_dict.clear()
 
-    def _after_batch(self, **kwargs):
+    def _after_optimizer_step(self, **kwargs):
         trainer = kwargs["model_executor"]
         batch = kwargs["batch"]
 

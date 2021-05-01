@@ -41,6 +41,10 @@ class Trainer(ModelExecutor):
         self.__save_model_hook = SaveModelHook()
         self.save_dir = save_dir
 
+    @property
+    def batch_loss_logger(self):
+        return self.__batch_loss_logger
+
     def get_inferencer_performance_metric(self, phase):
         return self.__inferencers[phase].performance_metric
 
@@ -164,6 +168,7 @@ class Trainer(ModelExecutor):
                             get_logger().debug("drop last one-batch for batchnorm")
                             continue
 
+                        optimizer.zero_grad()
                         self.exec_callbacks(
                             ModelExecutorCallbackPoint.BEFORE_BATCH,
                             model_executor=self,
@@ -200,6 +205,18 @@ class Trainer(ModelExecutor):
                             )
                         else:
                             optimizer.step()
+
+                        optimizer.zero_grad()
+                        self.exec_callbacks(
+                            ModelExecutorCallbackPoint.AFTER_OPTIMIZER_STEP,
+                            model_executor=self,
+                            batch_index=batch_index,
+                            batch=batch,
+                            epoch=epoch,
+                            result=result,
+                            batch_loss=batch_loss,
+                            batch_size=batch_size,
+                        )
 
                         if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                             get_logger().debug("adjust lr after batch")
