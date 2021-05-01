@@ -25,7 +25,7 @@ class Callback:
 
     def set_stripable(self, model_executor):
         for name in self.__yield_callback_names():
-            model_executor.set_stripable(name)
+            model_executor.set_stripable_callback(name)
 
     def remove_from_model_executor(self, model_executor):
         for name in self.__yield_callback_names():

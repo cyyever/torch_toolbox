@@ -10,10 +10,10 @@ from hooks.learning_rate_hook import LearningRateHook
 from hooks.save_model import SaveModelHook
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
-from metric_visualizers.loss_metric_logger import LossMetricLogger
+from metric_visualizers.batch_loss_metric_logger import BatchLossMetricLogger
 from metric_visualizers.metric_visdom import MetricVisdom
-from metric_visualizers.validation_metric_logger import ValidationMetricLogger
-from metrics.loss_metric import LossMetric
+# from metric_visualizers.validation_metric_logger import ValidationMetricLogger
+# from metrics.loss_metric import LossMetric
 # from metrics.validation_metric import ValidationMetric
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
@@ -36,37 +36,37 @@ class Trainer(ModelExecutor):
             hyper_parameter,
         )
         LearningRateHook().append_to_model_executor(self)
-        self.__loss_metric = LossMetric()
-        self.__loss_metric.append_to_model_executor(self)
+        # self.__loss_metric = LossMetric()
+        # self.__loss_metric.append_to_model_executor(self)
 
-        self.__validation_metrics = dict()
+        # self.__validation_metrics = dict()
         # for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
         #     self.__validation_metrics[phase] = ValidationMetric(phase)
         #     self.__validation_metrics[phase].append_to_model_executor(self)
-        self.__inferencers = dict()
-        self.__loss_logger = LossMetricLogger()
-        self.__loss_logger.append_to_model_executor(self)
-        self.__validation_loss_logger = ValidationMetricLogger()
-        self.__validation_loss_logger.append_to_model_executor(self)
+        self.__inferencers: dict = dict()
+        self.__batch_loss_logger = BatchLossMetricLogger()
+        self.__batch_loss_logger.append_to_model_executor(self)
+        # self.__validation_loss_logger = ValidationMetricLogger()
+        # self.__validation_loss_logger.append_to_model_executor(self)
         self.__metric_visdom: MetricVisdom = MetricVisdom()
         self.__metric_visdom.append_to_model_executor(self)
         self.__save_model_hook = SaveModelHook()
         self.save_dir = save_dir
 
-    @property
-    def metric_visdom(self):
-        return self.__metric_visdom
+    # @property
+    # def metric_visdom(self):
+    #     return self.__metric_visdom
 
-    @property
-    def loss_logger(self):
-        return self.__loss_logger
+    # @property
+    # def loss_logger(self):
+    #     return self.__loss_logger
 
-    @property
-    def loss_metric(self):
-        return self.__loss_metric
+    # @property
+    # def loss_metric(self):
+    #     return self.__loss_metric
 
-    def get_validation_metric(self, phase):
-        return self.__validation_metrics.get(phase)
+    # def get_validation_metric(self, phase):
+    #     return self.__validation_metrics.get(phase)
 
     def get_inferencer(
         self, phase: MachineLearningPhase, copy_model=False
@@ -92,8 +92,9 @@ class Trainer(ModelExecutor):
                 hyper_parameter=self.hyper_parameter,
                 iou_threshold=0.6,
             )
-        assert False
-        return None
+        raise RuntimeError(
+            "Unsupported model type:" + str(self.model_with_loss.model_type)
+        )
 
     def get_optimizer(self):
         if not self.has_data("optimizer"):
@@ -241,7 +242,7 @@ class Trainer(ModelExecutor):
                     if isinstance(
                         lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau
                     ):
-                        training_loss = self.__loss_metric.get_loss(epoch)
+                        training_loss = self.performance_metric.get_loss(epoch)
                         get_logger().debug(
                             "call ReduceLROnPlateau for training loss %s", training_loss
                         )
