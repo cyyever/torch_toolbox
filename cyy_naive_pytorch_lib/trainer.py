@@ -45,6 +45,10 @@ class Trainer(ModelExecutor):
     def batch_loss_logger(self):
         return self.__batch_loss_logger
 
+    @property
+    def metric_visdom(self):
+        return self.__metric_visdom
+
     def get_inferencer_performance_metric(self, phase):
         return self.__inferencers[phase].performance_metric
 
