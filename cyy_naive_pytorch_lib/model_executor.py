@@ -59,6 +59,11 @@ class ModelExecutor:
             self.__logger.remove_from_model_executor(self)
         self.__logger = None
 
+    def remove_performance_metric_logger(self):
+        if self.__performance_metric_logger is not None:
+            self.__performance_metric_logger.remove_from_model_executor(self)
+        self.__performance_metric_logger = None
+
     @property
     def dataset(self):
         return self.dataset_collection.get_dataset(phase=self.__phase)

@@ -4,13 +4,12 @@ import pickle
 import shutil
 
 import torch
-from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
-from cyy_naive_lib.log import get_logger
-from cyy_naive_lib.time_counter import TimeCounter
-
 from algorithm.hessian_vector_product import get_hessian_vector_product_func
 from algorithm.sample_gradient.sample_gradient_callback import \
     SampleGradientCallback
+from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
+from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.time_counter import TimeCounter
 from data_structure.synced_tensor_dict import SyncedTensorDict
 from ml_type import MachineLearningPhase
 from model_util import ModelUtil
@@ -93,6 +92,7 @@ class HyDRACallback(SampleGradientCallback):
         trainer = kwargs["model_executor"]
         tester = trainer.get_inferencer(phase=MachineLearningPhase.Test)
         tester.remove_logger()
+        tester.remove_performance_metric_logger()
         test_gradient = tester.get_gradient()
         if self.use_approximation:
             self.__save_hyper_gradients(
