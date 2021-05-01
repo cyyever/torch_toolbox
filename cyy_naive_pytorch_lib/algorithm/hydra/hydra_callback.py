@@ -92,6 +92,7 @@ class HyDRACallback(SampleGradientCallback):
         get_logger().info("end hyper-gradient tracking")
         trainer = kwargs["model_executor"]
         tester = trainer.get_inferencer(phase=MachineLearningPhase.Test)
+        tester.remove_logger()
         test_gradient = tester.get_gradient()
         if self.use_approximation:
             self.__save_hyper_gradients(
@@ -204,7 +205,9 @@ class HyDRACallback(SampleGradientCallback):
                 for (k, _) in self.approx_hyper_gradient_mom_dict.iterate(
                     unfinished_keys
                 ):
-                    get_logger().debug("do delayed_approximation_computations for %s", k)
+                    get_logger().debug(
+                        "do delayed_approximation_computations for %s", k
+                    )
                     self.do_delayed_computation(k)
             return
 
