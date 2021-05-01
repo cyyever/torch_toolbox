@@ -1,5 +1,4 @@
 from cyy_naive_lib.log import get_logger
-
 from ml_type import MachineLearningPhase
 
 from .metric_logger import MetricLogger
@@ -14,7 +13,7 @@ class PerformanceMetricLogger(MetricLogger):
         model_executor = kwargs.get("model_executor")
 
         phase_str = "training"
-        if model_executor.phase == MachineLearningPhase.Training:
+        if model_executor.phase == MachineLearningPhase.Validation:
             phase_str = "validation"
         elif model_executor.phase == MachineLearningPhase.Test:
             phase_str = "test"
