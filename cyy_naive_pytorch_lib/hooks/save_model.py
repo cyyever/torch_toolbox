@@ -26,7 +26,7 @@ class SaveModelHook(Callback):
         model_path = os.path.join(self.__model_dir, "epoch_" + str(epoch) + ".pt")
         trainer.save_model(model_path)
         self.__model_paths[epoch] = model_path
-        acc = trainer.get_validation_metric(
+        acc = trainer.get_inferencer_performance_metric(
             MachineLearningPhase.Validation
         ).get_epoch_metric(epoch, "accuracy")
         if not self.__best_epoch or acc > self.__best_epoch[1]:

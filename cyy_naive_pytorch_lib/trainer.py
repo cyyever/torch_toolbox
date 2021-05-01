@@ -211,7 +211,6 @@ class Trainer(ModelExecutor):
                 # update model parameters
                 for inferencer in self.__inferencers.values():
                     inferencer.set_model(copy.deepcopy(self.model))
-                    print("inference in try")
                     inferencer.inference(epoch=epoch, use_grad=False)
 
                 self.exec_callbacks(
