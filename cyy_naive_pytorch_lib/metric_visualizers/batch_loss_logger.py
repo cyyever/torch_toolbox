@@ -3,7 +3,7 @@ from cyy_naive_lib.log import get_logger
 from .metric_logger import MetricLogger
 
 
-class BatchLossMetricLogger(MetricLogger):
+class BatchLossLogger(MetricLogger):
     def _after_batch(self, **kwargs):
         model_executor = kwargs.get("model_executor")
         batch_size = kwargs["batch_size"]

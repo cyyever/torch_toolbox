@@ -10,7 +10,7 @@ from hooks.learning_rate_hook import LearningRateHook
 from hooks.save_model import SaveModelHook
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
-from metric_visualizers.batch_loss_metric_logger import BatchLossMetricLogger
+from metric_visualizers.batch_loss_logger import BatchLossLogger
 from metric_visualizers.metric_visdom import MetricVisdom
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
@@ -34,7 +34,7 @@ class Trainer(ModelExecutor):
         )
         LearningRateHook().append_to_model_executor(self)
         self.__inferencers: dict = dict()
-        self.__batch_loss_logger = BatchLossMetricLogger()
+        self.__batch_loss_logger = BatchLossLogger()
         self.__batch_loss_logger.append_to_model_executor(self)
         self.__metric_visdom: MetricVisdom = MetricVisdom()
         self.__metric_visdom.append_to_model_executor(self)
