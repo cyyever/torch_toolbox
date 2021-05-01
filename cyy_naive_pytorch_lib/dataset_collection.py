@@ -336,6 +336,11 @@ class DatasetCollection:
             dc.append_transform(
                 transforms.RandomHorizontalFlip(), phase=MachineLearningPhase.Training
             )
+        if name == "CIFAR10":
+            dc.append_transform(
+                transforms.RandomCrop(32, padding=4),
+                phase=MachineLearningPhase.Training,
+            )
         DatasetCollection.__dataset_collections[name] = dc
         return dc
 
