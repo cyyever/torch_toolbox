@@ -1,4 +1,4 @@
-from ml_type import MachineLearningPhase, ModelType
+from ml_type import ModelType
 
 from .acc_metric import AccuracyMetric
 from .loss_metric import LossMetric
@@ -10,8 +10,6 @@ class PerformanceMetric(Metric):
         super().__init__(**kwargs)
         self.__loss_metric = LossMetric()
         self.__accuracy_metric = None
-        # self.__phase = phase
-        # self.__inferencer = None
 
     def _before_execute(self, **kwargs):
         model_executor = kwargs.get("model_executor")
@@ -25,11 +23,6 @@ class PerformanceMetric(Metric):
             )
         else:
             self.__accuracy_metric = None
-        # if model_executor.phase != MachineLearningPhase.Training:
-        #     self.__inferencer = model_executor.get_inferencer(
-        #         self.__phase, copy_model=False
-        #     )
-        #     self.__inferencer.remove_logger()
 
     def _after_epoch(self, **kwargs):
         epoch = kwargs.get("epoch")
@@ -37,3 +30,6 @@ class PerformanceMetric(Metric):
         self._set_epoch_metric(
             epoch, "accuracy", self.__accuracy_metric.get_accuracy(epoch)
         )
+
+    def get_loss(self, epoch):
+        return self.__loss_metric(epoch)
