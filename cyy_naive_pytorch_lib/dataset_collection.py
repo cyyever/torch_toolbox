@@ -277,7 +277,7 @@ class DatasetCollection:
                     if "train" in sig.parameters:
                         # Some dataset only have train and test parts
                         if phase == MachineLearningPhase.Validation:
-                            continue
+                            break
                         dataset_kwargs["train"] = phase == MachineLearningPhase.Training
                     if "split" in sig.parameters:
                         if phase == MachineLearningPhase.Training:
