@@ -5,8 +5,6 @@ from torchvision.ops.boxes import box_iou
 from dataset import DatasetUtil
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
-from metrics.acc_metric import AccuracyMetric
-from metrics.loss_metric import LossMetric
 from metrics.prob_metric import ProbabilityMetric
 from ml_type import MachineLearningPhase
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
@@ -24,12 +22,6 @@ class Inferencer(ModelExecutor):
     ):
         assert phase != MachineLearningPhase.Training
         super().__init__(model_with_loss, dataset_collection, phase, hyper_parameter)
-        self._loss_metric = LossMetric()
-        self._loss_metric.append_to_model_executor(self)
-
-    @property
-    def loss_metric(self):
-        return self._loss_metric
 
     def inference(self, **kwargs):
         use_grad = kwargs.get("use_grad", False)
@@ -85,13 +77,7 @@ class Inferencer(ModelExecutor):
 class ClassificationInferencer(Inferencer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__acc_metric = AccuracyMetric()
-        self.__acc_metric.append_to_model_executor(self)
         self.__prob_metric = None
-
-    @property
-    def accuracy_metric(self) -> AccuracyMetric:
-        return self.__acc_metric
 
     @property
     def prob_metric(self) -> ProbabilityMetric:

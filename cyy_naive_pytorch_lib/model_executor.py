@@ -124,6 +124,9 @@ class ModelExecutor:
         if cb_point not in self.__callbacks:
             self.__callbacks[cb_point] = [data]
         else:
+            for d in self.__callbacks[cb_point]:
+                if name in d:
+                    raise RuntimeError(name + " has registered")
             self.__callbacks[cb_point].append(data)
 
     def set_stripable_callback(self, name: str):
@@ -154,6 +157,9 @@ class ModelExecutor:
         if cb_point not in self.__callbacks:
             self.__callbacks[cb_point] = [data]
         else:
+            for d in self.__callbacks[cb_point]:
+                if name in d:
+                    raise RuntimeError(name + " has registered")
             self.__callbacks[cb_point].insert(0, data)
 
     def remove_callback(self, name: str, cb_point: ModelExecutorCallbackPoint = None):
