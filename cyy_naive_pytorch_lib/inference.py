@@ -64,7 +64,7 @@ class Inferencer(ModelExecutor):
                     ModelExecutorCallbackPoint.AFTER_BATCH,
                     model_executor=self,
                     batch=batch,
-                    batch_loss=batch_loss,
+                    batch_loss=batch_loss.data.item(),
                     batch_index=batch_index,
                     batch_size=self.get_batch_size(targets),
                     result=result,

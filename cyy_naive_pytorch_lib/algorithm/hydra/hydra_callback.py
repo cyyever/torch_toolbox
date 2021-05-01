@@ -204,7 +204,7 @@ class HyDRACallback(SampleGradientCallback):
                 for (k, _) in self.approx_hyper_gradient_mom_dict.iterate(
                     unfinished_keys
                 ):
-                    get_logger().info("do delayed_approximation_computations for %s", k)
+                    get_logger().debug("do delayed_approximation_computations for %s", k)
                     self.do_delayed_computation(k)
             return
 

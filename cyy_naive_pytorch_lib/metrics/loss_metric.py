@@ -16,7 +16,7 @@ class LossMetric(Metric):
             epoch_loss = real_batch_loss
         else:
             epoch_loss += real_batch_loss
-        self._set_epoch_metric(epoch, "loss", epoch_loss.data.item())
+        self._set_epoch_metric(epoch, "loss", epoch_loss)
 
     def get_loss(self, epoch):
         return self.get_epoch_metric(epoch, "loss")

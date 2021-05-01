@@ -12,9 +12,6 @@ from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
 from metric_visualizers.batch_loss_metric_logger import BatchLossMetricLogger
 from metric_visualizers.metric_visdom import MetricVisdom
-# from metric_visualizers.validation_metric_logger import ValidationMetricLogger
-# from metrics.loss_metric import LossMetric
-# from metrics.validation_metric import ValidationMetric
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_util import ModelUtil
