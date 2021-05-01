@@ -33,7 +33,6 @@ class Inferencer(ModelExecutor):
         with torch.set_grad_enabled(use_grad):
             get_logger().debug("use device %s", self.device)
             self.model.zero_grad()
-            # self.model.to(self.device)
             self.exec_callbacks(
                 ModelExecutorCallbackPoint.BEFORE_EPOCH,
                 model_executor=self,

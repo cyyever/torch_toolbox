@@ -23,9 +23,15 @@ class PerformanceMetric(Metric):
     def _after_epoch(self, **kwargs):
         epoch = kwargs.get("epoch")
         self._set_epoch_metric(epoch, "loss", self.__loss_metric.get_loss(epoch))
-        self._set_epoch_metric(
-            epoch, "accuracy", self.__accuracy_metric.get_accuracy(epoch)
-        )
+        if self.__accuracy_metric is not None:
+            self._set_epoch_metric(
+                epoch, "accuracy", self.__accuracy_metric.get_accuracy(epoch)
+            )
 
     def get_loss(self, epoch):
-        return self.__loss_metric.get_loss(epoch)
+        return self.get_epoch_metric(epoch, "loss")
+
+    def get_accuracy(self, epoch):
+        if self.__accuracy_metric is None:
+            return None
+        return self.get_epoch_metric(epoch, "accuracy")
