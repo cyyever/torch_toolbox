@@ -41,6 +41,10 @@ class ModelExecutor:
     def phase(self):
         return self.__phase
 
+    @property
+    def performance_metric(self):
+        return self.__performance_metric
+
     def remove_logger(self):
         if self.__logger is not None:
             self.__logger.remove_from_model_executor(self)
