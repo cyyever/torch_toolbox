@@ -330,6 +330,9 @@ class DatasetCollection:
         if splited_dataset is not None:
             dc.set_origin_dataset(MachineLearningPhase.Validation, splited_dataset)
             dc.set_origin_dataset(MachineLearningPhase.Test, splited_dataset)
+        get_logger().info("training_dataset len %s", len(training_dataset))
+        get_logger().info("validation_dataset len %s", len(validation_dataset))
+        get_logger().info("test_dataset len %s", len(test_dataset))
 
         dc.append_transform(transforms.Normalize(mean=mean, std=std))
         if name not in ("SVHN", "MNIST"):
