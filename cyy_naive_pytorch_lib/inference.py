@@ -33,6 +33,7 @@ class Inferencer(ModelExecutor):
 
     def inference(self, **kwargs):
         use_grad = kwargs.get("use_grad", False)
+        epoch = kwargs.get("epoch", 1)
         self.exec_callbacks(
             ModelExecutorCallbackPoint.BEFORE_EXECUTE,
             model_executor=self,
@@ -44,7 +45,7 @@ class Inferencer(ModelExecutor):
             self.exec_callbacks(
                 ModelExecutorCallbackPoint.BEFORE_EPOCH,
                 model_executor=self,
-                epoch=1,
+                epoch=epoch,
             )
             for batch_index, batch in enumerate(self.dataloader):
                 inputs, targets, _ = self.decode_batch(batch)
@@ -67,12 +68,12 @@ class Inferencer(ModelExecutor):
                     batch_index=batch_index,
                     batch_size=self.get_batch_size(targets),
                     result=result,
-                    epoch=1,
+                    epoch=epoch,
                 )
             self.exec_callbacks(
                 ModelExecutorCallbackPoint.AFTER_EPOCH,
                 model_executor=self,
-                epoch=1,
+                epoch=epoch,
             )
             return
 
@@ -158,7 +159,7 @@ class DetectionInferencer(Inferencer):
                         label = target["labels"][box_idx].data.item()
                         detection_correct_count_per_label[label] += 1
 
-        self.add_named_callback(
+        self.append_callback(
             ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc", after_batch_callback
         )
         super().inference(**kwargs)
