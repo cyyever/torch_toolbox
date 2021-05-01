@@ -1,16 +1,9 @@
 from cyy_naive_lib.log import get_logger
 
-from .metric_visualizer import MetricVisualizer
+from .metric_logger import MetricLogger
 
 
-class LossMetricLogger(MetricVisualizer):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.prefix = ""
-
-    def set_prefix(self, prefix: str):
-        self.prefix = prefix
-
+class LossMetricLogger(MetricLogger):
     def _after_batch(self, **kwargs):
         model_executor = kwargs.get("model_executor")
         batch_size = kwargs["batch_size"]
@@ -25,12 +18,3 @@ class LossMetricLogger(MetricVisualizer):
                 model_executor.get_data("cur_learning_rates", None),
                 kwargs["batch_loss"],
             )
-
-    def _after_epoch(self, **kwargs):
-        epoch = kwargs["epoch"]
-        model_executor = kwargs.get("model_executor")
-        get_logger().info(
-            "epoch: %s, training loss: %s",
-            epoch,
-            model_executor.loss_metric.get_loss(epoch),
-        )
