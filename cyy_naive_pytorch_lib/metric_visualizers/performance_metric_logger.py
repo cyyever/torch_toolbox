@@ -2,10 +2,10 @@ from cyy_naive_lib.log import get_logger
 
 from ml_type import MachineLearningPhase
 
-from .metric_visualizer import MetricVisualizer
+from .metric_logger import MetricLogger
 
 
-class PerformanceMetricLogger(MetricVisualizer):
+class PerformanceMetricLogger(MetricLogger):
     def __init__(self):
         super().__init__(metric=None)
 

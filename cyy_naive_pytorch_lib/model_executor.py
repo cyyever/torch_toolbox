@@ -7,6 +7,8 @@ from dataset_collection import DatasetCollection
 from device import get_device
 from hooks.model_executor_logger import ModelExecutorLogger
 from hyper_parameter import HyperParameter
+from metric_visualizers.performance_metric_logger import \
+    PerformanceMetricLogger
 from metrics.performance_metric import PerformanceMetric
 from ml_type import MachineLearningPhase, ModelExecutorCallbackPoint
 from model_with_loss import ModelWithLoss
@@ -37,6 +39,8 @@ class ModelExecutor:
         self.__logger.append_to_model_executor(self)
         self.__performance_metric = PerformanceMetric()
         self.__performance_metric.append_to_model_executor(self)
+        self.__performance_metric_logger = PerformanceMetricLogger()
+        self.__performance_metric_logger.append_to_model_executor(self)
 
     @property
     def phase(self):
