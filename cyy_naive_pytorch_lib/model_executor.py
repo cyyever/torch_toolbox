@@ -7,6 +7,7 @@ from dataset_collection import DatasetCollection
 from device import get_device
 from hooks.model_executor_logger import ModelExecutorLogger
 from hyper_parameter import HyperParameter
+from metrics.performance_metric import PerformanceMetric
 from ml_type import MachineLearningPhase, ModelExecutorCallbackPoint
 from model_with_loss import ModelWithLoss
 
@@ -34,6 +35,7 @@ class ModelExecutor:
 
         self.__logger = ModelExecutorLogger()
         self.__logger.append_to_model_executor(self)
+        self.__performance_metric = PerformanceMetric()
 
     @property
     def phase(self):
@@ -102,35 +104,44 @@ class ModelExecutor:
     def enable_all_callbacks(self):
         self.__disabled_callbacks.clear()
 
-    def add_named_callback(
-        self,
-        cb_point: ModelExecutorCallbackPoint,
-        name: str,
-        cb: Callable,
-        stripable=False,
+    def append_callback(
+        self, cb_point: ModelExecutorCallbackPoint, name: str, cb: Callable
     ):
         data = {name: cb}
         if cb_point not in self.__callbacks:
             self.__callbacks[cb_point] = [data]
         else:
             self.__callbacks[cb_point].append(data)
-        if stripable:
-            self.__stripable_callbacks.add(name)
 
-    def prepend_named_callback(
+    def set_stripable_callback(self, name: str):
+        self.__stripable_callbacks.add(name)
+
+    def prepend_before_other_callback(
         self,
         cb_point: ModelExecutorCallbackPoint,
         name: str,
         cb: Callable,
-        stripable=False,
+        other_name: str,
+    ):
+        data = {name: cb}
+        assert cb_point in self.__callbacks
+        for idx, other_data in enumerate(self.__callbacks[cb_point]):
+            if other_data["name"] == other_name:
+                self.__callbacks[cb_point].insert(idx, data)
+                return
+        raise RuntimeError("unknown callback:" + other_name)
+
+    def prepend_callback(
+        self,
+        cb_point: ModelExecutorCallbackPoint,
+        name: str,
+        cb: Callable,
     ):
         data = {name: cb}
         if cb_point not in self.__callbacks:
             self.__callbacks[cb_point] = [data]
         else:
             self.__callbacks[cb_point].insert(0, data)
-        if stripable:
-            self.__stripable_callbacks.add(name)
 
     def remove_callback(self, name: str, cb_point: ModelExecutorCallbackPoint = None):
         for cur_cb_point, callbacks in self.__callbacks.items():

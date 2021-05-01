@@ -14,7 +14,7 @@ from metric_visualizers.loss_metric_logger import LossMetricLogger
 from metric_visualizers.metric_visdom import MetricVisdom
 from metric_visualizers.validation_metric_logger import ValidationMetricLogger
 from metrics.loss_metric import LossMetric
-from metrics.validation_metric import ValidationMetric
+# from metrics.validation_metric import ValidationMetric
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorCallbackPoint
 from model_util import ModelUtil
@@ -38,10 +38,12 @@ class Trainer(ModelExecutor):
         LearningRateHook().append_to_model_executor(self)
         self.__loss_metric = LossMetric()
         self.__loss_metric.append_to_model_executor(self)
+
         self.__validation_metrics = dict()
-        for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
-            self.__validation_metrics[phase] = ValidationMetric(phase)
-            self.__validation_metrics[phase].append_to_model_executor(self)
+        # for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
+        #     self.__validation_metrics[phase] = ValidationMetric(phase)
+        #     self.__validation_metrics[phase].append_to_model_executor(self)
+        self.__inferencers = dict()
         self.__loss_logger = LossMetricLogger()
         self.__loss_logger.append_to_model_executor(self)
         self.__validation_loss_logger = ValidationMetricLogger()
@@ -152,6 +154,9 @@ class Trainer(ModelExecutor):
             self.__save_model_hook.append_to_model_executor(self)
         else:
             self.__save_model_hook.remove_from_model_executor(self)
+        self.__inferencers.clear()
+        for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
+            self.__inferencers[phase] = self.get_inferencer(phase)
         self.exec_callbacks(
             ModelExecutorCallbackPoint.BEFORE_EXECUTE, model_executor=self
         )
@@ -220,6 +225,11 @@ class Trainer(ModelExecutor):
                         if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                             get_logger().debug("adjust lr after batch")
                             lr_scheduler.step()
+
+                # update model parameters
+                for inferencer in self.__inferencers.values():
+                    inferencer.set_model(copy.deepcopy(self.model))
+                    inferencer.inference(epoch=epoch, use_grad=False)
 
                 self.exec_callbacks(
                     ModelExecutorCallbackPoint.AFTER_EPOCH,
