@@ -18,6 +18,7 @@ class ModelExecutorCallbackPoint(IntEnum):
     BEFORE_EPOCH = auto()
     AFTER_EPOCH = auto()
     OPTIMIZER_STEP = auto()
+    AFTER_OPTIMIZER_STEP = auto()
     BEFORE_BATCH = auto()
     AFTER_BATCH = auto()
 
