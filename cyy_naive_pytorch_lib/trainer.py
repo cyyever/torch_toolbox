@@ -56,10 +56,10 @@ class Trainer(ModelExecutor):
         self, phase: MachineLearningPhase, copy_model=False
     ) -> Inferencer:
         assert phase != MachineLearningPhase.Training
-        model_with_loss = self.model_with_loss
+        model_with_loss = copy.copy(self.model_with_loss)
         if copy_model:
             get_logger().debug("copy model in inferencer")
-            model_with_loss = copy.deepcopy(model_with_loss)
+            model_with_loss.set_model(copy.deepcopy(self.model))
 
         if self.model_with_loss.model_type == ModelType.Classification:
             return ClassificationInferencer(
