@@ -91,7 +91,7 @@ def get_model(
             input_size = getattr(model_with_loss.model.__class__, "input_size", None)
             if input_size is not None:
                 get_logger().warning("use input_size %s", input_size)
-                dataset_collection.append_transform(
+                model_with_loss.append_transform(
                     torchvision.transforms.Resize(input_size)
                 )
             return model_with_loss
