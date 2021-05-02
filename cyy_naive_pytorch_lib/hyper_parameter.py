@@ -234,7 +234,7 @@ def get_recommended_hyper_parameter(
                 torch.Tensor([d[2] for d in batch]),
             )
         )
-    hyper_parameter.set_optimizer_factory(HyperParameter.get_optimizer_factory("Adam"))
+    hyper_parameter.set_optimizer_factory(HyperParameter.get_optimizer_factory("SGD"))
     return hyper_parameter
 
 
