@@ -8,6 +8,7 @@ from cyy_naive_lib.log import get_logger
 from dataset_collection import DatasetCollection
 from hooks.learning_rate_hook import LearningRateHook
 from hooks.save_model import SaveModelHook
+from hooks.trainer_debugger import TrainerDebugger
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
 from metric_visualizers.batch_loss_logger import BatchLossLogger
@@ -39,6 +40,7 @@ class Trainer(ModelExecutor):
         self.__metric_visdom: MetricVisdom = MetricVisdom()
         self.__metric_visdom.append_to_model_executor(self)
         self.__save_model_hook = SaveModelHook()
+        TrainerDebugger().append_to_model_executor(self)
         self.save_dir = save_dir
 
     @property
