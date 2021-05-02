@@ -57,10 +57,13 @@ class DatasetCollection:
         return DatasetUtil(self.get_dataset(phase))
 
     def append_transform(self, transform, phase=None):
+        origin_datasets = set()
         for k in MachineLearningPhase:
             if phase is not None and k != phase:
                 continue
-            DatasetUtil(self.__origin_datasets[k]).append_transform(transform)
+            origin_datasets.add(self.__origin_datasets[k])
+        for dataset in origin_datasets:
+            DatasetUtil(dataset).append_transform(transform)
 
     def prepend_transform(self, transform, phase=None):
         for k in MachineLearningPhase:
