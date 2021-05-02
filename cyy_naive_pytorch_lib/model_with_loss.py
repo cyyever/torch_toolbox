@@ -2,6 +2,7 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
+import torchvision
 from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
 
 from ml_type import MachineLearningPhase, ModelType
@@ -25,6 +26,7 @@ class ModelWithLoss:
             self.__loss_fun = self.__choose_loss_function()
         self.__model_type = model_type
         self.__has_batch_norm = None
+        self.__model_transforms: list = list()
 
     @property
     def model(self) -> torch.nn.Module:
@@ -47,6 +49,9 @@ class ModelWithLoss:
     def loss_fun(self):
         return self.__loss_fun
 
+    def append_transform(self, transform):
+        self.__model_transforms.append(transform)
+
     def set_model(self, model: torch.nn.Module):
         self.__model = model
 
@@ -62,21 +67,14 @@ class ModelWithLoss:
             inputs = inputs.to(device, non_blocking=True)
             targets = targets.to(device, non_blocking=True)
             self.model.to(device, non_blocking=True)
-        # if isinstance(self.model, GeneralizedRCNN):
-        #     detection = None
-        #     assert phase is not None
-        #     if phase == MachineLearningPhase.Training:
-        #         loss_dict = self.model(inputs, targets)
-        #     else:
-        #         loss_dict, detection = self.model(inputs, targets)
-
-        #     result = {"loss": sum(loss for loss in loss_dict.values())}
-        #     if detection is not None:
-        #         result["detection"] = detection
-        #     return result
 
         assert self.__loss_fun is not None
-
+        if self.__model_transforms and isinstance(self.__model_transforms, list):
+            self.__model_transforms = torchvision.transforms.Compose(
+                self.__model_transforms
+            )
+        if not isinstance(self.__model_transforms, list):
+            inputs = self.__model_transforms(inputs)
         output = self.__model(inputs)
         loss = self.__loss_fun(output, targets)
         return {"loss": loss, "output": output}
