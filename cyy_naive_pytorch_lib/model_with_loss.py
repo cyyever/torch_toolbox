@@ -62,18 +62,18 @@ class ModelWithLoss:
             inputs = inputs.to(device, non_blocking=True)
             targets = targets.to(device, non_blocking=True)
             self.model.to(device, non_blocking=True)
-        if isinstance(self.model, GeneralizedRCNN):
-            detection = None
-            assert phase is not None
-            if phase == MachineLearningPhase.Training:
-                loss_dict = self.model(inputs, targets)
-            else:
-                loss_dict, detection = self.model(inputs, targets)
+        # if isinstance(self.model, GeneralizedRCNN):
+        #     detection = None
+        #     assert phase is not None
+        #     if phase == MachineLearningPhase.Training:
+        #         loss_dict = self.model(inputs, targets)
+        #     else:
+        #         loss_dict, detection = self.model(inputs, targets)
 
-            result = {"loss": sum(loss for loss in loss_dict.values())}
-            if detection is not None:
-                result["detection"] = detection
-            return result
+        #     result = {"loss": sum(loss for loss in loss_dict.values())}
+        #     if detection is not None:
+        #         result["detection"] = detection
+        #     return result
 
         assert self.__loss_fun is not None
 
@@ -109,13 +109,6 @@ class ModelWithLoss:
         )
 
     def __set_model_mode(self, phase: MachineLearningPhase):
-        if isinstance(self.__model, GeneralizedRCNN):
-            if phase == MachineLearningPhase.Training:
-                self.model.train()
-            else:
-                self.model.eval()
-            return
-
         if phase == MachineLearningPhase.Training:
             self.model.train()
             return
