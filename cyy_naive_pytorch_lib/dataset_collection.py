@@ -322,13 +322,26 @@ class DatasetCollection:
         if validation_dataset is None or test_dataset is None:
             if validation_dataset is not None:
                 splited_dataset = validation_dataset
-                dataset_util = DatasetUtil(validation_dataset)
                 get_logger().warning("split validation dataset for %s", name)
             else:
                 splited_dataset = test_dataset
-                dataset_util = DatasetUtil(test_dataset)
                 get_logger().warning("split test dataset for %s", name)
-            validation_dataset, test_dataset = tuple(dataset_util.iid_split([1, 1]))
+            validation_dataset, test_dataset = DatasetCollection.__split_for_validation(
+                cache_dir, splited_dataset
+            )
+
+            # pickle_file = os.path.join(cache_dir, "split_index_lists.pk")
+            # if os.path.isfile(pickle_file):
+            #     split_index_lists = pickle.load(open(pickle_file, "rb"))
+            # else:
+            #     with open(pickle_file, "wb") as f:
+            #         dataset_util = DatasetUtil(splited_dataset)
+            #         split_result = dataset_util.iid_split([1, 1])
+            #         split_index_lists = split_result["index_lists"]
+            #         pickle.dump(split_index_lists, f)
+            # validation_dataset, test_dataset = tuple(
+            #     sub_dataset(splited_dataset, indices) for indices in split_index_lists
+            # )
         dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
         if splited_dataset is not None:
             dc.set_origin_dataset(MachineLearningPhase.Validation, splited_dataset)
@@ -349,6 +362,21 @@ class DatasetCollection:
             )
         DatasetCollection.__dataset_collections[name] = dc
         return dc
+
+    @staticmethod
+    def __split_for_validation(cache_dir, splited_dataset):
+        pickle_file = os.path.join(cache_dir, "split_index_lists.pk")
+        if os.path.isfile(pickle_file):
+            split_index_lists = pickle.load(open(pickle_file, "rb"))
+        else:
+            with open(pickle_file, "wb") as f:
+                dataset_util = DatasetUtil(splited_dataset)
+                split_result = dataset_util.iid_split([1, 1])
+                split_index_lists = split_result["index_lists"]
+                pickle.dump(split_index_lists, f)
+        return tuple(
+            sub_dataset(splited_dataset, indices) for indices in split_index_lists
+        )
 
 
 class DatasetCollectionConfig:
