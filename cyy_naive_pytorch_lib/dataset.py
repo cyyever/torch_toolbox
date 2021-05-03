@@ -3,11 +3,10 @@ import os
 import random
 from typing import Callable, Generator, Iterable
 
+import PIL
 import torch
 import torchvision
 from cyy_naive_lib.log import get_logger
-
-import PIL
 
 
 class DatasetFilter:
@@ -160,7 +159,7 @@ class DatasetUtil:
         return DatasetUtil.get_label_from_target(self.dataset[index][1])
 
     def get_labels(self) -> set:
-        def count_instance(container: set, instance):
+        def count_instance(container: set, instance) -> set:
             labels = DatasetUtil.get_labels_from_target(instance[1])
             container.update(labels)
             return container
@@ -189,16 +188,16 @@ class DatasetUtil:
             return
         torchvision.utils.save_image(self.dataset[idx][0], path)
 
-    def iid_split(self, parts: list) -> list:
+    def iid_split(self, parts: list) -> dict:
         return self.__split(parts, by_label=True)
 
-    def random_split(self, parts: list) -> list:
-        return self.__split(parts, by_label=False)
+    # def random_split(self, parts: list) -> list:
+    #     return self.__split(parts, by_label=False)[0]
 
-    def __split(self, parts: list, by_label: bool = True) -> list:
-        assert parts
-        if len(parts) == 1:
-            return [self.dataset]
+    def __split(self, parts: list, by_label: bool = True) -> dict:
+        assert parts and len(parts) != 1
+        # if len(parts) == 1:
+        #     return [self.dataset]
         sub_dataset_indices_list: list = []
         for _ in parts:
             sub_dataset_indices_list.append([])
@@ -216,10 +215,13 @@ class DatasetUtil:
                 delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
                 sub_dataset_indices_list[i] += label_indices_list[:delimiter]
                 label_indices_list = label_indices_list[delimiter:]
-
-        return [
-            sub_dataset(self.dataset, indices) for indices in sub_dataset_indices_list
-        ]
+        return {
+            "datasets": tuple(
+                sub_dataset(self.dataset, indices)
+                for indices in sub_dataset_indices_list
+            ),
+            "index_lists": sub_dataset_indices_list,
+        }
 
     def sample(self, percentage: float) -> Iterable:
         sample_size = int(self.len * percentage)
