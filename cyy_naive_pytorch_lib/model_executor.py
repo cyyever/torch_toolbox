@@ -41,6 +41,7 @@ class ModelExecutor:
         self.__performance_metric.append_to_model_executor(self)
         self.__performance_metric_logger = PerformanceMetricLogger()
         self.__performance_metric_logger.append_to_model_executor(self)
+        self.debugging_mode = False
 
     @property
     def phase(self):

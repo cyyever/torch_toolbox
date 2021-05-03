@@ -23,6 +23,7 @@ class DefaultConfig:
         self.model_name = model_name
         self.model_path = None
         self.pretrained = False
+        self.debug = False
         self.save_dir = None
         self.log_level = None
 
@@ -39,7 +40,7 @@ class DefaultConfig:
         self.dc_config.add_args(parser)
         self.hyper_parameter_config.add_args(parser)
         parser.add_argument("--log_level", type=str, default=None)
-        parser.add_argument("--config_file", type=str, default=None)
+        parser.add_argument("--debug", action="store_true", default=False)
         args = parser.parse_args()
         self.dc_config.load_args(args)
         self.hyper_parameter_config.load_args(args)
@@ -79,8 +80,11 @@ class DefaultConfig:
         trainer = Trainer(
             model_with_loss, dc, hyper_parameter, save_dir=self.get_save_dir()
         )
+        if self.debug:
+            trainer.debug_mode = True
         if self.model_path is not None:
             trainer.load_model(self.model_path)
+
         return trainer
 
     def create_inferencer(self, phase=MachineLearningPhase.Test) -> Inferencer:
