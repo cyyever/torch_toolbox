@@ -153,109 +153,6 @@ class DatasetCollection:
             name, vision_dataset_cls[name], **kwargs
         )
 
-        # root_dir = DatasetCollection.get_dataset_dir(name)
-        # training_dataset = None
-        # validation_dataset = None
-        # test_dataset = None
-        # elif name == "CIFAR10":
-        #     for for_training in (True, False):
-        #         transform = []
-        #         to_grayscale = kwargs.get("to_grayscale", False)
-        #         if to_grayscale:
-        #             get_logger().warning("convert %s to grayscale", name)
-        #             transform += [transforms.Grayscale()]
-        #         if for_training:
-        #             transform += [
-        #                 transforms.RandomCrop(32, padding=4),
-        #                 # transforms.RandomHorizontalFlip(),
-        #             ]
-        #                 transform.append(transforms.ToTensor())
-        #                 # use MNIST mean and std
-        #                 if to_grayscale:
-        #                     transform.append(transforms.Normalize(mean=[0.1307], std=[0.3081]))
-        #                 else:
-        #                     transform.append(
-        #                         transforms.Normalize(
-        #                             mean=[0.4914, 0.4822, 0.4465], std=[0.2470, 0.2435, 0.2616]
-        #                         )
-        #                     )
-        #                 dataset = torchvision.datasets.CIFAR10(
-        #                     root=root_dir,
-        #                     train=for_training,
-        #                     download=True,
-        #                     transform=transforms.Compose(transform),
-        #                 )
-        #                 if for_training:
-        #                     training_dataset = dataset
-        #                 else:
-        #                     test_dataset = dataset
-        # elif name == "CIFAR100":
-        #     for for_training in (True, False):
-        #         transform = []
-        #         if for_training:
-        #             transform += [
-        #                 transforms.RandomCrop(32, padding=4),
-        #                 transforms.RandomHorizontalFlip(),
-        #             ]
-        #         transform += [
-        #             transforms.ToTensor(),
-        #             transforms.Normalize(
-        #                 mean=[0.5071, 0.4866, 0.4409], std=[0.2673, 0.2564, 0.2762]
-        #             ),
-        #         ]
-        #         dataset = torchvision.datasets.CIFAR100(
-        #             root=root_dir,
-        #             train=for_training,
-        #             download=True,
-        #             transform=transforms.Compose(transform),
-        #         )
-        #         if for_training:
-        #             training_dataset = dataset
-        #         else:
-        #             test_dataset = dataset
-        # if name == "SVHN":
-        #     dataset = torchvision.datasets.SVHN(
-        #         root=root_dir,
-        #         split="extra",
-        #         download=True,
-        #         transform=transforms.ToTensor(),
-        #     )
-        #     mean, std = DatasetUtil(dataset).get_mean_and_std()
-
-        #     for for_training in (True, False):
-        #         transform = []
-        #         if for_training:
-        #             transform += [
-        #                 transforms.RandomCrop(32, padding=4),
-        #             ]
-
-        #         transform += [
-        #             transforms.ToTensor(),
-        #             transforms.Normalize(mean=mean, std=std),
-        #         ]
-        #         dataset = torchvision.datasets.SVHN(
-        #             root=root_dir,
-        #             split=("extra" if for_training else "test"),
-        #             download=True,
-        #             transform=transforms.Compose(transform),
-        #         )
-        #         if for_training:
-        #             training_dataset = dataset
-        #         else:
-        #             test_dataset = dataset
-        # else:
-        #     raise NotImplementedError(name)
-
-        # if validation_dataset is None:
-        #     dataset_util = DatasetUtil(test_dataset)
-        #     test_dataset_parts = [1, 1]
-        #     validation_dataset, test_dataset = tuple(
-        #         dataset_util.iid_split(test_dataset_parts)
-        #     )
-        # dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
-        # DatasetCollection.__dataset_collections[name] = dc
-        # return dc
-
     @staticmethod
     def __create_vision_dataset_collection(name, dataset_cls, **kwargs):
         root_dir = DatasetCollection.get_dataset_dir(name)
@@ -330,18 +227,6 @@ class DatasetCollection:
                 cache_dir, splited_dataset
             )
 
-            # pickle_file = os.path.join(cache_dir, "split_index_lists.pk")
-            # if os.path.isfile(pickle_file):
-            #     split_index_lists = pickle.load(open(pickle_file, "rb"))
-            # else:
-            #     with open(pickle_file, "wb") as f:
-            #         dataset_util = DatasetUtil(splited_dataset)
-            #         split_result = dataset_util.iid_split([1, 1])
-            #         split_index_lists = split_result["index_lists"]
-            #         pickle.dump(split_index_lists, f)
-            # validation_dataset, test_dataset = tuple(
-            #     sub_dataset(splited_dataset, indices) for indices in split_index_lists
-            # )
         dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
         if splited_dataset is not None:
             dc.set_origin_dataset(MachineLearningPhase.Validation, splited_dataset)
@@ -355,7 +240,7 @@ class DatasetCollection:
             dc.append_transform(
                 transforms.RandomHorizontalFlip(), phase=MachineLearningPhase.Training
             )
-        if name == "CIFAR10":
+        if name in ("CIFAR10", "CIFAR100"):
             dc.append_transform(
                 transforms.RandomCrop(32, padding=4),
                 phase=MachineLearningPhase.Training,
