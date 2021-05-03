@@ -1,6 +1,4 @@
 import copy
-import logging
-from typing import Callable
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -40,7 +38,6 @@ class Trainer(ModelExecutor):
         self.__metric_visdom: MetricVisdom = MetricVisdom()
         self.__metric_visdom.append_to_model_executor(self)
         self.__save_model_hook = SaveModelHook()
-        TrainerDebugger().append_to_model_executor(self)
         self.save_dir = save_dir
 
     @property
@@ -104,9 +101,11 @@ class Trainer(ModelExecutor):
     def remove_lr_scheduler(self):
         self.remove_data("lr_scheduler")
 
-    def load_model(self, model_path):
+    def load_model(self, model_path, remove_lr_scheduler: bool = True):
         super().load_model(model_path)
         self.remove_optimizer()
+        if remove_lr_scheduler:
+            self.remove_lr_scheduler()
 
     def load_parameter_dict(self, parameter_dict: dict, remove_lr_scheduler: bool):
         ModelUtil(self.model).load_parameter_dict(parameter_dict)
@@ -114,26 +113,13 @@ class Trainer(ModelExecutor):
         if remove_lr_scheduler:
             self.remove_lr_scheduler()
 
-    def repeated_train(self, repeated_num, save_dir=None, **kwargs):
-        def training_callback(_, trainer: Trainer):
-            nonlocal save_dir, kwargs
-            get_logger().setLevel(logging.ERROR)
-            kwargs["test_epoch_interval"] = 1
-            trainer.train(**kwargs)
-            if save_dir is not None:
-                trainer.save_model(save_dir)
-            get_logger().setLevel(logging.DEBUG)
-            return {
-                "training_loss": trainer.training_loss,
-                "validation_loss": trainer.validation_loss,
-                "validation_accuracy": trainer.validation_accuracy,
-                "test_loss": trainer.test_loss,
-                "test_accuracy": trainer.test_accuracy,
-            }
-
-        return Trainer.__repeated_training(repeated_num, self, training_callback)
-
     def train(self, **kwargs):
+        if self.debugging_mode:
+            get_logger().warning("train in debugging mode")
+            TrainerDebugger().append_to_model_executor(self)
+        else:
+            TrainerDebugger().remove_from_model_executor(self)
+
         self.remove_optimizer()
         self.remove_lr_scheduler()
 
@@ -254,25 +240,3 @@ class Trainer(ModelExecutor):
         self.exec_callbacks(
             ModelExecutorCallbackPoint.AFTER_EXECUTE, model_executor=self
         )
-
-    @staticmethod
-    def __repeated_training(number: int, trainer, training_callback: Callable):
-        results: dict = dict()
-        for idx in range(number):
-            statistics = training_callback(idx, trainer)
-            assert isinstance(statistics, dict)
-            for k, v in statistics.items():
-                tensor = None
-                if isinstance(v, list):
-                    tensor = torch.Tensor(v)
-                elif isinstance(v, dict):
-                    tensor = torch.Tensor([v[k] for k in sorted(v.keys())])
-                else:
-                    raise RuntimeError("unsupported value" + str(v))
-                if k in results:
-                    results[k] += tensor
-                else:
-                    results[k] = tensor
-        for k, v in results.items():
-            results[k] = v / number
-        return results
