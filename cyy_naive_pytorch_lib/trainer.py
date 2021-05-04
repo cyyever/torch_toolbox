@@ -110,6 +110,16 @@ class Trainer(ModelExecutor):
         if remove_lr_scheduler:
             self.remove_lr_scheduler()
 
+    def offload_from_gpu(self):
+        super().offload_from_gpu()
+        for inferencer in self.__inferencers.values():
+            inferencer.offload_from_gpu()
+
+    def load_to_gpu(self):
+        super().load_to_gpu()
+        for inferencer in self.__inferencers.values():
+            inferencer.load_to_gpu()
+
     def train(self, **kwargs):
         if self.debugging_mode:
             get_logger().warning("train in debugging mode")
@@ -147,7 +157,8 @@ class Trainer(ModelExecutor):
                         lr_scheduler = self.get_lr_scheduler()
                         assert optimizer is not None
                         assert lr_scheduler is not None
-                        batch_size = self.get_batch_size(batch[0])
+                        sample_inputs, sample_targets, _ = self.decode_batch(batch)
+                        batch_size = self.get_batch_size(sample_targets)
                         if (
                             self.model_with_loss.has_batch_norm
                             and self.hyper_parameter.batch_size != 1
@@ -165,7 +176,6 @@ class Trainer(ModelExecutor):
                             batch_size=batch_size,
                         )
                         optimizer.zero_grad()
-                        sample_inputs, sample_targets, _ = self.decode_batch(batch)
                         result = self.model_with_loss(
                             sample_inputs,
                             sample_targets,
