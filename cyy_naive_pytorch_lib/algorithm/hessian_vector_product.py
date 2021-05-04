@@ -67,7 +67,7 @@ atexit.register(stop_task_queue)
 def get_hessian_vector_product_func(model_with_loss: ModelWithLoss, batch):
     devices = get_devices()
 
-    model = ModelUtil(model_with_loss.model).deepcopy()
+    model = model_with_loss.model
     model_util = ModelUtil(model)
     if model_util.is_pruned:
         model_util.merge_and_remove_masks()

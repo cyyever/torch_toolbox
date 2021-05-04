@@ -1,3 +1,4 @@
+import copy
 from typing import Callable, Dict, List
 
 import torch
@@ -85,7 +86,14 @@ class ModelExecutor:
 
     @property
     def model(self) -> torch.nn.Module:
+        self.__wait_stream()
         return self.model_with_loss.model
+
+    def copy_model_with_loss(self, deepcopy=True):
+        self.__wait_stream()
+        if deepcopy:
+            return copy.deepcopy(self.model_with_loss)
+        return copy.copy(self.model_with_loss)
 
     def get_data(self, key: str, default_value=None):
         assert key in self.__data
@@ -193,6 +201,12 @@ class ModelExecutor:
         if self.__cuda_stream is None and "cuda" in self.device.type.lower():
             self.__cuda_stream = torch.cuda.Stream(device=self.device)
         return self.__cuda_stream
+
+    def __wait_stream(self):
+        if self.__cuda_stream is not None:
+            self.__cuda_stream.synchronize()
+            if self.debugging_mode:
+                assert self.__cuda_stream.query()
 
     def set_hyper_parameter(self, hyper_parameter):
         self.__hyper_parameter = hyper_parameter

@@ -4,12 +4,13 @@ import pickle
 import shutil
 
 import torch
-from algorithm.hessian_vector_product import get_hessian_vector_product_func
-from algorithm.sample_gradient.sample_gradient_callback import \
-    SampleGradientCallback
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.time_counter import TimeCounter
+
+from algorithm.hessian_vector_product import get_hessian_vector_product_func
+from algorithm.sample_gradient.sample_gradient_callback import \
+    SampleGradientCallback
 from data_structure.synced_tensor_dict import SyncedTensorDict
 from ml_type import MachineLearningPhase
 from model_util import ModelUtil
@@ -308,7 +309,7 @@ class HyDRACallback(SampleGradientCallback):
 
         if self.use_hessian:
             self.hvp_function = get_hessian_vector_product_func(
-                trainer.model_with_loss, batch
+                trainer.copy_model_with_loss(True), batch
             )
             self.hessian_computation_arguments = dict()
         else:

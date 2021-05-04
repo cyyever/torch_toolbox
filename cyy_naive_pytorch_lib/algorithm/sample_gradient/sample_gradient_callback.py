@@ -51,7 +51,7 @@ class SampleGradientCallback(AddIndexToDataset):
         if not sample_gradient_indices:
             return
         if self.__model_with_loss is None:
-            self.__model_with_loss = copy.deepcopy(trainer.model_with_loss)
+            self.__model_with_loss = trainer.copy_model_with_loss(True)
         gradient_list = get_sample_gradient(
             self.__model_with_loss,
             sample_gradient_inputs,
