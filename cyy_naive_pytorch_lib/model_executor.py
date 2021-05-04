@@ -5,7 +5,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from dataset_collection import DatasetCollection
-from device import get_cpu_device, get_device
+from device import get_device
 from hooks.model_executor_logger import ModelExecutorLogger
 from hyper_parameter import HyperParameter
 from metric_visualizers.performance_metric_logger import \
@@ -241,7 +241,7 @@ class ModelExecutor:
         raise RuntimeError("invalid targets:" + str(targets))
 
     def offload_from_gpu(self):
-        self.model.to(get_cpu_device())
+        self.model.cpu()
 
     def load_to_gpu(self):
         self.model.to(self.device)
