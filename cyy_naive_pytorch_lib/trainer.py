@@ -117,8 +117,6 @@ class Trainer(ModelExecutor):
 
     def load_to_gpu(self):
         super().load_to_gpu()
-        for inferencer in self.__inferencers.values():
-            inferencer.load_to_gpu()
 
     def train(self, **kwargs):
         if self.debugging_mode:
@@ -224,6 +222,7 @@ class Trainer(ModelExecutor):
                 for inferencer in self.__inferencers.values():
                     inferencer.set_model(copy.deepcopy(self.model))
                     inferencer.inference(epoch=epoch, use_grad=False)
+                    inferencer.offload_from_gpu()
 
                 self.exec_callbacks(
                     ModelExecutorCallbackPoint.AFTER_EPOCH,
