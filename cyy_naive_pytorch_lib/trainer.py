@@ -86,6 +86,7 @@ class Trainer(ModelExecutor):
 
     def remove_optimizer(self):
         self.remove_data("optimizer")
+        self.remove_lr_scheduler()
 
     def get_lr_scheduler(self):
         if not self.has_data("lr_scheduler"):
@@ -98,25 +99,18 @@ class Trainer(ModelExecutor):
     def remove_lr_scheduler(self):
         self.remove_data("lr_scheduler")
 
-    def load_model(self, model_path, remove_lr_scheduler: bool = True):
+    def load_model(self, model_path):
         super().load_model(model_path)
         self.remove_optimizer()
-        if remove_lr_scheduler:
-            self.remove_lr_scheduler()
 
-    def load_parameter_dict(self, parameter_dict: dict, remove_lr_scheduler: bool):
+    def load_parameter_dict(self, parameter_dict: dict):
         ModelUtil(self.model).load_parameter_dict(parameter_dict)
         self.remove_optimizer()
-        if remove_lr_scheduler:
-            self.remove_lr_scheduler()
 
     def offload_from_gpu(self):
         super().offload_from_gpu()
         for inferencer in self.__inferencers.values():
             inferencer.offload_from_gpu()
-
-    def load_to_gpu(self):
-        super().load_to_gpu()
 
     def train(self, **kwargs):
         if self.debugging_mode:
