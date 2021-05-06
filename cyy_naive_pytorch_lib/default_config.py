@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import json
 import os
 import uuid
 
@@ -25,6 +26,7 @@ class DefaultConfig:
         self.pretrained = False
         self.debug = False
         self.save_dir = None
+        self.model_kwarg_json_path = None
         self.log_level = None
 
     def load_args(self, parser=None):
@@ -37,6 +39,7 @@ class DefaultConfig:
         parser.add_argument("--save_dir", type=str, default=None)
         parser.add_argument("--reproducible_env_load_path", type=str, default=None)
         parser.add_argument("--make_reproducible", action="store_true", default=False)
+        parser.add_argument("--model_kwarg_json_path", type=str, default=None)
         self.dc_config.add_args(parser)
         self.hyper_parameter_config.add_args(parser)
         parser.add_argument("--log_level", type=str, default=None)
@@ -76,7 +79,13 @@ class DefaultConfig:
         )
 
         dc = self.dc_config.create_dataset_collection(self.get_save_dir())
-        model_with_loss = get_model(self.model_name, dc, pretrained=self.pretrained)
+        model_kwargs = dict()
+        if self.model_kwarg_json_path is not None:
+            with open(self.model_kwarg_json_path, "rt") as f:
+                model_kwargs = json.load(f)
+        model_with_loss = get_model(
+            self.model_name, dc, pretrained=self.pretrained, **model_kwargs
+        )
         trainer = Trainer(
             model_with_loss, dc, hyper_parameter, save_dir=self.get_save_dir()
         )
