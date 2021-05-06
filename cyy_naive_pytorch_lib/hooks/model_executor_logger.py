@@ -8,7 +8,10 @@ class ModelExecutorLogger(Callback):
         model_executor = kwargs["model_executor"]
         model_util = ModelUtil(model_executor.model)
         get_logger().info("dataset is %s", model_executor.dataset)
-        get_logger().info("model is %s", type(model_executor.model_with_loss.model))
+        get_logger().info(
+            "model type is %s", model_executor.model_with_loss.model.__class__
+        )
+        get_logger().debug("model is %s", model_executor.model_with_loss.model)
         get_logger().info(
             "loss function is %s", model_executor.model_with_loss.loss_fun
         )

@@ -191,20 +191,5 @@ class DenseNet3(nn.Module):
         return self.fc(out)
 
 
-def DenseNet40(num_classes, channels):
-    return DenseNet3(40, num_classes=num_classes, channels=channels)
-
-
-def densenet_CIFAR10(norm_function=nn.BatchNorm2d):
-    return DenseNet3(40, 10, norm_function=norm_function)
-
-
-def densenet_CIFAR10_group_norm():
-    def fixed_group_norm(num_channels):
-        return torch.nn.GroupNorm(num_groups=4, num_channels=num_channels)
-
-    return DenseNet3(40, 10, norm_function=fixed_group_norm)
-
-
-def densenet_MNIST():
-    return DenseNet3(40, 10, channels=1)
+def DenseNet40(num_classes, channels, **kwargs):
+    return DenseNet3(40, num_classes=num_classes, channels=channels, **kwargs)

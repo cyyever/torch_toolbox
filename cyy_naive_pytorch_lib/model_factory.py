@@ -54,7 +54,7 @@ def get_model_info():
 
 
 def get_model(
-    name: str, dataset_collection: DatasetCollection, **kwargs
+    name: str, dataset_collection: DatasetCollection, **model_kwargs
 ) -> ModelWithLoss:
 
     model_info = get_model_info()
@@ -74,6 +74,7 @@ def get_model(
         "num_classes": len(dataset_collection.get_labels()),
     }
     model_type = ModelType.Classification
+    # FIXME: use more robust method to determine detection models
     if "rcnn" in name.lower():
         model_type = ModelType.Detection
     if model_type == ModelType.Detection:
@@ -84,7 +85,7 @@ def get_model(
         try:
             model_with_loss = ModelWithLoss(
                 torch.hub.load(
-                    repo, model_name, source=source, **(added_kwargs | kwargs)
+                    repo, model_name, source=source, **(added_kwargs | model_kwargs)
                 ),
                 model_type=model_type,
             )
@@ -94,6 +95,7 @@ def get_model(
                 model_with_loss.append_transform(
                     torchvision.transforms.Resize(input_size)
                 )
+            get_logger().warning("use model arguments %s", added_kwargs | model_kwargs)
             return model_with_loss
         except TypeError as e:
             retry = False
@@ -104,8 +106,8 @@ def get_model(
                     retry = True
                     break
             if not retry:
-                if "pretrained" in str(e) and not kwargs["pretrained"]:
-                    kwargs.pop("pretrained")
+                if "pretrained" in str(e) and not model_kwargs["pretrained"]:
+                    model_kwargs.pop("pretrained")
                     retry = True
             if not retry:
                 raise e
