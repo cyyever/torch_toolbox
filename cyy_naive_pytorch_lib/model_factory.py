@@ -78,13 +78,15 @@ def get_model(
     if model_type == ModelType.Detection:
         added_kwargs["num_classes"] += 1
     repo, model_name, source = model_repo_and_name
+    loss_fun_name = model_kwargs.pop("loss_fun_name", None)
 
     while True:
         try:
             model_with_loss = ModelWithLoss(
-                torch.hub.load(
+                model=torch.hub.load(
                     repo, model_name, source=source, **(added_kwargs | model_kwargs)
                 ),
+                loss_fun=loss_fun_name,
                 model_type=model_type,
             )
             input_size = getattr(model_with_loss.model.__class__, "input_size", None)

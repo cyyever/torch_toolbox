@@ -3,6 +3,7 @@ from typing import Optional
 import torch
 import torch.nn as nn
 import torchvision
+from cyy_naive_lib.log import get_logger
 from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
 
 from ml_type import MachineLearningPhase, ModelType
@@ -17,13 +18,16 @@ class ModelWithLoss:
     def __init__(
         self,
         model: torch.nn.Module,
-        loss_fun: torch.nn.modules.loss._Loss = None,
+        loss_fun=None,
         model_type: ModelType = None,
     ):
         self.__model = model
-        self.__loss_fun = loss_fun
-        if self.__loss_fun is None:
-            self.__loss_fun = self.__choose_loss_function()
+        self.__loss_fun: torch.nn.modules.loss._Loss = loss_fun
+        if isinstance(loss_fun, str):
+            if loss_fun == "CrossEntropyLoss":
+                self.__loss_fun = nn.CrossEntropyLoss()
+            else:
+                raise RuntimeError("unknown loss function %s", loss_fun)
         self.__model_type = model_type
         self.__has_batch_norm = None
         self.__model_transforms: list = list()
@@ -46,8 +50,13 @@ class ModelWithLoss:
         return self.__model_type
 
     @property
-    def loss_fun(self):
+    def loss_fun(self) -> torch.nn.modules.loss._Loss:
+        if self.__loss_fun is None:
+            self.__loss_fun = self.__choose_loss_function()
         return self.__loss_fun
+
+    def set_loss_fun(self, loss_fun: torch.nn.modules.loss._Loss):
+        self.__loss_fun = loss_fun
 
     def append_transform(self, transform):
         self.__model_transforms.append(transform)
@@ -68,7 +77,7 @@ class ModelWithLoss:
             targets = targets.to(device, non_blocking=True)
             self.model.to(device, non_blocking=True)
 
-        assert self.__loss_fun is not None
+        assert self.loss_fun is not None
         if self.__model_transforms and isinstance(self.__model_transforms, list):
             self.__model_transforms = torchvision.transforms.Compose(
                 self.__model_transforms
@@ -76,24 +85,27 @@ class ModelWithLoss:
         if not isinstance(self.__model_transforms, list):
             inputs = self.__model_transforms(inputs)
         output = self.__model(inputs)
-        loss = self.__loss_fun(output, targets)
+        loss = self.loss_fun(output, targets)
         return {"loss": loss, "output": output}
 
     def __choose_loss_function(self) -> Optional[torch.nn.modules.loss._Loss]:
         if isinstance(self.__model, GeneralizedRCNN):
             return None
-        last_layer = [
+        layers = [
             m
             for m in self.__model.modules()
             if not isinstance(
                 m, (torch.quantization.QuantStub, torch.quantization.DeQuantStub)
             )
-        ][-1]
+        ]
+        last_layer = layers[-1]
+
         if isinstance(last_layer, nn.LogSoftmax):
             return nn.NLLLoss()
         if isinstance(last_layer, nn.Linear):
             return nn.CrossEntropyLoss()
-        raise NotImplementedError()
+        get_logger().error("can't choose a loss function, layers are %s", layers)
+        raise NotImplementedError(type(last_layer))
 
     def is_averaged_loss(self) -> bool:
         if hasattr(self.loss_fun, "reduction"):

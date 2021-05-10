@@ -83,9 +83,12 @@ class DefaultConfig:
         if self.model_kwarg_json_path is not None:
             with open(self.model_kwarg_json_path, "rt") as f:
                 model_kwargs = json.load(f)
-        model_with_loss = get_model(
-            self.model_name, dc, pretrained=self.pretrained, **model_kwargs
-        )
+        if self.pretrained:
+            if "pretrained" in model_kwargs:
+                raise RuntimeError("specify pretrained twice")
+            model_kwargs["pretrained"] = self.pretrained
+
+        model_with_loss = get_model(self.model_name, dc, **model_kwargs)
         trainer = Trainer(
             model_with_loss, dc, hyper_parameter, save_dir=self.get_save_dir()
         )
