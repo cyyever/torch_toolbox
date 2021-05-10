@@ -37,9 +37,7 @@ def get_model_info():
     repos = [
         os.path.join(os.path.dirname(os.path.realpath(__file__)), "models"),
     ]
-    github_repos = [
-        "pytorch/vision",
-    ]
+    github_repos = ["pytorch/vision", "lukemelas/EfficientNet-PyTorch"]
 
     if not __model_info:
         for repo in repos:
