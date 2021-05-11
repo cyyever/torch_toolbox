@@ -2,6 +2,7 @@ import threading
 
 import torch
 import visdom
+from cyy_naive_lib.log import get_logger
 
 
 class Window:
@@ -29,6 +30,7 @@ class Window:
     def vis(self):
         with Window.__lock:
             if self.env not in Window.__envs:
+                get_logger().info("create visdom env %s", self.env)
                 Window.__envs[self.env] = visdom.Visdom(env=self.env)
             return Window.__envs[self.env]
 
