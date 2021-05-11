@@ -79,6 +79,9 @@ def get_model(
         added_kwargs["num_classes"] += 1
     repo, model_name, source = model_repo_and_name
     loss_fun_name = model_kwargs.pop("loss_fun_name", None)
+    for k in list(added_kwargs.keys()):
+        if k in model_kwargs:
+            added_kwargs.pop(k)
 
     while True:
         try:
@@ -95,7 +98,7 @@ def get_model(
                 model_with_loss.append_transform(
                     torchvision.transforms.Resize(input_size)
                 )
-            get_logger().warning("use model arguments %s", added_kwargs | model_kwargs)
+            get_logger().warning("use model arguments %s", model_kwargs | added_kwargs)
             return model_with_loss
         except TypeError as e:
             retry = False
