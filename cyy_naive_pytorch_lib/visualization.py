@@ -16,6 +16,12 @@ class Window:
             for env, visdom_obj in Window.__envs.items():
                 visdom_obj.save([env])
 
+    @staticmethod
+    def close_env(env: str):
+        with Window.__lock:
+            Window.__envs.pop(env, None)
+            Window.__windows.pop(env, None)
+
     def __init__(self, title, env=None):
         if env is None:
             env = "main"

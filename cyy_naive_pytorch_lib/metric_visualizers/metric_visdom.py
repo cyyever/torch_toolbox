@@ -2,7 +2,6 @@ import datetime
 import threading
 
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
-
 from ml_type import MachineLearningPhase
 from visualization import EpochWindow, Window
 
@@ -15,6 +14,8 @@ class MetricVisdom(MetricVisualizer):
         self.__visdom_env = None
 
     def set_visdom_env(self, visdom_env: str):
+        if self.__visdom_env is not None:
+            Window.close_env(self.__visdom_env)
         self.__visdom_env = visdom_env
 
     def _before_execute(self, **kwargs):
