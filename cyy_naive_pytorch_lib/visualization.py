@@ -19,7 +19,8 @@ class Window:
     @staticmethod
     def close_env(env: str):
         with Window.__lock:
-            Window.__envs.pop(env, None)
+            vis = Window.__envs.pop(env, None)
+            vis.session.close()
             Window.__windows.pop(env, None)
 
     def __init__(self, title, env=None):
