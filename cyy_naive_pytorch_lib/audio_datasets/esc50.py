@@ -4,7 +4,8 @@ from pathlib import Path
 
 import torchaudio
 from torch.utils.data import Dataset
-from torchvision.utils import download_and_extract_archive, verify_str_arg
+from torchvision.datasets.utils import (download_and_extract_archive,
+                                        verify_str_arg)
 
 # from typing import Any, Callable, Optional, Tuple
 
