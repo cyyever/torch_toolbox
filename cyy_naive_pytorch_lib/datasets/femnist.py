@@ -4,10 +4,9 @@ import shutil
 from typing import Any, Callable, Optional, Tuple
 
 import torch
+from PIL import Image
 from torchvision import VisionDataset
 from torchvision.utils import download_and_extract_archive
-
-from PIL import Image
 
 
 class FEMNIST(VisionDataset):
