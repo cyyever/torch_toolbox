@@ -1,13 +1,16 @@
 import functools
 import os
+import pickle
 import random
 from typing import Callable, Generator, Iterable
 
+import librosa
+import matplotlib.pyplot as plt
+import numpy
+import PIL
 import torch
 import torchvision
 from cyy_naive_lib.log import get_logger
-
-import PIL
 
 
 class DatasetFilter:
@@ -47,6 +50,46 @@ class DatasetMapper:
 
     def __len__(self):
         return len(self.__dataset)
+
+
+class DatasetToSpectrogram:
+    def __init__(
+        self,
+        dataset: torch.utils.data.Dataset,
+        cache_dir: str,
+        label_index: int = -1,
+    ):
+        self.__dataset = dataset
+        self.__cache_dir = cache_dir
+        self.__label_index = label_index
+
+    def __getitem__(self, index):
+        pickled_file = os.path.join(self.__cache_dir, "{}.pick".format(index))
+        if os.path.exists(pickled_file):
+            with open(pickled_file, "rb") as f:
+                image_path, label = pickle.load(f)
+        else:
+            result = self.__dataset.__getitem__(index)
+            # we assume sample rate is in slot 1
+            tensor = result[0]
+            sample_rate = result[1]
+            label = result[self.__label_index]
+            assert len(tensor.shape) == 2 and tensor.shape[0] == 1
+            spectrogram = librosa.feature.melspectrogram(
+                tensor[0].numpy(), sr=sample_rate
+            )
+            log_spectrogram = librosa.power_to_db(spectrogram, ref=numpy.max)
+            librosa.display.specshow(
+                log_spectrogram, sr=sample_rate, x_axis="time", y_axis="mel"
+            )
+            image_path = os.path.join(self.__cache_dir, "{}.png".format(index))
+            plt.gcf().savefig(image_path, dpi=50)
+            with open(pickled_file, "wb") as f:
+                return pickle.dump((image_path, label), f)
+        return (image_path, label)
+
+    def __len__(self):
+        return self.__dataset.__len__()
 
 
 def sub_dataset(dataset: torch.utils.data.Dataset, indices: Iterable):
