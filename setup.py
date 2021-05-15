@@ -13,7 +13,8 @@ setuptools.setup(
     url="https://github.com/cyyever/naive_pytorch_lib",
     packages=[
         "cyy_naive_pytorch_lib",
-        "cyy_naive_pytorch_lib/datasets",
+        "cyy_naive_pytorch_lib/vision_datasets",
+        "cyy_naive_pytorch_lib/audio_datasets",
         "cyy_naive_pytorch_lib/models",
         "cyy_naive_pytorch_lib/metrics",
         "cyy_naive_pytorch_lib/hooks",

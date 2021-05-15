@@ -219,10 +219,9 @@ def get_recommended_hyper_parameter(
             epoch=50, batch_size=4, learning_rate=0.0001, weight_decay=1
         )
     else:
-        get_logger().error(
-            "no hyper parameter for dataset %s and model %s", dataset_name, model_name
+        hyper_parameter = HyperParameter(
+            epoch=350, batch_size=64, learning_rate=0.1, weight_decay=1
         )
-        return None
     hyper_parameter.set_lr_scheduler_factory(
         HyperParameter.get_lr_scheduler_factory("ReduceLROnPlateau", dataset_name)
     )
@@ -272,6 +271,7 @@ class HyperParameterConfig:
 
     def create_hyper_parameter(self, dataset_name, model_name):
         hyper_parameter = get_recommended_hyper_parameter(dataset_name, model_name)
+
         if self.epoch is not None:
             hyper_parameter.set_epoch(self.epoch)
         if self.batch_size is not None:

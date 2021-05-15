@@ -7,8 +7,6 @@ from torch.utils.data import Dataset
 from torchvision.datasets.utils import (download_and_extract_archive,
                                         verify_str_arg)
 
-# from typing import Any, Callable, Optional, Tuple
-
 
 class ESC50(Dataset):
     url = "https://github.com/karoldvl/ESC-50/archive/master.zip"
@@ -40,23 +38,29 @@ class ESC50(Dataset):
             )
 
         # Get directory listing from path
-        files = Path(self.raw_folder).glob("*.wav")
+        files = Path(self.raw_folder).glob("**/*.wav")
         # Iterate through the listing and create a list of tuples (filename, label)
         self.items = [
             (str(f), f.name.split("-")[-1].replace(".wav", "")) for f in files
         ]
-        if split == "train":
+        if self.split == "train":
             self.items = [
                 p
                 for p in self.items
                 if (
-                    p[0].startswith("1") or p[0].startswith("2") or p[0].startswith("3")
+                    os.path.basename(p[0]).startswith("1")
+                    or os.path.basename(p[0]).startswith("2")
+                    or os.path.basename(p[0]).startswith("3")
                 )
             ]
-        elif split == "val":
-            self.items = [p for p in self.items if p[0].startswith("4")]
+        elif self.split == "val":
+            self.items = [
+                p for p in self.items if os.path.basename(p[0]).startswith("4")
+            ]
         else:
-            self.items = [p for p in self.items if p[0].startswith("5")]
+            self.items = [
+                p for p in self.items if os.path.basename(p[0]).startswith("5")
+            ]
 
         self.length = len(self.items)
 

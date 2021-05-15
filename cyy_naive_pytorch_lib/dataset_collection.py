@@ -6,13 +6,16 @@ import pickle
 from typing import Callable, Dict, List
 
 import torch
+import torchaudio
 import torchvision
 import torchvision.transforms as transforms
 from cyy_naive_lib.log import get_logger
 
+import audio_datasets as local_audio_datasets
+import vision_datasets as local_vision_datasets
 from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
 from hyper_parameter import HyperParameter
-from ml_type import MachineLearningPhase
+from ml_type import DatasetType, MachineLearningPhase
 
 
 class DatasetCollection:
@@ -101,7 +104,7 @@ class DatasetCollection:
         if hasattr(self.get_training_dataset(), "classes"):
             return getattr(self.get_training_dataset(), "classes")
 
-        vision_dataset_cls = DatasetCollection.get_vision_dataset_cls()
+        vision_dataset_cls = DatasetCollection.get_dataset_cls(DatasetType.Vision)
         if self.name not in vision_dataset_cls:
             get_logger().error("supported datasets are %s", vision_dataset_cls.keys())
             raise NotImplementedError(self.name)
@@ -130,14 +133,20 @@ class DatasetCollection:
         return cache_dir
 
     @staticmethod
-    def get_vision_dataset_cls():
+    def get_dataset_cls(dataset_type: DatasetType):
+        repositories = []
+        if dataset_type == DatasetType.Vision:
+            repositories = [torchvision.datasets, local_vision_datasets]
+        elif dataset_type == DatasetType.Audio:
+            repositories = [torchaudio.datasets, local_audio_datasets]
         datasets = dict()
-        for name in dir(torchvision.datasets):
-            dataset_class = getattr(torchvision.datasets, name)
-            if not inspect.isclass(dataset_class):
-                continue
-            if issubclass(dataset_class, torch.utils.data.Dataset):
-                datasets[name] = dataset_class
+        for repository in repositories:
+            for name in dir(repository):
+                dataset_class = getattr(repository, name)
+                if not inspect.isclass(dataset_class):
+                    continue
+                if issubclass(dataset_class, torch.utils.data.Dataset):
+                    datasets[name] = dataset_class
         return datasets
 
     @staticmethod
@@ -145,16 +154,21 @@ class DatasetCollection:
         if name in DatasetCollection.__dataset_collections:
             return DatasetCollection.__dataset_collections[name]
 
-        vision_dataset_cls = DatasetCollection.get_vision_dataset_cls()
-        if name not in vision_dataset_cls:
-            get_logger().error("supported datasets are %s", vision_dataset_cls.keys())
-            raise NotImplementedError(name)
-        return DatasetCollection.__create_vision_dataset_collection(
-            name, vision_dataset_cls[name], **kwargs
-        )
+        all_dataset_cls = set()
+        for dataset_type in DatasetType:
+            dataset_cls = DatasetCollection.get_dataset_cls(dataset_type)
+            if name in dataset_cls:
+                return DatasetCollection.__create_dataset_collection(
+                    name, dataset_type, dataset_cls[name], **kwargs
+                )
+            all_dataset_cls |= dataset_cls.keys()
+        get_logger().error("supported datasets are %s", all_dataset_cls)
+        raise NotImplementedError(name)
 
     @staticmethod
-    def __create_vision_dataset_collection(name, dataset_cls, **kwargs):
+    def __create_dataset_collection(
+        name: str, dataset_type: DatasetType, dataset_cls, **kwargs
+    ):
         root_dir = DatasetCollection.get_dataset_dir(name)
         training_dataset = None
         validation_dataset = None
@@ -162,15 +176,15 @@ class DatasetCollection:
         dataset_kwargs = {
             "root": root_dir,
             "download": True,
-            "transform": transforms.Compose([transforms.ToTensor()]),
         }
+        if dataset_type == DatasetType.Vision:
+            dataset_kwargs["transform"] = transforms.Compose([transforms.ToTensor()])
         for k, v in kwargs.items():
             if k in dataset_kwargs:
                 raise RuntimeError("key " + k + " is set by the library")
             dataset_kwargs[k] = v
         sig = inspect.signature(dataset_cls)
 
-        # for for_training in (True, False):
         for phase in MachineLearningPhase:
             while True:
                 try:
@@ -204,16 +218,6 @@ class DatasetCollection:
                     break
 
         cache_dir = DatasetCollection.get_dataset_cache_dir(name)
-        pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
-        if os.path.isfile(pickle_file):
-            mean, std = pickle.load(open(pickle_file, "rb"))
-        else:
-            with open(pickle_file, "wb") as f:
-                total_dataset = torch.utils.data.ConcatDataset(
-                    [training_dataset, test_dataset]
-                )
-                mean, std = DatasetUtil(total_dataset).get_mean_and_std()
-                pickle.dump((mean, std), f)
 
         splited_dataset = None
         if validation_dataset is None or test_dataset is None:
@@ -235,16 +239,28 @@ class DatasetCollection:
         get_logger().info("validation_dataset len %s", len(validation_dataset))
         get_logger().info("test_dataset len %s", len(test_dataset))
 
-        dc.append_transform(transforms.Normalize(mean=mean, std=std))
-        if name not in ("SVHN", "MNIST"):
-            dc.append_transform(
-                transforms.RandomHorizontalFlip(), phase=MachineLearningPhase.Training
-            )
-        if name in ("CIFAR10", "CIFAR100"):
-            dc.append_transform(
-                transforms.RandomCrop(32, padding=4),
-                phase=MachineLearningPhase.Training,
-            )
+        if dataset_type == DatasetType.Vision:
+            pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
+            if os.path.isfile(pickle_file):
+                mean, std = pickle.load(open(pickle_file, "rb"))
+            else:
+                with open(pickle_file, "wb") as f:
+                    total_dataset = torch.utils.data.ConcatDataset(
+                        [training_dataset, test_dataset]
+                    )
+                    mean, std = DatasetUtil(total_dataset).get_mean_and_std()
+                    pickle.dump((mean, std), f)
+            dc.append_transform(transforms.Normalize(mean=mean, std=std))
+            if name not in ("SVHN", "MNIST"):
+                dc.append_transform(
+                    transforms.RandomHorizontalFlip(),
+                    phase=MachineLearningPhase.Training,
+                )
+            if name in ("CIFAR10", "CIFAR100"):
+                dc.append_transform(
+                    transforms.RandomCrop(32, padding=4),
+                    phase=MachineLearningPhase.Training,
+                )
         DatasetCollection.__dataset_collections[name] = dc
         return dc
 
