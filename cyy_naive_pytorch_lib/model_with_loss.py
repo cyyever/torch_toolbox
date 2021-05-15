@@ -95,7 +95,15 @@ class ModelWithLoss:
             m
             for m in self.__model.modules()
             if not isinstance(
-                m, (torch.quantization.QuantStub, torch.quantization.DeQuantStub)
+                m,
+                (
+                    torch.quantization.QuantStub,
+                    torch.quantization.DeQuantStub,
+                    torch.quantization.stubs.QuantWrapper,
+                    torch.quantization.fake_quantize.FakeQuantize,
+                    torch.quantization.observer.MovingAverageMinMaxObserver,
+                    torch.quantization.observer.MovingAveragePerChannelMinMaxObserver,
+                ),
             )
         ]
         last_layer = layers[-1]
@@ -104,7 +112,9 @@ class ModelWithLoss:
             return nn.NLLLoss()
         if isinstance(last_layer, nn.Linear):
             return nn.CrossEntropyLoss()
-        get_logger().error("can't choose a loss function, layers are %s", layers)
+        get_logger().error(
+            "can't choose a loss function, layers are %s", [l.__class__ for l in layers]
+        )
         raise NotImplementedError(type(last_layer))
 
     def is_averaged_loss(self) -> bool:
