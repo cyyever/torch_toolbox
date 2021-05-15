@@ -1,4 +1,3 @@
-# import multiprocessing
 import inspect
 import json
 import os
@@ -13,7 +12,8 @@ from cyy_naive_lib.log import get_logger
 
 import audio_datasets as local_audio_datasets
 import vision_datasets as local_vision_datasets
-from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
+from dataset import (DatasetToMelSpectrogram, DatasetUtil,
+                     replace_dataset_labels, sub_dataset)
 from hyper_parameter import HyperParameter
 from ml_type import DatasetType, MachineLearningPhase
 
@@ -69,10 +69,13 @@ class DatasetCollection:
             DatasetUtil(dataset).append_transform(transform)
 
     def prepend_transform(self, transform, phase=None):
+        origin_datasets = set()
         for k in MachineLearningPhase:
             if phase is not None and k != phase:
                 continue
-            DatasetUtil(self.__origin_datasets[k]).prepend_transform(transform)
+            origin_datasets.add(self.__origin_datasets[k])
+        for dataset in origin_datasets:
+            DatasetUtil(dataset).append_transform(transform)
 
     def get_dataloader(
         self,
@@ -177,8 +180,9 @@ class DatasetCollection:
             "root": root_dir,
             "download": True,
         }
+        vision_transform = transforms.Compose([transforms.ToTensor()])
         if dataset_type == DatasetType.Vision:
-            dataset_kwargs["transform"] = transforms.Compose([transforms.ToTensor()])
+            dataset_kwargs["transform"] = vision_transform
         for k, v in kwargs.items():
             if k in dataset_kwargs:
                 raise RuntimeError("key " + k + " is set by the library")
@@ -230,11 +234,24 @@ class DatasetCollection:
             validation_dataset, test_dataset = DatasetCollection.__split_for_validation(
                 cache_dir, splited_dataset
             )
-
         dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
         if splited_dataset is not None:
             dc.set_origin_dataset(MachineLearningPhase.Validation, splited_dataset)
             dc.set_origin_dataset(MachineLearningPhase.Test, splited_dataset)
+        if dataset_type == DatasetType.Audio and kwargs.get("use_mel_spectrogram"):
+            mel_spectrogram_cache_dir = (
+                DatasetCollection.get_dataset_cache_dir(name + "_mel_spectrogram"),
+            )
+            for phase in MachineLearningPhase:
+                dc.transform_dataset(
+                    phase,
+                    lambda dataset: DatasetToMelSpectrogram(
+                        dataset, root=mel_spectrogram_cache_dir
+                    ),
+                )
+            dc.prepend_transform(vision_transform)
+            dataset_type = DatasetType.Vision
+
         get_logger().info("training_dataset len %s", len(training_dataset))
         get_logger().info("validation_dataset len %s", len(validation_dataset))
         get_logger().info("test_dataset len %s", len(test_dataset))

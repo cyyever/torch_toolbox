@@ -52,19 +52,19 @@ class DatasetMapper:
         return len(self.__dataset)
 
 
-class DatasetToSpectrogram:
+class DatasetToMelSpectrogram(torchvision.datasets.VisionDataset):
     def __init__(
         self,
         dataset: torch.utils.data.Dataset,
-        cache_dir: str,
+        root: str,
         label_index: int = -1,
     ):
+        super().__init__(root=root)
         self.__dataset = dataset
-        self.__cache_dir = cache_dir
         self.__label_index = label_index
 
     def __getitem__(self, index):
-        pickled_file = os.path.join(self.__cache_dir, "{}.pick".format(index))
+        pickled_file = os.path.join(self.root, "{}.pick".format(index))
         if os.path.exists(pickled_file):
             with open(pickled_file, "rb") as f:
                 image_path, label = pickle.load(f)
@@ -82,7 +82,7 @@ class DatasetToSpectrogram:
             librosa.display.specshow(
                 log_spectrogram, sr=sample_rate, x_axis="time", y_axis="mel"
             )
-            image_path = os.path.join(self.__cache_dir, "{}.png".format(index))
+            image_path = os.path.join(self.root, "{}.png".format(index))
             plt.gcf().savefig(image_path, dpi=50)
             with open(pickled_file, "wb") as f:
                 return pickle.dump((image_path, label), f)
