@@ -66,8 +66,8 @@ class ESC50(Dataset):
 
     def __getitem__(self, index):
         filename, label = self.items[index]
-        tensor, _ = torchaudio.load(filename)
-        return (tensor, int(label))
+        tensor, sample_rate = torchaudio.load(filename)
+        return (tensor, sample_rate, int(label))
 
     def __len__(self):
         return self.length

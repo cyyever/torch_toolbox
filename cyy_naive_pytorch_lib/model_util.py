@@ -141,10 +141,10 @@ class ModelUtil:
         result = list()
         for i, prev_module in enumerate(modules):
             is_container = False
-            for j in range(i + 1, len(modules)):
-                if modules[j][0].startswith(prev_module[0]):
-                    is_container = True
-                    break
+            if isinstance(prev_module[1], torch.nn.Sequential):
+                is_container = True
+            if i == 0:
+                is_container = True
             if not is_container:
                 result.append(prev_module)
         assert result
