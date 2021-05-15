@@ -12,6 +12,12 @@ class ModelType(IntEnum):
     Detection = auto()
 
 
+class DatasetType(IntEnum):
+    Vision = auto()
+    Text = auto()
+    Audio = auto()
+
+
 class ModelExecutorCallbackPoint(IntEnum):
     BEFORE_EXECUTE = auto()
     AFTER_EXECUTE = auto()
