@@ -1,7 +1,9 @@
 import datetime
+import os
 import threading
 
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
+
 from ml_type import MachineLearningPhase
 from visualization import EpochWindow, Window
 
@@ -12,6 +14,10 @@ class MetricVisdom(MetricVisualizer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__visdom_env = None
+        if os.getenv("NO_VISDOM"):
+            self.__no_visdom = True
+        else:
+            self.__no_visdom = False
 
     def set_visdom_env(self, visdom_env: str):
         if self.__visdom_env is not None:
@@ -19,6 +25,8 @@ class MetricVisdom(MetricVisualizer):
         self.__visdom_env = visdom_env
 
     def _before_execute(self, **kwargs):
+        if self.__no_visdom:
+            return
         trainer = kwargs["model_executor"]
         if self.__visdom_env is None:
             self.__visdom_env = (
@@ -30,6 +38,8 @@ class MetricVisdom(MetricVisualizer):
             )
 
     def _after_epoch(self, **kwargs):
+        if self.__no_visdom:
+            return
         trainer = kwargs["model_executor"]
         epoch = kwargs["epoch"]
         learning_rates = trainer.get_data("cur_learning_rates")
