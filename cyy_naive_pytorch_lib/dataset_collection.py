@@ -1,3 +1,4 @@
+import copy
 import inspect
 import json
 import os
@@ -75,7 +76,7 @@ class DatasetCollection:
                 continue
             origin_datasets.add(self.__origin_datasets[k])
         for dataset in origin_datasets:
-            DatasetUtil(dataset).append_transform(transform)
+            DatasetUtil(dataset).prepend_transform(transform)
 
     def get_dataloader(
         self,
@@ -183,6 +184,8 @@ class DatasetCollection:
         vision_transform = transforms.Compose([transforms.ToTensor()])
         if dataset_type == DatasetType.Vision:
             dataset_kwargs["transform"] = vision_transform
+
+        use_mel_spectrogram = kwargs.pop("use_mel_spectrogram", False)
         for k, v in kwargs.items():
             if k in dataset_kwargs:
                 raise RuntimeError("key " + k + " is set by the library")
@@ -238,17 +241,18 @@ class DatasetCollection:
         if splited_dataset is not None:
             dc.set_origin_dataset(MachineLearningPhase.Validation, splited_dataset)
             dc.set_origin_dataset(MachineLearningPhase.Test, splited_dataset)
-        if dataset_type == DatasetType.Audio and kwargs.get("use_mel_spectrogram"):
-            mel_spectrogram_cache_dir = (
-                DatasetCollection.get_dataset_cache_dir(name + "_mel_spectrogram"),
+        if dataset_type == DatasetType.Audio and use_mel_spectrogram:
+            cache_dir = DatasetCollection.get_dataset_cache_dir(
+                name + "_mel_spectrogram"
             )
             for phase in MachineLearningPhase:
                 dc.transform_dataset(
                     phase,
                     lambda dataset: DatasetToMelSpectrogram(
-                        dataset, root=mel_spectrogram_cache_dir
+                        copy.deepcopy(dataset), root=cache_dir
                     ),
                 )
+                dc.set_origin_dataset(phase, dc.get_dataset(phase=phase))
             dc.prepend_transform(vision_transform)
             dataset_type = DatasetType.Vision
 
@@ -261,11 +265,11 @@ class DatasetCollection:
             if os.path.isfile(pickle_file):
                 mean, std = pickle.load(open(pickle_file, "rb"))
             else:
+                total_dataset = torch.utils.data.ConcatDataset(
+                    list(dc.__datasets.values())
+                )
+                mean, std = DatasetUtil(total_dataset).get_mean_and_std()
                 with open(pickle_file, "wb") as f:
-                    total_dataset = torch.utils.data.ConcatDataset(
-                        [training_dataset, test_dataset]
-                    )
-                    mean, std = DatasetUtil(total_dataset).get_mean_and_std()
                     pickle.dump((mean, std), f)
             dc.append_transform(transforms.Normalize(mean=mean, std=std))
             if name not in ("SVHN", "MNIST"):
@@ -313,6 +317,7 @@ class DatasetCollectionConfig:
         parser.add_argument(
             "--training_dataset_label_noise_percentage", type=float, default=None
         )
+        parser.add_argument("--dataset_arg_json_path", type=str, default=None)
 
     def load_args(self, args):
         for attr in dir(args):
@@ -324,6 +329,9 @@ class DatasetCollectionConfig:
             value = getattr(args, attr)
             if value is not None:
                 setattr(self, attr, value)
+        if args.dataset_arg_json_path is not None:
+            with open(args.dataset_arg_json_path, "rt") as f:
+                self.dataset_args = json.load(f)
 
     def create_dataset_collection(self, save_dir):
         if self.dataset_name is None:
