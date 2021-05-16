@@ -5,6 +5,7 @@ import random
 from typing import Callable, Generator, Iterable
 
 import librosa
+import librosa.display
 import matplotlib.pyplot as plt
 import numpy
 import PIL
@@ -57,23 +58,23 @@ class DatasetToMelSpectrogram(torchvision.datasets.VisionDataset):
         self,
         dataset: torch.utils.data.Dataset,
         root: str,
-        label_index: int = -1,
+        target_index: int = -1,
     ):
         super().__init__(root=root)
         self.__dataset = dataset
-        self.__label_index = label_index
+        self.__target_index = target_index
 
     def __getitem__(self, index):
         pickled_file = os.path.join(self.root, "{}.pick".format(index))
         if os.path.exists(pickled_file):
             with open(pickled_file, "rb") as f:
-                image_path, label = pickle.load(f)
+                image_path, target = pickle.load(f)
         else:
             result = self.__dataset.__getitem__(index)
             # we assume sample rate is in slot 1
             tensor = result[0]
             sample_rate = result[1]
-            label = result[self.__label_index]
+            target = result[self.__target_index]
             assert len(tensor.shape) == 2 and tensor.shape[0] == 1
             spectrogram = librosa.feature.melspectrogram(
                 tensor[0].numpy(), sr=sample_rate
@@ -85,8 +86,11 @@ class DatasetToMelSpectrogram(torchvision.datasets.VisionDataset):
             image_path = os.path.join(self.root, "{}.png".format(index))
             plt.gcf().savefig(image_path, dpi=50)
             with open(pickled_file, "wb") as f:
-                return pickle.dump((image_path, label), f)
-        return (image_path, label)
+                pickle.dump((image_path, target), f)
+        img = PIL.Image.open(image_path).convert("RGB")
+        if self.transform is not None:
+            img = self.transform(img)
+        return (img, target)
 
     def __len__(self):
         return self.__dataset.__len__()
@@ -167,6 +171,7 @@ class DatasetUtil:
         return mean, std
 
     def append_transform(self, transform):
+        assert transform is not None
         self.dataset.transform = torchvision.transforms.Compose(
             [self.dataset.transform, transform]
         )
@@ -175,12 +180,19 @@ class DatasetUtil:
         )
 
     def prepend_transform(self, transform):
-        self.dataset.transform = torchvision.transforms.Compose(
-            [transform, self.dataset.transform]
-        )
-        self.dataset.transforms = torchvision.transforms.Compose(
-            [transform, self.dataset.transforms]
-        )
+        assert transform is not None
+        if self.dataset.transform is None:
+            self.dataset.transform = transform
+        else:
+            self.dataset.transform = torchvision.transforms.Compose(
+                [transform, self.dataset.transform]
+            )
+        if self.dataset.transforms is None:
+            self.dataset.transforms = transform
+        else:
+            self.dataset.transforms = torchvision.transforms.Compose(
+                [transform, self.dataset.transforms]
+            )
 
     @staticmethod
     def get_labels_from_target(target) -> set:
