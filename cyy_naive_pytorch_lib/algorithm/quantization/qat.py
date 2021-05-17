@@ -64,7 +64,6 @@ class QuantizationAwareTraining(Callback):
                 modules = list()
                 for name_list in model_util.model.get_fused_modules():
                     modules.append(["module." + a for a in name_list])
-                get_logger().error(modules)
             else:
                 modules = QuantizationAwareTraining.get_fused_modules(quant_model)
             torch.quantization.fuse_modules(
