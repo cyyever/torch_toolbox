@@ -20,7 +20,8 @@ class Window:
     def close_env(env: str):
         with Window.__lock:
             vis = Window.__envs.pop(env, None)
-            vis.session.close()
+            if vis is not None:
+                vis.session.close()
             Window.__windows.pop(env, None)
 
     def __init__(self, title, env=None):
