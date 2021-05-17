@@ -48,7 +48,7 @@ class VideoSpiltter:
         filename = ".".join(self.__video_path.split(".")[:-1] + [filename])
         return filename
 
-    def extract(self):
+    def split(self):
         reader = cyy_naive_cpp_extension.video.FFmpegVideoReader(self.__video_path)
         if not reader.open(self.__video_path):
             raise RuntimeError("failed to open video " + self.__video_path)
