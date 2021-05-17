@@ -60,7 +60,13 @@ class QuantizationAwareTraining(Callback):
         if hasattr(quant_model, "fuse_model"):
             quant_model.fuse_model()
         else:
-            modules = QuantizationAwareTraining.get_fused_modules(quant_model)
+            if hasattr(model_util.model, "get_fused_modules"):
+                modules = list()
+                for name_list in model_util.model.get_fused_modules():
+                    modules.append(["module." + a for a in name_list])
+                get_logger().error(modules)
+            else:
+                modules = QuantizationAwareTraining.get_fused_modules(quant_model)
             torch.quantization.fuse_modules(
                 quant_model,
                 modules,
