@@ -251,7 +251,7 @@ class DatasetUtil:
     #     return self.__split(parts, by_label=False)[0]
 
     def __split(self, parts: list, by_label: bool = True) -> tuple:
-        assert parts and len(parts) != 1
+        assert parts
         if len(parts) == 1:
             return tuple([self.dataset])
         sub_dataset_indices_list: list = []
