@@ -247,8 +247,8 @@ class DatasetUtil:
     def iid_split(self, parts: list) -> tuple:
         return self.__split(parts, by_label=True)
 
-    # def random_split(self, parts: list) -> list:
-    #     return self.__split(parts, by_label=False)[0]
+    def random_split(self, parts: list) -> list:
+        return self.__split(parts, by_label=False)[0]
 
     def __split(self, parts: list, by_label: bool = True) -> tuple:
         assert parts
