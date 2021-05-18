@@ -14,12 +14,18 @@ class ProcessingState(IntEnum):
 
 
 class VideoSpiltter:
-    def __init__(self, video_path):
+    def __init__(
+        self,
+        video_path,
+        similarity_threshold,
+        similarity_seconds=5,
+        content_seconds=1,
+    ):
         self.__video_path: str = os.path.abspath(video_path)
         self.output_format = "mp4"
-        self.similarity_threshold = 0.9
-        self.similarity_seconds = 5  # at least
-        self.content_seconds = 5  # at least
+        self.similarity_threshold = similarity_threshold
+        self.similarity_seconds = similarity_seconds
+        self.content_seconds = content_seconds
 
     def __get_writer(self, reader):
         frame_width = reader.get_video_width()
