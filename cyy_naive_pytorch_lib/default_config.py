@@ -68,12 +68,12 @@ class DefaultConfig:
         os.makedirs(self.save_dir, exist_ok=True)
         return self.save_dir
 
-    def create_trainer(self, apply_env_factor=True) -> Trainer:
+    def create_trainer(self, apply_global_config=True) -> Trainer:
         get_logger().info(
             "use dataset %s and model %s", self.dc_config.dataset_name, self.model_name
         )
-        if apply_env_factor:
-            self.__apply_env_config()
+        if apply_global_config:
+            self.apply_global_config()
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
             self.dc_config.dataset_name, self.model_name
         )
@@ -103,7 +103,7 @@ class DefaultConfig:
         trainer = self.create_trainer()
         return trainer.get_inferencer(phase)
 
-    def __apply_env_config(self):
+    def apply_global_config(self):
         if self.log_level is not None:
             get_logger().setLevel(self.log_level)
         self.__set_reproducible_env()
