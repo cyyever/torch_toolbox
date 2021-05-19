@@ -15,7 +15,7 @@ def train(worker_id):
     trainer = DefaultConfig("MNIST", "LeNet5").create_trainer()
     trainer.hyper_parameter.set_epoch(1)
     trainer.hyper_parameter.set_learning_rate(0.01)
-    trainer.append_callback(
+    trainer.append_hook(
         ModelExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
     )
     trainer.train()
