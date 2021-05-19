@@ -14,8 +14,8 @@ class MetricTensorBoard(MetricVisualizer):
         super().__init__(**kwargs)
         self.__writer = None
 
-    def set_session(self, name: str):
-        super().set_session(name)
+    def set_session_name(self, name: str):
+        super().set_session_name(name)
         if self.__writer is not None:
             self.__writer.close()
             self.__writer = None
@@ -35,14 +35,14 @@ class MetricTensorBoard(MetricVisualizer):
         return self.session_name + "/" + title
 
     def __del__(self):
-        if self.writer is not None:
-            self.writer.close()
+        if self.__writer is not None:
+            self.__writer.close()
 
     @property
     def writer(self):
         if self.__writer is None:
             assert self.session_name
-            self.__writer = SummaryWriter(self.session_name)
+            self.__writer = SummaryWriter("runs/" + self.session_name)
         return self.__writer
 
     def _after_epoch(self, **kwargs):
@@ -107,3 +107,4 @@ class MetricTensorBoard(MetricVisualizer):
             test_metric.get_epoch_metric(epoch, "accuracy"),
             epoch,
         )
+        self.writer.flush()

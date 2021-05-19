@@ -19,7 +19,7 @@ class LRFinder(Callback):
         self.total_batch_num = None
         self.suggested_learning_rate = None
 
-    def _before_execute(self, *args, **kwargs):
+    def _before_execute(self, **kwargs):
         trainer = kwargs["model_executor"]
         trainer.remove_optimizer()
         trainer.remove_lr_scheduler()
@@ -36,7 +36,7 @@ class LRFinder(Callback):
         self.learning_rates.append(learning_rate)
         visualizer = trainer.visualizer
         visualizer.writer.add_scalar(
-            visualizer.writer.get_tag_name("LRFinder learning rate"),
+            visualizer.get_tag_name("LRFinder learning rate"),
             learning_rate,
             self.batch_index,
         )
@@ -51,7 +51,7 @@ class LRFinder(Callback):
             batch_loss = batch_loss + 0.98 * (self.losses[-1] - batch_loss)
         visualizer = trainer.visualizer
         visualizer.writer.add_scalar(
-            visualizer.writer.get_tag_name("LRFinder smooth batch loss"),
+            visualizer.get_tag_name("LRFinder smooth batch loss"),
             batch_loss,
             self.batch_index,
         )
