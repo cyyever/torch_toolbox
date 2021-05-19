@@ -13,12 +13,19 @@ class MetricTensorBoard(MetricVisualizer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.__writer = None
+        self.__log_dir = None
 
-    def set_session_name(self, name: str):
-        super().set_session_name(name)
+    def set_log_dir(self, log_dir: str):
+        self.__log_dir = log_dir
+
+    def close(self):
         if self.__writer is not None:
             self.__writer.close()
             self.__writer = None
+
+    def set_session_name(self, name: str):
+        super().set_session_name(name)
+        self.close()
 
     def _before_execute(self, **kwargs):
         trainer = kwargs["model_executor"]
@@ -35,14 +42,13 @@ class MetricTensorBoard(MetricVisualizer):
         return self.session_name + "/" + title
 
     def __del__(self):
-        if self.__writer is not None:
-            self.__writer.close()
+        self.close()
 
     @property
     def writer(self):
         if self.__writer is None:
             assert self.session_name
-            self.__writer = SummaryWriter("runs/" + self.session_name)
+            self.__writer = SummaryWriter(self.__log_dir + "/" + self.session_name)
         return self.__writer
 
     def _after_epoch(self, **kwargs):
