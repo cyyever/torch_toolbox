@@ -1,4 +1,4 @@
-from callback import Callback
+from hook import Callback
 from cyy_naive_lib.log import get_logger
 from model_util import ModelUtil
 

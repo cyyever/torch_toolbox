@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from callback import Callback
+from hook import Callback
 from ml_type import MachineLearningPhase
 
 

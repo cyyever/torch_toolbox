@@ -5,7 +5,7 @@ from cyy_naive_lib.log import get_logger
 from torch.quantization.fuser_method_mappings import \
     DEFAULT_OP_LIST_TO_FUSER_METHOD
 
-from callback import Callback
+from hook import Callback
 from model_util import ModelUtil
 from trainer import Trainer
 
