@@ -1,4 +1,5 @@
 import copy
+import os
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -38,7 +39,18 @@ class Trainer(ModelExecutor):
         self.__metric_tb: MetricTensorBoard = MetricTensorBoard()
         self.__metric_tb.append_to_model_executor(self)
         self.__save_model_hook = SaveModelHook()
-        self.save_dir = save_dir
+        self.__save_dir = None
+        self.set_save_dir(save_dir)
+
+    def set_save_dir(self, save_dir):
+        self.__save_dir = save_dir
+        log_dir = os.path.join(save_dir, "visualizer")
+        os.makedirs(log_dir, exist_ok=True)
+        self.__metric_tb.set_log_dir(log_dir)
+
+    @property
+    def save_dir(self):
+        return self.__save_dir
 
     @property
     def visualizer(self):
@@ -123,7 +135,7 @@ class Trainer(ModelExecutor):
         self.remove_lr_scheduler()
 
         self.__save_model_hook.remove_from_model_executor(self)
-        if kwargs.get("save_model", True) and self.save_dir is not None:
+        if kwargs.get("save_model", True) and self.__save_dir is not None:
             self.__save_model_hook.append_to_model_executor(self)
         self.__inferencers.clear()
         for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
