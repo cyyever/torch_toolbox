@@ -42,7 +42,7 @@ def lottery_ticket_prune(
             "models", trainer.model.__class__.__name__ + "_" + "pruned"
         )
 
-    def after_epoch_callback(trainer, epoch):
+    def after_epoch_hook(trainer, epoch):
         nonlocal init_parameters
         nonlocal save_dir
         nonlocal init_hyper_parameter
@@ -95,6 +95,6 @@ def lottery_ticket_prune(
         trainer.save_model(os.path.join(save_dir, str(epoch)))
 
     trainer.train(
-        plot_parameter_distribution=True, after_epoch_callbacks=[after_epoch_callback]
+        plot_parameter_distribution=True, after_epoch_hooks=[after_epoch_hook]
     )
     trainer.save_model(save_dir)
