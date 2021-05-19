@@ -12,7 +12,7 @@ from inference import ClassificationInferencer, DetectionInferencer, Inferencer
 from metric_visualizers.batch_loss_logger import BatchLossLogger
 from metric_visualizers.metric_visdom import MetricVisdom
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
-from model_executor import ModelExecutor, ModelExecutorCallbackPoint
+from model_executor import ModelExecutor, ModelExecutorHookPoint
 from model_util import ModelUtil
 from model_with_loss import ModelWithLoss
 
@@ -129,14 +129,14 @@ class Trainer(ModelExecutor):
         for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
             self.__inferencers[phase] = self.get_inferencer(phase)
             self.__inferencers[phase].remove_logger()
-        self.exec_callbacks(
-            ModelExecutorCallbackPoint.BEFORE_EXECUTE, model_executor=self
+        self.exec_hooks(
+            ModelExecutorHookPoint.BEFORE_EXECUTE, model_executor=self
         )
 
         try:
             for epoch in range(1, self.hyper_parameter.epoch + 1):
-                self.exec_callbacks(
-                    ModelExecutorCallbackPoint.BEFORE_EPOCH,
+                self.exec_hooks(
+                    ModelExecutorHookPoint.BEFORE_EPOCH,
                     model_executor=self,
                     epoch=epoch,
                 )
@@ -160,8 +160,8 @@ class Trainer(ModelExecutor):
                             continue
 
                         optimizer.zero_grad()
-                        self.exec_callbacks(
-                            ModelExecutorCallbackPoint.BEFORE_BATCH,
+                        self.exec_hooks(
+                            ModelExecutorHookPoint.BEFORE_BATCH,
                             model_executor=self,
                             batch_index=batch_index,
                             batch=batch,
@@ -178,8 +178,8 @@ class Trainer(ModelExecutor):
                         loss.backward()
                         batch_loss = loss.data.item()
 
-                        self.exec_callbacks(
-                            ModelExecutorCallbackPoint.AFTER_BATCH,
+                        self.exec_hooks(
+                            ModelExecutorHookPoint.AFTER_BATCH,
                             model_executor=self,
                             batch_index=batch_index,
                             batch=batch,
@@ -188,17 +188,17 @@ class Trainer(ModelExecutor):
                             batch_loss=batch_loss,
                             batch_size=batch_size,
                         )
-                        if self.has_callback(ModelExecutorCallbackPoint.OPTIMIZER_STEP):
-                            self.exec_callbacks(
-                                ModelExecutorCallbackPoint.OPTIMIZER_STEP,
+                        if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
+                            self.exec_hooks(
+                                ModelExecutorHookPoint.OPTIMIZER_STEP,
                                 self,
                             )
                         else:
                             optimizer.step()
 
                         optimizer.zero_grad()
-                        self.exec_callbacks(
-                            ModelExecutorCallbackPoint.AFTER_OPTIMIZER_STEP,
+                        self.exec_hooks(
+                            ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
                             model_executor=self,
                             batch_index=batch_index,
                             batch=batch,
@@ -218,8 +218,8 @@ class Trainer(ModelExecutor):
                     inferencer.inference(epoch=epoch, use_grad=False)
                     inferencer.offload_from_gpu()
 
-                self.exec_callbacks(
-                    ModelExecutorCallbackPoint.AFTER_EPOCH,
+                self.exec_hooks(
+                    ModelExecutorHookPoint.AFTER_EPOCH,
                     model_executor=self,
                     epoch=epoch,
                 )
@@ -237,6 +237,6 @@ class Trainer(ModelExecutor):
                         lr_scheduler.step()
         except StopExecutingException:
             get_logger().warning("stop training")
-        self.exec_callbacks(
-            ModelExecutorCallbackPoint.AFTER_EXECUTE, model_executor=self
+        self.exec_hooks(
+            ModelExecutorHookPoint.AFTER_EXECUTE, model_executor=self
         )

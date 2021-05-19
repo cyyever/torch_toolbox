@@ -18,7 +18,7 @@ class DatasetType(IntEnum):
     Audio = auto()
 
 
-class ModelExecutorCallbackPoint(IntEnum):
+class ModelExecutorHookPoint(IntEnum):
     BEFORE_EXECUTE = auto()
     AFTER_EXECUTE = auto()
     BEFORE_EPOCH = auto()

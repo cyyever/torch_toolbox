@@ -11,7 +11,7 @@ from hyper_parameter import HyperParameter
 from metric_visualizers.performance_metric_logger import \
     PerformanceMetricLogger
 from metrics.performance_metric import PerformanceMetric
-from ml_type import MachineLearningPhase, ModelExecutorCallbackPoint
+from ml_type import MachineLearningPhase, ModelExecutorHookPoint
 from model_with_loss import ModelWithLoss
 
 
@@ -30,11 +30,11 @@ class ModelExecutor:
         self.__device = get_device()
         self.__cuda_stream = None
         self.__data: dict = dict()
-        self.__callbacks: Dict[
-            ModelExecutorCallbackPoint, List[Dict[str, Callable]]
+        self.__hooks: Dict[
+            ModelExecutorHookPoint, List[Dict[str, Callable]]
         ] = dict()
-        self.__stripable_callbacks: set = set()
-        self.__disabled_callbacks: set = set()
+        self.__stripable_hooks: set = set()
+        self.__disabled_hooks: set = set()
 
         self.__logger = ModelExecutorLogger()
         self.__logger.append_to_model_executor(self)
@@ -108,81 +108,81 @@ class ModelExecutor:
     def has_data(self, key: str):
         return key in self.__data
 
-    def exec_callbacks(self, cb_point: ModelExecutorCallbackPoint, *args, **kwargs):
-        for o in self.__callbacks.get(cb_point, []):
+    def exec_hooks(self, cb_point: ModelExecutorHookPoint, *args, **kwargs):
+        for o in self.__hooks.get(cb_point, []):
             for name, cb in o.items():
-                if name in self.__disabled_callbacks:
+                if name in self.__disabled_hooks:
                     continue
                 get_logger().debug("call %s", name)
                 cb(*args, **kwargs)
 
-    def has_callback(
+    def has_hook(
         self,
-        cb_point: ModelExecutorCallbackPoint,
+        cb_point: ModelExecutorHookPoint,
     ):
-        return cb_point in self.__callbacks
+        return cb_point in self.__hooks
 
     def callbacks(self):
-        return self.__callbacks
+        return self.__hooks
 
-    def disable_stripable_callbacks(self):
-        self.__disabled_callbacks.update(self.__stripable_callbacks)
+    def disable_stripable_hooks(self):
+        self.__disabled_hooks.update(self.__stripable_hooks)
 
-    def enable_all_callbacks(self):
-        self.__disabled_callbacks.clear()
+    def enable_all_hooks(self):
+        self.__disabled_hooks.clear()
 
-    def append_callback(
-        self, cb_point: ModelExecutorCallbackPoint, name: str, cb: Callable
+    def append_hook(
+        self, cb_point: ModelExecutorHookPoint, name: str, cb: Callable
     ):
         data = {name: cb}
-        if cb_point not in self.__callbacks:
-            self.__callbacks[cb_point] = [data]
+        if cb_point not in self.__hooks:
+            self.__hooks[cb_point] = [data]
         else:
-            for d in self.__callbacks[cb_point]:
+            for d in self.__hooks[cb_point]:
                 if name in d:
                     raise RuntimeError(name + " has registered")
-            self.__callbacks[cb_point].append(data)
+            self.__hooks[cb_point].append(data)
 
-    def set_stripable_callback(self, name: str):
-        self.__stripable_callbacks.add(name)
+    def set_stripable_hook(self, name: str):
+        self.__stripable_hooks.add(name)
 
-    def prepend_before_other_callback(
+    def prepend_before_other_hook(
         self,
-        cb_point: ModelExecutorCallbackPoint,
+        cb_point: ModelExecutorHookPoint,
         name: str,
         cb: Callable,
         other_name: str,
     ):
         data = {name: cb}
-        assert cb_point in self.__callbacks
-        for idx, other_data in enumerate(self.__callbacks[cb_point]):
+        assert cb_point in self.__hooks
+        for idx, other_data in enumerate(self.__hooks[cb_point]):
             if other_name in other_data:
-                self.__callbacks[cb_point].insert(idx, data)
+                self.__hooks[cb_point].insert(idx, data)
                 return
         raise RuntimeError("unknown callback:" + other_name)
 
-    def prepend_callback(
+    def prepend_hook(
         self,
-        cb_point: ModelExecutorCallbackPoint,
+        cb_point: ModelExecutorHookPoint,
         name: str,
         cb: Callable,
     ):
         data = {name: cb}
-        if cb_point not in self.__callbacks:
-            self.__callbacks[cb_point] = [data]
+        if cb_point not in self.__hooks:
+            self.__hooks[cb_point] = [data]
         else:
-            for d in self.__callbacks[cb_point]:
+            for d in self.__hooks[cb_point]:
                 if name in d:
                     raise RuntimeError(name + " has registered")
-            self.__callbacks[cb_point].insert(0, data)
+            self.__hooks[cb_point].insert(0, data)
 
-    def remove_callback(self, name: str, cb_point: ModelExecutorCallbackPoint = None):
-        for cur_cb_point, callbacks in self.__callbacks.items():
+    def remove_hook(self, name: str, cb_point: ModelExecutorHookPoint = None):
+        for cur_cb_point, callbacks in self.__hooks.items():
             if cb_point is not None and cur_cb_point != cb_point:
                 continue
             for idx, cb in enumerate(callbacks):
                 cb.pop(name, None)
-                self.__callbacks[cur_cb_point][idx] = cb
+                self.__hooks[cur_cb_point][idx] = cb
 
     @property
     def dataset_collection(self) -> DatasetCollection:
