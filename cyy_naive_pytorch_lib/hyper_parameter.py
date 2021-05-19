@@ -99,7 +99,7 @@ class HyperParameter:
 
     @staticmethod
     def get_lr_scheduler_factory(name, dataset_name=None):
-        def callback(hyper_parameter, trainer):
+        def hook(hyper_parameter, trainer):
             nonlocal dataset_name
             nonlocal name
             optimizer = trainer.get_optimizer()
@@ -131,7 +131,7 @@ class HyperParameter:
                 )
             raise RuntimeError("unknown learning rate scheduler:" + name)
 
-        return callback
+        return hook
 
     def set_optimizer_factory(self, optimizer_factory: Callable):
         self.__optimizer_factory = optimizer_factory

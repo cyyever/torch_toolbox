@@ -1,4 +1,4 @@
-from callback import Callback
+from hook import Callback
 
 from .gradient_sanitizer import GradientSanitizer
 

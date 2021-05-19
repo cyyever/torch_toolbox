@@ -3,7 +3,7 @@ import threading
 
 import torch
 
-from callback import Callback
+from hook import Callback
 from ml_type import StopExecutingException
 from visualization import BatchWindow
 

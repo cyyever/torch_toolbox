@@ -122,7 +122,7 @@ class ModelExecutor:
     ):
         return cb_point in self.__hooks
 
-    def callbacks(self):
+    def hooks(self):
         return self.__hooks
 
     def disable_stripable_hooks(self):
@@ -159,7 +159,7 @@ class ModelExecutor:
             if other_name in other_data:
                 self.__hooks[cb_point].insert(idx, data)
                 return
-        raise RuntimeError("unknown callback:" + other_name)
+        raise RuntimeError("unknown hook:" + other_name)
 
     def prepend_hook(
         self,
