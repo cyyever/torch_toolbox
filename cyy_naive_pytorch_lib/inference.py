@@ -7,7 +7,7 @@ from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from metrics.prob_metric import ProbabilityMetric
 from ml_type import MachineLearningPhase
-from model_executor import ModelExecutor, ModelExecutorCallbackPoint
+from model_executor import ModelExecutor, ModelExecutorHookPoint
 from model_util import ModelUtil
 from model_with_loss import ModelWithLoss
 
@@ -26,15 +26,15 @@ class Inferencer(ModelExecutor):
     def inference(self, **kwargs):
         use_grad = kwargs.get("use_grad", False)
         epoch = kwargs.get("epoch", 1)
-        self.exec_callbacks(
-            ModelExecutorCallbackPoint.BEFORE_EXECUTE,
+        self.exec_hooks(
+            ModelExecutorHookPoint.BEFORE_EXECUTE,
             model_executor=self,
         )
         with torch.set_grad_enabled(use_grad):
             get_logger().debug("use device %s", self.device)
             self.model.zero_grad()
-            self.exec_callbacks(
-                ModelExecutorCallbackPoint.BEFORE_EPOCH,
+            self.exec_hooks(
+                ModelExecutorHookPoint.BEFORE_EPOCH,
                 model_executor=self,
                 epoch=epoch,
             )
@@ -51,8 +51,8 @@ class Inferencer(ModelExecutor):
                     real_batch_loss /= len(self.dataset)
                     real_batch_loss.backward()
 
-                self.exec_callbacks(
-                    ModelExecutorCallbackPoint.AFTER_BATCH,
+                self.exec_hooks(
+                    ModelExecutorHookPoint.AFTER_BATCH,
                     model_executor=self,
                     batch=batch,
                     batch_loss=batch_loss,
@@ -61,8 +61,8 @@ class Inferencer(ModelExecutor):
                     result=result,
                     epoch=epoch,
                 )
-            self.exec_callbacks(
-                ModelExecutorCallbackPoint.AFTER_EPOCH,
+            self.exec_hooks(
+                ModelExecutorHookPoint.AFTER_EPOCH,
                 model_executor=self,
                 epoch=epoch,
             )
@@ -110,7 +110,7 @@ class DetectionInferencer(Inferencer):
             detection_correct_count_per_label[label] = 0
             detection_count_per_label[label] = 0
 
-        def after_batch_callback(_, batch, result):
+        def after_batch_hook(_, batch, result):
             targets = batch[1]
             for target in targets:
                 for label in target["labels"]:
@@ -144,11 +144,11 @@ class DetectionInferencer(Inferencer):
                         label = target["labels"][box_idx].data.item()
                         detection_correct_count_per_label[label] += 1
 
-        self.append_callback(
-            ModelExecutorCallbackPoint.AFTER_BATCH, "compute_acc", after_batch_callback
+        self.append_hook(
+            ModelExecutorHookPoint.AFTER_BATCH, "compute_acc", after_batch_hook
         )
         super().inference(**kwargs)
-        self.remove_callback("compute_acc", ModelExecutorCallbackPoint.AFTER_BATCH)
+        self.remove_hook("compute_acc", ModelExecutorHookPoint.AFTER_BATCH)
 
         accuracy = sum(detection_correct_count_per_label.values()) / sum(
             detection_count_per_label.values()
