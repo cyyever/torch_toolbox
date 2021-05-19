@@ -1,13 +1,11 @@
 from cyy_naive_lib.log import get_logger
+
 from ml_type import MachineLearningPhase
 
 from .metric_logger import MetricLogger
 
 
 class PerformanceMetricLogger(MetricLogger):
-    def __init__(self):
-        super().__init__(metric=None)
-
     def _after_epoch(self, **kwargs):
         epoch = kwargs["epoch"]
         model_executor = kwargs.get("model_executor")

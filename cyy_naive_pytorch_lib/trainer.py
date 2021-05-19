@@ -10,7 +10,7 @@ from hooks.trainer_debugger import TrainerDebugger
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
 from metric_visualizers.batch_loss_logger import BatchLossLogger
-from metric_visualizers.metric_visdom import MetricVisdom
+from metric_visualizers.metric_tensorboard import MetricTensorBoard
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorHookPoint
 from model_util import ModelUtil
@@ -35,18 +35,18 @@ class Trainer(ModelExecutor):
         self.__inferencers: dict = dict()
         self.__batch_loss_logger = BatchLossLogger()
         self.__batch_loss_logger.append_to_model_executor(self)
-        self.__metric_visdom: MetricVisdom = MetricVisdom()
-        self.__metric_visdom.append_to_model_executor(self)
+        self.__metric_tb: MetricTensorBoard = MetricTensorBoard()
+        self.__metric_tb.append_to_model_executor(self)
         self.__save_model_hook = SaveModelHook()
         self.save_dir = save_dir
 
     @property
-    def batch_loss_logger(self):
-        return self.__batch_loss_logger
+    def visualizer(self):
+        return self.__metric_tb
 
     @property
-    def metric_visdom(self):
-        return self.__metric_visdom
+    def batch_loss_logger(self):
+        return self.__batch_loss_logger
 
     def get_inferencer_performance_metric(self, phase):
         return self.__inferencers[phase].performance_metric
@@ -129,9 +129,7 @@ class Trainer(ModelExecutor):
         for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
             self.__inferencers[phase] = self.get_inferencer(phase)
             self.__inferencers[phase].remove_logger()
-        self.exec_hooks(
-            ModelExecutorHookPoint.BEFORE_EXECUTE, model_executor=self
-        )
+        self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE, model_executor=self)
 
         try:
             for epoch in range(1, self.hyper_parameter.epoch + 1):
@@ -237,6 +235,4 @@ class Trainer(ModelExecutor):
                         lr_scheduler.step()
         except StopExecutingException:
             get_logger().warning("stop training")
-        self.exec_hooks(
-            ModelExecutorHookPoint.AFTER_EXECUTE, model_executor=self
-        )
+        self.exec_hooks(ModelExecutorHookPoint.AFTER_EXECUTE, model_executor=self)

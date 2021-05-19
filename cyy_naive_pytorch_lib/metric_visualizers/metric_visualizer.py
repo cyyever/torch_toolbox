@@ -1,12 +1,14 @@
 from hook import Callback
-from metrics.metric import Metric
 
 
 class MetricVisualizer(Callback):
-    def __init__(self, metric: Metric = None):
-        super().__init__()
-        self.__metric = metric
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.__session_name = None
+
+    def set_session_name(self, name: str):
+        self.__session_name = name
 
     @property
-    def metric(self):
-        return self.__metric
+    def session_name(self):
+        return self.__session_name
