@@ -30,9 +30,7 @@ class ModelExecutor:
         self.__device = get_device()
         self.__cuda_stream = None
         self.__data: dict = dict()
-        self.__hooks: Dict[
-            ModelExecutorHookPoint, List[Dict[str, Callable]]
-        ] = dict()
+        self.__hooks: Dict[ModelExecutorHookPoint, List[Dict[str, Callable]]] = dict()
         self.__stripable_hooks: set = set()
         self.__disabled_hooks: set = set()
 
@@ -131,9 +129,7 @@ class ModelExecutor:
     def enable_all_hooks(self):
         self.__disabled_hooks.clear()
 
-    def append_hook(
-        self, cb_point: ModelExecutorHookPoint, name: str, cb: Callable
-    ):
+    def append_hook(self, cb_point: ModelExecutorHookPoint, name: str, cb: Callable):
         data = {name: cb}
         if cb_point not in self.__hooks:
             self.__hooks[cb_point] = [data]
@@ -177,10 +173,10 @@ class ModelExecutor:
             self.__hooks[cb_point].insert(0, data)
 
     def remove_hook(self, name: str, cb_point: ModelExecutorHookPoint = None):
-        for cur_cb_point, callbacks in self.__hooks.items():
+        for cur_cb_point, hooks in self.__hooks.items():
             if cb_point is not None and cur_cb_point != cb_point:
                 continue
-            for idx, cb in enumerate(callbacks):
+            for idx, cb in enumerate(hooks):
                 cb.pop(name, None)
                 self.__hooks[cur_cb_point][idx] = cb
 
