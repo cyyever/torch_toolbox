@@ -40,6 +40,7 @@ class LRFinder(Callback):
             learning_rate,
             self.batch_index,
         )
+        visualizer.writer.flush()
         optimizer = trainer.get_optimizer()
         for group in optimizer.param_groups:
             group["lr"] = learning_rate
@@ -55,6 +56,7 @@ class LRFinder(Callback):
             batch_loss,
             self.batch_index,
         )
+        visualizer.writer.flush()
 
         self.losses.append(batch_loss)
 
