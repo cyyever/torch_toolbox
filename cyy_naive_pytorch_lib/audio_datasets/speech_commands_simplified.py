@@ -1,3 +1,5 @@
+from typing import Callable, Optional
+
 from torchaudio.datasets import SPEECHCOMMANDS
 
 
@@ -40,6 +42,10 @@ class SPEECHCOMMANDS_SIMPLIFIED(SPEECHCOMMANDS):
         "zero",
     ]
 
+    def __init__(self, transform: Optional[Callable] = None, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.transform = transform
+
     def __getitem__(self, n: int):
         (
             waveform,
@@ -48,4 +54,6 @@ class SPEECHCOMMANDS_SIMPLIFIED(SPEECHCOMMANDS):
             speaker_id,
             utterance_number,
         ) = super().__getitem__(n)
-        return (waveform, sample_rate, SPEECHCOMMANDS_SIMPLIFIED.classes.index(label))
+        if self.transform is not None:
+            waveform = self.transform(waveform)
+        return (waveform, SPEECHCOMMANDS_SIMPLIFIED.classes.index(label))

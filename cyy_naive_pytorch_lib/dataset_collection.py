@@ -293,6 +293,13 @@ class DatasetCollection:
                     transforms.RandomCrop(32, padding=4),
                     phase=MachineLearningPhase.Training,
                 )
+        if dataset_type == DatasetType.Audio:
+            if name == "SPEECHCOMMANDS_SIMPLIFIED":
+                dc.append_transform(
+                    lambda tensor: torch.nn.ConstantPad1d(
+                        (0, 16000 - tensor.shape[-1]), 0
+                    )(tensor)
+                )
         DatasetCollection.__dataset_collections[name] = dc
         return dc
 
