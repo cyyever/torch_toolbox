@@ -145,6 +145,7 @@ class VideoSpiltter:
             similarity = cyy_naive_cpp_extension.cv.Mat(
                 similarity_end_frame.content
             ).MSSIM(cyy_naive_cpp_extension.cv.Mat(frame.content))
+            similarity_end_frame = frame
             # Cv::Scalar has four emelemts, the last one is useless.
             similarity = list(similarity)[0:3]
             if sum(similarity) / len(similarity) < self.similarity_threshold:
@@ -163,12 +164,10 @@ class VideoSpiltter:
                 processing_state = ProcessingState.READ_CONTENT
                 content_end_frame = frame
                 similarity_begin_frame = frame
-                similarity_end_frame = frame
                 content_writer.write_frame(
                     cyy_naive_cpp_extension.cv.Matrix(frame.content)
                 )
                 continue
-            similarity_end_frame = frame
             processing_state = ProcessingState.DETECT_SIMILARITY
             if similarity_writer is None:
                 similarity_writer = self.__get_writer(reader)
