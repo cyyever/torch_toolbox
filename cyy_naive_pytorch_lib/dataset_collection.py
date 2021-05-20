@@ -127,13 +127,16 @@ class DatasetCollection:
 
     @staticmethod
     def get_dataset_dir(name: str):
-        return os.path.join(DatasetCollection.__dataset_root_dir, name)
+        dataset_dir = os.path.join(DatasetCollection.__dataset_root_dir, name)
+        if not os.path.isdir(dataset_dir):
+            os.makedirs(dataset_dir, exist_ok=True)
+        return dataset_dir
 
     @staticmethod
     def get_dataset_cache_dir(name: str):
         cache_dir = os.path.join(DatasetCollection.get_dataset_dir(name), ".cache")
         if not os.path.isdir(cache_dir):
-            os.makedirs(cache_dir)
+            os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
 
     @staticmethod
