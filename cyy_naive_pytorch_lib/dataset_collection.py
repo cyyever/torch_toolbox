@@ -210,6 +210,13 @@ class DatasetCollection:
                             dataset_kwargs["split"] = "val"
                         else:
                             dataset_kwargs["split"] = "test"
+                    if "subset" in sig.parameters:
+                        if phase == MachineLearningPhase.Training:
+                            dataset_kwargs["subset"] = "training"
+                        elif phase == MachineLearningPhase.Validation:
+                            dataset_kwargs["subset"] = "validation"
+                        else:
+                            dataset_kwargs["subset"] = "testing"
                     dataset = dataset_cls(**dataset_kwargs)
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
@@ -219,10 +226,11 @@ class DatasetCollection:
                         test_dataset = dataset
                     break
                 except Exception as e:
+                    raise e
                     split = dataset_kwargs.get("split", None)
                     if split is None:
                         raise e
-                    if split == "train":
+                    if phase == MachineLearningPhase.Training:
                         raise e
                     # no validation dataset or test dataset
                     break
