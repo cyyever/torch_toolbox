@@ -22,6 +22,7 @@ class M5(nn.Module):
         self.bn4 = nn.BatchNorm1d(2 * n_channel)
         self.pool4 = nn.MaxPool1d(4)
         self.fc1 = nn.Linear(2 * n_channel, num_classes)
+        self.soft_max = nn.LogSoftmax(dim=2)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -39,4 +40,4 @@ class M5(nn.Module):
         x = F.avg_pool1d(x, x.shape[-1])
         x = x.permute(0, 2, 1)
         x = self.fc1(x)
-        return F.softmax(x, dim=2)
+        return self.soft_max(x).squeeze(dim=1)
