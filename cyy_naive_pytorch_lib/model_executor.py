@@ -111,7 +111,6 @@ class ModelExecutor:
             for name, cb in o.items():
                 if name in self.__disabled_hooks:
                     continue
-                get_logger().debug("call %s", name)
                 cb(*args, **kwargs)
 
     def has_hook(
