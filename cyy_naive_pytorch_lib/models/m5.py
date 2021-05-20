@@ -3,6 +3,10 @@ import torch.nn.functional as F
 
 
 class M5(nn.Module):
+    """
+    Very Deep Convolutional Neural Networks for Raw Waveforms
+    """
+
     def __init__(self, n_input=1, num_classes=35, stride=4, n_channel=80):
         super().__init__()
         self.conv1 = nn.Conv1d(n_input, n_channel, kernel_size=80, stride=stride)
