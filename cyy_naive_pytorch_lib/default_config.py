@@ -93,7 +93,8 @@ class DefaultConfig:
             model_with_loss, dc, hyper_parameter, save_dir=self.get_save_dir()
         )
         if self.debug:
-            trainer.debug_mode = True
+            get_logger().warning("debug the trainer")
+            trainer.debugging_mode = True
         if self.model_path is not None:
             trainer.load_model(self.model_path)
 
