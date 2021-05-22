@@ -41,3 +41,10 @@ class M5(nn.Module):
         x = x.permute(0, 2, 1)
         x = self.fc1(x)
         return self.soft_max(x).squeeze(dim=1)
+
+
+class SmallM5(M5):
+    def __init__(self, n_input=1, num_classes=35):
+        super().__init__(
+            n_input=n_input, num_classes=num_classes, stride=16, n_channel=32
+        )
