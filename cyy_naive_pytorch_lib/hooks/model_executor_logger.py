@@ -25,7 +25,7 @@ class ModelExecutorLogger(Callback):
             get_logger().info(
                 "optimizer is %s", getattr(model_executor, "get_optimizer")()
             )
-        if hasattr(model_executor, "get_lr_scheduler "):
+        if hasattr(model_executor, "get_lr_scheduler"):
             get_logger().info(
-                "lr_scheduler is %s", getattr(model_executor, "get_lr_scheduler ")()
+                "lr_scheduler is %s", getattr(model_executor, "get_lr_scheduler")()
             )
