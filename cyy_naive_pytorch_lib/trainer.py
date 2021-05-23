@@ -40,7 +40,7 @@ class Trainer(ModelExecutor):
         self.__metric_tb.append_to_model_executor(self)
         self.__save_model_hook = SaveModelHook()
         self.__save_dir = None
-        self.__debugger=None
+        self.__debugger = None
         self.set_save_dir(save_dir)
 
     def set_save_dir(self, save_dir):
@@ -129,18 +129,12 @@ class Trainer(ModelExecutor):
         if self.debugging_mode:
             get_logger().warning("train in debugging mode")
             if self.__debugger is None:
-                self.__debugger=TrainerDebugger()
+                self.__debugger = TrainerDebugger()
                 self.__debugger.append_to_model_executor(self)
         else:
             if self.__debugger is not None:
                 self.__debugger.remove_from_model_executor(self)
-            self.__debugger=None
-
-        if not kwargs.get("keep_lr_scheduler",False):
-            self.remove_optimizer()
-            self.remove_lr_scheduler()
-        else:
-            get_logger().warning("keep lr scheduler")
+            self.__debugger = None
 
         self.__save_model_hook.remove_from_model_executor(self)
         if kwargs.get("save_model", True) and self.__save_dir is not None:
