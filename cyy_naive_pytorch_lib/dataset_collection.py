@@ -7,6 +7,7 @@ from typing import Callable, Dict, List
 
 import torch
 import torchaudio
+import torchtext
 import torchvision
 import torchvision.transforms as transforms
 from cyy_naive_lib.log import get_logger
@@ -144,6 +145,8 @@ class DatasetCollection:
         repositories = []
         if dataset_type == DatasetType.Vision:
             repositories = [torchvision.datasets, local_vision_datasets]
+        elif dataset_type == DatasetType.Text:
+            repositories = [torchtext.datasets]
         elif dataset_type == DatasetType.Audio:
             repositories = [torchaudio.datasets, local_audio_datasets]
         datasets = dict()
