@@ -31,31 +31,15 @@ class Trainer(ModelExecutor):
             dataset_collection,
             MachineLearningPhase.Training,
             hyper_parameter,
+            save_dir=save_dir
         )
         LearningRateHook().append_to_model_executor(self)
         self.__inferencers: dict = dict()
         self.__batch_loss_logger = BatchLossLogger()
         self.__batch_loss_logger.append_to_model_executor(self)
-        self.__metric_tb: MetricTensorBoard = MetricTensorBoard()
-        self.__metric_tb.append_to_model_executor(self)
         self.__save_model_hook = SaveModelHook()
-        self.__save_dir = None
         self.__debugger = None
-        self.set_save_dir(save_dir)
 
-    def set_save_dir(self, save_dir):
-        self.__save_dir = save_dir
-        log_dir = os.path.join(save_dir, "visualizer")
-        os.makedirs(log_dir, exist_ok=True)
-        self.__metric_tb.set_log_dir(log_dir)
-
-    @property
-    def save_dir(self):
-        return self.__save_dir
-
-    @property
-    def visualizer(self):
-        return self.__metric_tb
 
     @property
     def batch_loss_logger(self):
