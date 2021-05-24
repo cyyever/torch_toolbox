@@ -41,13 +41,20 @@ class DatasetFilter:
 class DatasetMapper:
     def __init__(self, dataset: torch.utils.data.Dataset, mappers: Iterable[Callable]):
         self.__dataset = dataset
-        self.__mappers = mappers
+        self.__mappers = list(mappers)
+
+    @property
+    def dataset(self):
+        return self.__dataset
 
     def __getitem__(self, index):
         item = self.__dataset.__getitem__(index)
         for mapper in self.__mappers:
             item = mapper(index, item)
         return item
+
+    def add_mapper(self, mapper: Callable):
+        self.__mappers.append(mapper)
 
     def __len__(self):
         return len(self.__dataset)

@@ -1,13 +1,14 @@
 import copy
+import os
 from typing import Callable, Dict, List
 
 import torch
-from cyy_naive_lib.log import get_logger
 
 from dataset_collection import DatasetCollection
 from device import get_device
 from hooks.model_executor_logger import ModelExecutorLogger
 from hyper_parameter import HyperParameter
+from metric_visualizers.metric_tensorboard import MetricTensorBoard
 from metric_visualizers.performance_metric_logger import \
     PerformanceMetricLogger
 from metrics.performance_metric import PerformanceMetric
@@ -22,6 +23,7 @@ class ModelExecutor:
         dataset_collection: DatasetCollection,
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
+        save_dir=None,
     ):
         self.__model_with_loss = model_with_loss
         self.__dataset_collection: DatasetCollection = dataset_collection
@@ -34,6 +36,8 @@ class ModelExecutor:
         self.__stripable_hooks: set = set()
         self.__disabled_hooks: set = set()
 
+        self.__metric_tb: MetricTensorBoard = MetricTensorBoard()
+        self.__metric_tb.append_to_model_executor(self)
         self.__logger = ModelExecutorLogger()
         self.__logger.append_to_model_executor(self)
         self.__performance_metric = PerformanceMetric()
@@ -41,6 +45,12 @@ class ModelExecutor:
         self.__performance_metric_logger = PerformanceMetricLogger()
         self.__performance_metric_logger.append_to_model_executor(self)
         self.debugging_mode = False
+        self.__save_dir = None
+        self.set_save_dir(save_dir)
+
+    @property
+    def visualizer(self):
+        return self.__metric_tb
 
     @property
     def phase(self):
@@ -53,6 +63,16 @@ class ModelExecutor:
     @property
     def performance_metric_logger(self):
         return self.__performance_metric_logger
+
+    def set_save_dir(self, save_dir):
+        self.__save_dir = save_dir
+        log_dir = os.path.join(save_dir, "visualizer")
+        os.makedirs(log_dir, exist_ok=True)
+        self.__metric_tb.set_log_dir(log_dir)
+
+    @property
+    def save_dir(self):
+        return self.__save_dir
 
     def remove_logger(self):
         if self.__logger is not None:
