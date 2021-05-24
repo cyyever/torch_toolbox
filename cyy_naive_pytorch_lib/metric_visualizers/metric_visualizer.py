@@ -1,7 +1,7 @@
-from hook import Callback
+from hook import Hook
 
 
-class MetricVisualizer(Callback):
+class MetricVisualizer(Hook):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.__session_name = None

@@ -1,10 +1,10 @@
 import tracemalloc
 
 from cyy_naive_lib.log import get_logger
-from hook import Callback
+from hook import Hook
 
 
-class MemoryTracker(Callback):
+class MemoryTracker(Hook):
     def _after_epoch(self, **kwargs):
         snapshot = tracemalloc.take_snapshot()
         top_stats = snapshot.statistics("lineno")

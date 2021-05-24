@@ -1,10 +1,10 @@
 import torch
 
-from hook import Callback
+from hook import Hook
 from ml_type import StopExecutingException
 
 
-class LRFinder(Callback):
+class LRFinder(Hook):
     "Training with exponentially growing learning rate, coped from fastai"
 
     def __init__(self, start_lr=1e-7, end_lr=10, epoch=2, stop_div=True):

@@ -1,7 +1,7 @@
-from hook import Callback
+from hook import Hook
 
 
-class Metric(Callback):
+class Metric(Hook):
     def __init__(self):
         super().__init__()
         self.__epoch_metrics: dict = dict()

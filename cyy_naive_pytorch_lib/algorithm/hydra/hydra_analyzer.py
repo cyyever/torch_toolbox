@@ -5,7 +5,7 @@ from algorithm.sample_gradient.sample_gradient_util import \
 from data_structure.synced_tensor_dict import SyncedTensorDict
 from inference import Inferencer
 
-from .hydra_callback import HyDRACallback
+from .hydra_hook import HyDRAHook
 
 
 class HyDRAAnalyzer:
@@ -17,7 +17,7 @@ class HyDRAAnalyzer:
         cache_size=1024,
     ):
         self.inferencer: Inferencer = inferencer
-        self.hydra_gradient = HyDRACallback.create_hypergradient_dict(
+        self.hydra_gradient = HyDRAHook.create_hypergradient_dict(
             cache_size, self.inferencer.model, storage_dir=hyper_gradient_dir
         )
         self.cache_size = cache_size
@@ -26,7 +26,7 @@ class HyDRAAnalyzer:
     def get_subset_contributions(
         self, training_subset_dict: dict, test_subset_dict: dict
     ) -> dict:
-        hyper_gradient_sum_dict = HyDRACallback.create_hypergradient_dict(
+        hyper_gradient_sum_dict = HyDRAHook.create_hypergradient_dict(
             self.cache_size, self.inferencer.model
         )
         hyper_gradient_sum_dict.set_storage_dir(tempfile.gettempdir())

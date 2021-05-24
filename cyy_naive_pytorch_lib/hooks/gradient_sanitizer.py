@@ -1,7 +1,7 @@
-from hook import Callback
+from hook import Hook
 
 
-class GradientSanitizer(Callback):
+class GradientSanitizer(Hook):
     def _before_batch(self, **kwargs):
         batch_index = kwargs["batch_index"]
         if batch_index % 100 != 0:

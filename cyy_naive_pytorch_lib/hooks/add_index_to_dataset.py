@@ -1,8 +1,8 @@
-from hook import Callback
+from hook import Hook
 from dataset import dataset_with_indices
 
 
-class AddIndexToDataset(Callback):
+class AddIndexToDataset(Hook):
     def __init__(self):
         super().__init__()
         self.__raw_dataset = None

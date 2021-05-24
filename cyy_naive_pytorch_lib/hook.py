@@ -1,7 +1,7 @@
 from ml_type import ModelExecutorHookPoint
 
 
-class Callback:
+class Hook:
     def append_to_model_executor(self, model_executor):
         for cb_point, name, method in self.__yield_hooks():
             model_executor.append_hook(cb_point, name, method)
