@@ -2,9 +2,8 @@ import datetime
 import threading
 
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
-from torch.utils.tensorboard import SummaryWriter
-
 from ml_type import MachineLearningPhase
+from torch.utils.tensorboard import SummaryWriter
 
 from .metric_visualizer import MetricVisualizer
 
@@ -14,9 +13,16 @@ class MetricTensorBoard(MetricVisualizer):
         super().__init__(**kwargs)
         self.__writer = None
         self.__log_dir = None
+        self.__enable = True
 
     def set_log_dir(self, log_dir: str):
         self.__log_dir = log_dir
+
+    def enable(self):
+        self.__enable = True
+
+    def disable(self):
+        self.__enable = False
 
     def close(self):
         if self.__writer is not None:
@@ -26,6 +32,13 @@ class MetricTensorBoard(MetricVisualizer):
     def set_session_name(self, name: str):
         super().set_session_name(name)
         self.close()
+
+    @property
+    def writer(self):
+        if self.__writer is None:
+            assert self.session_name
+            self.__writer = SummaryWriter(self.__log_dir + "/" + self.session_name)
+        return self.__writer
 
     def _before_execute(self, **kwargs):
         trainer = kwargs["model_executor"]
@@ -44,16 +57,14 @@ class MetricTensorBoard(MetricVisualizer):
     def __del__(self):
         self.close()
 
-    @property
-    def writer(self):
-        if self.__writer is None:
-            assert self.session_name
-            self.__writer = SummaryWriter(self.__log_dir + "/" + self.session_name)
-        return self.__writer
-
     def _after_epoch(self, **kwargs):
+        if not self.__enable:
+            return
         trainer = kwargs["model_executor"]
         epoch = kwargs["epoch"]
+
+        if not trainer.has_data("cur_learning_rates"):
+            return
         learning_rates = trainer.get_data("cur_learning_rates")
         assert len(learning_rates) == 1
         self.writer.add_scalar(

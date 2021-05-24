@@ -37,7 +37,6 @@ class ModelExecutor:
         self.__disabled_hooks: set = set()
 
         self.__metric_tb: MetricTensorBoard = MetricTensorBoard()
-        self.__metric_tb.append_to_model_executor(self)
         self.__logger = ModelExecutorLogger()
         self.__logger.append_to_model_executor(self)
         self.__performance_metric = PerformanceMetric()
@@ -46,7 +45,8 @@ class ModelExecutor:
         self.__performance_metric_logger.append_to_model_executor(self)
         self.debugging_mode = False
         self.__save_dir = None
-        self.set_save_dir(save_dir)
+        if save_dir is not None:
+            self.set_save_dir(save_dir)
 
     @property
     def visualizer(self):
@@ -64,7 +64,7 @@ class ModelExecutor:
     def performance_metric_logger(self):
         return self.__performance_metric_logger
 
-    def set_save_dir(self, save_dir):
+    def set_save_dir(self, save_dir: str):
         self.__save_dir = save_dir
         log_dir = os.path.join(save_dir, "visualizer")
         os.makedirs(log_dir, exist_ok=True)

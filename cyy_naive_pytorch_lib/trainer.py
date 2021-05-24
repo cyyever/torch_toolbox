@@ -1,5 +1,4 @@
 import copy
-import os
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -11,7 +10,6 @@ from hooks.trainer_debugger import TrainerDebugger
 from hyper_parameter import HyperParameter
 from inference import ClassificationInferencer, DetectionInferencer, Inferencer
 from metric_visualizers.batch_loss_logger import BatchLossLogger
-from metric_visualizers.metric_tensorboard import MetricTensorBoard
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorHookPoint
 from model_util import ModelUtil
@@ -31,15 +29,15 @@ class Trainer(ModelExecutor):
             dataset_collection,
             MachineLearningPhase.Training,
             hyper_parameter,
-            save_dir=save_dir
+            save_dir=save_dir,
         )
         LearningRateHook().append_to_model_executor(self)
         self.__inferencers: dict = dict()
         self.__batch_loss_logger = BatchLossLogger()
         self.__batch_loss_logger.append_to_model_executor(self)
         self.__save_model_hook = SaveModelHook()
+        self.visualizer.append_to_model_executor(self)
         self.__debugger = None
-
 
     @property
     def batch_loss_logger(self):
@@ -121,7 +119,7 @@ class Trainer(ModelExecutor):
             self.__debugger = None
 
         self.__save_model_hook.remove_from_model_executor(self)
-        if kwargs.get("save_model", True) and self.__save_dir is not None:
+        if kwargs.get("save_model", True) and self.save_dir is not None:
             self.__save_model_hook.append_to_model_executor(self)
         self.__inferencers.clear()
         for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):

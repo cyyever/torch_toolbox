@@ -53,6 +53,7 @@ class HyperParameter:
             get_logger().warning("guess lr")
             tmp_trainer = copy.deepcopy(trainer)
             tmp_trainer.remove_logger()
+            tmp_trainer.visualizer.disable()
             tmp_trainer.disable_stripable_hooks()
             lr_finder = LRFinder()
             lr_finder.prepend_to_model_executor(tmp_trainer)
