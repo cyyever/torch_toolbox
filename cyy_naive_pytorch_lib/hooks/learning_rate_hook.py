@@ -1,7 +1,7 @@
-from hook import Callback
+from hook import Hook
 
 
-class LearningRateHook(Callback):
+class LearningRateHook(Hook):
     def _before_batch(self, **kwargs):
         model_executor = kwargs["model_executor"]
         model_executor.set_data(

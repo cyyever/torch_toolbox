@@ -9,14 +9,14 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.time_counter import TimeCounter
 
 from algorithm.hessian_vector_product import get_hessian_vector_product_func
-from algorithm.sample_gradient.sample_gradient_callback import \
-    SampleGradientCallback
+from algorithm.sample_gradient.sample_gradient_hook import \
+    SampleGradientHook
 from data_structure.synced_tensor_dict import SyncedTensorDict
 from ml_type import MachineLearningPhase
 from model_util import ModelUtil
 
 
-class HyDRACallback(SampleGradientCallback):
+class HyDRAHook(SampleGradientHook):
     def __init__(self, cache_size, save_dir, **kwargs):
         super().__init__()
         self.cache_size = cache_size
@@ -52,7 +52,7 @@ class HyDRACallback(SampleGradientCallback):
         if self.use_hessian:
             get_logger().info("use hessian to compute hyper-gradients")
             self.hessian_hyper_gradient_mom_dict = (
-                HyDRACallback.create_hypergradient_dict(
+                HyDRAHook.create_hypergradient_dict(
                     self.cache_size,
                     trainer.model,
                     storage_dir=self.hessian_hyper_gradient_and_momentum_dir,
@@ -64,7 +64,7 @@ class HyDRACallback(SampleGradientCallback):
             )
         if self.use_approximation:
             self.approx_hyper_gradient_mom_dict = (
-                HyDRACallback.create_hypergradient_dict(
+                HyDRAHook.create_hypergradient_dict(
                     self.cache_size,
                     trainer.model,
                     storage_dir=self.approx_hyper_gradient_and_momentum_dir,

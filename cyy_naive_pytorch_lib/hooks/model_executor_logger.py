@@ -1,9 +1,9 @@
-from hook import Callback
+from hook import Hook
 from cyy_naive_lib.log import get_logger
 from model_util import ModelUtil
 
 
-class ModelExecutorLogger(Callback):
+class ModelExecutorLogger(Hook):
     def _before_execute(self, **kwargs):
         model_executor = kwargs["model_executor"]
         model_util = ModelUtil(model_executor.model)

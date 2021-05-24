@@ -5,12 +5,12 @@ from cyy_naive_lib.log import get_logger
 from torch.quantization.fuser_method_mappings import \
     DEFAULT_OP_LIST_TO_FUSER_METHOD
 
-from hook import Callback
+from hook import Hook
 from model_util import ModelUtil
 from trainer import Trainer
 
 
-class QuantizationAwareTraining(Callback):
+class QuantizationAwareTraining(Hook):
     """
     Quantization-aware training
     """

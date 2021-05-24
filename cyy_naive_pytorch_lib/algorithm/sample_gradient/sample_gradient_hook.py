@@ -6,7 +6,7 @@ from hooks.add_index_to_dataset import AddIndexToDataset
 from .sample_gradient import get_sample_gradient
 
 
-class SampleGradientCallback(AddIndexToDataset):
+class SampleGradientHook(AddIndexToDataset):
     def __init__(self, *args, **kwargs):
         storage_dir = kwargs.pop("storage_dir", None)
         super().__init__(*args, **kwargs)

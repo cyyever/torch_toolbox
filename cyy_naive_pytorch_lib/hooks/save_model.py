@@ -1,11 +1,11 @@
 import os
 import shutil
 
-from hook import Callback
+from hook import Hook
 from ml_type import MachineLearningPhase
 
 
-class SaveModelHook(Callback):
+class SaveModelHook(Hook):
     def __init__(self):
         super().__init__()
         self.__best_epoch = None
