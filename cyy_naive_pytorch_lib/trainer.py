@@ -113,7 +113,7 @@ class Trainer(ModelExecutor):
             get_logger().warning("train in debugging mode")
             if self.__debugger is None:
                 self.__debugger = TrainerDebugger()
-                self.__debugger.append_to_model_executor(self)
+                self.append_hook(self.__debugger)
             else:
                 self.enable_hook(self.__debugger)
         else:

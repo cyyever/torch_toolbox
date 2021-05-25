@@ -8,5 +8,5 @@ def test_training():
     trainer.hyper_parameter.set_epoch(1)
     trainer.hyper_parameter.set_learning_rate(0.01)
     qat = QuantizationAwareTraining()
-    qat.append_to_model_executor(trainer)
+    trainer.append_hook(qat)
     trainer.train()

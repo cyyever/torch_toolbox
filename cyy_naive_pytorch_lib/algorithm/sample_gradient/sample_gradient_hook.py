@@ -7,9 +7,9 @@ from .sample_gradient import get_sample_gradient
 
 
 class SampleGradientHook(AddIndexToDataset):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         storage_dir = kwargs.pop("storage_dir", None)
-        super().__init__(*args, **kwargs)
+        super().__init__(**kwargs)
         self.__computed_indices = None
         self.__sample_gradient_dict = SyncedTensorDict.create()
         self.__storage_dir = storage_dir

@@ -40,7 +40,7 @@ class ModelExecutor:
         self.__metric_tb: MetricTensorBoard = MetricTensorBoard()
         self.__logger = ModelExecutorLogger()
         self.append_hook(self.__logger)
-        self.__performance_metric = PerformanceMetric()
+        self.__performance_metric = PerformanceMetric(self.model_with_loss.model_type)
         self.append_hook(self.__performance_metric)
         self.__performance_metric_logger = PerformanceMetricLogger()
         self.append_hook(self.__performance_metric_logger)

@@ -1,7 +1,7 @@
-from hook import Hook
+from hook import ComposeHook, Hook
 
 
-class Metric(Hook):
+class Metric(ComposeHook):
     def __init__(self):
         super().__init__()
         self.__epoch_metrics: dict = dict()

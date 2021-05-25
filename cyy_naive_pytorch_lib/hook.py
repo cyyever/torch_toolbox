@@ -16,7 +16,7 @@ class Hook:
         for _, name, __ in self.yield_hooks():
             yield name
 
-    def __get_hook(self, cb_point):
+    def _get_hook(self, cb_point):
         method_name = "_" + str(cb_point).split(".")[-1].lower()
         name = self.__class__.__name__ + "." + str(method_name)
         if hasattr(self, method_name):
@@ -25,6 +25,19 @@ class Hook:
 
     def yield_hooks(self):
         for cb_point in ModelExecutorHookPoint:
-            res = self.__get_hook(cb_point)
+            res = self._get_hook(cb_point)
+            if res is not None:
+                yield res
+
+
+class ComposeHook(Hook):
+    def yield_hooks(self):
+        components = [c for c in dir(self) if isinstance(c, Hook)]
+        for cb_point in ModelExecutorHookPoint:
+            for c in components:
+                res = c._get_hook(cb_point)
+                if res is not None:
+                    yield res
+            res = super()._get_hook(cb_point)
             if res is not None:
                 yield res
