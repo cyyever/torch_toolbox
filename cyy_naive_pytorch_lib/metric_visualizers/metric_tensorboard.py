@@ -29,6 +29,15 @@ class MetricTensorBoard(MetricVisualizer):
             self.__writer.close()
             self.__writer = None
 
+    def set_session_name_by_model_executor(self, model_executor):
+        self.set_session_name(
+            "training_"
+            + str(model_executor.model.__class__.__name__)
+            + "_"
+            + str(threading.get_native_id())
+            + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
+        )
+
     def set_session_name(self, name: str):
         super().set_session_name(name)
         self.close()
@@ -41,15 +50,9 @@ class MetricTensorBoard(MetricVisualizer):
         return self.__writer
 
     def _before_execute(self, **kwargs):
-        trainer = kwargs["model_executor"]
+        model_executor = kwargs["model_executor"]
         if self.session_name is None:
-            self.set_session_name(
-                "training_"
-                + str(trainer.model.__class__.__name__)
-                + "_"
-                + str(threading.get_native_id())
-                + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
-            )
+            self.set_session_name_by_model_executor(model_executor)
 
     def get_tag_name(self, title: str):
         return self.session_name + "/" + title

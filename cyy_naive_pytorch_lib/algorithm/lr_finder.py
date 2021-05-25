@@ -1,5 +1,4 @@
 import torch
-
 from hook import Hook
 from ml_type import StopExecutingException
 
@@ -35,6 +34,8 @@ class LRFinder(Hook):
         learning_rate = self.lr_getter(self.batch_index / (self.total_batch_num - 1))
         self.learning_rates.append(learning_rate)
         visualizer = trainer.visualizer
+        if visualizer.session_name is None:
+            visualizer.set_session_name_by_model_executor(trainer)
         visualizer.writer.add_scalar(
             visualizer.get_tag_name("LRFinder learning rate"),
             learning_rate,

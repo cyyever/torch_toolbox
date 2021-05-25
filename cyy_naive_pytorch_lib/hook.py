@@ -32,7 +32,9 @@ class Hook:
 
 class ComposeHook(Hook):
     def yield_hooks(self):
-        components = [c for c in dir(self) if isinstance(c, Hook)]
+        components = [
+            getattr(self, c) for c in dir(self) if isinstance(getattr(self, c), Hook)
+        ]
         for cb_point in ModelExecutorHookPoint:
             for c in components:
                 res = c._get_hook(cb_point)
