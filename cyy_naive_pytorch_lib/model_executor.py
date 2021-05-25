@@ -91,8 +91,7 @@ class ModelExecutor:
     @property
     def dataloader(self):
         return self.dataset_collection.get_dataloader(
-            self.__phase,
-            self.__hyper_parameter,
+            self.__phase, self.__hyper_parameter, device=self.device
         )
 
     @property
@@ -242,20 +241,22 @@ class ModelExecutor:
         torch.save(self.model.state_dict(), model_path)
 
     def decode_batch(self, batch, device=None):
-        if device is None:
-            device = self.device
+        if hasattr(batch, "text"):
+            return (getattr(batch, "text"), getattr(batch, "label"), {})
         sample_inputs = batch[0]
         sample_targets = batch[1]
         if len(batch) == 3:
             return (sample_inputs, sample_targets, batch[2])
         return (sample_inputs, sample_targets, {})
 
-    def get_batch_size(self, targets):
-        if isinstance(targets, torch.Tensor):
-            return targets.shape[0]
-        if isinstance(targets, list):
-            return len(targets)
-        raise RuntimeError("invalid targets:" + str(targets))
+    def get_batch_size(self, batch):
+        if isinstance(batch, tuple):
+            return self.get_batch_size(batch[0])
+        if isinstance(batch, torch.Tensor):
+            return batch.shape[0]
+        if isinstance(batch, list):
+            return len(batch)
+        raise RuntimeError("invalid batch:" + str(batch))
 
     def offload_from_gpu(self):
         self.model.cpu()

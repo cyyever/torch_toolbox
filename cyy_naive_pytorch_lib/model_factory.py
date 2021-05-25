@@ -67,12 +67,16 @@ def get_model(
 
     dataset_util = dataset_collection.get_dataset_util()
     added_kwargs = {
-        "input_channels": dataset_util.channel,
-        "channels": dataset_util.channel,
         "num_classes": len(dataset_collection.get_labels()),
     }
+    if dataset_collection.dataset_type == DatasetType.Vision:
+        added_kwargs |= {
+            "input_channels": dataset_util.channel,
+            "channels": dataset_util.channel,
+        }
     if dataset_collection.dataset_type == DatasetType.Text:
         added_kwargs["num_embeddings"] = len(dataset_collection.text_field.vocab)
+
     model_type = ModelType.Classification
     # FIXME: use more robust method to determine detection models
     if "rcnn" in name.lower():
