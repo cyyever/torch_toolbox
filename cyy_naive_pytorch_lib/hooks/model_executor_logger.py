@@ -1,9 +1,12 @@
-from hook import Hook
 from cyy_naive_lib.log import get_logger
+from hook import Hook
 from model_util import ModelUtil
 
 
 class ModelExecutorLogger(Hook):
+    def __init__(self):
+        super().__init__(stripable=True)
+
     def _before_execute(self, **kwargs):
         model_executor = kwargs["model_executor"]
         model_util = ModelUtil(model_executor.model)
