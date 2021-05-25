@@ -2,37 +2,18 @@ from ml_type import ModelExecutorHookPoint
 
 
 class Hook:
-    def append_to_model_executor(self, model_executor):
-        for cb_point, name, method in self.__yield_hooks():
-            model_executor.append_hook(cb_point, name, method)
+    def __init__(self, stripable=False):
+        self.__stripable = stripable
 
-    def prepend_to_model_executor(self, model_executor):
-        for cb_point, name, method in self.__yield_hooks():
-            model_executor.prepend_hook(cb_point, name, method)
+    @property
+    def stripable(self):
+        return self.__stripable
 
-    def prepend_to_model_executor_before_other_hook(
-        self, model_executor, other_hook
-    ):
-        for cb_point, name, method in self.__yield_hooks():
-            res = other_hook.__get_hook(cb_point)
-            if res is None:
-                model_executor.prepend_hook(cb_point, name, method)
-            else:
-                other_name = res[1]
-                model_executor.prepend_before_other_hook(
-                    cb_point, name, method, other_name
-                )
+    def set_stripable(self):
+        self.__stripable = True
 
-    def set_stripable(self, model_executor):
-        for name in self.__yield_hook_names():
-            model_executor.set_stripable_hook(name)
-
-    def remove_from_model_executor(self, model_executor):
-        for name in self.__yield_hook_names():
-            model_executor.remove_hook(name)
-
-    def __yield_hook_names(self):
-        for _, name, __ in self.__yield_hooks():
+    def yield_hook_names(self):
+        for _, name, __ in self.yield_hooks():
             yield name
 
     def __get_hook(self, cb_point):
@@ -42,7 +23,7 @@ class Hook:
             return (cb_point, name, getattr(self, method_name))
         return None
 
-    def __yield_hooks(self):
+    def yield_hooks(self):
         for cb_point in ModelExecutorHookPoint:
             res = self.__get_hook(cb_point)
             if res is not None:

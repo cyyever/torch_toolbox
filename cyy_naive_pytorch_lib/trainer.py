@@ -31,12 +31,13 @@ class Trainer(ModelExecutor):
             hyper_parameter,
             save_dir=save_dir,
         )
-        LearningRateHook().append_to_model_executor(self)
+        self.append_hook(LearningRateHook())
         self.__inferencers: dict = dict()
         self.__batch_loss_logger = BatchLossLogger()
-        self.__batch_loss_logger.append_to_model_executor(self)
+        self.append_hook(self.__batch_loss_logger)
         self.__save_model_hook = SaveModelHook()
-        self.visualizer.append_to_model_executor(self)
+        self.append_hook(self.__save_model_hook)
+        self.append_hook(self.visualizer)
         self.__debugger = None
 
     @property
@@ -113,14 +114,15 @@ class Trainer(ModelExecutor):
             if self.__debugger is None:
                 self.__debugger = TrainerDebugger()
                 self.__debugger.append_to_model_executor(self)
+            else:
+                self.enable_hook(self.__debugger)
         else:
             if self.__debugger is not None:
-                self.__debugger.remove_from_model_executor(self)
-            self.__debugger = None
+                self.disable_hook(self.__debugger)
 
-        self.__save_model_hook.remove_from_model_executor(self)
+        self.disable_hook(self.__save_model_hook)
         if kwargs.get("save_model", True) and self.save_dir is not None:
-            self.__save_model_hook.append_to_model_executor(self)
+            self.enable_hook(self.__save_model_hook)
         self.__inferencers.clear()
         for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
             self.__inferencers[phase] = self.get_inferencer(phase)

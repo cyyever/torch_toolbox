@@ -85,12 +85,12 @@ class ClassificationInferencer(Inferencer):
     def inference(self, **kwargs):
         sample_prob = kwargs.get("sample_prob", False)
         if sample_prob:
-            self.__prob_metric = ProbabilityMetric()
-            self.__prob_metric.append_to_model_executor(self)
+            if self.__prob_metric is None:
+                self.__prob_metric = ProbabilityMetric()
+                self.append_hook(self.__prob_metric)
         else:
             if self.__prob_metric is not None:
-                self.__prob_metric.remove_from_model_executor(self)
-                self.__prob_metric = None
+                self.disable_hook(self.__prob_metric)
         super().inference(**kwargs)
 
 
