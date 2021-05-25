@@ -6,7 +6,7 @@ import torchvision
 from cyy_naive_lib.log import get_logger
 
 from dataset_collection import DatasetCollection
-from ml_type import ModelType
+from ml_type import DatasetType, ModelType
 from model_with_loss import ModelWithLoss
 
 
@@ -71,6 +71,8 @@ def get_model(
         "channels": dataset_util.channel,
         "num_classes": len(dataset_collection.get_labels()),
     }
+    if dataset_collection.dataset_type == DatasetType.Text:
+        added_kwargs["num_embeddings"] = len(dataset_collection.text_field.vocab)
     model_type = ModelType.Classification
     # FIXME: use more robust method to determine detection models
     if "rcnn" in name.lower():

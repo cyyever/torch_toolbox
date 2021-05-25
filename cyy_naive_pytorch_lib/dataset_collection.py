@@ -27,7 +27,10 @@ class DatasetCollection:
         training_dataset: torch.utils.data.Dataset,
         validation_dataset: torch.utils.data.Dataset,
         test_dataset: torch.utils.data.Dataset,
-        name=None,
+        dataset_type: DatasetType,
+        name,
+        text_field=None,
+        label_field=None,
     ):
         assert training_dataset is not None
         assert validation_dataset is not None
@@ -41,7 +44,17 @@ class DatasetCollection:
         ] = dict()
         for k, v in self.__datasets.items():
             self.__origin_datasets[k] = v
+        self.__dataset_type = dataset_type
         self.__name = name
+        self.__text_field = text_field
+        self.__label_field = label_field
+
+    @property
+    def dataset_type(self):
+        return self.__dataset_type
+    @property
+    def text_field(self):
+        return self.__text_field
 
     def set_origin_dataset(self, phase: MachineLearningPhase, dataset):
         self.__origin_datasets[phase] = dataset
@@ -207,6 +220,8 @@ class DatasetCollection:
             dataset_kwargs[k] = v
         sig = inspect.signature(dataset_constructor)
 
+        text_field = None
+        label_field = None
         if name == "IMDB":
             assert dataset_type == DatasetType.Text
             text_field, label_field = get_text_and_label_fields()
@@ -278,7 +293,15 @@ class DatasetCollection:
                     validation_dataset,
                     test_dataset,
                 ) = DatasetCollection.__split_for_validation(cache_dir, splited_dataset)
-        dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
+        dc = DatasetCollection(
+            training_dataset,
+            validation_dataset,
+            test_dataset,
+            dataset_type,
+            name,
+            text_field,
+            label_field,
+        )
         if splited_dataset is not None:
             dc.set_origin_dataset(MachineLearningPhase.Validation, splited_dataset)
             dc.set_origin_dataset(MachineLearningPhase.Test, splited_dataset)
