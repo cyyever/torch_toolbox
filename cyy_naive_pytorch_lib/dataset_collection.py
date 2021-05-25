@@ -52,6 +52,7 @@ class DatasetCollection:
     @property
     def dataset_type(self):
         return self.__dataset_type
+
     @property
     def text_field(self):
         return self.__text_field
@@ -94,16 +95,21 @@ class DatasetCollection:
             DatasetUtil(dataset).prepend_transform(transform)
 
     def get_dataloader(
-        self,
-        phase: MachineLearningPhase,
-        hyper_parameter: HyperParameter,
+        self, phase: MachineLearningPhase, hyper_parameter: HyperParameter, device=None
     ):
         dataset = self.get_dataset(phase)
-        return torch.utils.data.DataLoader(
-            dataset,
+        if self.dataset_type != DatasetType.Text:
+            return torch.utils.data.DataLoader(
+                dataset,
+                batch_size=hyper_parameter.batch_size,
+                shuffle=(phase == MachineLearningPhase.Training),
+            )
+        return torchtext.legacy.data.BucketIterator.splits(
+            [dataset],
             batch_size=hyper_parameter.batch_size,
             shuffle=(phase == MachineLearningPhase.Training),
-        )
+            device=device,
+        )[0]
 
     @property
     def name(self):
@@ -325,8 +331,7 @@ class DatasetCollection:
         get_logger().info("test_dataset len %s", len(test_dataset))
 
         if dataset_type == DatasetType.Text:
-            MAX_VOCAB_SIZE = 25000
-            text_field.build_vocab(training_dataset, max_size=MAX_VOCAB_SIZE)
+            text_field.build_vocab(training_dataset, max_size=25000)
             label_field.build_vocab(training_dataset)
 
         if dataset_type == DatasetType.Vision:
