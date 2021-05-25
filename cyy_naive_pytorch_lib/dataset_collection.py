@@ -109,7 +109,9 @@ class DatasetCollection:
         if hasattr(self.get_training_dataset(), "classes"):
             return getattr(self.get_training_dataset(), "classes")
 
-        vision_dataset_cls = DatasetCollection.get_dataset_cls(DatasetType.Vision)
+        vision_dataset_cls = DatasetCollection.get_dataset_constructor(
+            DatasetType.Vision
+        )
         if self.name not in vision_dataset_cls:
             get_logger().error("supported datasets are %s", vision_dataset_cls.keys())
             raise NotImplementedError(self.name)
@@ -141,7 +143,7 @@ class DatasetCollection:
         return cache_dir
 
     @staticmethod
-    def get_dataset_cls(dataset_type: DatasetType):
+    def get_dataset_constructor(dataset_type: DatasetType):
         repositories = []
         if dataset_type == DatasetType.Vision:
             repositories = [torchvision.datasets, local_vision_datasets]
@@ -152,11 +154,15 @@ class DatasetCollection:
         datasets = dict()
         for repository in repositories:
             for name in dir(repository):
-                dataset_class = getattr(repository, name)
-                if not inspect.isclass(dataset_class):
+                dataset_constructor = getattr(repository, name)
+                if dataset_type == DatasetType.Text:
+                    if hasattr(dataset_constructor, "root"):
+                        datasets[name] = dataset_constructor
+                        continue
+                if not inspect.isclass(dataset_constructor):
                     continue
-                if issubclass(dataset_class, torch.utils.data.Dataset):
-                    datasets[name] = dataset_class
+                if issubclass(dataset_constructor, torch.utils.data.Dataset):
+                    datasets[name] = dataset_constructor
         return datasets
 
     @staticmethod
@@ -164,20 +170,22 @@ class DatasetCollection:
         if name in DatasetCollection.__dataset_collections:
             return DatasetCollection.__dataset_collections[name]
 
-        all_dataset_cls = set()
+        all_dataset_constructors = set()
         for dataset_type in DatasetType:
-            dataset_cls = DatasetCollection.get_dataset_cls(dataset_type)
-            if name in dataset_cls:
+            dataset_constructor = DatasetCollection.get_dataset_constructor(
+                dataset_type
+            )
+            if name in dataset_constructor:
                 return DatasetCollection.__create_dataset_collection(
-                    name, dataset_type, dataset_cls[name], **kwargs
+                    name, dataset_type, dataset_constructor[name], **kwargs
                 )
-            all_dataset_cls |= dataset_cls.keys()
-        get_logger().error("supported datasets are %s", all_dataset_cls)
+            all_dataset_constructors |= dataset_constructor.keys()
+        get_logger().error("supported datasets are %s", all_dataset_constructors)
         raise NotImplementedError(name)
 
     @staticmethod
     def __create_dataset_collection(
-        name: str, dataset_type: DatasetType, dataset_cls, **kwargs
+        name: str, dataset_type: DatasetType, dataset_constructor, **kwargs
     ):
         root_dir = DatasetCollection.get_dataset_dir(name)
         training_dataset = None
@@ -196,7 +204,7 @@ class DatasetCollection:
             if k in dataset_kwargs:
                 raise RuntimeError("key " + k + " is set by the library")
             dataset_kwargs[k] = v
-        sig = inspect.signature(dataset_cls)
+        sig = inspect.signature(dataset_constructor)
 
         for phase in MachineLearningPhase:
             while True:
@@ -210,7 +218,10 @@ class DatasetCollection:
                         if phase == MachineLearningPhase.Training:
                             dataset_kwargs["split"] = "train"
                         elif phase == MachineLearningPhase.Validation:
-                            dataset_kwargs["split"] = "val"
+                            if dataset_type == DatasetType.Text:
+                                dataset_kwargs["split"] = "valid"
+                            else:
+                                dataset_kwargs["split"] = "val"
                         else:
                             dataset_kwargs["split"] = "test"
                     if "subset" in sig.parameters:
@@ -220,7 +231,7 @@ class DatasetCollection:
                             dataset_kwargs["subset"] = "validation"
                         else:
                             dataset_kwargs["subset"] = "testing"
-                    dataset = dataset_cls(**dataset_kwargs)
+                    dataset = dataset_constructor(**dataset_kwargs)
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
                     elif phase == MachineLearningPhase.Validation:
