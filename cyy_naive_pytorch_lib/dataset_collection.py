@@ -230,13 +230,13 @@ class DatasetCollection:
                     break
                 except Exception as e:
                     raise e
-                    split = dataset_kwargs.get("split", None)
-                    if split is None:
-                        raise e
-                    if phase == MachineLearningPhase.Training:
-                        raise e
-                    # no validation dataset or test dataset
-                    break
+                    # split = dataset_kwargs.get("split", None)
+                    # if split is None:
+                    #     raise e
+                    # if phase == MachineLearningPhase.Training:
+                    #     raise e
+                    # # no validation dataset or test dataset
+                    # break
 
         cache_dir = DatasetCollection.get_dataset_cache_dir(name)
 
