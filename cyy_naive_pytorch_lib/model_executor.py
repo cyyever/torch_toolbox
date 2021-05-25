@@ -124,6 +124,7 @@ class ModelExecutor:
         return key in self.__data
 
     def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs):
+        print(self.__disabled_hooks)
         for o in self.__hooks.get(hook_point, []):
             for name, cb in o.items():
                 if name not in self.__disabled_hooks:
@@ -165,6 +166,7 @@ class ModelExecutor:
 
     def insert_hook(self, pos, hook: Hook):
         for hook_point, name, fun in hook.yield_hooks():
+            print("add callback", name)
             self.insert_callback(pos, hook_point, name, fun, hook.stripable)
 
     def append_hook(self, hook: Hook):

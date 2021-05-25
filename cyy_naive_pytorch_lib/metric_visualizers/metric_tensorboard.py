@@ -10,7 +10,7 @@ from .metric_visualizer import MetricVisualizer
 
 class MetricTensorBoard(MetricVisualizer):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(**kwargs, stripable=True)
         self.__writer = None
         self.__log_dir = None
         self.__enable = True

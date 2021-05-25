@@ -126,7 +126,7 @@ class Trainer(ModelExecutor):
         self.__inferencers.clear()
         for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
             self.__inferencers[phase] = self.get_inferencer(phase)
-            self.__inferencers[phase].remove_logger()
+            self.__inferencers[phase].disable_logger()
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE, model_executor=self)
 
         try:
