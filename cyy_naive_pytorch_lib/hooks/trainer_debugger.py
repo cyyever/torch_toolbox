@@ -1,11 +1,11 @@
-from hook import Hook
+from hook import ComposeHook, Hook
 
 from .gradient_sanitizer import GradientSanitizer
-from .memory_tracker import MemoryTracker
-#from cyy_naive_lib.log import get_logger
+
+# from .memory_tracker import MemoryTracker
 
 
-class TrainerDebugger(Hook):
-    def append_to_model_executor(self, model_executor):
-        GradientSanitizer().append_to_model_executor(model_executor)
-        #MemoryTracker().append_to_model_executor(model_executor)
+class TrainerDebugger(ComposeHook):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.gradient_sanitizer = GradientSanitizer()

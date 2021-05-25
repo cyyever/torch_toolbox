@@ -37,8 +37,7 @@ class HyDRAConfig(DefaultConfig):
             use_hessian=self.use_hessian,
             use_approximation=self.use_approximation,
         )
-        hydra_hook.append_to_model_executor(trainer)
-        hydra_hook.set_stripable(trainer)
+        trainer.append_hook(hydra_hook)
 
         if self.tracking_percentage is not None:
             subset_dict = DatasetUtil(trainer.dataset).iid_sample(
