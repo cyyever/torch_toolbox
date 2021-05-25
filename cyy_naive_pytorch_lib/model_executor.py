@@ -144,6 +144,15 @@ class ModelExecutor:
     def enable_all_hooks(self):
         self.__disabled_hooks.clear()
 
+    def append_named_hook(
+        self,
+        hook_point: ModelExecutorHookPoint,
+        name: str,
+        cb: Callable,
+        stripable=False,
+    ):
+        self.insert_callback(-1, hook_point, name, cb, stripable)
+
     def insert_callback(
         self,
         pos,
