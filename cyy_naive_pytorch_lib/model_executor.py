@@ -1,11 +1,12 @@
 import copy
 import os
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 
 import torch
 
 from dataset_collection import DatasetCollection
 from device import get_device
+from hook import Hook
 from hooks.model_executor_logger import ModelExecutorLogger
 from hyper_parameter import HyperParameter
 from metric_visualizers.metric_tensorboard import MetricTensorBoard
@@ -38,13 +39,13 @@ class ModelExecutor:
 
         self.__metric_tb: MetricTensorBoard = MetricTensorBoard()
         self.__logger = ModelExecutorLogger()
-        self.__logger.append_to_model_executor(self)
+        self.append_hook(self.__logger)
         self.__performance_metric = PerformanceMetric()
-        self.__performance_metric.append_to_model_executor(self)
+        self.append_hook(self.__performance_metric)
         self.__performance_metric_logger = PerformanceMetricLogger()
-        self.__performance_metric_logger.append_to_model_executor(self)
+        self.append_hook(self.__performance_metric_logger)
         self.debugging_mode = False
-        self.__save_dir = None
+        self.__save_dir: Optional[str] = None
         if save_dir is not None:
             self.set_save_dir(save_dir)
 
@@ -74,15 +75,11 @@ class ModelExecutor:
     def save_dir(self):
         return self.__save_dir
 
-    def remove_logger(self):
-        if self.__logger is not None:
-            self.__logger.remove_from_model_executor(self)
-        self.__logger = None
+    def disable_logger(self):
+        self.disable_hook(self.__logger)
 
-    def remove_performance_metric_logger(self):
-        if self.__performance_metric_logger is not None:
-            self.__performance_metric_logger.remove_from_model_executor(self)
-        self.__performance_metric_logger = None
+    def disable_performance_metric_logger(self):
+        self.disable_hook(self.__performance_metric_logger)
 
     @property
     def dataset(self):
@@ -126,18 +123,17 @@ class ModelExecutor:
     def has_data(self, key: str):
         return key in self.__data
 
-    def exec_hooks(self, cb_point: ModelExecutorHookPoint, *args, **kwargs):
-        for o in self.__hooks.get(cb_point, []):
+    def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs):
+        for o in self.__hooks.get(hook_point, []):
             for name, cb in o.items():
-                if name in self.__disabled_hooks:
-                    continue
-                cb(*args, **kwargs)
+                if name not in self.__disabled_hooks:
+                    cb(**kwargs)
 
     def has_hook(
         self,
-        cb_point: ModelExecutorHookPoint,
+        hook_point: ModelExecutorHookPoint,
     ):
-        return cb_point in self.__hooks
+        return hook_point in self.__hooks
 
     def hooks(self):
         return self.__hooks
@@ -148,52 +144,46 @@ class ModelExecutor:
     def enable_all_hooks(self):
         self.__disabled_hooks.clear()
 
-    def append_hook(self, cb_point: ModelExecutorHookPoint, name: str, cb: Callable):
-        data = {name: cb}
-        if cb_point not in self.__hooks:
-            self.__hooks[cb_point] = [data]
-        else:
-            for d in self.__hooks[cb_point]:
-                if name in d:
-                    raise RuntimeError(name + " has registered")
-            self.__hooks[cb_point].append(data)
-
-    def set_stripable_hook(self, name: str):
-        self.__stripable_hooks.add(name)
-
-    def prepend_before_other_hook(
+    def insert_callback(
         self,
-        cb_point: ModelExecutorHookPoint,
+        pos,
+        hook_point: ModelExecutorHookPoint,
         name: str,
         cb: Callable,
-        other_name: str,
+        stripable=False,
     ):
+        if stripable:
+            self.__stripable_hooks.add(name)
         data = {name: cb}
-        assert cb_point in self.__hooks
-        for idx, other_data in enumerate(self.__hooks[cb_point]):
-            if other_name in other_data:
-                self.__hooks[cb_point].insert(idx, data)
-                return
-        raise RuntimeError("unknown hook:" + other_name)
-
-    def prepend_hook(
-        self,
-        cb_point: ModelExecutorHookPoint,
-        name: str,
-        cb: Callable,
-    ):
-        data = {name: cb}
-        if cb_point not in self.__hooks:
-            self.__hooks[cb_point] = [data]
+        if hook_point not in self.__hooks:
+            self.__hooks[hook_point] = [data]
         else:
-            for d in self.__hooks[cb_point]:
+            for d in self.__hooks[hook_point]:
                 if name in d:
                     raise RuntimeError(name + " has registered")
-            self.__hooks[cb_point].insert(0, data)
+            self.__hooks[hook_point].insert(pos, data)
 
-    def remove_hook(self, name: str, cb_point: ModelExecutorHookPoint = None):
+    def insert_hook(self, pos, hook: Hook):
+        for hook_point, name, fun in hook.yield_hooks():
+            self.insert_callback(pos, hook_point, name, fun, hook.stripable)
+
+    def append_hook(self, hook: Hook):
+        self.insert_hook(-1, hook)
+
+    def prepend_hook(self, hook: Hook):
+        self.insert_hook(0, hook)
+
+    def enable_hook(self, hook: Hook):
+        for name in hook.yield_hook_names():
+            self.__disabled_hooks.remove(name)
+
+    def disable_hook(self, hook: Hook):
+        for name in hook.yield_hook_names():
+            self.__disabled_hooks.add(name)
+
+    def remove_hook(self, name: str, hook_point: ModelExecutorHookPoint = None):
         for cur_cb_point, hooks in self.__hooks.items():
-            if cb_point is not None and cur_cb_point != cb_point:
+            if hook_point is not None and cur_cb_point != hook_point:
                 continue
             for idx, cb in enumerate(hooks):
                 cb.pop(name, None)
