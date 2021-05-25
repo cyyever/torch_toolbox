@@ -3,6 +3,7 @@ import copy
 import torch
 from cyy_naive_lib.log import get_logger
 
+from dataset import decode_batch
 from dataset_collection import DatasetCollection
 from hooks.learning_rate_hook import LearningRateHook
 from hooks.save_model import SaveModelHook
@@ -145,7 +146,7 @@ class Trainer(ModelExecutor):
                         lr_scheduler = self.get_lr_scheduler()
                         assert optimizer is not None
                         assert lr_scheduler is not None
-                        sample_inputs, sample_targets, _ = self.decode_batch(batch)
+                        sample_inputs, sample_targets, _ = decode_batch(batch)
                         batch_size = self.get_batch_size(sample_targets)
                         if (
                             self.model_with_loss.has_batch_norm

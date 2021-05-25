@@ -2,7 +2,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 from torchvision.ops.boxes import box_iou
 
-from dataset import DatasetUtil
+from dataset import DatasetUtil, decode_batch
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from metrics.prob_metric import ProbabilityMetric
@@ -39,7 +39,7 @@ class Inferencer(ModelExecutor):
                 epoch=epoch,
             )
             for batch_index, batch in enumerate(self.dataloader):
-                inputs, targets, _ = self.decode_batch(batch)
+                inputs, targets, _ = decode_batch(batch)
                 result = self.model_with_loss(
                     inputs, targets, phase=self.phase, device=self.device
                 )

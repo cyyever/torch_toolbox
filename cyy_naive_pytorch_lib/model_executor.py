@@ -240,15 +240,6 @@ class ModelExecutor:
     def save_model(self, model_path):
         torch.save(self.model.state_dict(), model_path)
 
-    def decode_batch(self, batch, device=None):
-        if hasattr(batch, "text"):
-            return (getattr(batch, "text"), getattr(batch, "label"), {})
-        sample_inputs = batch[0]
-        sample_targets = batch[1]
-        if len(batch) == 3:
-            return (sample_inputs, sample_targets, batch[2])
-        return (sample_inputs, sample_targets, {})
-
     def get_batch_size(self, batch):
         if isinstance(batch, tuple):
             return self.get_batch_size(batch[0])
