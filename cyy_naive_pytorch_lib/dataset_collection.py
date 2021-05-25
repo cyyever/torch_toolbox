@@ -18,6 +18,7 @@ from dataset import (DatasetToMelSpectrogram, DatasetUtil,
                      replace_dataset_labels, sub_dataset)
 from hyper_parameter import HyperParameter
 from ml_type import DatasetType, MachineLearningPhase
+from pipelines.text_field import get_text_and_label_fields
 
 
 class DatasetCollection:
@@ -148,7 +149,7 @@ class DatasetCollection:
         if dataset_type == DatasetType.Vision:
             repositories = [torchvision.datasets, local_vision_datasets]
         elif dataset_type == DatasetType.Text:
-            repositories = [torchtext.datasets]
+            repositories = [torchtext.legacy.datasets]
         elif dataset_type == DatasetType.Audio:
             repositories = [torchaudio.datasets, local_audio_datasets]
         datasets = dict()
@@ -156,8 +157,8 @@ class DatasetCollection:
             for name in dir(repository):
                 dataset_constructor = getattr(repository, name)
                 if dataset_type == DatasetType.Text:
-                    if hasattr(dataset_constructor, "root"):
-                        datasets[name] = dataset_constructor
+                    if hasattr(dataset_constructor, "splits"):
+                        datasets[name] = getattr(dataset_constructor, "splits")
                         continue
                 if not inspect.isclass(dataset_constructor):
                     continue
@@ -206,48 +207,57 @@ class DatasetCollection:
             dataset_kwargs[k] = v
         sig = inspect.signature(dataset_constructor)
 
-        for phase in MachineLearningPhase:
-            while True:
-                try:
-                    if "train" in sig.parameters:
-                        # Some dataset only have train and test parts
-                        if phase == MachineLearningPhase.Validation:
-                            break
-                        dataset_kwargs["train"] = phase == MachineLearningPhase.Training
-                    if "split" in sig.parameters:
-                        if phase == MachineLearningPhase.Training:
-                            dataset_kwargs["split"] = "train"
-                        elif phase == MachineLearningPhase.Validation:
-                            if dataset_type == DatasetType.Text:
-                                dataset_kwargs["split"] = "valid"
+        if name == "IMDB":
+            assert dataset_type == DatasetType.Text
+            text_field, label_field = get_text_and_label_fields()
+            training_dataset, test_dataset = dataset_constructor(
+                text_field, label_field
+            )
+        else:
+            for phase in MachineLearningPhase:
+                while True:
+                    try:
+                        if "train" in sig.parameters:
+                            # Some dataset only have train and test parts
+                            if phase == MachineLearningPhase.Validation:
+                                break
+                            dataset_kwargs["train"] = (
+                                phase == MachineLearningPhase.Training
+                            )
+                        if "split" in sig.parameters:
+                            if phase == MachineLearningPhase.Training:
+                                dataset_kwargs["split"] = "train"
+                            elif phase == MachineLearningPhase.Validation:
+                                if dataset_type == DatasetType.Text:
+                                    dataset_kwargs["split"] = "valid"
+                                else:
+                                    dataset_kwargs["split"] = "val"
                             else:
-                                dataset_kwargs["split"] = "val"
-                        else:
-                            dataset_kwargs["split"] = "test"
-                    if "subset" in sig.parameters:
+                                dataset_kwargs["split"] = "test"
+                        if "subset" in sig.parameters:
+                            if phase == MachineLearningPhase.Training:
+                                dataset_kwargs["subset"] = "training"
+                            elif phase == MachineLearningPhase.Validation:
+                                dataset_kwargs["subset"] = "validation"
+                            else:
+                                dataset_kwargs["subset"] = "testing"
+                        dataset = dataset_constructor(**dataset_kwargs)
                         if phase == MachineLearningPhase.Training:
-                            dataset_kwargs["subset"] = "training"
+                            training_dataset = dataset
                         elif phase == MachineLearningPhase.Validation:
-                            dataset_kwargs["subset"] = "validation"
+                            validation_dataset = dataset
                         else:
-                            dataset_kwargs["subset"] = "testing"
-                    dataset = dataset_constructor(**dataset_kwargs)
-                    if phase == MachineLearningPhase.Training:
-                        training_dataset = dataset
-                    elif phase == MachineLearningPhase.Validation:
-                        validation_dataset = dataset
-                    else:
-                        test_dataset = dataset
-                    break
-                except Exception as e:
-                    raise e
-                    # split = dataset_kwargs.get("split", None)
-                    # if split is None:
-                    #     raise e
-                    # if phase == MachineLearningPhase.Training:
-                    #     raise e
-                    # # no validation dataset or test dataset
-                    # break
+                            test_dataset = dataset
+                        break
+                    except Exception as e:
+                        raise e
+                        # split = dataset_kwargs.get("split", None)
+                        # if split is None:
+                        #     raise e
+                        # if phase == MachineLearningPhase.Training:
+                        #     raise e
+                        # # no validation dataset or test dataset
+                        # break
 
         cache_dir = DatasetCollection.get_dataset_cache_dir(name)
 
@@ -259,9 +269,15 @@ class DatasetCollection:
             else:
                 splited_dataset = test_dataset
                 get_logger().warning("split test dataset for %s", name)
-            validation_dataset, test_dataset = DatasetCollection.__split_for_validation(
-                cache_dir, splited_dataset
-            )
+            if dataset_type == DatasetType.Text:
+                validation_dataset, test_dataset = splited_dataset.split(
+                    random_state=1234
+                )
+            else:
+                (
+                    validation_dataset,
+                    test_dataset,
+                ) = DatasetCollection.__split_for_validation(cache_dir, splited_dataset)
         dc = DatasetCollection(training_dataset, validation_dataset, test_dataset, name)
         if splited_dataset is not None:
             dc.set_origin_dataset(MachineLearningPhase.Validation, splited_dataset)
@@ -284,6 +300,11 @@ class DatasetCollection:
         get_logger().info("training_dataset len %s", len(training_dataset))
         get_logger().info("validation_dataset len %s", len(validation_dataset))
         get_logger().info("test_dataset len %s", len(test_dataset))
+
+        if dataset_type == DatasetType.Text:
+            MAX_VOCAB_SIZE = 25000
+            text_field.build_vocab(training_dataset, max_size=MAX_VOCAB_SIZE)
+            label_field.build_vocab(training_dataset)
 
         if dataset_type == DatasetType.Vision:
             pickle_file = os.path.join(cache_dir, "mean_and_std.pk")

@@ -16,6 +16,7 @@ setuptools.setup(
         "cyy_naive_pytorch_lib/vision_datasets",
         "cyy_naive_pytorch_lib/audio_datasets",
         "cyy_naive_pytorch_lib/models",
+        "cyy_naive_pytorch_lib/pipelines",
         "cyy_naive_pytorch_lib/metrics",
         "cyy_naive_pytorch_lib/hooks",
         "cyy_naive_pytorch_lib/metric_visualizers",
