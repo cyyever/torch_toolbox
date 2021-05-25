@@ -24,8 +24,7 @@ setuptools.setup(
         "cyy_naive_pytorch_lib/algorithm/quantization",
         "cyy_naive_pytorch_lib/algorithm/sample_gradient",
         "cyy_naive_pytorch_lib/algorithm/video",
-        "cyy_naive_pytorch_lib/algorithm/hydra",
-        "cyy_naive_pytorch_lib/algorithm/shapely_value",
+        "cyy_naive_pytorch_lib/algorithm/hydra"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
