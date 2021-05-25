@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class SimpleRNN(nn.Module):
-    def __init__(self, num_embeddings, embedding_dim, num_classes, hidden_dim=256):
+    def __init__(self, num_embeddings, num_classes, embedding_dim=250, hidden_dim=256):
         super().__init__()
         self.embedding = nn.Embedding(num_embeddings, embedding_dim)
         self.rnn = nn.RNN(embedding_dim, hidden_dim)

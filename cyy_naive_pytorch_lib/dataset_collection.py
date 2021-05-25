@@ -3,6 +3,7 @@ import inspect
 import json
 import os
 import pickle
+import random
 from typing import Callable, Dict, List
 
 import torch
@@ -120,8 +121,11 @@ class DatasetCollection:
         pickle_file = os.path.join(cache_dir, "labels.pk")
         if os.path.isfile(pickle_file):
             return pickle.load(open(pickle_file, "rb"))
-        with open(pickle_file, "wb") as f:
+        if self.__label_field is not None:
+            labels = set(self.__label_field.vocab.stoi.values())
+        else:
             labels = self.get_dataset_util().get_labels()
+        with open(pickle_file, "wb") as f:
             pickle.dump(labels, f)
             return labels
 
@@ -292,7 +296,7 @@ class DatasetCollection:
                 get_logger().warning("split test dataset for %s", name)
             if dataset_type == DatasetType.Text:
                 validation_dataset, test_dataset = splited_dataset.split(
-                    random_state=1234
+                    random_state=random.seed(1234)
                 )
             else:
                 (

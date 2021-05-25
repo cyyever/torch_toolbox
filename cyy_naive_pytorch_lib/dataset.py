@@ -330,3 +330,13 @@ def replace_dataset_labels(dataset, label_map: dict):
         return item
 
     return DatasetMapper(dataset, [mapper])
+
+
+def decode_batch(batch):
+    if hasattr(batch, "text"):
+        return (getattr(batch, "text"), getattr(batch, "label"), {})
+    sample_inputs = batch[0]
+    sample_targets = batch[1]
+    if len(batch) == 3:
+        return (sample_inputs, sample_targets, batch[2])
+    return (sample_inputs, sample_targets, {})
