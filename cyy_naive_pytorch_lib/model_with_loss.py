@@ -1,3 +1,4 @@
+import copy
 from typing import Optional
 
 import torch
@@ -31,6 +32,13 @@ class ModelWithLoss:
         self.__model_type = model_type
         self.__has_batch_norm = None
         self.__model_transforms: list = list()
+        self.trace_input = False
+        self.__example_input = None
+
+    @property
+    def example_input(self):
+        assert self.__example_input
+        return self.__example_input
 
     @property
     def model(self) -> torch.nn.Module:
@@ -90,6 +98,9 @@ class ModelWithLoss:
             inputs = self.__model_transforms(inputs)
         output = self.__model(inputs, *extra_inputs)
         loss = self.loss_fun(output, targets)
+        if self.trace_input and self.__example_input is None:
+            self.__example_input = [inputs.detach()] + copy.deepcopy(extra_inputs)
+
         return {"loss": loss, "output": output}
 
     def __choose_loss_function(self) -> Optional[torch.nn.modules.loss._Loss]:
