@@ -272,6 +272,15 @@ class DatasetUtil:
     def random_split(self, parts: list) -> list:
         return self.__split(parts, by_label=False)
 
+    def split_by_indices(self, indices_list: list) -> tuple:
+        subsets = tuple(sub_dataset(self.dataset, indices) for indices in indices_list)
+        for subset in subsets:
+            if hasattr(self.dataset, "sort_key"):
+                subset.sort_key = self.dataset.sort_key
+            if hasattr(self.dataset, "fields"):
+                subset.fields = self.dataset.fields
+        return subsets
+
     def __split(self, parts: list, by_label: bool = True) -> tuple:
         assert parts
         if len(parts) == 1:
@@ -293,9 +302,7 @@ class DatasetUtil:
                 delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
                 sub_dataset_indices_list[i] += label_indices_list[:delimiter]
                 label_indices_list = label_indices_list[delimiter:]
-        return tuple(
-            sub_dataset(self.dataset, indices) for indices in sub_dataset_indices_list
-        )
+        return self.split_by_indices(sub_dataset_indices_list)
 
     def sample(self, percentage: float) -> Iterable:
         sample_size = int(self.len * percentage)

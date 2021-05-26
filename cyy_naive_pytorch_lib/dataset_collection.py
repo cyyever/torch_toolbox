@@ -316,12 +316,6 @@ class DatasetCollection:
             ) = DatasetCollection.__split_for_validation(
                 cache_dir, splited_dataset, label_field
             )
-            if hasattr(training_dataset, "sort_key"):
-                validation_dataset.sort_key = training_dataset.sort_key
-                test_dataset.sort_key = training_dataset.sort_key
-            if hasattr(training_dataset, "fields"):
-                validation_dataset.fields = training_dataset.fields
-                test_dataset.fields = training_dataset.fields
         dc = DatasetCollection(
             training_dataset,
             validation_dataset,
@@ -388,12 +382,10 @@ class DatasetCollection:
     @staticmethod
     def __split_for_validation(cache_dir, splited_dataset, label_field=None):
         pickle_file = os.path.join(cache_dir, "split_index_lists.pk")
+        dataset_util = DatasetUtil(splited_dataset, label_field)
         if os.path.isfile(pickle_file):
             split_index_lists = pickle.load(open(pickle_file, "rb"))
-            return tuple(
-                sub_dataset(splited_dataset, indices) for indices in split_index_lists
-            )
-        dataset_util = DatasetUtil(splited_dataset, label_field)
+            return dataset_util.split_by_indices(split_index_lists)
         datasets = dataset_util.iid_split([1, 1])
         with open(pickle_file, "wb") as f:
             pickle.dump([d.indices for d in datasets], f)
