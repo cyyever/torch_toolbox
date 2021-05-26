@@ -3,11 +3,16 @@ import inspect
 import json
 import os
 import pickle
-import random
 from typing import Callable, Dict, List
 
 import torch
-import torchaudio
+
+try:
+    import torchaudio
+
+    has_torchaudio = True
+except ImportError:
+    has_torchaudio = False
 import torchtext
 import torchvision
 import torchvision.transforms as transforms
@@ -175,7 +180,8 @@ class DatasetCollection:
         elif dataset_type == DatasetType.Text:
             repositories = [torchtext.legacy.datasets]
         elif dataset_type == DatasetType.Audio:
-            repositories = [torchaudio.datasets, local_audio_datasets]
+            if has_torchaudio:
+                repositories = [torchaudio.datasets, local_audio_datasets]
         datasets = dict()
         for repository in repositories:
             for name in dir(repository):
