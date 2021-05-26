@@ -27,7 +27,7 @@ class ModelWithLoss:
             if loss_fun == "CrossEntropyLoss":
                 self.__loss_fun = nn.CrossEntropyLoss()
             else:
-                raise RuntimeError("unknown loss function %s", loss_fun)
+                raise RuntimeError("unknown loss function {}".format(loss_fun))
         self.__model_type = model_type
         self.__has_batch_norm = None
         self.__model_transforms: list = list()
@@ -72,6 +72,10 @@ class ModelWithLoss:
         else:
             if self.model.training:
                 phase = MachineLearningPhase.Training
+        extra_inputs = []
+        if isinstance(inputs, tuple):
+            inputs, *extra_inputs = inputs
+
         if device is not None:
             inputs = inputs.to(device, non_blocking=True)
             targets = targets.to(device, non_blocking=True)
@@ -84,7 +88,7 @@ class ModelWithLoss:
             )
         if not isinstance(self.__model_transforms, list):
             inputs = self.__model_transforms(inputs)
-        output = self.__model(inputs)
+        output = self.__model(inputs, *extra_inputs)
         loss = self.loss_fun(output, targets)
         return {"loss": loss, "output": output}
 
@@ -103,6 +107,7 @@ class ModelWithLoss:
                     torch.quantization.fake_quantize.FakeQuantize,
                     torch.quantization.observer.MovingAverageMinMaxObserver,
                     torch.quantization.observer.MovingAveragePerChannelMinMaxObserver,
+                    torch.nn.modules.dropout.Dropout,
                 ),
             )
         ]

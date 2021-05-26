@@ -55,7 +55,7 @@ class DatasetCollection:
         return self.__dataset_type
 
     @property
-    def text_field(self):
+    def text_field(self) -> torchtext.legacy.data.Field:
         return self.__text_field
 
     def set_origin_dataset(self, phase: MachineLearningPhase, dataset):
@@ -109,6 +109,7 @@ class DatasetCollection:
             [dataset],
             batch_size=hyper_parameter.batch_size,
             shuffle=(phase == MachineLearningPhase.Training),
+            sort_within_batch=True,
             device=device,
         )[0]
 
@@ -295,9 +296,9 @@ class DatasetCollection:
                 splited_dataset = test_dataset
                 get_logger().warning("split test dataset for %s", name)
             if dataset_type == DatasetType.Text:
-                validation_dataset, test_dataset = splited_dataset.split(
-                    random_state=random.seed(1234)
-                )
+                # FIXME use random_state
+                validation_dataset, test_dataset = splited_dataset.split()
+                # random_state=random.seed(1234)
             else:
                 (
                     validation_dataset,
