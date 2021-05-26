@@ -11,7 +11,7 @@ try:
     import torchaudio
 
     has_torchaudio = True
-except ImportError:
+except ModuleNotFoundError:
     has_torchaudio = False
 import torchtext
 import torchvision
