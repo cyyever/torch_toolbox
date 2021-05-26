@@ -8,7 +8,7 @@ class SimpleLSTM(nn.Module):
         num_embeddings,
         num_classes,
         pad_idx,
-        n_layers=2,
+        n_layers=1,
         bidirectional=True,
         embedding_dim=250,
         hidden_dim=256,

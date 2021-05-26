@@ -188,7 +188,7 @@ class Trainer(ModelExecutor):
                         if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
                             self.exec_hooks(
                                 ModelExecutorHookPoint.OPTIMIZER_STEP,
-                                self,
+                                model_executor=self,
                             )
                         else:
                             optimizer.step()
