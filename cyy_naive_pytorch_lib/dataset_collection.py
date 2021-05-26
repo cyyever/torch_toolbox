@@ -18,7 +18,9 @@ import torchvision
 import torchvision.transforms as transforms
 from cyy_naive_lib.log import get_logger
 
-import audio_datasets as local_audio_datasets
+if has_torchaudio:
+    import audio_datasets as local_audio_datasets
+
 import vision_datasets as local_vision_datasets
 from dataset import (DatasetToMelSpectrogram, DatasetUtil,
                      replace_dataset_labels, sub_dataset)
