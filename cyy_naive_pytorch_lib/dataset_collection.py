@@ -316,6 +316,12 @@ class DatasetCollection:
             ) = DatasetCollection.__split_for_validation(
                 cache_dir, splited_dataset, label_field
             )
+            if hasattr(training_dataset, "sort_key"):
+                validation_dataset.sort_key = training_dataset.sort_key
+                test_dataset.sort_key = training_dataset.sort_key
+            if hasattr(training_dataset, "fields"):
+                validation_dataset.fields = training_dataset.fields
+                test_dataset.fields = training_dataset.fields
         dc = DatasetCollection(
             training_dataset,
             validation_dataset,
@@ -346,7 +352,6 @@ class DatasetCollection:
         get_logger().info("training_dataset len %s", len(training_dataset))
         get_logger().info("validation_dataset len %s", len(validation_dataset))
         get_logger().info("test_dataset len %s", len(test_dataset))
-
 
         if dataset_type == DatasetType.Vision:
             pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
