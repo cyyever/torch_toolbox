@@ -22,7 +22,8 @@ if has_torchaudio:
     import audio_datasets as local_audio_datasets
 
 import vision_datasets as local_vision_datasets
-from dataset import (DatasetToMelSpectrogram, DatasetUtil,
+# from dataset import (DatasetToMelSpectrogram, DatasetUtil,
+from dataset import ( DatasetUtil,
                      replace_dataset_labels, sub_dataset)
 from hyper_parameter import HyperParameter
 from ml_type import DatasetType, MachineLearningPhase
@@ -328,20 +329,20 @@ class DatasetCollection:
         if splited_dataset is not None:
             dc.set_origin_dataset(MachineLearningPhase.Validation, splited_dataset)
             dc.set_origin_dataset(MachineLearningPhase.Test, splited_dataset)
-        if dataset_type == DatasetType.Audio and use_mel_spectrogram:
-            cache_dir = DatasetCollection.get_dataset_cache_dir(
-                name + "_mel_spectrogram"
-            )
-            for phase in MachineLearningPhase:
-                dc.transform_dataset(
-                    phase,
-                    lambda dataset: DatasetToMelSpectrogram(
-                        copy.deepcopy(dataset), root=cache_dir
-                    ),
-                )
-                dc.set_origin_dataset(phase, dc.get_dataset(phase=phase))
-            dc.prepend_transform(vision_transform)
-            dataset_type = DatasetType.Vision
+        # if dataset_type == DatasetType.Audio and use_mel_spectrogram:
+        #     cache_dir = DatasetCollection.get_dataset_cache_dir(
+        #         name + "_mel_spectrogram"
+        #     )
+        #     for phase in MachineLearningPhase:
+        #         dc.transform_dataset(
+        #             phase,
+        #             lambda dataset: DatasetToMelSpectrogram(
+        #                 copy.deepcopy(dataset), root=cache_dir
+        #             ),
+        #         )
+        #         dc.set_origin_dataset(phase, dc.get_dataset(phase=phase))
+        #     dc.prepend_transform(vision_transform)
+        #     dataset_type = DatasetType.Vision
 
         get_logger().info("training_dataset len %s", len(training_dataset))
         get_logger().info("validation_dataset len %s", len(validation_dataset))
