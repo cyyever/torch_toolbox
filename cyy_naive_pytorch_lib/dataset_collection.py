@@ -82,7 +82,7 @@ class DatasetCollection:
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
-        return DatasetUtil(self.get_dataset(phase))
+        return DatasetUtil(self.get_dataset(phase), self.__label_field)
 
     def append_transform(self, transform, phase=None):
         origin_datasets = set()
@@ -247,6 +247,8 @@ class DatasetCollection:
             training_dataset, test_dataset = dataset_constructor(
                 text_field, label_field
             )
+            text_field.build_vocab(training_dataset, max_size=25000)
+            label_field.build_vocab(training_dataset)
         else:
             for phase in MachineLearningPhase:
                 while True:
@@ -303,15 +305,17 @@ class DatasetCollection:
             else:
                 splited_dataset = test_dataset
                 get_logger().warning("split test dataset for %s", name)
-            if dataset_type == DatasetType.Text:
-                # FIXME use random_state
-                validation_dataset, test_dataset = splited_dataset.split()
-                # random_state=random.seed(1234)
-            else:
-                (
-                    validation_dataset,
-                    test_dataset,
-                ) = DatasetCollection.__split_for_validation(cache_dir, splited_dataset)
+            # if dataset_type == DatasetType.Text:
+            #     # FIXME use random_state
+            #     validation_dataset, test_dataset = splited_dataset.split()
+            #     # random_state=random.seed(1234)
+            # else:
+            (
+                validation_dataset,
+                test_dataset,
+            ) = DatasetCollection.__split_for_validation(
+                cache_dir, splited_dataset, label_field
+            )
         dc = DatasetCollection(
             training_dataset,
             validation_dataset,
@@ -343,9 +347,6 @@ class DatasetCollection:
         get_logger().info("validation_dataset len %s", len(validation_dataset))
         get_logger().info("test_dataset len %s", len(test_dataset))
 
-        if dataset_type == DatasetType.Text:
-            text_field.build_vocab(training_dataset, max_size=25000)
-            label_field.build_vocab(training_dataset)
 
         if dataset_type == DatasetType.Vision:
             pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
@@ -380,16 +381,16 @@ class DatasetCollection:
         return dc
 
     @staticmethod
-    def __split_for_validation(cache_dir, splited_dataset):
+    def __split_for_validation(cache_dir, splited_dataset, label_field=None):
         pickle_file = os.path.join(cache_dir, "split_index_lists.pk")
         if os.path.isfile(pickle_file):
             split_index_lists = pickle.load(open(pickle_file, "rb"))
             return tuple(
                 sub_dataset(splited_dataset, indices) for indices in split_index_lists
             )
+        dataset_util = DatasetUtil(splited_dataset, label_field)
+        datasets = dataset_util.iid_split([1, 1])
         with open(pickle_file, "wb") as f:
-            dataset_util = DatasetUtil(splited_dataset)
-            datasets = dataset_util.iid_split([1, 1])
             pickle.dump([d.indices for d in datasets], f)
             return datasets
 

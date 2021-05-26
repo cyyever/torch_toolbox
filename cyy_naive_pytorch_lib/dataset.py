@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy
 import PIL
 import torch
+import torchtext
 import torchvision
 from cyy_naive_lib.log import get_logger
 
@@ -135,10 +136,11 @@ def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
 
 
 class DatasetUtil:
-    def __init__(self, dataset: torch.utils.data.Dataset):
+    def __init__(self, dataset: torch.utils.data.Dataset, label_field=None):
         self.dataset: torch.utils.data.Dataset = dataset
         self.__channel = None
         self.__len = None
+        self.__label_field = label_field
 
     @property
     def len(self):
@@ -228,6 +230,10 @@ class DatasetUtil:
         return next(iter(labels))
 
     def get_sample_label(self, index):
+        sample = self.dataset[index]
+        if isinstance(sample, torchtext.legacy.data.example.Example):
+            assert self.__label_field is not None
+            return self.__label_field.vocab.stoi[sample.label]
         return DatasetUtil.get_label_from_target(self.dataset[index][1])
 
     def get_labels(self) -> set:
