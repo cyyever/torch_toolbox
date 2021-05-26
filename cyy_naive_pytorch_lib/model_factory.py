@@ -54,7 +54,6 @@ def get_model_info():
 def get_model(
     name: str, dataset_collection: DatasetCollection, **model_kwargs
 ) -> ModelWithLoss:
-
     model_info = get_model_info()
     model_repo_and_name = model_info.get(name.lower(), None)
     if model_repo_and_name is None:
@@ -76,6 +75,9 @@ def get_model(
         }
     if dataset_collection.dataset_type == DatasetType.Text:
         added_kwargs["num_embeddings"] = len(dataset_collection.text_field.vocab)
+        added_kwargs["pad_idx"] = dataset_collection.text_field.vocab.stoi[
+            dataset_collection.text_field.pad_token
+        ]
 
     model_type = ModelType.Classification
     # FIXME: use more robust method to determine detection models
