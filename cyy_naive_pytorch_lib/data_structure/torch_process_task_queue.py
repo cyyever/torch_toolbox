@@ -4,12 +4,11 @@ from typing import Callable
 
 import torch.multiprocessing
 from cyy_naive_lib.data_structure.task_queue import TaskQueue
-
 from device import get_devices
 
 
 class TorchProcessTaskQueue(TaskQueue):
-    def __init__(self, worker_fun: Callable, worker_num=None):
+    def __init__(self, worker_fun: Callable = None, worker_num=None):
         self.devices = get_devices()
         if worker_num is None:
             if torch.cuda.is_available():
