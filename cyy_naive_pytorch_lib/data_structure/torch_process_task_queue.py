@@ -9,29 +9,28 @@ from tensor import to_device
 
 
 class TorchProcessTaskQueue(TaskQueue):
-    def __init__(
-        self, worker_fun: Callable = None, worker_num=None, use_cpu_tensor=False
-    ):
+    def __init__(self, worker_fun: Callable = None, worker_num=None, use_manager=False):
         self.devices = get_devices()
+        self.__use_manager = use_manager
         if worker_num is None:
             if torch.cuda.is_available():
                 worker_num = len(self.devices)
             else:
                 worker_num = os.cpu_count()
-        self.__use_cpu_tensor = use_cpu_tensor
+        ctx = torch.multiprocessing.get_context("spawn")
         super().__init__(
             worker_fun=worker_fun,
-            ctx=torch.multiprocessing.get_context("spawn"),
+            ctx=ctx if not use_manager else ctx.Manager(),
             worker_num=worker_num,
         )
 
     def add_task(self, task):
-        if self.__use_cpu_tensor:
+        if self.__use_manager:
             task = to_device(task, get_cpu_device())
         super().add_task(task)
 
     def put_result(self, result):
-        if self.__use_cpu_tensor:
+        if self.__use_manager:
             if isinstance(result, RepeatedResult):
                 result.set_data(to_device(result.get_data(), get_cpu_device()))
             else:
