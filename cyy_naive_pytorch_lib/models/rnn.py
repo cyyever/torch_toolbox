@@ -9,7 +9,7 @@ class SimpleRNN(nn.Module):
         self.rnn = nn.RNN(embedding_dim, hidden_dim)
         self.fc = nn.Linear(hidden_dim, num_classes)
 
-    def forward(self, text):
+    def forward(self, text, text_lengths):
         embedded = self.embedding(text)
         output, hidden = self.rnn(embedded)
         assert torch.equal(output[-1, :, :], hidden.squeeze(0))
