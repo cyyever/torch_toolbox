@@ -3,7 +3,7 @@ import os
 from typing import Callable
 
 import torch.multiprocessing
-from cyy_naive_lib.data_structure.task_queue import TaskQueue
+from cyy_naive_lib.data_structure.task_queue import RepeatedResult, TaskQueue
 from device import get_cpu_device, get_devices
 from tensor import to_device
 
@@ -27,7 +27,10 @@ class TorchProcessTaskQueue(TaskQueue):
 
     def put_result(self, result):
         if self.__use_cpu_tensor:
-            result = to_device(result, get_cpu_device())
+            if isinstance(result, RepeatedResult):
+                result.set_data(to_device(result.get_data(), get_cpu_device()))
+            else:
+                result = to_device(result, get_cpu_device())
         super().put_result(result)
 
     def __getstate__(self):
