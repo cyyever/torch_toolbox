@@ -109,7 +109,12 @@ def sub_dataset(dataset: torch.utils.data.Dataset, indices: Iterable):
     Subset of a dataset at specified indices in order.
     """
     indices = sorted(set(indices))
-    return torch.utils.data.Subset(dataset, indices)
+    subset = torch.utils.data.Subset(dataset, indices)
+    if hasattr(dataset, "sort_key"):
+        subset.sort_key = dataset.sort_key
+    if hasattr(dataset, "fields"):
+        subset.fields = dataset.fields
+    return subset
 
 
 def sample_dataset(dataset: torch.utils.data.Dataset, index: int):
@@ -279,13 +284,7 @@ class DatasetUtil:
         return self.__split(parts, by_label=False)
 
     def split_by_indices(self, indices_list: list) -> list:
-        subsets = [sub_dataset(self.dataset, indices) for indices in indices_list]
-        for subset in subsets:
-            if hasattr(self.dataset, "sort_key"):
-                subset.sort_key = self.dataset.sort_key
-            if hasattr(self.dataset, "fields"):
-                subset.fields = self.dataset.fields
-        return subsets
+        return [sub_dataset(self.dataset, indices) for indices in indices_list]
 
     def __get_split_indices(self, parts: list, by_label: bool = True) -> list:
         assert parts
