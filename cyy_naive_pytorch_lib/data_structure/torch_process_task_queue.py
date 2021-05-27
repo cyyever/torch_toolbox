@@ -20,8 +20,9 @@ class TorchProcessTaskQueue(TaskQueue):
         ctx = torch.multiprocessing.get_context("spawn")
         super().__init__(
             worker_fun=worker_fun,
-            ctx=ctx if not use_manager else ctx.Manager(),
+            ctx=ctx,
             worker_num=worker_num,
+            manager=None if not use_manager else ctx.Manager(),
         )
 
     def add_task(self, task):
