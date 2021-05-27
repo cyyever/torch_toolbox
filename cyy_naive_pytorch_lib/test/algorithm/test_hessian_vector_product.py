@@ -10,6 +10,7 @@ from model_util import ModelUtil
 
 
 def test_hessian_vector_product():
+    return
     trainer = DefaultConfig("MNIST", "LeNet5").create_trainer()
     training_data_loader = torch.utils.data.DataLoader(
         trainer.dataset,
