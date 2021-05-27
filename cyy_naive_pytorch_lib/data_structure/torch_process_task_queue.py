@@ -21,5 +21,10 @@ class TorchProcessTaskQueue(TaskQueue):
             worker_num=worker_num,
         )
 
+    def __getstate__(self):
+        state = super().__getstate__()
+        state["devices"] = None
+        return state
+
     def _get_extra_task_arguments(self, worker_id):
         return [self.devices[worker_id % len(self.devices)]]
