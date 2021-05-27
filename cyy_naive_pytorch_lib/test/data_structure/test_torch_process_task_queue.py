@@ -16,7 +16,7 @@ def test_process_task_queue():
         devices = queue.get_result()
         assert devices
         queue.stop()
-        queue = TorchProcessTaskQueue(hello, use_cpu_tensor=True)
+        queue = TorchProcessTaskQueue(hello, use_manager=True)
         queue.start()
         queue.add_task(())
         devices = queue.get_result()
