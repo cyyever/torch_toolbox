@@ -25,6 +25,11 @@ class TorchProcessTaskQueue(TaskQueue):
             worker_num=worker_num,
         )
 
+    def add_task(self, task):
+        if self.__use_cpu_tensor:
+            task = to_device(task, get_cpu_device())
+        super().add_task(task)
+
     def put_result(self, result):
         if self.__use_cpu_tensor:
             if isinstance(result, RepeatedResult):
