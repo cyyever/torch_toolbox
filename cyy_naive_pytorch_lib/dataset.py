@@ -1,13 +1,13 @@
 import functools
 import os
-import pickle
+# import pickle
 import random
 from typing import Callable, Generator, Iterable
 
 # import librosa
 # import librosa.display
-import matplotlib.pyplot as plt
-import numpy
+# import matplotlib.pyplot as plt
+# import numpy
 import PIL
 import torch
 import torchtext
@@ -266,14 +266,20 @@ class DatasetUtil:
             return
         torchvision.utils.save_image(self.dataset[idx][0], path)
 
-    def iid_split(self, parts: list) -> tuple:
+    def iid_split_indices(self, parts: list) -> list:
+        return self.__get_split_indices(parts, by_label=True)
+
+    def random_split_indices(self, parts: list) -> list:
+        return self.__get_split_indices(parts, by_label=False)
+
+    def iid_split(self, parts: list) -> list:
         return self.__split(parts, by_label=True)
 
     def random_split(self, parts: list) -> list:
         return self.__split(parts, by_label=False)
 
-    def split_by_indices(self, indices_list: list) -> tuple:
-        subsets = tuple(sub_dataset(self.dataset, indices) for indices in indices_list)
+    def split_by_indices(self, indices_list: list) -> list:
+        subsets = [sub_dataset(self.dataset, indices) for indices in indices_list]
         for subset in subsets:
             if hasattr(self.dataset, "sort_key"):
                 subset.sort_key = self.dataset.sort_key
@@ -281,11 +287,12 @@ class DatasetUtil:
                 subset.fields = self.dataset.fields
         return subsets
 
-    def __split(self, parts: list, by_label: bool = True) -> tuple:
+    def __get_split_indices(self, parts: list, by_label: bool = True) -> list:
         assert parts
-        if len(parts) == 1:
-            return tuple([self.dataset])
         sub_dataset_indices_list: list = []
+        if len(parts) == 1:
+            sub_dataset_indices_list.append(list(range(len(self.dataset))))
+            return sub_dataset_indices_list
         for _ in parts:
             sub_dataset_indices_list.append([])
 
@@ -302,6 +309,13 @@ class DatasetUtil:
                 delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
                 sub_dataset_indices_list[i] += label_indices_list[:delimiter]
                 label_indices_list = label_indices_list[delimiter:]
+        return sub_dataset_indices_list
+
+    def __split(self, parts: list, by_label: bool = True) -> list:
+        assert parts
+        if len(parts) == 1:
+            return [self.dataset]
+        sub_dataset_indices_list = self.__get_split_indices(parts, by_label)
         return self.split_by_indices(sub_dataset_indices_list)
 
     def sample(self, percentage: float) -> Iterable:
