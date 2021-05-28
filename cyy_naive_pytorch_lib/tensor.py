@@ -31,21 +31,5 @@ def split_tensor_to_dict(name_and_shapes: list, tensor: torch.Tensor):
     return data
 
 
-def to_device(data, device):
-    if isinstance(data, torch.Tensor):
-        return data.to(device=device)
-    if isinstance(data, list):
-        for idx, d in enumerate(data):
-            data[idx] = to_device(d, device)
-        return data
-    if isinstance(data, tuple):
-        return tuple(to_device(list(data), device))
-    if isinstance(data, dict):
-        for k, v in data.items():
-            data[k] = to_device(v, device)
-        return data
-    return data
-
-
 def get_tensor_serialization_size(data):
     return len(pickle.dumps(data))

@@ -37,6 +37,8 @@ def put_data_to_device(data, device=None):
         for idx, element in enumerate(data):
             data[idx] = put_data_to_device(element, device)
         return data
+    if isinstance(data, tuple):
+        return tuple(put_data_to_device(list(data), device))
     if isinstance(data, dict):
         for k, v in data.items():
             data[k] = put_data_to_device(v, device)
