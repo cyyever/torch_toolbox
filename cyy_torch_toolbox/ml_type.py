@@ -30,7 +30,7 @@ class ModelExecutorHookPoint(IntEnum):
 
 
 try:
-    from cyy_naive_pytorch_lib.ml_type import StopExecutingException
+    from cyy_torch_toolbox.ml_type import StopExecutingException
 except ImportError:
 
     class StopExecutingException(Exception):

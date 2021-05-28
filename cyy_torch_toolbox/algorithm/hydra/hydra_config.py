@@ -2,8 +2,8 @@
 
 import argparse
 
-from cyy_naive_pytorch_lib.dataset import DatasetUtil
-from cyy_naive_pytorch_lib.default_config import DefaultConfig
+from cyy_torch_toolbox.dataset import DatasetUtil
+from cyy_torch_toolbox.default_config import DefaultConfig
 
 from .hydra_hook import HyDRAHook
 
