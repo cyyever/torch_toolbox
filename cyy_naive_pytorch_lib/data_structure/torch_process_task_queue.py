@@ -17,19 +17,12 @@ class TorchProcessTaskQueue(TaskQueue):
             else:
                 worker_num = os.cpu_count()
         ctx = torch.multiprocessing.get_context("spawn")
-        self.__manager = None
+        manager = None
         if use_manager:
-            self.__manager = ctx.Manager()
+            manager = ctx.Manager()
         super().__init__(
-            worker_fun=worker_fun,
-            ctx=ctx,
-            worker_num=worker_num,
-            manager=self.__manager,
+            worker_fun=worker_fun, ctx=ctx, worker_num=worker_num, manager=manager
         )
-
-    @property
-    def manager(self):
-        return self.__manager
 
     def add_task(self, task):
         if self.manager is not None:
