@@ -149,7 +149,8 @@ class Trainer(ModelExecutor):
                 if self.cuda_stream is not None:
                     get_logger().debug("use cuda stream %s", self.cuda_stream)
 
-                with torch.cuda.stream(self.cuda_stream):
+                # with torch.cuda.stream(self.cuda_stream):
+                with torch.cuda.stream(None):
                     for batch_index, batch in enumerate(self.dataloader):
                         optimizer = self.get_optimizer()
                         lr_scheduler = self.get_lr_scheduler()
