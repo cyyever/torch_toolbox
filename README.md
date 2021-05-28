@@ -1,3 +1,3 @@
-# naive_pytorch_lib
+# torch_toolbox
 
-This is a pytorch wrapper inspired by [fastai](https://github.com/fastai/fastai) for personal use and research.
+This is a pytorch library inspired by [fastai](https://github.com/fastai/fastai) for personal use and research.
