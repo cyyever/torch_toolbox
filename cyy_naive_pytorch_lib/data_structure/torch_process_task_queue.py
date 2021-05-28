@@ -10,10 +10,10 @@ from tensor import to_device
 
 class TorchProcessTaskQueue(TaskQueue):
     def __init__(self, worker_fun: Callable = None, worker_num=None, use_manager=False):
-        self.devices = get_devices()
+        self.__devices = get_devices()
         if worker_num is None:
             if torch.cuda.is_available():
-                worker_num = len(self.devices)
+                worker_num = len(self.__devices)
             else:
                 worker_num = os.cpu_count()
         ctx = torch.multiprocessing.get_context("spawn")
@@ -46,8 +46,10 @@ class TorchProcessTaskQueue(TaskQueue):
 
     def __getstate__(self):
         state = super().__getstate__()
-        state["devices"] = None
+        for k in state:
+            if "devices" in k:
+                state[k] = None
         return state
 
     def _get_extra_task_arguments(self, worker_id):
-        return [self.devices[worker_id % len(self.devices)]]
+        return [self.__devices[worker_id % len(self.__devices)]]
