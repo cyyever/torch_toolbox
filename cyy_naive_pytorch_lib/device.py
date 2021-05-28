@@ -43,4 +43,4 @@ def put_data_to_device(data, device=None):
         for k, v in data.items():
             data[k] = put_data_to_device(v, device)
         return data
-    raise RuntimeError("unsupported data:" + str(data))
+    return data
