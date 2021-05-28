@@ -23,8 +23,7 @@ if has_torchaudio:
 
 import vision_datasets as local_vision_datasets
 # from dataset import (DatasetToMelSpectrogram, DatasetUtil,
-from dataset import ( DatasetUtil,
-                     replace_dataset_labels, sub_dataset)
+from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
 from hyper_parameter import HyperParameter
 from ml_type import DatasetType, MachineLearningPhase
 from pipelines.text_field import get_text_and_label_fields
@@ -202,7 +201,7 @@ class DatasetCollection:
     @staticmethod
     def get_by_name(name: str, **kwargs):
         if name in DatasetCollection.__dataset_collections:
-            return DatasetCollection.__dataset_collections[name]
+            return copy.deepcopy(DatasetCollection.__dataset_collections[name])
 
         all_dataset_constructors = set()
         for dataset_type in DatasetType:
