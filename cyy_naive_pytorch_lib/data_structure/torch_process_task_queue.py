@@ -11,6 +11,7 @@ from tensor import to_device
 class TorchProcessTaskQueue(TaskQueue):
     def __init__(self, worker_fun: Callable = None, worker_num=None, use_manager=False):
         self.__devices = get_devices()
+        self.__use_manager = use_manager
         if worker_num is None:
             if torch.cuda.is_available():
                 worker_num = len(self.__devices)
@@ -18,31 +19,24 @@ class TorchProcessTaskQueue(TaskQueue):
                 worker_num = os.cpu_count()
         ctx = torch.multiprocessing.get_context("spawn")
         manager = None
-        if use_manager:
+        if self.__use_manager:
             manager = ctx.Manager()
         super().__init__(
             worker_fun=worker_fun, ctx=ctx, worker_num=worker_num, manager=manager
         )
 
     def add_task(self, task):
-        if self.manager is not None:
+        if self.__use_manager:
             task = to_device(task, get_cpu_device())
         super().add_task(task)
 
     def put_result(self, result):
-        if self.manager is not None:
+        if self.__use_manager:
             if isinstance(result, RepeatedResult):
                 result.set_data(to_device(result.get_data(), get_cpu_device()))
             else:
                 result = to_device(result, get_cpu_device())
         super().put_result(result)
-
-    def __getstate__(self):
-        state = super().__getstate__()
-        for k in state:
-            if "devices" in k:
-                state[k] = None
-        return state
 
     def _get_extra_task_arguments(self, worker_id):
         return [self.__devices[worker_id % len(self.__devices)]]
