@@ -4,8 +4,7 @@ from typing import Callable
 
 import torch.multiprocessing
 from cyy_naive_lib.data_structure.task_queue import RepeatedResult, TaskQueue
-from device import get_cpu_device, get_devices
-from tensor import to_device
+from device import get_cpu_device, get_devices, put_data_to_device
 
 
 class TorchProcessTaskQueue(TaskQueue):
@@ -27,15 +26,15 @@ class TorchProcessTaskQueue(TaskQueue):
 
     def add_task(self, task):
         if self.__use_manager:
-            task = to_device(task, get_cpu_device())
+            task = put_data_to_device(task, get_cpu_device())
         super().add_task(task)
 
     def put_result(self, result):
         if self.__use_manager:
             if isinstance(result, RepeatedResult):
-                result.set_data(to_device(result.get_data(), get_cpu_device()))
+                result.set_data(put_data_to_device(result.get_data(), get_cpu_device()))
             else:
-                result = to_device(result, get_cpu_device())
+                result = put_data_to_device(result, get_cpu_device())
         super().put_result(result)
 
     def _get_extra_task_arguments(self, worker_id):
