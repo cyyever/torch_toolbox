@@ -9,7 +9,7 @@ from hooks.learning_rate_hook import LearningRateHook
 from hooks.save_model import SaveModelHook
 from hooks.trainer_debugger import TrainerDebugger
 from hyper_parameter import HyperParameter
-from inference import ClassificationInferencer, DetectionInferencer, Inferencer
+from inference import ClassificationInferencer, Inferencer
 from metric_visualizers.batch_loss_logger import BatchLossLogger
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorHookPoint
@@ -41,6 +41,11 @@ class Trainer(ModelExecutor):
         self.append_hook(self.visualizer)
         self.__debugger = None
 
+    def set_device(self, device):
+        super().set_device(device)
+        for a in self.__inferencers.values():
+            a.set_device(device)
+
     @property
     def batch_loss_logger(self):
         return self.__batch_loss_logger
@@ -54,24 +59,28 @@ class Trainer(ModelExecutor):
         assert phase != MachineLearningPhase.Training
         model_with_loss = self.copy_model_with_loss(deepcopy=copy_model)
 
+        inferencer = None
         if self.model_with_loss.model_type == ModelType.Classification:
-            return ClassificationInferencer(
+            inferencer = ClassificationInferencer(
                 model_with_loss,
                 self.dataset_collection,
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
             )
-        if self.model_with_loss.model_type == ModelType.Detection:
-            return DetectionInferencer(
-                model_with_loss,
-                self.dataset_collection,
-                phase=phase,
-                hyper_parameter=self.hyper_parameter,
-                iou_threshold=0.6,
+        # if self.model_with_loss.model_type == ModelType.Detection:
+        #     return DetectionInferencer(
+        #         model_with_loss,
+        #         self.dataset_collection,
+        #         phase=phase,
+        #         hyper_parameter=self.hyper_parameter,
+        #         iou_threshold=0.6,
+        #     )
+        if inferencer is None:
+            raise RuntimeError(
+                "Unsupported model type:" + str(self.model_with_loss.model_type)
             )
-        raise RuntimeError(
-            "Unsupported model type:" + str(self.model_with_loss.model_type)
-        )
+        inferencer.set_device(self.device)
+        return inferencer
 
     def get_optimizer(self):
         if not self.has_data("optimizer"):
