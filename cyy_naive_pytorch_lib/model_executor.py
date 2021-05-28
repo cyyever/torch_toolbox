@@ -209,6 +209,7 @@ class ModelExecutor:
         return self.__device
 
     def set_device(self, device):
+        self.__wait_stream()
         self.__device = device
         self.__cuda_stream = None
 
