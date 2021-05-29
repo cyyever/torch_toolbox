@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import pynvml
 import torch
 
 
@@ -44,3 +45,37 @@ def put_data_to_device(data, device=None):
             data[k] = put_data_to_device(v, device)
         return data
     return data
+
+
+class CudaDeviceRoundRobinAllocator:
+    def __init__(self):
+        self.__devices = get_cuda_devices()
+        self.__idx = 0
+
+    def get_device(self):
+        device = self.__devices[self.__idx]
+        self.__idx += 1
+        if self.__idx >= len(self.__devices):
+            self.__idx = 0
+        return device
+
+
+class CudaDeviceSmartAllocator:
+    def __init__(self, max_needed_bytes):
+        self.__devices = get_cuda_devices()
+        self.__cnts: dict = dict()
+        for device in self.__devices:
+            self.__cnts[device] = 0
+        self.__max_need_bytes = max_needed_bytes
+
+    def get_device(self):
+        pynvml.nvmlInit()
+        for device in sorted(self.__cnts.keys(), key=lambda x: self.__cnts[x]):
+            h = pynvml.nvmlDeviceGetHandleByIndex(device.index)
+            info = pynvml.nvmlDeviceGetMemoryInfo(h)
+            if info.free >= self.__max_need_bytes:
+                self.__cnts[device] += 1
+                pynvml.nvmlShutdown()
+                return device
+        pynvml.nvmlShutdown()
+        return None
