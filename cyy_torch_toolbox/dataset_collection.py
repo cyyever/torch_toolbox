@@ -232,7 +232,7 @@ class DatasetCollection:
         if dataset_type == DatasetType.Vision:
             dataset_kwargs["transform"] = vision_transform
 
-        use_mel_spectrogram = kwargs.pop("use_mel_spectrogram", False)
+        # use_mel_spectrogram = kwargs.pop("use_mel_spectrogram", False)
         for k, v in kwargs.items():
             if k in dataset_kwargs:
                 raise RuntimeError("key " + k + " is set by the library")
@@ -305,11 +305,6 @@ class DatasetCollection:
             else:
                 splited_dataset = test_dataset
                 get_logger().warning("split test dataset for %s", name)
-            # if dataset_type == DatasetType.Text:
-            #     # FIXME use random_state
-            #     validation_dataset, test_dataset = splited_dataset.split()
-            #     # random_state=random.seed(1234)
-            # else:
             (
                 validation_dataset,
                 test_dataset,
