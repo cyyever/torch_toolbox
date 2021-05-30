@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import time
+
 import pynvml
 import torch
 
@@ -15,12 +17,6 @@ def get_cuda_devices():
     for device_id in range(device_count):
         devices.append(torch.device("cuda:" + str(device_id)))
     return devices
-
-
-def get_device():
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    return torch.device("cpu")
 
 
 def get_devices():
@@ -60,22 +56,45 @@ class CudaDeviceRoundRobinAllocator:
         return device
 
 
-class CudaDeviceSmartAllocator:
-    def __init__(self, max_needed_bytes):
+class CudaDeviceGreedyAllocator:
+    def __init__(self):
         self.__devices = get_cuda_devices()
-        self.__cnts: dict = dict()
+        self.__free_memory_dict: dict = dict()
         for device in self.__devices:
-            self.__cnts[device] = 0
-        self.__max_need_bytes = max_needed_bytes
+            self.__free_memory_dict[device] = 0
+        self.__last_query_time = None
 
-    def get_device(self):
+    def __refresh_memory_info(self):
+        if (
+            self.__last_query_time is not None
+            and time.time() < self.__last_query_time + 60 * 10
+        ):
+            return
         pynvml.nvmlInit()
-        for device in sorted(self.__cnts.keys(), key=lambda x: self.__cnts[x]):
+        for device in self.__free_memory_dict:
             h = pynvml.nvmlDeviceGetHandleByIndex(device.index)
             info = pynvml.nvmlDeviceGetMemoryInfo(h)
-            if info.free >= self.__max_need_bytes:
-                self.__cnts[device] += 1
-                pynvml.nvmlShutdown()
-                return device
+            self.__free_memory_dict[device] = info.free
         pynvml.nvmlShutdown()
-        return None
+        self.__last_query_time = time.time()
+
+    def get_device(self, max_needed_bytes=None):
+        for device in self.__sort_devices():
+            if max_needed_bytes is not None:
+                if self.__free_memory_dict[device] < max_needed_bytes:
+                    return None
+            return device
+
+    def __sort_devices(self) -> list:
+        self.__refresh_memory_info()
+        return sorted(
+            self.__free_memory_dict.keys(),
+            key=lambda x: self.__free_memory_dict[x],
+            reverse=True,
+        )
+
+
+def get_device():
+    if torch.cuda.is_available():
+        return CudaDeviceGreedyAllocator().get_device()
+    return get_cpu_device()
