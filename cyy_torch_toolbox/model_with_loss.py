@@ -84,10 +84,11 @@ class ModelWithLoss:
         if isinstance(inputs, tuple):
             inputs, *extra_inputs = inputs
 
+        non_blocking = False
         if device is not None:
-            inputs = inputs.to(device, non_blocking=True)
-            targets = targets.to(device, non_blocking=True)
-            self.model.to(device, non_blocking=True)
+            inputs = inputs.to(device, non_blocking=non_blocking)
+            targets = targets.to(device, non_blocking=non_blocking)
+            self.model.to(device, non_blocking=non_blocking)
 
         assert self.loss_fun is not None
         if self.__model_transforms and isinstance(self.__model_transforms, list):
