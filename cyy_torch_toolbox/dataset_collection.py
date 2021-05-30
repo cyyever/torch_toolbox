@@ -127,15 +127,15 @@ class DatasetCollection:
     def get_labels(self) -> set:
         cache_dir = DatasetCollection.get_dataset_cache_dir(self.name)
         pickle_file = os.path.join(cache_dir, "labels.pk")
-        if os.path.isfile(pickle_file):
-            return pickle.load(open(pickle_file, "rb"))
+        labels = DatasetCollection.__read_data(pickle_file)
+        if labels is not None:
+            return labels
         if self.__label_field is not None:
             labels = set(self.__label_field.vocab.stoi.values())
         else:
             labels = self.get_dataset_util().get_labels()
-        with open(pickle_file, "wb") as f:
-            pickle.dump(labels, f)
-            return labels
+        DatasetCollection.__write_data(pickle_file, labels)
+        return labels
 
     def get_label_names(self) -> List[str]:
         if hasattr(self.get_training_dataset(), "classes"):
@@ -344,15 +344,15 @@ class DatasetCollection:
 
         if dataset_type == DatasetType.Vision:
             pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
-            if os.path.isfile(pickle_file):
-                mean, std = pickle.load(open(pickle_file, "rb"))
+            res = DatasetCollection.__read_data(pickle_file)
+            if res is not None:
+                mean, std = res
             else:
                 total_dataset = torch.utils.data.ConcatDataset(
                     list(dc.__datasets.values())
                 )
                 mean, std = DatasetUtil(total_dataset).get_mean_and_std()
-                with open(pickle_file, "wb") as f:
-                    pickle.dump((mean, std), f)
+                DatasetCollection.__write_data(pickle_file, (mean, std))
             dc.append_transform(transforms.Normalize(mean=mean, std=std))
             if name not in ("SVHN", "MNIST"):
                 dc.append_transform(
@@ -378,13 +378,27 @@ class DatasetCollection:
     def __split_for_validation(cache_dir, splited_dataset, label_field=None):
         pickle_file = os.path.join(cache_dir, "split_index_lists.pk")
         dataset_util = DatasetUtil(splited_dataset, label_field)
-        if os.path.isfile(pickle_file):
-            split_index_lists = pickle.load(open(pickle_file, "rb"))
+        split_index_lists = DatasetCollection.__read_data(pickle_file)
+        if split_index_lists is not None:
             return dataset_util.split_by_indices(split_index_lists)
         datasets = dataset_util.iid_split([1, 1])
-        with open(pickle_file, "wb") as f:
-            pickle.dump([d.indices for d in datasets], f)
-            return datasets
+        DatasetCollection.__write_data(pickle_file, [d.indices for d in datasets])
+        return datasets
+
+    @staticmethod
+    def __read_data(path):
+        if not os.path.isfile(path):
+            return None
+        fd = os.open(path, flags=os.O_RDONLY)
+        with os.fdopen(fd, "rb") as f:
+            res = pickle.load(f)
+        return res
+
+    @staticmethod
+    def __write_data(path, data):
+        fd = os.open(path, flags=os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        with os.fdopen(fd, "wb") as f:
+            pickle.dump(data, f)
 
 
 class DatasetCollectionConfig:
