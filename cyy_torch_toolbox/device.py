@@ -4,6 +4,7 @@ import time
 
 import pynvml
 import torch
+from cyy_naive_lib.log import get_logger
 
 
 def get_cpu_device():
@@ -80,10 +81,13 @@ class CudaDeviceGreedyAllocator:
 
     def get_device(self, max_needed_bytes=None):
         for device in self.__sort_devices():
-            if max_needed_bytes is not None:
-                if self.__free_memory_dict[device] < max_needed_bytes:
-                    return None
+            if (
+                max_needed_bytes is not None
+                and self.__free_memory_dict[device] < max_needed_bytes
+            ):
+                continue
             return device
+        return None
 
     def __sort_devices(self) -> list:
         self.__refresh_memory_info()
@@ -94,7 +98,17 @@ class CudaDeviceGreedyAllocator:
         )
 
 
-def get_device():
+def get_device(max_needed_bytes=None, use_cuda_only=False):
     if torch.cuda.is_available():
-        return CudaDeviceGreedyAllocator().get_device()
+        device = CudaDeviceGreedyAllocator().get_device(
+            max_needed_bytes=max_needed_bytes
+        )
+        if device is not None:
+            return device
+        if use_cuda_only:
+            raise RuntimeError("no cuda device avaiable")
+        get_logger().warning(
+            "cuda device is unavaiable, max_needed_bytes is %s, switch to CPU",
+            max_needed_bytes,
+        )
     return get_cpu_device()
