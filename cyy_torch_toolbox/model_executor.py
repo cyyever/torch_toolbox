@@ -1,4 +1,5 @@
 import copy
+# import inspect
 import os
 from typing import Callable, Dict, List, Optional
 
@@ -123,10 +124,10 @@ class ModelExecutor:
         return key in self.__data
 
     def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs):
-        for o in self.__hooks.get(hook_point, []):
-            for name, cb in o.items():
+        for hook in self.__hooks.get(hook_point, []):
+            for name, fun in hook.items():
                 if name not in self.__disabled_hooks:
-                    cb(**kwargs)
+                    fun(**kwargs)
 
     def has_hook(
         self,
@@ -147,22 +148,23 @@ class ModelExecutor:
         self,
         hook_point: ModelExecutorHookPoint,
         name: str,
-        cb: Callable,
+        fun: Callable,
         stripable=False,
     ):
-        self.insert_callback(-1, hook_point, name, cb, stripable)
+        self.insert_callback(-1, hook_point, name, fun, stripable)
 
     def insert_callback(
         self,
         pos,
         hook_point: ModelExecutorHookPoint,
         name: str,
-        cb: Callable,
+        fun: Callable,
         stripable=False,
     ):
         if stripable:
             self.__stripable_hooks.add(name)
-        data = {name: cb}
+        # data = {name: (fun, inspect.iscoroutinefunction(fun))}
+        data = {name: fun}
         if hook_point not in self.__hooks:
             self.__hooks[hook_point] = [data]
         else:
@@ -193,12 +195,12 @@ class ModelExecutor:
             self.__disabled_hooks.add(name)
 
     def remove_hook(self, name: str, hook_point: ModelExecutorHookPoint = None):
-        for cur_cb_point, hooks in self.__hooks.items():
-            if hook_point is not None and cur_cb_point != hook_point:
+        for cur_hook_point, hooks in self.__hooks.items():
+            if hook_point is not None and cur_hook_point != hook_point:
                 continue
-            for idx, cb in enumerate(hooks):
-                cb.pop(name, None)
-                self.__hooks[cur_cb_point][idx] = cb
+            for idx, hook in enumerate(hooks):
+                hook.pop(name, None)
+                self.__hooks[cur_hook_point][idx] = hook
 
     @property
     def dataset_collection(self) -> DatasetCollection:
