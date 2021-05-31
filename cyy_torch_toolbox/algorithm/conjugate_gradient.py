@@ -1,25 +1,19 @@
 #!/usr/bin/env python3
 
 import torch
-from device import get_device
 
 
 def conjugate_gradient(A, b, max_iteration=None, epsilon=0.0001):
-    return conjugate_gradient_general(
-        lambda v: A @ v, b, max_iteration, epsilon)
+    return conjugate_gradient_general(lambda v: A @ v, b, max_iteration, epsilon)
 
 
-def conjugate_gradient_general(
-    A_product_func,
-    b,
-    max_iteration=None,
-        epsilon=0.0001):
+def conjugate_gradient_general(A_product_func, b, max_iteration=None, epsilon=0.0001):
     r"""
     Implements Conjugate Gradient illustrated by
     An Introduction to the Conjugate Gradient Method Without the Agonizing Pain
     """
     x = torch.ones(b.shape)
-    x = x.to(get_device())
+    x = x.to(b.device)
     if max_iteration is None:
         max_iteration = b.shape[0]
     r = b - A_product_func(x)
