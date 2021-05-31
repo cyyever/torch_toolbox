@@ -75,7 +75,9 @@ class CudaDeviceGreedyAllocator:
         for device in self.__free_memory_dict:
             h = pynvml.nvmlDeviceGetHandleByIndex(device.index)
             info = pynvml.nvmlDeviceGetMemoryInfo(h)
-            self.__free_memory_dict[device] = info.free
+            self.__free_memory_dict[device] = info.free + torch.cuda.memory_reserved(
+                device=device
+            )
         pynvml.nvmlShutdown()
         self.__last_query_time = time.time()
 
