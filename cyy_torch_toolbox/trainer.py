@@ -137,6 +137,7 @@ class Trainer(ModelExecutor):
         for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
             self.__inferencers[phase] = self.get_inferencer(phase)
             self.__inferencers[phase].disable_logger()
+            self.__inferencers[phase].set_device(self.device)
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE, model_executor=self)
 
         if self.cuda_stream is not None:
