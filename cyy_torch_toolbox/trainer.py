@@ -139,18 +139,16 @@ class Trainer(ModelExecutor):
             self.__inferencers[phase].disable_logger()
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE, model_executor=self)
 
-        try:
-            for epoch in range(1, self.hyper_parameter.epoch + 1):
-                self.exec_hooks(
-                    ModelExecutorHookPoint.BEFORE_EPOCH,
-                    model_executor=self,
-                    epoch=epoch,
-                )
-                if self.cuda_stream is not None:
-                    get_logger().debug("use cuda stream %s", self.cuda_stream)
-
-                # with torch.cuda.stream(self.cuda_stream):
-                with torch.cuda.stream(None):
+        if self.cuda_stream is not None:
+            get_logger().debug("use cuda stream %s", self.cuda_stream)
+        with torch.cuda.stream(self.cuda_stream):
+            try:
+                for epoch in range(1, self.hyper_parameter.epoch + 1):
+                    self.exec_hooks(
+                        ModelExecutorHookPoint.BEFORE_EPOCH,
+                        model_executor=self,
+                        epoch=epoch,
+                    )
                     for batch_index, batch in enumerate(self.dataloader):
                         optimizer = self.get_optimizer()
                         lr_scheduler = self.get_lr_scheduler()
@@ -242,6 +240,7 @@ class Trainer(ModelExecutor):
                         lr_scheduler.step(training_loss)
                     else:
                         lr_scheduler.step()
-        except StopExecutingException:
-            get_logger().warning("stop training")
+            except StopExecutingException:
+                get_logger().warning("stop training")
+            self._wait_stream()
         self.exec_hooks(ModelExecutorHookPoint.AFTER_EXECUTE, model_executor=self)

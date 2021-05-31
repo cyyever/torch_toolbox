@@ -101,11 +101,11 @@ class ModelExecutor:
 
     @property
     def model(self) -> torch.nn.Module:
-        self.__wait_stream()
+        self._wait_stream()
         return self.model_with_loss.model
 
     def copy_model_with_loss(self, deepcopy=True):
-        self.__wait_stream()
+        self._wait_stream()
         if deepcopy:
             return copy.deepcopy(self.model_with_loss)
         return copy.copy(self.model_with_loss)
@@ -211,7 +211,7 @@ class ModelExecutor:
         return self.__device
 
     def set_device(self, device):
-        self.__wait_stream()
+        self._wait_stream()
         self.__device = device
         self.__cuda_stream = None
 
@@ -221,7 +221,7 @@ class ModelExecutor:
             self.__cuda_stream = torch.cuda.Stream(device=self.device)
         return self.__cuda_stream
 
-    def __wait_stream(self):
+    def _wait_stream(self):
         if self.__cuda_stream is not None:
             self.__cuda_stream.synchronize()
             if self.debugging_mode:
