@@ -23,7 +23,8 @@ def stochastic_quantization(
         old_tensor_shape = tensor.shape
         old_device = tensor.device
         tensor = put_data_to_device(tensor)
-        with torch.cuda.Stream(device=tensor.device):
+        stream = torch.cuda.Stream(device=tensor.device)
+        with torch.cuda.stream(stream):
             tensor = tensor.reshape(-1)
             assert len(tensor.shape) == 1
 
