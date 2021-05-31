@@ -2,9 +2,9 @@
 
 import atexit
 
+import torch
 import torch.autograd as autograd
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
-
 from data_structure.torch_process_task_queue import TorchProcessTaskQueue
 from device import get_devices
 from model_util import ModelUtil
@@ -30,8 +30,9 @@ def __get_f(device, inputs, targets, model_with_loss: ModelWithLoss):
 
 
 def worker_fun(task, args):
-    (idx, vector_chunk, model_with_loss, parameter_list, inputs, targets) = task
     worker_device = args[0]
+    torch.cuda.set_device(worker_device)
+    (idx, vector_chunk, model_with_loss, parameter_list, inputs, targets) = task
     for index, vector in enumerate(vector_chunk):
         vector_chunk[index] = vector.to(worker_device)
     inputs = inputs.to(worker_device)

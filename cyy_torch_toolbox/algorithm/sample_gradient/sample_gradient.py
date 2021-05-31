@@ -2,8 +2,8 @@
 
 import atexit
 
+import torch
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
-
 from data_structure.torch_process_task_queue import TorchProcessTaskQueue
 from device import get_cuda_devices
 from ml_type import MachineLearningPhase
@@ -12,10 +12,11 @@ from model_with_loss import ModelWithLoss
 
 
 def __worker_fun(task, args):
+    device = args[0]
+    torch.cuda.set_device(device)
     (index, input_chunk, target_chunk, model_with_loss) = task
 
     loss = None
-    device = args[0]
     gradient_lists = []
     for (sample_input, sample_target) in zip(input_chunk, target_chunk):
         model_with_loss.model.zero_grad()
