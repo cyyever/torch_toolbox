@@ -1,8 +1,8 @@
-import copy
 import inspect
 import json
 import os
 import pickle
+import threading
 from typing import Callable, Dict, List
 
 import torch
@@ -125,7 +125,7 @@ class DatasetCollection:
         return self.__name
 
     def get_labels(self) -> set:
-        cache_dir = DatasetCollection.get_dataset_cache_dir(self.name)
+        cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
         pickle_file = os.path.join(cache_dir, "labels.pk")
         labels = DatasetCollection.__read_data(pickle_file)
         if labels is not None:
@@ -154,22 +154,24 @@ class DatasetCollection:
         raise NotImplementedError(self.name)
 
     __dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
-    __dataset_collections: Dict = dict()
+    __lock = threading.RLock()
+    # __dataset_collections: Dict = dict()
 
     @staticmethod
     def set_dataset_root_dir(root_dir: str):
-        DatasetCollection.__dataset_root_dir = root_dir
+        with DatasetCollection.__lock:
+            DatasetCollection.__dataset_root_dir = root_dir
 
     @staticmethod
-    def get_dataset_dir(name: str):
+    def __get_dataset_dir(name: str):
         dataset_dir = os.path.join(DatasetCollection.__dataset_root_dir, name)
         if not os.path.isdir(dataset_dir):
             os.makedirs(dataset_dir, exist_ok=True)
         return dataset_dir
 
     @staticmethod
-    def get_dataset_cache_dir(name: str):
-        cache_dir = os.path.join(DatasetCollection.get_dataset_dir(name), ".cache")
+    def __get_dataset_cache_dir(name: str):
+        cache_dir = os.path.join(DatasetCollection.__get_dataset_dir(name), ".cache")
         if not os.path.isdir(cache_dir):
             os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
@@ -200,27 +202,25 @@ class DatasetCollection:
 
     @staticmethod
     def get_by_name(name: str, **kwargs):
-        if name in DatasetCollection.__dataset_collections:
-            return copy.deepcopy(DatasetCollection.__dataset_collections[name])
-
-        all_dataset_constructors = set()
-        for dataset_type in DatasetType:
-            dataset_constructor = DatasetCollection.get_dataset_constructor(
-                dataset_type
-            )
-            if name in dataset_constructor:
-                return DatasetCollection.__create_dataset_collection(
-                    name, dataset_type, dataset_constructor[name], **kwargs
+        with DatasetCollection.__lock:
+            all_dataset_constructors = set()
+            for dataset_type in DatasetType:
+                dataset_constructor = DatasetCollection.get_dataset_constructor(
+                    dataset_type
                 )
-            all_dataset_constructors |= dataset_constructor.keys()
-        get_logger().error("supported datasets are %s", all_dataset_constructors)
-        raise NotImplementedError(name)
+                if name in dataset_constructor:
+                    return DatasetCollection.__create_dataset_collection(
+                        name, dataset_type, dataset_constructor[name], **kwargs
+                    )
+                all_dataset_constructors |= dataset_constructor.keys()
+            get_logger().error("supported datasets are %s", all_dataset_constructors)
+            raise NotImplementedError(name)
 
     @staticmethod
     def __create_dataset_collection(
         name: str, dataset_type: DatasetType, dataset_constructor, **kwargs
     ):
-        root_dir = DatasetCollection.get_dataset_dir(name)
+        root_dir = DatasetCollection.__get_dataset_dir(name)
         training_dataset = None
         validation_dataset = None
         test_dataset = None
@@ -295,7 +295,7 @@ class DatasetCollection:
                         # # no validation dataset or test dataset
                         # break
 
-        cache_dir = DatasetCollection.get_dataset_cache_dir(name)
+        cache_dir = DatasetCollection.__get_dataset_cache_dir(name)
 
         splited_dataset = None
         if validation_dataset is None or test_dataset is None:
@@ -371,7 +371,6 @@ class DatasetCollection:
                         (0, 16000 - tensor.shape[-1]), 0
                     )(tensor)
                 )
-        DatasetCollection.__dataset_collections[name] = dc
         return dc
 
     @staticmethod
