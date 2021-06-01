@@ -8,7 +8,7 @@ class LossMetric(Metric):
         batch_size = kwargs.get("batch_size")
         model_executor = kwargs.get("model_executor")
         real_batch_loss = batch_loss
-        if model_executor.model_with_loss.is_averaged_loss():
+        if model_executor._model_with_loss.is_averaged_loss():
             real_batch_loss *= batch_size
         real_batch_loss /= len(model_executor.dataset)
         epoch_loss = self.get_epoch_metric(epoch, "loss")
