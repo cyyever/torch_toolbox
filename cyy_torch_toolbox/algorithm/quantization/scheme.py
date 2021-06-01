@@ -3,7 +3,7 @@ from typing import Callable, Tuple
 import cyy_naive_cpp_extension
 import torch
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
-from device import put_data_to_device
+from device import get_cpu_device, get_device, put_data_to_device
 from tensor import cat_tensors_to_vector, split_tensor_to_dict
 
 
@@ -22,8 +22,11 @@ def stochastic_quantization(
 
         old_tensor_shape = tensor.shape
         old_device = tensor.device
-        tensor = put_data_to_device(tensor)
-        stream = torch.cuda.Stream(device=tensor.device)
+        if old_device == get_cpu_device():
+            tensor = put_data_to_device(tensor, get_device())
+            stream = torch.cuda.Stream(device=tensor.device)
+        else:
+            stream = None
         with torch.cuda.stream(stream):
             tensor = tensor.reshape(-1)
             assert len(tensor.shape) == 1

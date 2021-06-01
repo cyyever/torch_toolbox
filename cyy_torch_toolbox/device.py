@@ -26,9 +26,7 @@ def get_devices():
     return [torch.device("cpu")]
 
 
-def put_data_to_device(data, device=None):
-    if device is None:
-        device = get_device()
+def put_data_to_device(data, device):
     if isinstance(data, torch.Tensor):
         return data.to(device)
     if isinstance(data, list):
