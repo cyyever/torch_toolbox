@@ -91,11 +91,11 @@ class ModelWithLoss:
             self.model.to(device, non_blocking=non_blocking)
 
         assert self.loss_fun is not None
-        if self.__model_transforms and isinstance(self.__model_transforms, list):
-            self.__model_transforms = torchvision.transforms.Compose(
-                self.__model_transforms
-            )
-        if not isinstance(self.__model_transforms, list):
+        if self.__model_transforms:
+            if isinstance(self.__model_transforms, list):
+                self.__model_transforms = torchvision.transforms.Compose(
+                    self.__model_transforms
+                )
             inputs = self.__model_transforms(inputs)
         output = self.__model(inputs, *extra_inputs)
         loss = self.loss_fun(output, targets)
