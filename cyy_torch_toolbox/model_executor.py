@@ -94,11 +94,6 @@ class ModelExecutor:
             self.__phase, self.__hyper_parameter, device=self.device
         )
 
-    # @property
-    # def model_with_loss(self):
-    #     self._wait_stream()
-    #     return self.__model_with_loss
-
     @property
     def model(self) -> torch.nn.Module:
         self._wait_stream()
@@ -258,6 +253,3 @@ class ModelExecutor:
     def offload_from_gpu(self):
         self.model.cpu()
         torch.cuda.empty_cache()
-
-    # def load_to_gpu(self):
-    #     self.model.to(self.device)
