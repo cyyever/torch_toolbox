@@ -1,5 +1,4 @@
 import copy
-# import inspect
 import os
 from typing import Callable, Dict, List, Optional
 
@@ -27,7 +26,7 @@ class ModelExecutor:
         hyper_parameter: HyperParameter,
         save_dir=None,
     ):
-        self.__model_with_loss = model_with_loss
+        self._model_with_loss = model_with_loss
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
@@ -41,7 +40,7 @@ class ModelExecutor:
         self.__metric_tb: MetricTensorBoard = MetricTensorBoard()
         self.__logger = ModelExecutorLogger()
         self.append_hook(self.__logger)
-        self.__performance_metric = PerformanceMetric(self.model_with_loss.model_type)
+        self.__performance_metric = PerformanceMetric(self._model_with_loss.model_type)
         self.append_hook(self.__performance_metric)
         self.__performance_metric_logger = PerformanceMetricLogger()
         self.append_hook(self.__performance_metric_logger)
@@ -95,20 +94,21 @@ class ModelExecutor:
             self.__phase, self.__hyper_parameter, device=self.device
         )
 
-    @property
-    def model_with_loss(self):
-        return self.__model_with_loss
+    # @property
+    # def model_with_loss(self):
+    #     self._wait_stream()
+    #     return self.__model_with_loss
 
     @property
     def model(self) -> torch.nn.Module:
         self._wait_stream()
-        return self.model_with_loss.model
+        return self._model_with_loss.model
 
     def copy_model_with_loss(self, deepcopy=True):
         self._wait_stream()
         if deepcopy:
-            return copy.deepcopy(self.model_with_loss)
-        return copy.copy(self.model_with_loss)
+            return copy.deepcopy(self._model_with_loss)
+        return copy.copy(self._model_with_loss)
 
     def get_data(self, key: str, default_value=None):
         assert key in self.__data
@@ -163,7 +163,6 @@ class ModelExecutor:
     ):
         if stripable:
             self.__stripable_hooks.add(name)
-        # data = {name: (fun, inspect.iscoroutinefunction(fun))}
         data = {name: fun}
         if hook_point not in self.__hooks:
             self.__hooks[hook_point] = [data]
@@ -239,7 +238,7 @@ class ModelExecutor:
         return self.__hyper_parameter
 
     def set_model(self, model: torch.nn.Module):
-        self.model_with_loss.set_model(model)
+        self._model_with_loss.set_model(model)
 
     def load_model(self, model_path):
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
@@ -258,6 +257,7 @@ class ModelExecutor:
 
     def offload_from_gpu(self):
         self.model.cpu()
+        torch.cuda.empty_cache()
 
-    def load_to_gpu(self):
-        self.model.to(self.device)
+    # def load_to_gpu(self):
+    #     self.model.to(self.device)
