@@ -1,6 +1,5 @@
+from inference import Inferencer
 from metrics.prob_metric import ProbabilityMetric
-
-from .inference import Inferencer
 
 # from torchvision.ops.boxes import box_iou
 
