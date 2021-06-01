@@ -73,7 +73,12 @@ class ModelWithLoss:
         self.__model = model
 
     def __call__(
-        self, inputs, targets, phase: MachineLearningPhase = None, device=None
+        self,
+        inputs,
+        targets,
+        phase: MachineLearningPhase = None,
+        device=None,
+        non_blocking=False,
     ) -> dict:
         if phase is not None:
             self.__set_model_mode(phase)
@@ -84,7 +89,6 @@ class ModelWithLoss:
         if isinstance(inputs, tuple):
             inputs, *extra_inputs = inputs
 
-        non_blocking = False
         if device is not None:
             inputs = inputs.to(device, non_blocking=non_blocking)
             targets = targets.to(device, non_blocking=non_blocking)

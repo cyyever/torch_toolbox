@@ -142,6 +142,9 @@ class Trainer(ModelExecutor):
 
         if self.cuda_stream is not None:
             get_logger().debug("use cuda stream %s", self.cuda_stream)
+            for a in self.__inferencers.values():
+                a.set_stream(self.cuda_stream)
+
         with torch.cuda.stream(self.cuda_stream):
             try:
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
