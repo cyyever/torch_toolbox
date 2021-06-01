@@ -54,6 +54,9 @@ class AccuracyMetric(Metric):
 
         class_accuracy = dict()
         for label in self.__classification_correct_count_per_label:
+            # non iid case
+            if self.__classification_count_per_label[label] == 0:
+                continue
             class_accuracy[label] = (
                 self.__classification_correct_count_per_label[label]
                 / self.__classification_count_per_label[label]
