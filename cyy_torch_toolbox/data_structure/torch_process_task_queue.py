@@ -29,13 +29,13 @@ class TorchProcessTaskQueue(TaskQueue):
             task = put_data_to_device(task, get_cpu_device())
         super().add_task(task)
 
-    def put_result(self, result):
+    def put_result(self, result, queue_name: str = "default"):
         if self.__use_manager:
             if isinstance(result, RepeatedResult):
                 result.set_data(put_data_to_device(result.get_data(), get_cpu_device()))
             else:
                 result = put_data_to_device(result, get_cpu_device())
-        super().put_result(result)
+        super().put_result(result, queue_name=queue_name)
 
     def _get_extra_task_arguments(self, worker_id):
         return [self.__devices[worker_id % len(self.__devices)]]
