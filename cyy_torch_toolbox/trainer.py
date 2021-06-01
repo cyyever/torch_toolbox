@@ -1,6 +1,5 @@
-import copy
-
 import torch
+from classfication_inferencer import ClassificationInferencer
 from cyy_naive_lib.log import get_logger
 
 from dataset import decode_batch
@@ -9,7 +8,7 @@ from hooks.learning_rate_hook import LearningRateHook
 from hooks.save_model import SaveModelHook
 from hooks.trainer_debugger import TrainerDebugger
 from hyper_parameter import HyperParameter
-from inference import ClassificationInferencer, Inferencer
+from inference import Inferencer
 from metric_visualizers.batch_loss_logger import BatchLossLogger
 from ml_type import MachineLearningPhase, ModelType, StopExecutingException
 from model_executor import ModelExecutor, ModelExecutorHookPoint
@@ -60,24 +59,16 @@ class Trainer(ModelExecutor):
         model_with_loss = self.copy_model_with_loss(deepcopy=copy_model)
 
         inferencer = None
-        if self.model_with_loss.model_type == ModelType.Classification:
+        if self._model_with_loss.model_type == ModelType.Classification:
             inferencer = ClassificationInferencer(
                 model_with_loss,
                 self.dataset_collection,
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
             )
-        # if self.model_with_loss.model_type == ModelType.Detection:
-        #     return DetectionInferencer(
-        #         model_with_loss,
-        #         self.dataset_collection,
-        #         phase=phase,
-        #         hyper_parameter=self.hyper_parameter,
-        #         iou_threshold=0.6,
-        #     )
         if inferencer is None:
             raise RuntimeError(
-                "Unsupported model type:" + str(self.model_with_loss.model_type)
+                "Unsupported model type:" + str(self._model_with_loss.model_type)
             )
         inferencer.set_device(self.device)
         return inferencer
@@ -161,7 +152,7 @@ class Trainer(ModelExecutor):
                         sample_inputs, sample_targets, _ = decode_batch(batch)
                         batch_size = self.get_batch_size(sample_targets)
                         if (
-                            self.model_with_loss.has_batch_norm
+                            self._model_with_loss.has_batch_norm
                             and self.hyper_parameter.batch_size != 1
                             and batch_size == 1
                         ):
@@ -177,11 +168,12 @@ class Trainer(ModelExecutor):
                             batch_size=batch_size,
                         )
                         optimizer.zero_grad()
-                        result = self.model_with_loss(
+                        result = self._model_with_loss(
                             sample_inputs,
                             sample_targets,
                             phase=self.phase,
                             device=self.device,
+                            non_blocking=True,
                         )
                         loss = result["loss"]
                         loss.backward()
@@ -223,9 +215,8 @@ class Trainer(ModelExecutor):
 
                 # update model parameters
                 for inferencer in self.__inferencers.values():
-                    inferencer.set_model(copy.deepcopy(self.model))
+                    inferencer.set_model(self.model)
                     inferencer.inference(epoch=epoch, use_grad=False)
-                    inferencer.offload_from_gpu()
 
                 self.exec_hooks(
                     ModelExecutorHookPoint.AFTER_EPOCH,
