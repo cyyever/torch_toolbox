@@ -244,4 +244,8 @@ class Trainer(ModelExecutor):
             except StopExecutingException:
                 get_logger().warning("stop training")
             self._wait_stream()
-        self.exec_hooks(ModelExecutorHookPoint.AFTER_EXECUTE, model_executor=self)
+        self.exec_hooks(
+            ModelExecutorHookPoint.AFTER_EXECUTE,
+            model_executor=self,
+            epoch=self.hyper_parameter.epoch,
+        )
