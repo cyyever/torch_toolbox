@@ -1,7 +1,7 @@
 import torch
-from classfication_inferencer import ClassificationInferencer
 from cyy_naive_lib.log import get_logger
 
+from classification_inferencer import ClassificationInferencer
 from dataset import decode_batch
 from dataset_collection import DatasetCollection
 from hooks.learning_rate_hook import LearningRateHook
@@ -59,7 +59,7 @@ class Trainer(ModelExecutor):
         model_with_loss = self.copy_model_with_loss(deepcopy=copy_model)
 
         inferencer = None
-        if self._model_with_loss.model_type == ModelType.Classification:
+        if model_with_loss.model_type == ModelType.Classification:
             inferencer = ClassificationInferencer(
                 model_with_loss,
                 self.dataset_collection,
@@ -68,7 +68,7 @@ class Trainer(ModelExecutor):
             )
         if inferencer is None:
             raise RuntimeError(
-                "Unsupported model type:" + str(self._model_with_loss.model_type)
+                "Unsupported model type:" + str(model_with_loss.model_type)
             )
         inferencer.set_device(self.device)
         return inferencer

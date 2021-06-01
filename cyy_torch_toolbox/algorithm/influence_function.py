@@ -1,6 +1,7 @@
+from data_structure.synced_tensor_dict import SyncedTensorDict
+
 from algorithm.inverse_hessian_vector_product import \
     stochastic_inverse_hessian_vector_product
-from data_structure.synced_tensor_dict import SyncedTensorDict
 
 
 def compute_influence_function(
@@ -18,7 +19,7 @@ def compute_influence_function(
     product = (
         stochastic_inverse_hessian_vector_product(
             trainer.dataset,
-            trainer.model_with_loss,
+            trainer.copy_model_with_loss(True),
             test_gradient,
             repeated_num=3,
             max_iteration=None,
