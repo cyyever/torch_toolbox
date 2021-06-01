@@ -215,6 +215,10 @@ class ModelExecutor:
         self.__device = device
         self.__cuda_stream = None
 
+    def set_stream(self, stream):
+        self._wait_stream()
+        self.__cuda_stream = stream
+
     @property
     def cuda_stream(self):
         if self.__cuda_stream is None and "cuda" in self.device.type.lower():
