@@ -15,13 +15,9 @@ class ModelExecutorLogger(Hook):
         if os.getenv("draw_torch_model") is not None:
             model_executor.model_with_loss.trace_input = True
         get_logger().info("dataset is %s", model_executor.dataset)
-        get_logger().info(
-            "model type is %s", model_executor.model_with_loss.model.__class__
-        )
-        get_logger().debug("model is %s", model_executor.model_with_loss.model)
-        get_logger().info(
-            "loss function is %s", model_executor.model_with_loss.loss_fun
-        )
+        get_logger().info("model type is %s", model_executor.model.__class__)
+        get_logger().debug("model is %s", model_executor.model)
+        get_logger().info("loss function is %s", model_executor.loss_fun)
         get_logger().info(
             "parameter number is %s",
             len(model_util.get_parameter_list()),

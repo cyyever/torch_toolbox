@@ -95,6 +95,10 @@ class ModelExecutor:
         )
 
     @property
+    def loss_fun(self):
+        return self._model_with_loss.loss_fun
+
+    @property
     def model(self) -> torch.nn.Module:
         self._wait_stream()
         return self._model_with_loss.model
