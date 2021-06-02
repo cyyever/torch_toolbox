@@ -105,8 +105,12 @@ class ModelWithLoss:
         loss = self.loss_fun(output, targets)
         if self.trace_input and self.__example_input is None:
             self.__example_input = [inputs.detach()] + copy.deepcopy(extra_inputs)
+        if self.__is_averaged_loss():
+            normalized_loss = loss * targets.shape[0]
+        else:
+            normalized_loss = loss
 
-        return {"loss": loss, "output": output}
+        return {"loss": loss, "normalized_loss": normalized_loss, "output": output}
 
     def __choose_loss_function(self) -> Optional[torch.nn.modules.loss._Loss]:
         if isinstance(self.__model, GeneralizedRCNN):
@@ -138,7 +142,7 @@ class ModelWithLoss:
         )
         raise NotImplementedError(type(last_layer))
 
-    def is_averaged_loss(self) -> bool:
+    def __is_averaged_loss(self) -> bool:
         if hasattr(self.loss_fun, "reduction"):
             if self.loss_fun.reduction in ("mean", "elementwise_mean"):
                 return True
