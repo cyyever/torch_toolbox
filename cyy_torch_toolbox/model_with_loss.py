@@ -105,11 +105,9 @@ class ModelWithLoss:
         loss = self.loss_fun(output, targets)
         if self.trace_input and self.__example_input is None:
             self.__example_input = [inputs.detach()] + copy.deepcopy(extra_inputs)
+        normalized_loss = loss
         if self.__is_averaged_loss():
             normalized_loss = loss * targets.shape[0]
-        else:
-            normalized_loss = loss
-
         return {"loss": loss, "normalized_loss": normalized_loss, "output": output}
 
     def __choose_loss_function(self) -> Optional[torch.nn.modules.loss._Loss]:

@@ -13,7 +13,7 @@ class ModelExecutorLogger(Hook):
         model_executor = kwargs["model_executor"]
         model_util = ModelUtil(model_executor.model)
         if os.getenv("draw_torch_model") is not None:
-            model_executor.model_with_loss.trace_input = True
+            model_executor._model_with_loss.trace_input = True
         get_logger().info("dataset is %s", model_executor.dataset)
         get_logger().info("model type is %s", model_executor.model.__class__)
         get_logger().debug("model is %s", model_executor.model)
@@ -37,5 +37,5 @@ class ModelExecutorLogger(Hook):
         model_executor = kwargs["model_executor"]
         if os.getenv("draw_torch_model") is not None:
             model_executor.visualizer.writer.add_graph(
-                model_executor.model, model_executor.model_with_loss.example_input
+                model_executor.model, model_executor._model_with_loss.example_input
             )
