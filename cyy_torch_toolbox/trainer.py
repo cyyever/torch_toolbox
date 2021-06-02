@@ -147,8 +147,7 @@ class Trainer(ModelExecutor):
                     for batch_index, batch in enumerate(self.dataloader):
                         optimizer = self.get_optimizer()
                         lr_scheduler = self.get_lr_scheduler()
-                        assert optimizer is not None
-                        assert lr_scheduler is not None
+
                         sample_inputs, sample_targets, _ = decode_batch(batch)
                         batch_size = self.get_batch_size(sample_targets)
                         if (
