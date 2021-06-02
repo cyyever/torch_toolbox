@@ -1,4 +1,4 @@
-from hook import ComposeHook, Hook
+from hook import ComposeHook
 
 
 class Metric(ComposeHook):

@@ -30,7 +30,8 @@ class Inferencer(ModelExecutor):
         )
         with torch.set_grad_enabled(use_grad):
             get_logger().debug("use device %s", self.device)
-            self.model.zero_grad()
+            if use_grad:
+                self.model.zero_grad(set_to_none=True)
             self.exec_hooks(
                 ModelExecutorHookPoint.BEFORE_EPOCH,
                 model_executor=self,
@@ -41,12 +42,9 @@ class Inferencer(ModelExecutor):
                 result = self._model_with_loss(
                     inputs, targets, phase=self.phase, device=self.device
                 )
-                batch_loss = result["loss"].data.item()
+                batch_loss = result["loss"]
                 if use_grad:
-                    real_batch_loss = result["loss"]
-                    if self._model_with_loss.is_averaged_loss():
-                        real_batch_loss *= self.get_batch_size(targets)
-                    real_batch_loss /= len(self.dataset)
+                    real_batch_loss = result["normalized_loss"] / len(self.dataset)
                     real_batch_loss.backward()
 
                 self.exec_hooks(

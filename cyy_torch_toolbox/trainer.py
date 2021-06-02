@@ -159,7 +159,6 @@ class Trainer(ModelExecutor):
                             get_logger().debug("drop last one-batch for batchnorm")
                             continue
 
-                        optimizer.zero_grad()
                         self.exec_hooks(
                             ModelExecutorHookPoint.BEFORE_BATCH,
                             model_executor=self,
@@ -167,7 +166,7 @@ class Trainer(ModelExecutor):
                             batch=batch,
                             batch_size=batch_size,
                         )
-                        optimizer.zero_grad()
+                        optimizer.zero_grad(set_to_none=True)
                         result = self._model_with_loss(
                             sample_inputs,
                             sample_targets,
@@ -177,7 +176,6 @@ class Trainer(ModelExecutor):
                         )
                         loss = result["loss"]
                         loss.backward()
-                        batch_loss = loss.data.item()
 
                         self.exec_hooks(
                             ModelExecutorHookPoint.AFTER_BATCH,
@@ -186,7 +184,8 @@ class Trainer(ModelExecutor):
                             batch=batch,
                             epoch=epoch,
                             result=result,
-                            batch_loss=batch_loss,
+                            batch_loss=loss,
+                            normalized_batch_loss=result["normalized_loss"],
                             batch_size=batch_size,
                         )
                         if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
@@ -197,17 +196,17 @@ class Trainer(ModelExecutor):
                         else:
                             optimizer.step()
 
-                        optimizer.zero_grad()
-                        self.exec_hooks(
-                            ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
-                            model_executor=self,
-                            batch_index=batch_index,
-                            batch=batch,
-                            epoch=epoch,
-                            result=result,
-                            batch_loss=batch_loss,
-                            batch_size=batch_size,
-                        )
+                        # optimizer.zero_grad(set_to_none=True)
+                        # self.exec_hooks(
+                        #     ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
+                        #     model_executor=self,
+                        #     batch_index=batch_index,
+                        #     batch=batch,
+                        #     epoch=epoch,
+                        #     result=result,
+                        #     batch_loss=loss,
+                        #     batch_size=batch_size,
+                        # )
 
                         if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                             get_logger().debug("adjust lr after batch")
