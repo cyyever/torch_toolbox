@@ -5,7 +5,8 @@ class LossMetric(Metric):
     def _after_batch(self, **kwargs):
         epoch = kwargs.get("epoch")
         model_executor = kwargs.get("model_executor")
-        real_batch_loss = kwargs.get("normalized_batch_loss") / len(
+
+        real_batch_loss = kwargs.get("normalized_batch_loss").detach() / len(
             model_executor.dataset
         )
         epoch_loss = self.get_epoch_metric(epoch, "loss")

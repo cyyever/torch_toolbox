@@ -52,6 +52,7 @@ class Inferencer(ModelExecutor):
                     model_executor=self,
                     batch=batch,
                     batch_loss=batch_loss,
+                    normalized_batch_loss=result["normalized_loss"],
                     batch_index=batch_index,
                     batch_size=self.get_batch_size(targets),
                     result=result,
