@@ -8,8 +8,8 @@ class BatchLossLogger(MetricLogger):
         model_executor = kwargs.get("model_executor")
         batch_size = kwargs["batch_size"]
         batch_index = kwargs["batch_index"]
-        ten_batches = len(model_executor.dataset) // (10 * batch_size)
-        if ten_batches == 0 or batch_index % ten_batches == 0:
+        five_batches = len(model_executor.dataset) // (5 * batch_size)
+        if five_batches == 0 or batch_index % five_batches == 0:
             get_logger().info(
                 "%s epoch: %s, batch: %s, learning rate: %s, batch loss: %s",
                 self.prefix,
