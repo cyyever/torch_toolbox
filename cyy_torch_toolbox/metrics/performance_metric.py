@@ -1,3 +1,5 @@
+import time
+
 from ml_type import ModelType
 
 from .acc_metric import AccuracyMetric
@@ -12,10 +14,18 @@ class PerformanceMetric(Metric):
         self.__accuracy_metric = None
         if model_type == ModelType.Classification:
             self.__accuracy_metric = AccuracyMetric()
+        self.__epoch_time_point: float = None
+
+    def _before_epoch(self, **kwargs):
+        self.__epoch_time_point = time.time()
 
     def _after_epoch(self, **kwargs):
         epoch = kwargs.get("epoch")
+        epoch_end_time_point = time.time()
         self._set_epoch_metric(epoch, "loss", self.__loss_metric.get_loss(epoch))
+        self._set_epoch_metric(
+            epoch, "duration", epoch_end_time_point - self.__epoch_time_point
+        )
         if self.__accuracy_metric is not None:
             self._set_epoch_metric(
                 epoch, "accuracy", self.__accuracy_metric.get_accuracy(epoch)
@@ -23,6 +33,9 @@ class PerformanceMetric(Metric):
 
     def get_loss(self, epoch):
         return self.get_epoch_metric(epoch, "loss")
+
+    def get_duration(self, epoch):
+        return self.get_epoch_metric(epoch, "duration")
 
     def get_accuracy(self, epoch):
         if self.__accuracy_metric is None:
