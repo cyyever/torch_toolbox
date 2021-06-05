@@ -48,6 +48,7 @@ class HyDRAAnalyzer:
                     -(test_subset_gradient @ hyper_gradient_sum)
                     / self.training_set_size
                 ).data.item()
+        test_subset_gradient_dict.release()
         return contribution_dict
 
     def get_training_sample_contributions(
