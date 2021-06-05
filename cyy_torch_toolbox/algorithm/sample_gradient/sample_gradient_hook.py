@@ -11,11 +11,10 @@ class SampleGradientHook(AddIndexToDataset):
         storage_dir = kwargs.pop("storage_dir", None)
         super().__init__(**kwargs)
         self.__computed_indices = None
-        self.__sample_gradient_dict = SyncedTensorDict.create()
+        self.__sample_gradient_dict = None
         self.__storage_dir = storage_dir
         self.__model_with_loss = None
-        if storage_dir is not None:
-            self.__sample_gradient_dict.set_storage_dir(storage_dir)
+        self.__storage_dir = storage_dir
 
     @property
     def sample_gradient_dict(self):
@@ -23,6 +22,11 @@ class SampleGradientHook(AddIndexToDataset):
 
     def set_computed_indices(self, computed_indices):
         self.__computed_indices = set(computed_indices)
+
+    def _before_execute(self, **kwargs):
+        if self.__storage_dir is not None:
+            self.__sample_gradient_dict.set_storage_dir(self.__storage_dir)
+        self.__sample_gradient_dict = SyncedTensorDict.create()
 
     def _before_batch(self, **kwargs):
         self.sample_gradient_dict.clear()
@@ -65,4 +69,7 @@ class SampleGradientHook(AddIndexToDataset):
     def _after_execute(self, **kwargs):
         if not self.__storage_dir:
             self.sample_gradient_dict.clear()
+
+        self.__sample_gradient_dict.release()
+        self.__sample_gradient_dict = None
         super()._after_execute(**kwargs)
