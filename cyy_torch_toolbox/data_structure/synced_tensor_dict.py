@@ -25,6 +25,9 @@ class SyncedTensorDict:
     def __delitem__(self, key):
         self.__tensor_dict.__delitem__(str(key))
 
+    def release(self):
+        self.__tensor_dict.release()
+
     def keys(self) -> set:
         return {self.__key_type(k) for k in self.__tensor_dict.keys()}
 
