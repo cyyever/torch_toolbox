@@ -235,10 +235,22 @@ class DatasetCollection:
 
         # use_mel_spectrogram = kwargs.pop("use_mel_spectrogram", False)
         for k, v in kwargs.items():
-            if k in dataset_kwargs:
-                raise RuntimeError("key " + k + " is set by the library")
+            get_logger().warning("override dataset argument %s", k)
             dataset_kwargs[k] = v
+
         sig = inspect.signature(dataset_constructor)
+        discarded_dataset_kwargs = set()
+        for k in dataset_kwargs:
+            if k not in sig.parameters:
+                discarded_dataset_kwargs.add(k)
+        if "download" in sig.parameters and sig.parameters["download"].default is None:
+            discarded_dataset_kwargs.add("download")
+        if discarded_dataset_kwargs:
+            get_logger().warning(
+                "discarded_dataset_kwargs %s", discarded_dataset_kwargs
+            )
+            for k in dataset_kwargs:
+                dataset_kwargs.pop(k)
 
         text_field = None
         label_field = None
@@ -254,6 +266,10 @@ class DatasetCollection:
             for phase in MachineLearningPhase:
                 while True:
                     try:
+                        print(
+                            sig.parameters["download"],
+                            "===========================================",
+                        )
                         if "train" in sig.parameters:
                             # Some dataset only have train and test parts
                             if phase == MachineLearningPhase.Validation:
