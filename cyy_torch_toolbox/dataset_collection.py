@@ -369,7 +369,7 @@ class DatasetCollection:
         if (
             "download" in sig.parameters
             and "download" in sig.parameters
-            and sig.parameters["download"].default is None
+            and sig.parameters["download"].default is not None
         ):
             dataset_kwargs["download"] = True
         vision_transform = transforms.Compose([transforms.ToTensor()])
@@ -384,7 +384,7 @@ class DatasetCollection:
             get_logger().warning(
                 "discarded_dataset_kwargs %s", discarded_dataset_kwargs
             )
-            for k in dataset_kwargs:
+            for k in discarded_dataset_kwargs:
                 dataset_kwargs.pop(k)
         return dataset_kwargs
 
