@@ -335,10 +335,14 @@ class DatasetCollection:
             if res is not None:
                 mean, std = res
             else:
-                total_dataset = torch.utils.data.ConcatDataset(
-                    list(dc.__datasets.values())
-                )
-                mean, std = DatasetUtil(total_dataset).get_mean_and_std()
+                if name.lower() == "imagenet":
+                    mean = torch.Tensor([0.485, 0.456, 0.406])
+                    std = torch.Tensor([0.229, 0.224, 0.225])
+                else:
+                    total_dataset = torch.utils.data.ConcatDataset(
+                        list(dc.__datasets.values())
+                    )
+                    mean, std = DatasetUtil(total_dataset).get_mean_and_std()
                 DatasetCollection.__write_data(pickle_file, (mean, std))
             dc.append_transform(transforms.Normalize(mean=mean, std=std))
             if name not in ("SVHN", "MNIST"):
