@@ -202,7 +202,7 @@ class DatasetCollection:
         return datasets
 
     @staticmethod
-    def get_by_name(name: str, **kwargs):
+    def get_by_name(name: str, dataset_kwargs: dict):
         with DatasetCollection.__lock:
             all_dataset_constructors = set()
             for dataset_type in DatasetType:
@@ -211,7 +211,7 @@ class DatasetCollection:
                 )
                 if name in dataset_constructor:
                     return DatasetCollection.__create_dataset_collection(
-                        name, dataset_type, dataset_constructor[name], **kwargs
+                        name, dataset_type, dataset_constructor[name], dataset_kwargs
                     )
                 all_dataset_constructors |= dataset_constructor.keys()
             get_logger().error("supported datasets are %s", all_dataset_constructors)
@@ -219,38 +219,15 @@ class DatasetCollection:
 
     @staticmethod
     def __create_dataset_collection(
-        name: str, dataset_type: DatasetType, dataset_constructor, **kwargs
+        name: str, dataset_type: DatasetType, dataset_constructor, dataset_kwargs
     ):
-        root_dir = DatasetCollection.__get_dataset_dir(name)
+        sig = inspect.signature(dataset_constructor)
+        dataset_kwargs = DatasetCollection.__prepare_dataset_kwargs(
+            name, dataset_type, sig, dataset_kwargs
+        )
         training_dataset = None
         validation_dataset = None
         test_dataset = None
-        dataset_kwargs = {
-            "root": root_dir,
-            "download": True,
-        }
-        vision_transform = transforms.Compose([transforms.ToTensor()])
-        if dataset_type == DatasetType.Vision:
-            dataset_kwargs["transform"] = vision_transform
-
-        # use_mel_spectrogram = kwargs.pop("use_mel_spectrogram", False)
-        for k, v in kwargs.items():
-            get_logger().warning("override dataset argument %s", k)
-            dataset_kwargs[k] = v
-
-        sig = inspect.signature(dataset_constructor)
-        discarded_dataset_kwargs = set()
-        for k in dataset_kwargs:
-            if k not in sig.parameters:
-                discarded_dataset_kwargs.add(k)
-        if "download" in sig.parameters and sig.parameters["download"].default is None:
-            discarded_dataset_kwargs.add("download")
-        if discarded_dataset_kwargs:
-            get_logger().warning(
-                "discarded_dataset_kwargs %s", discarded_dataset_kwargs
-            )
-            for k in dataset_kwargs:
-                dataset_kwargs.pop(k)
 
         text_field = None
         label_field = None
@@ -266,10 +243,6 @@ class DatasetCollection:
             for phase in MachineLearningPhase:
                 while True:
                     try:
-                        print(
-                            sig.parameters["download"],
-                            "===========================================",
-                        )
                         if "train" in sig.parameters:
                             # Some dataset only have train and test parts
                             if phase == MachineLearningPhase.Validation:
@@ -306,10 +279,6 @@ class DatasetCollection:
                         raise e
                         # split = dataset_kwargs.get("split", None)
                         # if split is None:
-                        #     raise e
-                        # if phase == MachineLearningPhase.Training:
-                        #     raise e
-                        # # no validation dataset or test dataset
                         # break
 
         cache_dir = DatasetCollection.__get_dataset_cache_dir(name)
@@ -340,6 +309,7 @@ class DatasetCollection:
         if splited_dataset is not None:
             dc.set_origin_dataset(MachineLearningPhase.Validation, splited_dataset)
             dc.set_origin_dataset(MachineLearningPhase.Test, splited_dataset)
+        # use_mel_spectrogram = kwargs.pop("use_mel_spectrogram", False)
         # if dataset_type == DatasetType.Audio and use_mel_spectrogram:
         #     cache_dir = DatasetCollection.get_dataset_cache_dir(
         #         name + "_mel_spectrogram"
@@ -381,14 +351,42 @@ class DatasetCollection:
                     transforms.RandomCrop(32, padding=4),
                     phase=MachineLearningPhase.Training,
                 )
-        if dataset_type == DatasetType.Audio:
-            if name == "SPEECHCOMMANDS_SIMPLIFIED":
-                dc.append_transform(
-                    lambda tensor: torch.nn.ConstantPad1d(
-                        (0, 16000 - tensor.shape[-1]), 0
-                    )(tensor)
-                )
+        # if dataset_type == DatasetType.Audio:
+        #     if name == "SPEECHCOMMANDS_SIMPLIFIED":
+        #         dc.append_transform(
+        #             lambda tensor: torch.nn.ConstantPad1d(
+        #                 (0, 16000 - tensor.shape[-1]), 0
+        #             )(tensor)
+        #         )
         return dc
+
+    @staticmethod
+    def __prepare_dataset_kwargs(
+        name: str, dataset_type: DatasetType, sig, dataset_kwargs: dict
+    ):
+        if "root" not in dataset_kwargs and "root" in sig.parameters:
+            dataset_kwargs["root"] = DatasetCollection.__get_dataset_dir(name)
+        if (
+            "download" in sig.parameters
+            and "download" in sig.parameters
+            and sig.parameters["download"].default is None
+        ):
+            dataset_kwargs["download"] = True
+        vision_transform = transforms.Compose([transforms.ToTensor()])
+        if dataset_type == DatasetType.Vision:
+            dataset_kwargs["transform"] = vision_transform
+
+        discarded_dataset_kwargs = set()
+        for k in dataset_kwargs:
+            if k not in sig.parameters:
+                discarded_dataset_kwargs.add(k)
+        if discarded_dataset_kwargs:
+            get_logger().warning(
+                "discarded_dataset_kwargs %s", discarded_dataset_kwargs
+            )
+            for k in dataset_kwargs:
+                dataset_kwargs.pop(k)
+        return dataset_kwargs
 
     @staticmethod
     def __split_for_validation(cache_dir, splited_dataset, label_field=None):
@@ -454,7 +452,7 @@ class DatasetCollectionConfig:
         if self.dataset_name is None:
             raise RuntimeError("dataset_name is None")
 
-        dc = DatasetCollection.get_by_name(self.dataset_name, **self.dataset_kwargs)
+        dc = DatasetCollection.get_by_name(self.dataset_name, self.dataset_kwargs)
         dc.transform_dataset(
             MachineLearningPhase.Training,
             lambda dataset: self.__transform_training_dataset(dataset, save_dir),
