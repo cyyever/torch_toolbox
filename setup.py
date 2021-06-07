@@ -22,10 +22,6 @@ setuptools.setup(
         "cyy_torch_toolbox/metric_visualizers",
         "cyy_torch_toolbox/data_structure",
         "cyy_torch_toolbox/algorithm",
-        "cyy_torch_toolbox/algorithm/quantization",
-        "cyy_torch_toolbox/algorithm/sample_gradient",
-        "cyy_torch_toolbox/algorithm/video",
-        "cyy_torch_toolbox/algorithm/hydra",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
