@@ -202,7 +202,7 @@ class DatasetCollection:
         return datasets
 
     @staticmethod
-    def get_by_name(name: str, dataset_kwargs: dict):
+    def get_by_name(name: str, dataset_kwargs: dict = dict()):
         with DatasetCollection.__lock:
             all_dataset_constructors = set()
             for dataset_type in DatasetType:
