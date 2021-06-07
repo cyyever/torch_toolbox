@@ -276,10 +276,10 @@ class DatasetCollection:
                             test_dataset = dataset
                         break
                     except Exception as e:
+                        split = dataset_kwargs.get("split", None)
+                        if split == "test":
+                            break
                         raise e
-                        # split = dataset_kwargs.get("split", None)
-                        # if split is None:
-                        # break
 
         cache_dir = DatasetCollection.__get_dataset_cache_dir(name)
 
