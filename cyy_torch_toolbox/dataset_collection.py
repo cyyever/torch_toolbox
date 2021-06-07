@@ -157,7 +157,6 @@ class DatasetCollection:
 
     __dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
     __lock = threading.RLock()
-    # __dataset_collections: Dict = dict()
 
     @staticmethod
     def set_dataset_root_dir(root_dir: str):

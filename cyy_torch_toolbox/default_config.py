@@ -6,7 +6,11 @@ import uuid
 
 from cyy_naive_lib.log import get_logger
 
-from dataset_collection import DatasetCollectionConfig
+try:
+    from cyy_torch_toolbox.dataset_collection import DatasetCollectionConfig
+except ImportError:
+    from dataset_collection import DatasetCollectionConfig
+
 from hyper_parameter import HyperParameterConfig
 from inference import Inferencer
 from ml_type import MachineLearningPhase
