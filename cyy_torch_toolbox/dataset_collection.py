@@ -84,14 +84,18 @@ class DatasetCollection:
     ) -> DatasetUtil:
         return DatasetUtil(self.get_dataset(phase), self.__label_field)
 
-    def append_transform(self, transform, phase=None):
+    def append_transforms(self, transforms, phases=None):
         origin_datasets = set()
         for k in MachineLearningPhase:
-            if k != phase:
+            if phases is not None and k not in phases:
                 continue
             origin_datasets.add(self.__origin_datasets[k])
         for dataset in origin_datasets:
-            DatasetUtil(dataset).append_transform(transform)
+            for t in transforms:
+                DatasetUtil(dataset).append_transform(t)
+
+    def append_transform(self, transform, phases=None):
+        return self.append_transforms([transform], phases)
 
     def prepend_transform(self, transform, phase=None):
         origin_datasets = set()
@@ -348,28 +352,27 @@ class DatasetCollection:
             if name not in ("SVHN", "MNIST"):
                 dc.append_transform(
                     transforms.RandomHorizontalFlip(),
-                    phase=MachineLearningPhase.Training,
+                    phases={MachineLearningPhase.Training},
                 )
             if name in ("CIFAR10", "CIFAR100"):
                 dc.append_transform(
                     transforms.RandomCrop(32, padding=4),
-                    phase=MachineLearningPhase.Training,
+                    phases={MachineLearningPhase.Training},
                 )
             if name.lower() == "imagenet":
                 dc.append_transform(
-                    transforms.RandomResizedCrop(224),
-                    transforms.RandomHorizontalFlip(),
-                    phase=MachineLearningPhase.Training,
+                    [
+                        transforms.RandomResizedCrop(224),
+                        transforms.RandomHorizontalFlip(),
+                    ],
+                    phases={MachineLearningPhase.Training},
                 )
-                dc.append_transform(
-                    transforms.Resize(256),
-                    transforms.CenterCrop(224),
-                    phase=MachineLearningPhase.Validation,
-                )
-                dc.append_transform(
-                    transforms.Resize(256),
-                    transforms.CenterCrop(224),
-                    phase=MachineLearningPhase.Test,
+                dc.append_transforms(
+                    [
+                        transforms.Resize(256),
+                        transforms.CenterCrop(224),
+                    ],
+                    phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
                 )
         # if dataset_type == DatasetType.Audio:
         #     if name == "SPEECHCOMMANDS_SIMPLIFIED":
