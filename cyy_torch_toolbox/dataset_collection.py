@@ -360,7 +360,7 @@ class DatasetCollection:
                     phases={MachineLearningPhase.Training},
                 )
             if name.lower() == "imagenet":
-                dc.append_transform(
+                dc.append_transforms(
                     [
                         transforms.RandomResizedCrop(224),
                         transforms.RandomHorizontalFlip(),
