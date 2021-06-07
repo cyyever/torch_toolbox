@@ -87,7 +87,7 @@ class DatasetCollection:
     def append_transform(self, transform, phase=None):
         origin_datasets = set()
         for k in MachineLearningPhase:
-            if phase is not None and k != phase:
+            if k != phase:
                 continue
             origin_datasets.add(self.__origin_datasets[k])
         for dataset in origin_datasets:
@@ -354,6 +354,22 @@ class DatasetCollection:
                 dc.append_transform(
                     transforms.RandomCrop(32, padding=4),
                     phase=MachineLearningPhase.Training,
+                )
+            if name.lower() == "imagenet":
+                dc.append_transform(
+                    transforms.RandomResizedCrop(224),
+                    transforms.RandomHorizontalFlip(),
+                    phase=MachineLearningPhase.Training,
+                )
+                dc.append_transform(
+                    transforms.Resize(256),
+                    transforms.CenterCrop(224),
+                    phase=MachineLearningPhase.Validation,
+                )
+                dc.append_transform(
+                    transforms.Resize(256),
+                    transforms.CenterCrop(224),
+                    phase=MachineLearningPhase.Test,
                 )
         # if dataset_type == DatasetType.Audio:
         #     if name == "SPEECHCOMMANDS_SIMPLIFIED":
