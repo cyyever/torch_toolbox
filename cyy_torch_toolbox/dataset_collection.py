@@ -372,9 +372,6 @@ class DatasetCollection:
             and sig.parameters["download"].default is not None
         ):
             dataset_kwargs["download"] = True
-        vision_transform = transforms.Compose([transforms.ToTensor()])
-        if dataset_type == DatasetType.Vision:
-            dataset_kwargs["transform"] = vision_transform
 
         discarded_dataset_kwargs = set()
         for k in dataset_kwargs:
@@ -386,6 +383,11 @@ class DatasetCollection:
             )
             for k in discarded_dataset_kwargs:
                 dataset_kwargs.pop(k)
+        if dataset_type == DatasetType.Vision:
+            if "transform" not in dataset_kwargs:
+                dataset_kwargs["transform"] = transforms.Compose(
+                    [transforms.ToTensor()]
+                )
         return dataset_kwargs
 
     @staticmethod
