@@ -404,7 +404,7 @@ class DatasetCollection:
 class DatasetCollectionConfig:
     def __init__(self, dataset_name=None):
         self.dataset_name = dataset_name
-        self.dataset_args = dict()
+        self.dataset_kwargs = dict()
         self.training_dataset_percentage = None
         self.training_dataset_indices_path = None
         self.training_dataset_label_map_path = None
@@ -432,13 +432,13 @@ class DatasetCollectionConfig:
                 setattr(self, attr, value)
         if args.dataset_arg_json_path is not None:
             with open(args.dataset_arg_json_path, "rt") as f:
-                self.dataset_args = json.load(f)
+                self.dataset_kwargs = json.load(f)
 
     def create_dataset_collection(self, save_dir):
         if self.dataset_name is None:
             raise RuntimeError("dataset_name is None")
 
-        dc = DatasetCollection.get_by_name(self.dataset_name, **self.dataset_args)
+        dc = DatasetCollection.get_by_name(self.dataset_name, **self.dataset_kwargs)
         dc.transform_dataset(
             MachineLearningPhase.Training,
             lambda dataset: self.__transform_training_dataset(dataset, save_dir),
