@@ -412,7 +412,7 @@ class DatasetCollection:
 
     def __get_label_indices(self, cache_dir):
         with self.__lock:
-            cache_dir = self.get_dataset_cache_dir()
+            cache_dir = DatasetCollection.get_dataset_cache_dir()
             pickle_file = os.path.join(cache_dir, "label_indices.pk")
             label_indices = DatasetCollection.__read_data(pickle_file)
             if label_indices is not None:
