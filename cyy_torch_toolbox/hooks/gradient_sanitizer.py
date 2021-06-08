@@ -10,7 +10,13 @@ class GradientSanitizer(Hook):
         trainer = kwargs["model_executor"]
         optimizer = trainer.get_optimizer()
         for name, parameter in trainer.model.named_parameters():
+            flag = False
             for group in optimizer.param_groups:
-                if group["params"][0] is parameter:
-                    return
-            raise RuntimeError("can't find parameter " + name + " in the optimizer")
+                if flag:
+                    break
+                for param in group["params"]:
+                    if param is parameter:
+                        flag = True
+                        break
+            if not flag:
+                raise RuntimeError("can't find parameter " + name + " in the optimizer")

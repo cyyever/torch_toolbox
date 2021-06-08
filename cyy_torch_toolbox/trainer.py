@@ -198,18 +198,6 @@ class Trainer(ModelExecutor):
                         else:
                             optimizer.step()
 
-                        # optimizer.zero_grad(set_to_none=True)
-                        # self.exec_hooks(
-                        #     ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
-                        #     model_executor=self,
-                        #     batch_index=batch_index,
-                        #     batch=batch,
-                        #     epoch=epoch,
-                        #     result=result,
-                        #     batch_loss=loss,
-                        #     batch_size=batch_size,
-                        # )
-
                         if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                             get_logger().debug("adjust lr after batch")
                             lr_scheduler.step()
@@ -231,7 +219,8 @@ class Trainer(ModelExecutor):
                         ):
                             training_loss = self.performance_metric.get_loss(epoch)
                             get_logger().debug(
-                                "call ReduceLROnPlateau for training loss %s", training_loss
+                                "call ReduceLROnPlateau for training loss %s",
+                                training_loss,
                             )
                             lr_scheduler.step(training_loss)
                         else:
