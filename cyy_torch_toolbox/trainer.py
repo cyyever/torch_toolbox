@@ -214,28 +214,28 @@ class Trainer(ModelExecutor):
                             get_logger().debug("adjust lr after batch")
                             lr_scheduler.step()
 
-                # update model parameters
-                for inferencer in self.__inferencers.values():
-                    inferencer.set_model(self.model)
-                    inferencer.inference(epoch=epoch, use_grad=False)
+                    # update model parameters
+                    for inferencer in self.__inferencers.values():
+                        inferencer.set_model(self.model)
+                        inferencer.inference(epoch=epoch, use_grad=False)
 
-                self.exec_hooks(
-                    ModelExecutorHookPoint.AFTER_EPOCH,
-                    model_executor=self,
-                    epoch=epoch,
-                )
+                    self.exec_hooks(
+                        ModelExecutorHookPoint.AFTER_EPOCH,
+                        model_executor=self,
+                        epoch=epoch,
+                    )
 
-                if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                    if isinstance(
-                        lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau
-                    ):
-                        training_loss = self.performance_metric.get_loss(epoch)
-                        get_logger().debug(
-                            "call ReduceLROnPlateau for training loss %s", training_loss
-                        )
-                        lr_scheduler.step(training_loss)
-                    else:
-                        lr_scheduler.step()
+                    if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+                        if isinstance(
+                            lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau
+                        ):
+                            training_loss = self.performance_metric.get_loss(epoch)
+                            get_logger().debug(
+                                "call ReduceLROnPlateau for training loss %s", training_loss
+                            )
+                            lr_scheduler.step(training_loss)
+                        else:
+                            lr_scheduler.step()
             except StopExecutingException:
                 get_logger().warning("stop training")
             self._wait_stream()
