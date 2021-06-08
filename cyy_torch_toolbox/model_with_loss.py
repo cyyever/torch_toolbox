@@ -15,12 +15,14 @@ from model_util import ModelUtil
 class CheckPointBlock(nn.Module):
     def __init__(self, block):
         super().__init__()
-        self.block = nn.Sequential(*[m[1] for m in block])
+        self.block = [m[1] for m in block]
         self.__block_names = [m[0] for m in block]
-        get_logger().info("use checkpoint_block %s", self.__block_names)
+        get_logger().debug("use checkpoint_block %s", self.__block_names)
 
-    def forward(self, *args, **kwargs):
-        return torch.utils.checkpoint.checkpoint(self.block, *args, **kwargs)
+    def forward(self, x):
+        for module in self.block:
+            x = module(x)
+        return x
 
 
 class ModelWithLoss:
@@ -91,13 +93,14 @@ class ModelWithLoss:
     def checkpointed_model(self) -> torch.nn.Module:
         if self.__checkpointed_model is not None:
             return self.__checkpointed_model
-        checkpointed_blocks = ModelUtil(self.__model).get_module_blocks(
+        checkpointed_blocks = ModelUtil(self.__model).get_sub_module_blocks(
             block_types={(nn.Conv2d, nn.BatchNorm2d)},
             # block_types={},
             only_block_name=False,
         )
         assert checkpointed_blocks
-        self.__checkpointed_model = copy.copy(self.__model)
+        self.__checkpointed_model = copy.deepcopy(self.__model)
+        self.__checkpointed_model.load_state_dict(self.__model.state_dict())
         checkpointed_model_util = ModelUtil(self.__checkpointed_model)
         for checkpointed_block in checkpointed_blocks:
             for idx, submodule in enumerate(checkpointed_block):

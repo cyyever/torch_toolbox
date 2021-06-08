@@ -150,7 +150,7 @@ class ModelUtil:
         assert result
         return result
 
-    def get_module_blocks(
+    def get_sub_module_blocks(
         self,
         block_types: set = None,
         block_classes: set = None,
