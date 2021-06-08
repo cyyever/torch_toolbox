@@ -14,14 +14,18 @@ class CUDAMemoryTracker(Hook):
 
     def _before_epoch(self, **kwargs):
         assert not self.__hooks
+        self.__used_memory = None
+
+    def _before_batch(self, **kwargs):
         model_executor = kwargs["model_executor"]
+        if kwargs["batch_index"] != 2:
+            return
         for module_name, module in model_executor.model.named_modules():
             self.__hooks.append(
                 module.register_forward_hook(
                     partial(self.__compute_gpu_memory_assumption, module_name)
                 )
             )
-        self.__used_memory = None
 
     def __compute_gpu_memory_assumption(self, module_name, module, _, __):
         if not module_name:
@@ -48,3 +52,4 @@ class CUDAMemoryTracker(Hook):
         for h in self.__hooks:
             h.remove()
         self.__hooks = []
+        self.__used_memory = None
