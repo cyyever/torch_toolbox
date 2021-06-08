@@ -3,12 +3,24 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
+import torch.utils.checkpoint
 import torchvision
 from cyy_naive_lib.log import get_logger
 from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
 
 from ml_type import MachineLearningPhase, ModelType
 from model_util import ModelUtil
+
+
+class CheckPointBlock(nn.Module):
+    def __init__(self, block):
+        super().__init__()
+        self.block = nn.Sequential(*[m[1] for m in block])
+        self.__block_names = [m[0] for m in block]
+        get_logger().info("use checkpoint_block %s", self.__block_names)
+
+    def forward(self, *args, **kwargs):
+        return torch.utils.checkpoint.checkpoint(self.block, *args, **kwargs)
 
 
 class ModelWithLoss:
@@ -34,6 +46,8 @@ class ModelWithLoss:
         self.__model_transforms: list = list()
         self.trace_input = False
         self.__example_input = None
+        self.use_checkpoint = False
+        self.__checkpointed_model = None
 
     @property
     def example_input(self):
@@ -71,6 +85,35 @@ class ModelWithLoss:
 
     def set_model(self, model: torch.nn.Module):
         self.__model = model
+        self.__checkpointed_model = None
+
+    @property
+    def checkpointed_model(self) -> torch.nn.Module:
+        if self.__checkpointed_model is not None:
+            return self.__checkpointed_model
+        checkpointed_blocks = ModelUtil(self.__model).get_module_blocks(
+            block_types={(nn.Conv2d, nn.BatchNorm2d)},
+            # block_types={},
+            only_block_name=False,
+        )
+        assert checkpointed_blocks
+        self.__checkpointed_model = copy.copy(self.__model)
+        checkpointed_model_util = ModelUtil(self.__checkpointed_model)
+        for checkpointed_block in checkpointed_blocks:
+            for idx, submodule in enumerate(checkpointed_block):
+                submodule_name = submodule[0]
+                if idx == 0:
+                    checkpointed_model_util.set_attr(
+                        submodule_name,
+                        CheckPointBlock(checkpointed_block),
+                        as_parameter=False,
+                    )
+                else:
+                    checkpointed_model_util.set_attr(
+                        submodule_name, lambda x: x, as_parameter=False
+                    )
+
+        return self.__checkpointed_model
 
     def __call__(
         self,
@@ -101,7 +144,11 @@ class ModelWithLoss:
                     self.__model_transforms
                 )
             inputs = self.__model_transforms(inputs)
-        output = self.__model(inputs, *extra_inputs)
+        if phase == MachineLearningPhase.Training and self.use_checkpoint:
+            inputs.requires_grad_()
+            output = self.checkpointed_model(inputs, *extra_inputs)
+        else:
+            output = self.__model(inputs, *extra_inputs)
         loss = self.loss_fun(output, targets)
         if self.trace_input and self.__example_input is None:
             self.__example_input = [inputs.detach()] + copy.deepcopy(extra_inputs)
