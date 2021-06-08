@@ -151,7 +151,10 @@ class ModelUtil:
         return result
 
     def get_module_blocks(
-        self, block_types: set = None, block_classes: set = None
+        self,
+        block_types: set = None,
+        block_classes: set = None,
+        only_block_name: bool = True,
     ) -> list:
         if block_types is None:
             block_types = {
@@ -180,7 +183,7 @@ class ModelUtil:
                         for block_class in block_classes
                     )
                 ):
-                    blocks.append(tuple([module[0]]))
+                    blocks.append([module])
                     memo.add(module[1])
                     flag = True
                     break
@@ -206,13 +209,16 @@ class ModelUtil:
                 candidates = new_candidates
                 j += 1
             if end_index is not None:
-                module_name_list = []
+                module_list = []
                 while i <= end_index:
-                    module_name_list.append(modules[i][0])
+                    module_list.append(modules[i])
                     i += 1
-                blocks.append(tuple(module_name_list))
+                blocks.append(module_list)
             else:
                 i += 1
+        if only_block_name:
+            for idx, block in enumerate(blocks):
+                blocks[idx] = [m[0] for m in block]
         return blocks
 
     def get_pruning_mask_list(self):
