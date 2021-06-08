@@ -206,7 +206,7 @@ class DatasetCollection:
         return datasets
 
     @staticmethod
-    def get_by_name(name: str, dataset_kwargs: dict = dict()):
+    def get_by_name(name: str, dataset_kwargs=None):
         with DatasetCollection.__lock:
             all_dataset_constructors = set()
             for dataset_type in DatasetType:
@@ -223,7 +223,7 @@ class DatasetCollection:
 
     @staticmethod
     def __create_dataset_collection(
-        name: str, dataset_type: DatasetType, dataset_constructor, dataset_kwargs
+        name: str, dataset_type: DatasetType, dataset_constructor, dataset_kwargs=None
     ):
         sig = inspect.signature(dataset_constructor)
         dataset_kwargs = DatasetCollection.__prepare_dataset_kwargs(
@@ -382,8 +382,10 @@ class DatasetCollection:
 
     @staticmethod
     def __prepare_dataset_kwargs(
-        name: str, dataset_type: DatasetType, sig, dataset_kwargs: dict
+        name: str, dataset_type: DatasetType, sig, dataset_kwargs: dict = None
     ):
+        if dataset_kwargs is None:
+            dataset_kwargs = dict()
         if "root" not in dataset_kwargs and "root" in sig.parameters:
             dataset_kwargs["root"] = DatasetCollection.__get_dataset_dir(name)
         if (
@@ -412,7 +414,7 @@ class DatasetCollection:
 
     def __get_label_indices(self, cache_dir):
         with self.__lock:
-            cache_dir = DatasetCollection.get_dataset_cache_dir()
+            cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
             pickle_file = os.path.join(cache_dir, "label_indices.pk")
             label_indices = DatasetCollection.__read_data(pickle_file)
             if label_indices is not None:
