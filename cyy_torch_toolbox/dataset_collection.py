@@ -410,6 +410,20 @@ class DatasetCollection:
                 )
         return dataset_kwargs
 
+    def __get_label_indices(self, cache_dir):
+        with self.__lock:
+            cache_dir = self.get_dataset_cache_dir()
+            pickle_file = os.path.join(cache_dir, "label_indices.pk")
+            label_indices = DatasetCollection.__read_data(pickle_file)
+            if label_indices is not None:
+                return label_indices
+            label_indices = dict()
+            for phase in MachineLearningPhase:
+                dataset_util = self.get_dataset_util(phase)
+                label_indices[phase] = dataset_util.split_by_label()
+            DatasetCollection.__write_data(pickle_file, label_indices)
+            return label_indices
+
     @staticmethod
     def __split_for_validation(cache_dir, splited_dataset, label_field=None):
         pickle_file = os.path.join(cache_dir, "split_index_lists.pk")
