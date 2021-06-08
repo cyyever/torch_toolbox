@@ -44,18 +44,18 @@ class ModelUtil:
             (parameter.grad for parameter in self.__get_parameter_seq(detach=False))
         )
 
-    def deepcopy(self, keep_pruning_mask: bool = True):
-        if self.is_pruned and not keep_pruning_mask:
-            for layer in self.model.modules():
-                for name, _ in layer.named_parameters(recurse=False):
-                    if not name.endswith("_orig"):
-                        assert not hasattr(layer, name + "_mask")
-                        continue
-                    real_name = name[:-5]
-                    assert hasattr(layer, real_name + "_mask")
-                    if hasattr(layer, real_name):
-                        delattr(layer, real_name)
-        return copy.deepcopy(self.model)
+    # def deepcopy(self, keep_pruning_mask: bool = True):
+    #     if self.is_pruned and not keep_pruning_mask:
+    #         for layer in self.model.modules():
+    #             for name, _ in layer.named_parameters(recurse=False):
+    #                 if not name.endswith("_orig"):
+    #                     assert not hasattr(layer, name + "_mask")
+    #                     continue
+    #                 real_name = name[:-5]
+    #                 assert hasattr(layer, real_name + "_mask")
+    #                 if hasattr(layer, real_name):
+    #                     delattr(layer, real_name)
+    #     return copy.deepcopy(self.model)
 
     def set_attr(self, name: str, value, as_parameter=True):
         model = self.model
@@ -150,7 +150,9 @@ class ModelUtil:
         assert result
         return result
 
-    def get_sub_module_blocks(self, block_types: set = None) -> list:
+    def get_module_blocks(
+        self, block_types: set = None, block_classes: set = None
+    ) -> list:
         if block_types is None:
             block_types = {
                 (nn.Conv2d, nn.BatchNorm2d, nn.ReLU),
@@ -160,9 +162,32 @@ class ModelUtil:
                 (nn.Conv2d, nn.ReLU, nn.MaxPool2d),
                 (nn.Linear, nn.ReLU),
             }
+        if block_classes is None:
+            block_classes = {"Bottleneck"}
         blocks: list = []
         i = 0
-        modules = list(self.model.named_modules())
+        memo = set()
+
+        # use while loop to avoid add submodule when a module is added
+        while True:
+            flag = False
+            for module in self.model.named_modules(memo=copy.copy(memo)):
+                module_class_name = module[1].__class__.__name__
+                if any(
+                    (
+                        module_class_name == block_class
+                        or module_class_name.endswith("." + block_class)
+                        for block_class in block_classes
+                    )
+                ):
+                    blocks.append(tuple([module[0]]))
+                    memo.add(module[1])
+                    flag = True
+                    break
+            if not flag:
+                break
+
+        modules = list(self.model.named_modules(memo=copy.copy(memo)))
         while i < len(modules):
             candidates: set = block_types
             j = i
