@@ -126,6 +126,9 @@ class HyperParameter:
                 return optim.lr_scheduler.CosineAnnealingLR(
                     optimizer, T_max=hyper_parameter.epoch
                 )
+            if name == "MultiStepLR":
+                return optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 80])
+
             raise RuntimeError("unknown learning rate scheduler:" + name)
 
         return hook
