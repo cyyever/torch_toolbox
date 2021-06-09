@@ -15,14 +15,12 @@ from model_util import ModelUtil
 class CheckPointBlock(nn.Module):
     def __init__(self, block):
         super().__init__()
-        self.block = [m[1] for m in block]
+        self.block = nn.Sequential(*[m[1] for m in block])
         self.__block_names = [m[0] for m in block]
         get_logger().debug("use checkpoint_block %s", self.__block_names)
 
     def forward(self, x):
-        for module in self.block:
-            x = module(x)
-        return x
+        return self.block(x)
 
 
 class ModelWithLoss:
