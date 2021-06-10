@@ -198,6 +198,15 @@ class Trainer(ModelExecutor):
                         else:
                             optimizer.step()
 
+                        self.exec_hooks(
+                            ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
+                            model_executor=self,
+                            epoch=epoch,
+                            batch_index=batch_index,
+                            batch=batch,
+                            batch_size=batch_size,
+                        )
+
                         if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                             get_logger().debug("adjust lr after batch")
                             lr_scheduler.step()
