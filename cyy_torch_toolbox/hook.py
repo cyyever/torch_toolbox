@@ -4,10 +4,11 @@ from ml_type import ModelExecutorHookPoint
 class Hook:
     def __init__(self, stripable=False):
         self.__stripable = stripable
+        self._is_cyy_torch_toolbox_hook = True
         self._sub_hooks = []
 
     def __setattr__(self, name, value):
-        if isinstance(value, Hook):
+        if hasattr(value, "_is_cyy_torch_toolbox_hook"):
             self._sub_hooks.append(value)
         super().__setattr__(name, value)
 
