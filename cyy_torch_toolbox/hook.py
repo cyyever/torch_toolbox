@@ -4,6 +4,12 @@ from ml_type import ModelExecutorHookPoint
 class Hook:
     def __init__(self, stripable=False):
         self.__stripable = stripable
+        self._sub_hooks = []
+
+    def __setattr__(self, name, value):
+        if isinstance(value, Hook):
+            self._sub_hooks.append(value)
+        super().__setattr__(name, value)
 
     @property
     def stripable(self):
@@ -23,23 +29,15 @@ class Hook:
             return (cb_point, name, getattr(self, method_name))
         return None
 
+    def _get_hooks(self, cb_point):
+        for c in self._sub_hooks:
+            for hook in c._get_hooks(cb_point):
+                yield hook
+        res = self._get_hook(cb_point)
+        if res is not None:
+            yield res
+
     def yield_hooks(self):
         for cb_point in ModelExecutorHookPoint:
-            res = self._get_hook(cb_point)
-            if res is not None:
-                yield res
-
-
-class ComposeHook(Hook):
-    def yield_hooks(self):
-        components = [
-            getattr(self, c) for c in dir(self) if isinstance(getattr(self, c), Hook)
-        ]
-        for cb_point in ModelExecutorHookPoint:
-            for c in components:
-                res = c._get_hook(cb_point)
-                if res is not None:
-                    yield res
-            res = super()._get_hook(cb_point)
-            if res is not None:
-                yield res
+            for hook in self._get_hooks(cb_point):
+                yield hook
