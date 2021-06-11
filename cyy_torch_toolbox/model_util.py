@@ -136,18 +136,19 @@ class ModelUtil:
                 return True
         return False
 
-    def get_sub_modules(self) -> list:
-        modules = list(self.model.named_modules())
-        result = list()
-        for i, prev_module in enumerate(modules):
-            is_container = False
-            if isinstance(prev_module[1], torch.nn.Sequential):
-                is_container = True
-            if i == 0:
-                is_container = True
-            if not is_container:
-                result.append(prev_module)
-        assert result
+    def get_sub_modules(self, model=None, prefix="") -> list:
+        if model is None:
+            model = self.model
+        result = []
+        for name, module in model._modules.items():
+            if module is None:
+                continue
+            submodule_prefix = prefix + ("." if prefix else "") + name
+            sub_result = self.get_sub_modules(module, submodule_prefix)
+            if sub_result:
+                result += sub_result
+            else:
+                result.append((submodule_prefix, module))
         return result
 
     def get_sub_module_blocks(
@@ -166,7 +167,7 @@ class ModelUtil:
                 (nn.Linear, nn.ReLU),
             }
         if block_classes is None:
-            block_classes = {"Bottleneck"}
+            block_classes = {"Bottleneck", "DenseBlock"}
         blocks: list = []
         i = 0
         memo = set()
