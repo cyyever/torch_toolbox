@@ -186,7 +186,8 @@ class ModelExecutor:
 
     def enable_hook(self, hook: Hook):
         for name in hook.yield_hook_names():
-            self.__disabled_hooks.remove(name)
+            if name in self.__disabled_hooks:
+                self.__disabled_hooks.remove(name)
 
     def disable_hook(self, hook: Hook):
         for name in hook.yield_hook_names():
