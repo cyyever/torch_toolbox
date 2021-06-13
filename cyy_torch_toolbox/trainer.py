@@ -113,6 +113,7 @@ class Trainer(ModelExecutor):
             inferencer.offload_from_gpu()
 
     def train(self, **kwargs):
+        self.remove_optimizer()
         if self.debugging_mode:
             get_logger().warning("train in debugging mode")
             if self.__debugger is None:
