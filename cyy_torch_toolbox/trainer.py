@@ -112,8 +112,15 @@ class Trainer(ModelExecutor):
         for inferencer in self.__inferencers.values():
             inferencer.offload_from_gpu()
 
+    def add_skipped_epoch(self, epoch):
+        key = "skipped_epoch"
+        old_data = self.get_data(key, set())
+        old_data.add(epoch)
+        self.set_data(key, old_data)
+
     def train(self, **kwargs):
         self.remove_optimizer()
+        self.remove_data("skipped_epoch")
         if self.debugging_mode:
             get_logger().warning("train in debugging mode")
             if self.__debugger is None:
@@ -143,6 +150,9 @@ class Trainer(ModelExecutor):
         with torch.cuda.stream(self.cuda_stream):
             try:
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
+                    if epoch in self.get_data("skipped_epoch", set()):
+                        get_logger().warning("skip epoch %s", epoch)
+                        continue
                     self.exec_hooks(
                         ModelExecutorHookPoint.BEFORE_EPOCH,
                         model_executor=self,
