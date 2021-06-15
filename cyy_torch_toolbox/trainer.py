@@ -119,8 +119,7 @@ class Trainer(ModelExecutor):
         self.set_data(key, old_data)
 
     def train(self, **kwargs):
-        self.remove_optimizer()
-        self.remove_data("skipped_epoch")
+        self._prepare_execution()
         if self.debugging_mode:
             get_logger().warning("train in debugging mode")
             if self.__debugger is None:

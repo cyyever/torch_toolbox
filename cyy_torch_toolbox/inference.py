@@ -1,7 +1,7 @@
 import torch
 from cyy_naive_lib.log import get_logger
 
-from dataset import DatasetUtil, decode_batch
+from dataset import decode_batch
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from ml_type import MachineLearningPhase
@@ -22,6 +22,7 @@ class Inferencer(ModelExecutor):
         assert self.phase != MachineLearningPhase.Training
 
     def inference(self, **kwargs):
+        self._prepare_execution()
         use_grad = kwargs.get("use_grad", False)
         epoch = kwargs.get("epoch", 1)
         self.exec_hooks(
