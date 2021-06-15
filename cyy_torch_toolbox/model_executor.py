@@ -122,6 +122,13 @@ class ModelExecutor:
     def has_data(self, key: str):
         return key in self.__data
 
+    def _prepare_execution(self):
+        self.__data.clear()
+        for name in dir(self):
+            attr = getattr(self, name)
+            if hasattr(attr, "_is_cyy_torch_toolbox_metric"):
+                attr.clear_metric()
+
     def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs):
         for hook in self.__hooks.get(hook_point, []):
             for name, fun in hook.items():

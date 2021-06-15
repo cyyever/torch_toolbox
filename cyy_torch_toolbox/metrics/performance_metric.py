@@ -46,8 +46,3 @@ class PerformanceMetric(Metric):
 
     def get_last_loss(self):
         return self.get_epoch_metric(self.__last_epoch, "loss")
-
-    def clear_metric(self):
-        self.__epoch_metrics.clear_metric()
-        self.__accuracy_metric.clear_metric()
-        super().clear_metric()

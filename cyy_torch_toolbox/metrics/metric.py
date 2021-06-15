@@ -5,6 +5,7 @@ class Metric(Hook):
     def __init__(self):
         super().__init__()
         self.__epoch_metrics: dict = dict()
+        self._is_cyy_torch_toolbox_metric = True
 
     def _before_execute(self, **__):
         self.__epoch_metrics.clear()
@@ -19,3 +20,10 @@ class Metric(Hook):
         if epoch not in self.__epoch_metrics:
             self.__epoch_metrics[epoch] = dict()
         self.__epoch_metrics[epoch][name] = data
+
+    def clear_metric(self):
+        for name in dir(self):
+            attr = getattr(self, name)
+            if hasattr(attr, "_is_cyy_torch_toolbox_metric"):
+                attr.clear_metric()
+        self.__epoch_metrics.clear()
