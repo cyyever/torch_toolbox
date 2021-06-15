@@ -224,6 +224,12 @@ class ModelExecutor:
         self._wait_stream()
         self.__cuda_stream = stream
 
+    def __getstate__(self):
+        # capture what is normally pickled
+        state = self.__dict__.copy()
+        state["_ModelExecutor__cuda_stream"] = None
+        return state
+
     @property
     def cuda_stream(self):
         if self.__cuda_stream is None and "cuda" in self.device.type.lower():
