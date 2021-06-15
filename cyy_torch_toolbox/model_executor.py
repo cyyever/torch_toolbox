@@ -110,7 +110,6 @@ class ModelExecutor:
         return copy.copy(self._model_with_loss)
 
     def get_data(self, key: str, default_value=None):
-        assert key in self.__data
         return self.__data.get(key, default_value)
 
     def set_data(self, key: str, value):
