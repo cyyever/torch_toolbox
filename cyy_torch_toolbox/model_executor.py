@@ -110,7 +110,6 @@ class ModelExecutor:
         return copy.copy(self._model_with_loss)
 
     def get_data(self, key: str, default_value=None):
-        assert key in self.__data
         return self.__data.get(key, default_value)
 
     def set_data(self, key: str, value):
@@ -121,6 +120,13 @@ class ModelExecutor:
 
     def has_data(self, key: str):
         return key in self.__data
+
+    def _prepare_execution(self):
+        self.__data.clear()
+        for name in dir(self):
+            attr = getattr(self, name)
+            if hasattr(attr, "_is_cyy_torch_toolbox_metric"):
+                attr.clear_metric()
 
     def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs):
         for hook in self.__hooks.get(hook_point, []):
@@ -217,6 +223,12 @@ class ModelExecutor:
     def set_stream(self, stream):
         self._wait_stream()
         self.__cuda_stream = stream
+
+    def __getstate__(self):
+        # capture what is normally pickled
+        state = self.__dict__.copy()
+        state["_ModelExecutor__cuda_stream"] = None
+        return state
 
     @property
     def cuda_stream(self):
