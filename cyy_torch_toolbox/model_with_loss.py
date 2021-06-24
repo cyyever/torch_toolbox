@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.utils.checkpoint
 import torchvision
 from cyy_naive_lib.log import get_logger
-from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
+# from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
 
 from ml_type import MachineLearningPhase, ModelType
 from model_util import ModelUtil
@@ -159,11 +159,11 @@ class ModelWithLoss:
         return {"loss": loss, "normalized_loss": normalized_loss, "output": output}
 
     def __choose_loss_function(self) -> Optional[torch.nn.modules.loss._Loss]:
-        if isinstance(self.__model, GeneralizedRCNN):
-            return None
+        # if isinstance(self.__model, GeneralizedRCNN):
+        #     return None
         layers = [
             m
-            for m in self.__model.modules()
+            for _, m in ModelUtil(self.__model).get_sub_modules()
             if not isinstance(
                 m,
                 (
@@ -176,16 +176,16 @@ class ModelWithLoss:
                     torch.nn.modules.dropout.Dropout,
                 ),
             )
+            and "MemoryEfficientSwish" not in str(m)
         ]
         last_layer = layers[-1]
 
+        get_logger().info("last module is %s", last_layer.__class__)
         if isinstance(last_layer, nn.LogSoftmax):
             return nn.NLLLoss()
         if isinstance(last_layer, nn.Linear):
             return nn.CrossEntropyLoss()
-        get_logger().error(
-            "can't choose a loss function, layers are %s", [l.__class__ for l in layers]
-        )
+        get_logger().error("can't choose a loss function, model is %s", self.__model)
         raise NotImplementedError(type(last_layer))
 
     def __is_averaged_loss(self) -> bool:
