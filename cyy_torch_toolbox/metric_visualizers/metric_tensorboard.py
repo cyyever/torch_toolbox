@@ -100,20 +100,20 @@ class MetricTensorBoard(MetricVisualizer):
             epoch,
         )
 
-        if trainer.has_data("plot_class_accuracy"):
-            class_accuracy = validation_metric.get_class_accuracy(epoch)
-            for idx, sub_list in enumerate(
-                split_list_to_chunks(list(class_accuracy.keys()), 2)
-            ):
-                class_accuracy_title = "validation class accuracy part " + str(idx)
-                for k in sub_list:
-                    self.writer.add_scalars(
-                        self.get_tag_name(class_accuracy_title),
-                        {
-                            "class_" + str(k) + "_accuracy": class_accuracy[k],
-                        },
-                        epoch,
-                    )
+        # if trainer.has_data("plot_class_accuracy"):
+        #     class_accuracy = validation_metric.get_class_accuracy(epoch)
+        #     for idx, sub_list in enumerate(
+        #         split_list_to_chunks(list(class_accuracy.keys()), 2)
+        #     ):
+        #         class_accuracy_title = "validation class accuracy part " + str(idx)
+        #         for k in sub_list:
+        #             self.writer.add_scalars(
+        #                 self.get_tag_name(class_accuracy_title),
+        #                 {
+        #                     "class_" + str(k) + "_accuracy": class_accuracy[k],
+        #                 },
+        #                 epoch,
+        #             )
         test_metric = trainer.get_inferencer_performance_metric(
             MachineLearningPhase.Test
         )
