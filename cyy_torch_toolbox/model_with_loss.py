@@ -50,6 +50,7 @@ class ModelWithLoss:
         self.use_checkpoint = False
         self.__checkpointed_model = None
         self.__current_phase = None
+        self.__current_model_device = None
 
     @property
     def example_input(self):
@@ -59,6 +60,7 @@ class ModelWithLoss:
     @property
     def model(self) -> torch.nn.Module:
         self.__current_phase = None
+        self.__current_model_device = None
         return self.__model
 
     @property
@@ -144,7 +146,9 @@ class ModelWithLoss:
         if device is not None:
             inputs = inputs.to(device, non_blocking=non_blocking)
             targets = targets.to(device, non_blocking=non_blocking)
-            self.__model.to(device, non_blocking=non_blocking)
+            if self.__current_model_device != device:
+                self.__model.to(device, non_blocking=non_blocking)
+                self.__current_model_device = device
 
         assert self.loss_fun is not None
         if self.__model_transforms:
