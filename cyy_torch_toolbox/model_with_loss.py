@@ -6,10 +6,11 @@ import torch.nn as nn
 import torch.utils.checkpoint
 import torchvision
 from cyy_naive_lib.log import get_logger
-# from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
 
 from ml_type import MachineLearningPhase, ModelType
 from model_util import ModelUtil
+
+# from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
 
 
 class CheckPointBlock(nn.Module):
@@ -48,6 +49,7 @@ class ModelWithLoss:
         self.__example_input = None
         self.use_checkpoint = False
         self.__checkpointed_model = None
+        self.__current_phase = None
 
     @property
     def example_input(self):
@@ -56,13 +58,14 @@ class ModelWithLoss:
 
     @property
     def model(self) -> torch.nn.Module:
+        self.__current_phase = None
         return self.__model
 
     @property
     def has_batch_norm(self):
         if self.__has_batch_norm is None:
             pass
-        self.__has_batch_norm = ModelUtil(self.model).has_sub_module(
+        self.__has_batch_norm = ModelUtil(self.__model).has_sub_module(
             torch.nn.BatchNorm2d
         )
         return self.__has_batch_norm
@@ -125,10 +128,15 @@ class ModelWithLoss:
         non_blocking=False,
     ) -> dict:
         if phase is not None:
-            self.__set_model_mode(phase)
+            if self.__current_phase != phase:
+                self.__set_model_mode(phase)
+            self.__current_phase = phase
         else:
-            if self.model.training:
-                phase = MachineLearningPhase.Training
+            if self.__model.training:
+                self.__current_phase = MachineLearningPhase.Training
+            else:
+                self.__current_phase = None
+
         extra_inputs = []
         if isinstance(inputs, tuple):
             inputs, *extra_inputs = inputs
@@ -136,7 +144,7 @@ class ModelWithLoss:
         if device is not None:
             inputs = inputs.to(device, non_blocking=non_blocking)
             targets = targets.to(device, non_blocking=non_blocking)
-            self.model.to(device, non_blocking=non_blocking)
+            self.__model.to(device, non_blocking=non_blocking)
 
         assert self.loss_fun is not None
         if self.__model_transforms:
@@ -145,7 +153,10 @@ class ModelWithLoss:
                     self.__model_transforms
                 )
             inputs = self.__model_transforms(inputs)
-        if phase == MachineLearningPhase.Training and self.use_checkpoint:
+        if (
+            self.__current_phase == MachineLearningPhase.Training
+            and self.use_checkpoint
+        ):
             inputs.requires_grad_()
             output = self.checkpointed_model(inputs, *extra_inputs)
         else:
@@ -196,11 +207,11 @@ class ModelWithLoss:
 
     def __str__(self):
         return "model: {}, loss_fun: {}".format(
-            self.model.__class__.__name__, self.loss_fun
+            self.__model.__class__.__name__, self.loss_fun
         )
 
     def __set_model_mode(self, phase: MachineLearningPhase):
         if phase == MachineLearningPhase.Training:
-            self.model.train()
+            self.__model.train()
             return
-        self.model.eval()
+        self.__model.eval()
