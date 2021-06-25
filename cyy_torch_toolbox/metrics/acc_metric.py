@@ -7,9 +7,6 @@ from .metric import Metric
 class AccuracyMetric(Metric):
     def __init__(self):
         super().__init__()
-        self.__classification_count_per_label: dict = dict()
-        self.__classification_correct_count_per_label: dict = dict()
-        self.__labels = None
         self.__correct_count = None
         self.__dataset_size = None
 
@@ -17,9 +14,6 @@ class AccuracyMetric(Metric):
         return self.get_epoch_metric(epoch, "accuracy")
 
     def _before_epoch(self, **kwargs):
-        if not self.__labels:
-            model_executor = kwargs["model_executor"]
-            self.__labels = model_executor.dataset_collection.get_labels()
         self.__dataset_size = 0
         self.__correct_count = 0
 
@@ -38,7 +32,5 @@ class AccuracyMetric(Metric):
 
     def _after_epoch(self, **kwargs):
         epoch = kwargs["epoch"]
-        accuracy = sum(self.__classification_correct_count_per_label.values()) / sum(
-            self.__classification_count_per_label.values()
-        )
+        accuracy = self.__correct_count / self.__dataset_size
         self._set_epoch_metric(epoch, "accuracy", accuracy)
