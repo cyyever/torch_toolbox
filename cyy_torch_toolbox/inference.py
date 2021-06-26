@@ -39,7 +39,10 @@ class Inferencer(ModelExecutor):
                 epoch=epoch,
             )
             for batch_index, batch in enumerate(self.dataloader):
-                inputs, targets, _ = decode_batch(batch)
+                inputs, targets, other_info = decode_batch(batch)
+                inputs = inputs.to(self.device, non_blocking=True)
+                targets = targets.to(self.device, non_blocking=True)
+                batch = (inputs, targets, other_info)
                 result = self._model_with_loss(
                     inputs, targets, phase=self.phase, device=self.device
                 )
