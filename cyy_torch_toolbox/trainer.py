@@ -161,7 +161,12 @@ class Trainer(ModelExecutor):
                         optimizer = self.get_optimizer()
                         lr_scheduler = self.get_lr_scheduler()
 
-                        sample_inputs, sample_targets, _ = decode_batch(batch)
+                        sample_inputs, sample_targets, other_info = decode_batch(batch)
+                        sample_inputs = sample_inputs.to(self.device, non_blocking=True)
+                        sample_targets = sample_targets.to(
+                            self.device, non_blocking=True
+                        )
+                        batch = (sample_inputs, sample_targets, other_info)
                         batch_size = self.get_batch_size(sample_targets)
                         if (
                             self._model_with_loss.has_batch_norm
