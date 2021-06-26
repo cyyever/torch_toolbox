@@ -1,5 +1,6 @@
 import copy
 import os
+# import traceback
 from typing import Callable, Dict, List, Optional
 
 import torch
@@ -15,6 +16,9 @@ from metric_visualizers.performance_metric_logger import \
 from metrics.performance_metric import PerformanceMetric
 from ml_type import MachineLearningPhase, ModelExecutorHookPoint
 from model_with_loss import ModelWithLoss
+
+# from cyy_naive_lib.log import get_logger
+
 
 
 class ModelExecutor:
@@ -238,6 +242,7 @@ class ModelExecutor:
 
     def _wait_stream(self):
         if self.__cuda_stream is not None:
+            # get_logger().debug("sync stream, %s", traceback.format_stack())
             self.__cuda_stream.synchronize()
             if self.debugging_mode:
                 assert self.__cuda_stream.query()
