@@ -1,7 +1,10 @@
 import datetime
 import threading
+import warnings
 
-from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
+warnings.simplefilter("ignore", DeprecationWarning)
+
+# from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from ml_type import MachineLearningPhase
 from torch.utils.tensorboard import SummaryWriter
 
