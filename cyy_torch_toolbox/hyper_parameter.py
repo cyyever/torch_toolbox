@@ -28,7 +28,7 @@ class HyperParameter:
         self.__learning_rate = learning_rate
         self.__weight_decay = weight_decay
         self.__momentum = momentum
-        self.__collate_fn = None
+        # self.__collate_fn = None
         self.__lr_scheduler_factory: Optional[Callable] = None
         self.__optimizer_factory: Optional[Callable] = None
 
@@ -161,8 +161,8 @@ class HyperParameter:
             **{k: kwargs[k] for k in kwargs if k in parameter_names}
         )
 
-    def set_dataloader_collate_fn(self, collate_fn):
-        self.__collate_fn = collate_fn
+    # def set_dataloader_collate_fn(self, collate_fn):
+    #     self.__collate_fn = collate_fn
 
     def __str__(self):
         s = (
@@ -216,14 +216,14 @@ def get_recommended_hyper_parameter(
     hyper_parameter.set_lr_scheduler_factory(
         HyperParameter.get_lr_scheduler_factory("ReduceLROnPlateau", dataset_name)
     )
-    if model_name == "FasterRCNN":
-        hyper_parameter.set_dataloader_collate_fn(
-            lambda batch: (
-                [d[0] for d in batch],
-                [d[1] for d in batch],
-                torch.Tensor([d[2] for d in batch]),
-            )
-        )
+    # if model_name == "FasterRCNN":
+    #     hyper_parameter.set_dataloader_collate_fn(
+    #         lambda batch: (
+    #             [d[0] for d in batch],
+    #             [d[1] for d in batch],
+    #             torch.Tensor([d[2] for d in batch]),
+    #         )
+    #     )
     hyper_parameter.set_optimizer_factory(HyperParameter.get_optimizer_factory("SGD"))
     return hyper_parameter
 

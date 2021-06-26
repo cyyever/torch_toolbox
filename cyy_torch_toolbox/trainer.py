@@ -118,8 +118,8 @@ class Trainer(ModelExecutor):
         old_data.add(epoch)
         self.set_data(key, old_data)
 
-    def train(self, **kwargs):
-        self._prepare_execution()
+    def _prepare_execution(self, **kwargs):
+        super()._prepare_execution(**kwargs)
         if self.debugging_mode:
             get_logger().warning("train in debugging mode")
             if self.__debugger is None:
@@ -145,6 +145,9 @@ class Trainer(ModelExecutor):
             get_logger().debug("use cuda stream %s", self.cuda_stream)
             for a in self.__inferencers.values():
                 a.set_stream(self.cuda_stream)
+
+    def train(self, **kwargs):
+        self._prepare_execution(**kwargs)
 
         with torch.cuda.stream(self.cuda_stream):
             try:
