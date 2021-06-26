@@ -20,7 +20,6 @@ from model_with_loss import ModelWithLoss
 # from cyy_naive_lib.log import get_logger
 
 
-
 class ModelExecutor:
     def __init__(
         self,
@@ -49,6 +48,7 @@ class ModelExecutor:
         self.__performance_metric_logger = PerformanceMetricLogger()
         self.append_hook(self.__performance_metric_logger)
         self.debugging_mode = False
+        self.profiling_mode = False
         self.__save_dir: Optional[str] = None
         if save_dir is not None:
             self.set_save_dir(save_dir)
@@ -125,7 +125,7 @@ class ModelExecutor:
     def has_data(self, key: str):
         return key in self.__data
 
-    def _prepare_execution(self,**kwargs):
+    def _prepare_execution(self, **kwargs):
         self.__data.clear()
         for name in dir(self):
             attr = getattr(self, name)
