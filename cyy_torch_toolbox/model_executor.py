@@ -125,7 +125,7 @@ class ModelExecutor:
     def has_data(self, key: str):
         return key in self.__data
 
-    def _prepare_execution(self):
+    def _prepare_execution(self,**kwargs):
         self.__data.clear()
         for name in dir(self):
             attr = getattr(self, name)

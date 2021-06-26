@@ -116,6 +116,7 @@ class DatasetCollection:
                 batch_size=hyper_parameter.batch_size,
                 shuffle=(phase == MachineLearningPhase.Training),
                 num_workers=1,
+                persistent_workers=True,
                 pin_memory=True,
             )
         return torchtext.legacy.data.BucketIterator.splits(
