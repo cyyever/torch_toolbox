@@ -29,7 +29,7 @@ class AccuracyMetric(Metric):
 
     def __process_pending_count(self):
         if self.__pending_count is not None:
-            self.__correct_count += self.__pending_count.cpu()
+            self.__correct_count += self.__pending_count
             self.__pending_count = None
 
     def _after_epoch(self, **kwargs):
