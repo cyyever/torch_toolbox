@@ -1,5 +1,6 @@
 import torch
 from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.time_counter import TimeCounter
 
 from classification_inferencer import ClassificationInferencer
 from dataset import decode_batch
@@ -160,7 +161,15 @@ class Trainer(ModelExecutor):
                         model_executor=self,
                         epoch=epoch,
                     )
+                    if self.profiling_mode:
+                        dataloader_time_counter = TimeCounter()
                     for batch_index, batch in enumerate(self.dataloader):
+                        if self.profiling_mode:
+                            get_logger().warning(
+                                "fetching batch used %sms",
+                                dataloader_time_counter.elapsed_milliseconds(),
+                            )
+
                         optimizer = self.get_optimizer()
                         lr_scheduler = self.get_lr_scheduler()
 
@@ -228,6 +237,9 @@ class Trainer(ModelExecutor):
                         if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                             get_logger().debug("adjust lr after batch")
                             lr_scheduler.step()
+
+                        if self.profiling_mode:
+                            dataloader_time_counter.reset_start_time()
 
                     # update model parameters
                     for inferencer in self.__inferencers.values():

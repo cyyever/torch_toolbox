@@ -29,6 +29,7 @@ class DefaultConfig:
         self.model_path = None
         self.pretrained = False
         self.debug = False
+        self.profile = False
         self.save_dir = None
         self.model_kwarg_json_path = None
         self.log_level = None
@@ -48,6 +49,7 @@ class DefaultConfig:
         self.hyper_parameter_config.add_args(parser)
         parser.add_argument("--log_level", type=str, default=None)
         parser.add_argument("--debug", action="store_true", default=False)
+        parser.add_argument("--profile", action="store_true", default=False)
         args = parser.parse_args()
         self.dc_config.load_args(args)
         self.hyper_parameter_config.load_args(args)
@@ -99,6 +101,9 @@ class DefaultConfig:
         if self.debug:
             get_logger().warning("debug the trainer")
             trainer.debugging_mode = True
+        if self.profile:
+            get_logger().warning("profile the trainer")
+            trainer.profiling_mode = True
         if self.model_path is not None:
             trainer.load_model(self.model_path)
 
