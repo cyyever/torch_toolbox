@@ -10,7 +10,7 @@ class AccuracyMetric(Metric):
         self.__dataset_size = None
 
     def get_accuracy(self, epoch):
-        return self.get_epoch_metric(epoch, "accuracy")
+        return self.get_epoch_metric(epoch, "accuracy").cpu()
 
     def _before_epoch(self, **kwargs):
         self.__dataset_size = 0
@@ -23,11 +23,8 @@ class AccuracyMetric(Metric):
         output = result["output"]
         assert isinstance(targets, torch.Tensor)
         correct = torch.eq(torch.max(output, dim=1)[1], targets).view(-1)
-        assert correct.shape[0] == targets.shape[0]
-        self.__correct_count += torch.sum(correct).cpu()
+        self.__correct_count += torch.sum(correct)
         self.__dataset_size += targets.shape[0]
-
-        assert self.__correct_count <= self.__dataset_size
 
     def _after_epoch(self, **kwargs):
         epoch = kwargs["epoch"]
