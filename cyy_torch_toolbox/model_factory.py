@@ -1,3 +1,4 @@
+import copy
 import os
 import sys
 
@@ -110,7 +111,7 @@ def get_model(
             return model_with_loss
         except TypeError as e:
             retry = False
-            for k in added_kwargs:
+            for k in copy.copy(added_kwargs):
                 if k in str(e):
                     get_logger().debug("%s so remove %s", e, k)
                     added_kwargs.pop(k)
