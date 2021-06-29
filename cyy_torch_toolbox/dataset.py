@@ -141,11 +141,21 @@ def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
 
 
 class DatasetUtil:
-    def __init__(self, dataset: torch.utils.data.Dataset, label_field=None):
+    def __init__(
+        self, dataset: torch.utils.data.Dataset, label_field=None, dataloader=None
+    ):
         self.dataset: torch.utils.data.Dataset = dataset
         self.__channel = None
         self.__len = None
         self.__label_field = label_field
+        self.__dataloader = dataloader
+
+    def __get_dataloader(self):
+        if self.__dataloader is not None:
+            return self.__dataloader
+        return torch.utils.data.DataLoader(
+            self.dataset, batch_size=1, num_workers=2, prefetch_factor=1
+        )
 
     @property
     def len(self):
@@ -157,17 +167,16 @@ class DatasetUtil:
     def channel(self):
         if self.__channel is not None:
             return self.__channel
-        dataloader = torch.utils.data.DataLoader(self.dataset, batch_size=1)
         channel = 0
-        for x, _ in dataloader:
+        for x, _ in self.__get_dataloader():
             channel = x.shape[1]
             break
         self.__channel = channel
         return self.__channel
 
     def get_mean_and_std(self):
-        dataloader = torch.utils.data.DataLoader(self.dataset, batch_size=1)
         mean = torch.zeros(self.channel)
+        dataloader = self.__dataloader()
         for x, _ in dataloader:
             for i in range(self.channel):
                 mean[i] += x[:, i, :, :].mean()
@@ -180,7 +189,6 @@ class DatasetUtil:
                 wh = x.shape[2] * x.shape[3]
             for i in range(self.channel):
                 std[i] += torch.sum((x[:, i, :, :] - mean[i].data.item()) ** 2) / wh
-
         std = std.div(self.len).sqrt()
         return mean, std
 
