@@ -225,6 +225,22 @@ class DatasetCollection:
             raise NotImplementedError(name)
 
     @staticmethod
+    def __get_mean_and_std(name: str, dataset):
+        cache_dir = os.path.join(DatasetCollection.__get_dataset_dir(name), ".cache")
+        pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
+        res = DatasetCollection.__read_data(pickle_file)
+        if res is not None:
+            return res
+        if name.lower() == "imagenet":
+            mean = torch.Tensor([0.485, 0.456, 0.406])
+            std = torch.Tensor([0.229, 0.224, 0.225])
+        else:
+            mean, std = DatasetUtil(dataset).get_mean_and_std()
+            res = (mean, std)
+        DatasetCollection.__write_data(pickle_file, res)
+        return res
+
+    @staticmethod
     def __create_dataset_collection(
         name: str, dataset_type: DatasetType, dataset_constructor, dataset_kwargs=None
     ):
@@ -337,20 +353,9 @@ class DatasetCollection:
         get_logger().info("test_dataset len %s", len(test_dataset))
 
         if dataset_type == DatasetType.Vision:
-            pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
-            res = DatasetCollection.__read_data(pickle_file)
-            if res is not None:
-                mean, std = res
-            else:
-                if name.lower() == "imagenet":
-                    mean = torch.Tensor([0.485, 0.456, 0.406])
-                    std = torch.Tensor([0.229, 0.224, 0.225])
-                else:
-                    total_dataset = torch.utils.data.ConcatDataset(
-                        list(dc.__datasets.values())
-                    )
-                    mean, std = DatasetUtil(total_dataset).get_mean_and_std()
-                DatasetCollection.__write_data(pickle_file, (mean, std))
+            mean, std = DatasetCollection.__get_mean_and_std(
+                name, torch.utils.data.ConcatDataset(list(dc.__datasets.values()))
+            )
             dc.append_transform(transforms.Normalize(mean=mean, std=std))
             if name not in ("SVHN", "MNIST"):
                 dc.append_transform(
