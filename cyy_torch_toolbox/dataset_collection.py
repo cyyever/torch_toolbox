@@ -106,28 +106,6 @@ class DatasetCollection:
         for dataset in origin_datasets:
             DatasetUtil(dataset).prepend_transform(transform)
 
-    def get_dataloader(
-        self, phase: MachineLearningPhase, hyper_parameter: HyperParameter, device=None
-    ):
-        dataset = self.get_dataset(phase)
-        if self.dataset_type != DatasetType.Text:
-            return torch.utils.data.DataLoader(
-                dataset,
-                batch_size=hyper_parameter.batch_size,
-                shuffle=(phase == MachineLearningPhase.Training),
-                num_workers=2,
-                prefetch_factor=1,
-                persistent_workers=False,
-                pin_memory=True,
-            )
-        return torchtext.legacy.data.BucketIterator.splits(
-            [dataset],
-            batch_size=hyper_parameter.batch_size,
-            shuffle=(phase == MachineLearningPhase.Training),
-            sort_within_batch=True,
-            device=device,
-        )[0]
-
     @property
     def name(self):
         return self.__name
