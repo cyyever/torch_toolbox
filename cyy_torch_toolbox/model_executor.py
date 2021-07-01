@@ -5,6 +5,7 @@ from typing import Callable, Dict, List, Optional
 
 import torch
 
+from dataloader import get_dataloader
 from dataset_collection import DatasetCollection
 from device import get_device
 from hook import Hook
@@ -94,8 +95,11 @@ class ModelExecutor:
 
     @property
     def dataloader(self):
-        return self.dataset_collection.get_dataloader(
-            self.__phase, self.__hyper_parameter, device=self.device
+        return get_dataloader(
+            self.dataset_collection,
+            self.__phase,
+            self.__hyper_parameter,
+            device=self.device,
         )
 
     @property
