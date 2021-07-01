@@ -47,11 +47,6 @@ class DatasetCollection:
         self.__datasets[MachineLearningPhase.Training] = training_dataset
         self.__datasets[MachineLearningPhase.Validation] = validation_dataset
         self.__datasets[MachineLearningPhase.Test] = test_dataset
-        self.__origin_datasets: Dict[
-            MachineLearningPhase, torch.utils.data.Dataset
-        ] = dict()
-        for k, v in self.__datasets.items():
-            self.__origin_datasets[k] = v
         self.__dataset_type = dataset_type
         self.__name = name
         self.__text_field = text_field
@@ -65,9 +60,6 @@ class DatasetCollection:
     def text_field(self) -> torchtext.legacy.data.Field:
         return self.__text_field
 
-    def set_origin_dataset(self, phase: MachineLearningPhase, dataset):
-        self.__origin_datasets[phase] = dataset
-
     def transform_dataset(self, phase: MachineLearningPhase, transformer: Callable):
         dataset = self.get_dataset(phase)
         self.__datasets[phase] = transformer(dataset)
@@ -79,6 +71,14 @@ class DatasetCollection:
         assert phase in self.__datasets
         return self.__datasets[phase]
 
+    def __get_original_dataset(
+        self, phase: MachineLearningPhase
+    ) -> torch.utils.data.Dataset:
+        dataset = self.get_dataset(phase)
+        if hasattr(dataset, "dataset"):
+            dataset = dataset.dataset
+        return dataset
+
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
@@ -89,7 +89,7 @@ class DatasetCollection:
         for k in MachineLearningPhase:
             if phases is not None and k not in phases:
                 continue
-            origin_datasets.add(self.__origin_datasets[k])
+            origin_datasets.add(self.__get_original_dataset(k))
         for dataset in origin_datasets:
             for t in transforms:
                 DatasetUtil(dataset).append_transform(t)
@@ -102,7 +102,7 @@ class DatasetCollection:
         for k in MachineLearningPhase:
             if phase is not None and k != phase:
                 continue
-            origin_datasets.add(self.__origin_datasets[k])
+            origin_datasets.add(self.__get_original_dataset(k))
         for dataset in origin_datasets:
             DatasetUtil(dataset).prepend_transform(transform)
 
@@ -329,24 +329,6 @@ class DatasetCollection:
             text_field,
             label_field,
         )
-        if splited_dataset is not None:
-            dc.set_origin_dataset(MachineLearningPhase.Validation, splited_dataset)
-            dc.set_origin_dataset(MachineLearningPhase.Test, splited_dataset)
-        # use_mel_spectrogram = kwargs.pop("use_mel_spectrogram", False)
-        # if dataset_type == DatasetType.Audio and use_mel_spectrogram:
-        #     cache_dir = DatasetCollection.get_dataset_cache_dir(
-        #         name + "_mel_spectrogram"
-        #     )
-        #     for phase in MachineLearningPhase:
-        #         dc.transform_dataset(
-        #             phase,
-        #             lambda dataset: DatasetToMelSpectrogram(
-        #                 copy.deepcopy(dataset), root=cache_dir
-        #             ),
-        #         )
-        #         dc.set_origin_dataset(phase, dc.get_dataset(phase=phase))
-        #     dc.prepend_transform(vision_transform)
-        #     dataset_type = DatasetType.Vision
 
         get_logger().info("training_dataset len %s", len(training_dataset))
         get_logger().info("validation_dataset len %s", len(validation_dataset))
