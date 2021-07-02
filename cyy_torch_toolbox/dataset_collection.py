@@ -71,7 +71,7 @@ class DatasetCollection:
         assert phase in self.__datasets
         return self.__datasets[phase]
 
-    def __get_original_dataset(
+    def get_original_dataset(
         self, phase: MachineLearningPhase
     ) -> torch.utils.data.Dataset:
         dataset = self.get_dataset(phase)
@@ -89,7 +89,7 @@ class DatasetCollection:
         for k in MachineLearningPhase:
             if phases is not None and k not in phases:
                 continue
-            origin_datasets.add(self.__get_original_dataset(k))
+            origin_datasets.add(self.get_original_dataset(k))
         for dataset in origin_datasets:
             for t in transforms:
                 DatasetUtil(dataset).append_transform(t)
@@ -102,7 +102,7 @@ class DatasetCollection:
         for k in MachineLearningPhase:
             if phase is not None and k != phase:
                 continue
-            origin_datasets.add(self.__get_original_dataset(k))
+            origin_datasets.add(self.get_original_dataset(k))
         for dataset in origin_datasets:
             DatasetUtil(dataset).prepend_transform(transform)
 
