@@ -12,7 +12,7 @@ from nvidia.dali.plugin.pytorch import DALIClassificationIterator
 
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
-from ml_type import DatasetType, MachineLearningPhase
+from ml_type import DatasetType, MachineLearningPhase, ModelType
 
 
 def get_raw_transformers(obj) -> list:
@@ -35,8 +35,8 @@ def create_dali_pipeline(dc: DatasetCollection, phase: MachineLearningPhase, dev
     assert isinstance(original_dataset, torchvision.datasets.folder.ImageFolder)
     samples = original_dataset.samples
     if hasattr(dataset, "indices"):
+        get_logger().info("use indices")
         samples = [samples[idx] for idx in dataset.indices]
-    print("samples size is %s", len(samples))
 
     images, labels = fn.readers.file(
         files=[s[0] for s in samples],
@@ -110,12 +110,13 @@ def create_dali_pipeline(dc: DatasetCollection, phase: MachineLearningPhase, dev
 
 def get_dataloader(
     dc: DatasetCollection,
+    model_type: ModelType,
     phase: MachineLearningPhase,
     hyper_parameter: HyperParameter,
     device=None,
 ):
     dataset = dc.get_dataset(phase)
-    if dc.dataset_type == DatasetType.Vision:
+    if dc.dataset_type == DatasetType.Vision and model_type == ModelType.Classification:
         get_logger().info("use DALI")
         device_id = -1
         if device is not None:
@@ -129,7 +130,7 @@ def get_dataloader(
             device=device,
         )
         pipeline.build()
-        return DALIClassificationIterator(pipeline)
+        return DALIClassificationIterator(pipeline, auto_reset=True)
     if dc.dataset_type != DatasetType.Text:
         return torch.utils.data.DataLoader(
             dataset,
