@@ -97,6 +97,7 @@ class ModelExecutor:
     def dataloader(self):
         return get_dataloader(
             self.dataset_collection,
+            self._model_with_loss.model_type,
             self.__phase,
             self.__hyper_parameter,
             device=self.device,
@@ -213,7 +214,7 @@ class ModelExecutor:
                 continue
             for idx, hook in enumerate(hooks):
                 hook.pop(name, None)
-                self.__hooks[cur_hook_point][idx] = hook
+                hooks[idx] = hook
 
     @property
     def dataset_collection(self) -> DatasetCollection:
