@@ -1,5 +1,4 @@
 import copy
-import os
 
 import nvidia.dali.fn as fn
 import nvidia.dali.types as types
@@ -123,7 +122,8 @@ def get_dataloader(
             device_id = device.index
         pipeline = create_dali_pipeline(
             batch_size=hyper_parameter.batch_size,
-            num_threads=os.cpu_count(),
+            # num_threads=os.cpu_count(),
+            num_threads=2,
             device_id=device_id,
             dc=dc,
             phase=phase,
