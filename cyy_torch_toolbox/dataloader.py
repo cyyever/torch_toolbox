@@ -1,6 +1,6 @@
 import copy
+import random
 
-import numpy
 import nvidia.dali.fn as fn
 import nvidia.dali.types as types
 import torch
@@ -8,8 +8,8 @@ import torchtext
 import torchvision
 from cyy_naive_lib.log import get_logger
 from nvidia.dali.pipeline import pipeline_def
-from nvidia.dali.plugin.pytorch import DALIClassificationIterator
-from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
+from nvidia.dali.plugin.pytorch import (DALIClassificationIterator,
+                                        LastBatchPolicy)
 
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
@@ -17,32 +17,45 @@ from ml_type import DatasetType, MachineLearningPhase, ModelType
 
 
 class ExternalInputIterator:
-    def __init__(self, dataset, batch_size: int, shuffle: bool):
-        self.__dataset = copy.deepcopy(dataset)
-        if hasattr(self.__dataset, "transform"):
-            setattr(self.__dataset, "transform", None)
-        if hasattr(self.__dataset, "transforms"):
-            setattr(self.__dataset, "transforms", None)
+    def __init__(self, dataset, original_dataset, batch_size: int, shuffle: bool):
+        self.__dataset = dataset
+        self.__original_dataset = original_dataset
+
+        assert hasattr(self.__original_dataset, "data")
+        if hasattr(dataset, "indices"):
+            self.__indices = dataset.indices
+            assert hasattr(original_dataset, "data")
+            self.__data = original_dataset.data
+            self.__targets = original_dataset.targets
+        else:
+            self.__indices = list(range(len(dataset)))
+            assert hasattr(dataset, "data")
+            self.__data = original_dataset.data
+            self.__targets = original_dataset.targets
+        assert len(self.__dataset) <= len(self.__data)
+
+        self.__tmp_indices = None
         self.__batch_size = batch_size
         self.__shuffle = shuffle
-        self.__batch_sampler = None
-        self.__transform = torchvision.transforms.ToTensor()
 
     def __iter__(self):
+        self.__tmp_indices = copy.deepcopy(self.__indices)
+        self.__tmp_indices.reverse()
         if self.__shuffle:
-            sampler = RandomSampler(self.__dataset)
-        else:
-            sampler = SequentialSampler(self.__dataset)
-        self.__batch_sampler = BatchSampler(sampler, self.__batch_size, drop_last=False)
+            random.shuffle(self.__tmp_indices)
         return self
 
     def __next__(self):
-        batch_iter = self.__batch_sampler.__iter__()
         batch = []
         labels = []
-        for idx in batch_iter.__next__():
-            sample, label = self.__dataset[idx]
-            sample = self.__transform(sample)
+        if not self.__tmp_indices:
+            raise StopIteration()
+        for _ in range(self.__batch_size):
+            if not self.__tmp_indices:
+                break
+            idx = self.__tmp_indices.pop()
+            sample = self.__data[idx].unsqueeze(0)
+            label = self.__targets[idx]
             batch.append(sample)
             labels.append(label)
         return (batch, torch.LongTensor(labels))
@@ -86,23 +99,24 @@ def create_dali_pipeline(
     else:
         external_source = ExternalInputIterator(
             dataset,
+            original_dataset,
             batch_size=hyper_parameter.batch_size,
             shuffle=(phase == MachineLearningPhase.Training),
         )
         images, labels = fn.external_source(
-            source=external_source, layout=["CHW", ""], num_outputs=2
+            source=external_source, layout=("CHW", ""), num_outputs=2
         )
+        # images = fn.decoders.image(images, device="cpu" if device is None else "mixed")
 
-    raw_transforms = get_raw_transformers(dataset.transforms)
+    get_logger().error("dataset is %s", dataset)
+    raw_transforms = get_raw_transformers(original_dataset.transforms)
     raw_transforms = [
         t
         for t in raw_transforms
         if not isinstance(t, torchvision.transforms.transforms.ToTensor)
     ]
-    raw_transform_dict = {
-        idx: transform for idx, transform in enumerate(raw_transforms)
-    }
-    get_logger().info("raw_transforms are %s", raw_transform_dict)
+    raw_transform_dict = dict(enumerate(raw_transforms))
+    get_logger().debug("raw_transforms are %s", raw_transform_dict)
     crop_size = None
     horizontal_mirror = False
     mean_and_std = None
@@ -182,7 +196,13 @@ def get_dataloader(
             device=device,
         )
         pipeline.build()
-        return DALIClassificationIterator(pipeline, auto_reset=True)
+        return DALIClassificationIterator(
+            pipeline,
+            auto_reset=True,
+            dynamic_shape=True,
+            last_batch_policy=LastBatchPolicy.PARTIAL,
+            last_batch_padded=True,
+        )
     if dc.dataset_type != DatasetType.Text:
         return torch.utils.data.DataLoader(
             dataset,
