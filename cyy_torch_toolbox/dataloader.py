@@ -1,5 +1,6 @@
 import copy
 
+import numpy
 import nvidia.dali.fn as fn
 import nvidia.dali.types as types
 import torch
@@ -8,10 +9,46 @@ import torchvision
 from cyy_naive_lib.log import get_logger
 from nvidia.dali.pipeline import pipeline_def
 from nvidia.dali.plugin.pytorch import DALIClassificationIterator
+from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
 
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from ml_type import DatasetType, MachineLearningPhase, ModelType
+
+
+class ExternalInputIterator:
+    def __init__(self, dataset, batch_size: int, shuffle: bool):
+        self.__dataset = copy.deepcopy(dataset)
+        if hasattr(self.__dataset, "transform"):
+            setattr(self.__dataset, "transform", None)
+        if hasattr(self.__dataset, "transforms"):
+            setattr(self.__dataset, "transforms", None)
+        self.__batch_size = batch_size
+        self.__shuffle = shuffle
+        self.__batch_sampler = None
+        self.__transform = torchvision.transforms.ToTensor()
+
+    def __iter__(self):
+        if self.__shuffle:
+            sampler = RandomSampler(self.__dataset)
+        else:
+            sampler = SequentialSampler(self.__dataset)
+        self.__batch_sampler = BatchSampler(sampler, self.__batch_size, drop_last=False)
+        return self
+
+    def __next__(self):
+        batch_iter = self.__batch_sampler.__iter__()
+        batch = []
+        labels = []
+        for idx in batch_iter.__next__():
+            sample, label = self.__dataset[idx]
+            sample = self.__transform(sample)
+            batch.append(sample)
+            labels.append(label)
+        return (batch, torch.LongTensor(labels))
+
+    def __len__(self):
+        return len(self.__dataset)
 
 
 def get_raw_transformers(obj) -> list:
@@ -28,20 +65,33 @@ def get_raw_transformers(obj) -> list:
 
 
 @pipeline_def
-def create_dali_pipeline(dc: DatasetCollection, phase: MachineLearningPhase, device):
+def create_dali_pipeline(
+    dc: DatasetCollection,
+    phase: MachineLearningPhase,
+    hyper_parameter: HyperParameter,
+    device,
+):
     dataset = dc.get_dataset(phase)
     original_dataset = dc.get_original_dataset(phase)
-    assert isinstance(original_dataset, torchvision.datasets.folder.ImageFolder)
-    samples = original_dataset.samples
-    if hasattr(dataset, "indices"):
-        get_logger().info("use indices")
-        samples = [samples[idx] for idx in dataset.indices]
-
-    images, labels = fn.readers.file(
-        files=[s[0] for s in samples],
-        labels=[s[1] for s in samples],
-        random_shuffle=(phase == MachineLearningPhase.Training),
-    )
+    if isinstance(original_dataset, torchvision.datasets.folder.ImageFolder):
+        samples = original_dataset.samples
+        if hasattr(dataset, "indices"):
+            get_logger().info("use indices")
+            samples = [samples[idx] for idx in dataset.indices]
+        image_files, labels = fn.readers.file(
+            files=[s[0] for s in samples],
+            labels=[s[1] for s in samples],
+            random_shuffle=(phase == MachineLearningPhase.Training),
+        )
+    else:
+        external_source = ExternalInputIterator(
+            dataset,
+            batch_size=hyper_parameter.batch_size,
+            shuffle=(phase == MachineLearningPhase.Training),
+        )
+        images, labels = fn.external_source(
+            source=external_source, layout=["HWC", ""], num_outputs=2
+        )
 
     raw_transforms = get_raw_transformers(dataset.transforms)
     raw_transforms = [
@@ -52,6 +102,7 @@ def create_dali_pipeline(dc: DatasetCollection, phase: MachineLearningPhase, dev
     raw_transform_dict = {
         idx: transform for idx, transform in enumerate(raw_transforms)
     }
+    get_logger().info("raw_transforms are %s", raw_transform_dict)
     crop_size = None
     horizontal_mirror = False
     mean_and_std = None
@@ -60,7 +111,7 @@ def create_dali_pipeline(dc: DatasetCollection, phase: MachineLearningPhase, dev
         transform = raw_transform_dict_copy[idx]
         if isinstance(transform, torchvision.transforms.transforms.RandomResizedCrop):
             images = fn.decoders.image_random_crop(
-                images,
+                image_files,
                 device="cpu" if device is None else "mixed",
                 num_attempts=5,
             )
@@ -127,6 +178,7 @@ def get_dataloader(
             device_id=device_id,
             dc=dc,
             phase=phase,
+            hyper_parameter=hyper_parameter,
             device=device,
         )
         pipeline.build()
@@ -148,17 +200,3 @@ def get_dataloader(
         sort_within_batch=True,
         device=device,
     )[0]
-
-
-# def get_dali_dataloader(
-#     dc: DatasetCollection,
-#     phase: MachineLearningPhase,
-#     hyper_parameter: HyperParameter,
-#     device=None,
-# ):
-#     dataset = dc.get_dataset(phase)
-#     original_dataset = dc.get_original_dataset(phase)
-#     assert isinstance(original_dataset, torchvision.datasets.folder.ImageFolder)
-#     samples = original_dataset.samples
-#     if hasattr(dataset, "indices"):
-#         samples = [samples[idx] for idx in dataset.indices]
