@@ -90,7 +90,7 @@ def create_dali_pipeline(
             shuffle=(phase == MachineLearningPhase.Training),
         )
         images, labels = fn.external_source(
-            source=external_source, layout=["HWC", ""], num_outputs=2
+            source=external_source, layout=["CHW", ""], num_outputs=2
         )
 
     raw_transforms = get_raw_transformers(dataset.transforms)
