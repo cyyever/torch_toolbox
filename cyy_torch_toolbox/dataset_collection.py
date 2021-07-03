@@ -15,16 +15,14 @@ except ModuleNotFoundError:
     has_torchaudio = False
 import torchtext
 import torchvision
-import torchvision.transforms as transforms
 from cyy_naive_lib.log import get_logger
+from torchvision import transforms
 
 if has_torchaudio:
     import audio_datasets as local_audio_datasets
 
 import vision_datasets as local_vision_datasets
-# from dataset import (DatasetToMelSpectrogram, DatasetUtil,
 from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
-from hyper_parameter import HyperParameter
 from ml_type import DatasetType, MachineLearningPhase
 from pipelines.text_field import get_text_and_label_fields
 
