@@ -37,6 +37,7 @@ class ExternalInputIterator:
         self.__tmp_indices = None
         self.__batch_size = batch_size
         self.__shuffle = shuffle
+        self.__transform = torchvision.transforms.ToTensor()
 
     def __iter__(self):
         self.__tmp_indices = copy.deepcopy(self.__indices)
@@ -54,7 +55,7 @@ class ExternalInputIterator:
             if not self.__tmp_indices:
                 break
             idx = self.__tmp_indices.pop()
-            sample = self.__data[idx].unsqueeze(0)
+            sample = self.__transform(self.__data[idx].numpy())
             label = self.__targets[idx]
             batch.append(sample)
             labels.append(label)
@@ -146,10 +147,13 @@ def create_dali_pipeline(
             raw_transform_dict.pop(idx)
             continue
         if isinstance(transform, torchvision.transforms.transforms.Normalize):
-            mean_and_std = (transform.mean, transform.std)
+            mean_and_std = (copy.deepcopy(transform.mean), copy.deepcopy(transform.std))
             raw_transform_dict.pop(idx)
             continue
     assert mean_and_std is not None
+    for idx, m in enumerate(mean_and_std[0]):
+        assert 0 <= m <= 1
+        mean_and_std[0][idx] = m * 255
     if crop_size is None:
         crop_size = (10000000000, 1000000000000)
     images = fn.crop_mirror_normalize(
@@ -160,6 +164,7 @@ def create_dali_pipeline(
         crop_w=crop_size[1],
         mean=mean_and_std[0].tolist(),
         std=mean_and_std[1].tolist(),
+        scale=1.0 / 255,
         mirror=horizontal_mirror,
     )
 
