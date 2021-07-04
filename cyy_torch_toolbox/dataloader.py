@@ -1,6 +1,7 @@
 import copy
 import random
 
+import numpy
 import nvidia.dali.fn as fn
 import nvidia.dali.types as types
 import torch
@@ -55,7 +56,10 @@ class ExternalInputIterator:
             if not self.__tmp_indices:
                 break
             idx = self.__tmp_indices.pop()
-            sample = self.__transform(self.__data[idx].numpy())
+            sample = self.__data[idx]
+            if not isinstance(sample, numpy.ndarray):
+                sample = sample.numpy()
+            sample = self.__transform(sample)
             label = self.__targets[idx]
             batch.append(sample)
             labels.append(label)
@@ -109,7 +113,6 @@ def create_dali_pipeline(
         )
         # images = fn.decoders.image(images, device="cpu" if device is None else "mixed")
 
-    get_logger().error("dataset is %s", dataset)
     raw_transforms = get_raw_transformers(original_dataset.transforms)
     raw_transforms = [
         t
@@ -125,9 +128,14 @@ def create_dali_pipeline(
     for idx in sorted(raw_transform_dict_copy):
         transform = raw_transform_dict_copy[idx]
         if isinstance(transform, torchvision.transforms.transforms.RandomResizedCrop):
+            # ask nvJPEG to preallocate memory for the biggest sample in ImageNet for CPU and GPU to avoid reallocations in runtime
+            device_memory_padding = 211025920 if device is not None else 0
+            host_memory_padding = 140544512 if device is not None else 0
             images = fn.decoders.image_random_crop(
                 image_files,
                 device="cpu" if device is None else "mixed",
+                device_memory_padding=device_memory_padding,
+                host_memory_padding=host_memory_padding,
                 num_attempts=5,
             )
             images = fn.resize(
@@ -137,7 +145,7 @@ def create_dali_pipeline(
                 resize_x=transform.size[0],
                 resize_y=transform.size[1],
             )
-            crop_size = transform.size
+            # crop_size = transform.size
             raw_transform_dict.pop(idx)
             continue
         if isinstance(
@@ -154,14 +162,14 @@ def create_dali_pipeline(
     for idx, m in enumerate(mean_and_std[0]):
         assert 0 <= m <= 1
         mean_and_std[0][idx] = m * 255
-    if crop_size is None:
-        crop_size = (10000000000, 1000000000000)
+    # if crop_size is None:
+    #     crop_size = (10000000, 10000000)
     images = fn.crop_mirror_normalize(
         images,
         dtype=types.FLOAT,
         output_layout="CHW",
-        crop_h=crop_size[0],
-        crop_w=crop_size[1],
+        crop_h=0.0 if crop_size is None else crop_size[0],
+        crop_w=0.0 if crop_size is None else crop_size[1],
         mean=mean_and_std[0].tolist(),
         std=mean_and_std[1].tolist(),
         scale=1.0 / 255,
@@ -169,7 +177,7 @@ def create_dali_pipeline(
     )
 
     if raw_transform_dict:
-        get_logger().info("remaining raw_transforms are %s", raw_transform_dict)
+        get_logger().error("remaining raw_transforms are %s", raw_transform_dict)
     assert not raw_transform_dict
 
     if device is not None:
