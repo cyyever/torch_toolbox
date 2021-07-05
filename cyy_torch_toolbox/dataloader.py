@@ -1,7 +1,6 @@
 import copy
 import random
 
-import numpy
 import nvidia
 import torch
 import torchtext
@@ -29,7 +28,6 @@ class ExternalInputIterator:
         else:
             self.__indices = list(range(len(dataset)))
             assert dataset == original_dataset
-        # get_logger().debug("use indices %s", self.__indices)
         self.__data = original_dataset.data
         self.__targets = original_dataset.targets
         assert len(self.__indices) == len(self.__dataset)
