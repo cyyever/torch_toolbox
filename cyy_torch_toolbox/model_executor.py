@@ -241,6 +241,7 @@ class ModelExecutor:
         # capture what is normally pickled
         state = self.__dict__.copy()
         state["_ModelExecutor__cuda_stream"] = None
+        state["_ModelExecutor__dataloader"] = None
         return state
 
     @property
