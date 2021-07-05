@@ -35,6 +35,7 @@ class ModelExecutor:
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
         self.__device = get_device()
+        self.__dataloader = None
         self.__cuda_stream = None
         self.__data: dict = dict()
         self.__hooks: Dict[ModelExecutorHookPoint, List[Dict[str, Callable]]] = dict()
@@ -95,13 +96,15 @@ class ModelExecutor:
 
     @property
     def dataloader(self):
-        return get_dataloader(
-            self.dataset_collection,
-            self._model_with_loss.model_type,
-            self.__phase,
-            self.__hyper_parameter,
-            device=self.device,
-        )
+        if self.__dataloader is None:
+            self.__dataloader = get_dataloader(
+                self.dataset_collection,
+                self._model_with_loss.model_type,
+                self.__phase,
+                self.__hyper_parameter,
+                device=self.device,
+            )
+        return self.__dataloader
 
     @property
     def loss_fun(self):
@@ -228,6 +231,7 @@ class ModelExecutor:
         self._wait_stream()
         self.__device = device
         self.__cuda_stream = None
+        self.__dataloader = None
 
     def set_stream(self, stream):
         self._wait_stream()
@@ -254,6 +258,7 @@ class ModelExecutor:
 
     def set_hyper_parameter(self, hyper_parameter):
         self.__hyper_parameter = hyper_parameter
+        self.__dataloader = None
 
     @property
     def hyper_parameter(self):
