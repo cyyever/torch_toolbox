@@ -200,7 +200,13 @@ def get_dataloader(
     device=None,
 ):
     dataset = dc.get_dataset(phase)
-    if dc.dataset_type == DatasetType.Vision and model_type == ModelType.Classification:
+    original_dataset = dc.get_original_dataset(phase)
+    if (
+        dc.dataset_type == DatasetType.Vision
+        and model_type == ModelType.Classification
+        # We use DALI for ImageFolder only
+        and isinstance(original_dataset, torchvision.datasets.folder.ImageFolder)
+    ):
         get_logger().info("use DALI")
         device_id = -1
         if device is not None:
