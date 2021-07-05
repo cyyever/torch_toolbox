@@ -319,11 +319,11 @@ class DatasetCollection:
                     transforms.RandomHorizontalFlip(),
                     phases={MachineLearningPhase.Training},
                 )
-            if name in ("CIFAR10", "CIFAR100"):
-                dc.append_transform(
-                    transforms.RandomCrop(32, padding=4),
-                    phases={MachineLearningPhase.Training},
-                )
+            # if name in ("CIFAR10", "CIFAR100"):
+            #     dc.append_transform(
+            #         # transforms.RandomCrop(32, padding=4),
+            #         phases={MachineLearningPhase.Training},
+            #     )
             if name.lower() == "imagenet":
                 dc.append_transform(
                     transforms.RandomResizedCrop(224),
