@@ -100,8 +100,6 @@ def create_dali_pipeline(
 ):
     dataset = dc.get_dataset(phase)
     original_dataset = dc.get_original_dataset(phase)
-    get_logger().error("dataset is %s", dataset)
-    get_logger().error("original_dataset is %s", original_dataset)
     if isinstance(original_dataset, torchvision.datasets.folder.ImageFolder):
         samples = original_dataset.samples
         if hasattr(dataset, "indices"):
