@@ -10,8 +10,6 @@ from cyy_naive_lib.log import get_logger
 from ml_type import MachineLearningPhase, ModelType
 from model_util import ModelUtil
 
-# from torchvision.models.detection.generalized_rcnn import GeneralizedRCNN
-
 
 class CheckPointBlock(nn.Module):
     def __init__(self, block):

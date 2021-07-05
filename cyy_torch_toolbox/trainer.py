@@ -241,7 +241,6 @@ class Trainer(ModelExecutor):
                         if self.profiling_mode:
                             dataloader_time_counter.reset_start_time()
 
-                    # update model parameters
                     for inferencer in self.__inferencers.values():
                         inferencer.set_model(self.model)
                         inferencer.inference(epoch=epoch, use_grad=False)
@@ -252,6 +251,7 @@ class Trainer(ModelExecutor):
                         epoch=epoch,
                     )
 
+                    # update model parameters
                     if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                         if isinstance(
                             lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau

@@ -176,7 +176,7 @@ class DatasetUtil:
 
     def get_mean_and_std(self):
         mean = torch.zeros(self.channel)
-        dataloader = self.__dataloader()
+        dataloader = self.__get_dataloader()
         for x, _ in dataloader:
             for i in range(self.channel):
                 mean[i] += x[:, i, :, :].mean()
