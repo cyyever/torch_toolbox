@@ -98,6 +98,7 @@ def create_dali_pipeline(
 ):
     dataset = dc.get_dataset(phase)
     original_dataset = dc.get_original_dataset(phase)
+    is_external_source = False
     if isinstance(original_dataset, torchvision.datasets.folder.ImageFolder):
         samples = original_dataset.samples
         if hasattr(dataset, "indices"):
@@ -114,6 +115,7 @@ def create_dali_pipeline(
             batch_size=hyper_parameter.batch_size,
             shuffle=(phase == MachineLearningPhase.Training),
         )
+        is_external_source = True
         images, labels = nvidia.dali.fn.external_source(
             source=external_source, layout=("CHW", ""), num_outputs=2
         )
@@ -165,20 +167,19 @@ def create_dali_pipeline(
             raw_transform_dict.pop(idx)
             continue
     assert mean_and_std is not None
-    # for idx, m in enumerate(mean_and_std[0]):
-    #     assert 0 <= m <= 1
-    #     mean_and_std[0][idx] = m * 255
-    # if crop_size is None:
-    #     crop_size = (10000000, 10000000)
+    scale = 1.0
+    if not is_external_source:
+        for idx, m in enumerate(mean_and_std[0]):
+            assert 0 <= m <= 1
+            mean_and_std[0][idx] = m * 255
+        scale = 1.0 / 255
     images = nvidia.dali.fn.crop_mirror_normalize(
         images,
         dtype=nvidia.dali.types.FLOAT,
         output_layout="CHW",
-        # crop_h=0.0 if crop_size is None else crop_size[0],
-        # crop_w=0.0 if crop_size is None else crop_size[1],
         mean=mean_and_std[0].tolist(),
         std=mean_and_std[1].tolist(),
-        # scale=1.0 / 255,
+        scale=scale,
         mirror=horizontal_mirror,
     )
 
