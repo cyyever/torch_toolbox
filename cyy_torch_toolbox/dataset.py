@@ -243,11 +243,11 @@ class DatasetUtil:
         return next(iter(labels))
 
     def get_sample_label(self, index):
-        sample = self.dataset[index]
-        if isinstance(sample, torchtext.legacy.data.example.Example):
+        sample_and_target = self.dataset[index]
+        if isinstance(sample_and_target, torchtext.legacy.data.example.Example):
             assert self.__label_field is not None
-            return self.__label_field.vocab.stoi[sample.label]
-        return DatasetUtil.get_label_from_target(self.dataset[index][1])
+            return self.__label_field.vocab.stoi[sample_and_target.label]
+        return DatasetUtil.get_label_from_target(sample_and_target[1])
 
     def get_labels(self) -> set:
         def get_label(container: set, instance) -> set:
