@@ -259,7 +259,7 @@ class DatasetUtil:
 
     def split_by_label(self) -> dict:
         label_map: dict = {}
-        for index, _ in enumerate(self.dataset):
+        for index in range(len(self.dataset)):
             label = self.get_sample_label(index)
             if label not in label_map:
                 label_map[label] = []
