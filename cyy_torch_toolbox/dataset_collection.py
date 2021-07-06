@@ -62,6 +62,19 @@ class DatasetCollection:
         dataset = self.get_dataset(phase)
         self.__datasets[phase] = transformer(dataset)
 
+    def transform_dataset_to_subset(self, phase: MachineLearningPhase, labels: set):
+
+        label_indices = self.__get_label_indices(self, phase)
+        assert labels.issubset(set(label_indices.keys()))
+        total_indices = []
+        for label, indices in label_indices.items():
+            if label in labels:
+                total_indices += indices
+
+        self.transform_dataset(
+            phase, lambda dataset: sub_dataset(dataset, total_indices)
+        )
+
     def get_training_dataset(self) -> torch.utils.data.Dataset:
         return self.get_dataset(MachineLearningPhase.Training)
 
