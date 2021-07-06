@@ -242,8 +242,14 @@ class DatasetUtil:
         assert len(labels) == 1
         return next(iter(labels))
 
-    def get_sample_label(self, index):
-        sample_and_target = self.dataset[index]
+    def get_sample_label(self, index, dataset=None):
+        if dataset is None:
+            dataset = self.dataset
+        if isinstance(dataset, torch.utils.data.Subset):
+            return self.get_sample_label(dataset.indices[index], dataset.dataset)
+        if hasattr(dataset, "targets") and dataset.target_transform is None:
+            return dataset.targets[index]
+        sample_and_target = dataset[index]
         if isinstance(sample_and_target, torchtext.legacy.data.example.Example):
             assert self.__label_field is not None
             return self.__label_field.vocab.stoi[sample_and_target.label]

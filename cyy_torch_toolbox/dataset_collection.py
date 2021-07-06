@@ -111,15 +111,13 @@ class DatasetCollection:
     def get_labels(self) -> set:
         cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
         pickle_file = os.path.join(cache_dir, "labels.pk")
-        labels = DatasetCollection.__read_data(pickle_file)
-        if labels is not None:
-            return labels
-        if self.__label_field is not None:
-            labels = set(self.__label_field.vocab.stoi.values())
-        else:
-            labels = self.get_dataset_util().get_labels()
-        DatasetCollection.__write_data(pickle_file, labels)
-        return labels
+
+        def computation_fun():
+            if self.__label_field is not None:
+                return set(self.__label_field.vocab.stoi.values())
+            return self.get_dataset_util(phase=MachineLearningPhase.Test).get_labels()
+
+        return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
     def get_label_names(self) -> List[str]:
         if hasattr(self.get_training_dataset(), "classes"):
@@ -153,8 +151,10 @@ class DatasetCollection:
         return dataset_dir
 
     @staticmethod
-    def __get_dataset_cache_dir(name: str):
+    def __get_dataset_cache_dir(name: str, phase=None):
         cache_dir = os.path.join(DatasetCollection.__get_dataset_dir(name), ".cache")
+        if phase is not None:
+            cache_dir = os.path.join(cache_dir, str(phase))
         if not os.path.isdir(cache_dir):
             os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
@@ -203,17 +203,16 @@ class DatasetCollection:
     def __get_mean_and_std(name: str, dataset):
         cache_dir = os.path.join(DatasetCollection.__get_dataset_dir(name), ".cache")
         pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
-        res = DatasetCollection.__read_data(pickle_file)
-        if res is not None:
-            return res
-        if name.lower() == "imagenet":
-            mean = torch.Tensor([0.485, 0.456, 0.406])
-            std = torch.Tensor([0.229, 0.224, 0.225])
-        else:
-            mean, std = DatasetUtil(dataset).get_mean_and_std()
-            res = (mean, std)
-        DatasetCollection.__write_data(pickle_file, res)
-        return res
+
+        def computation_fun():
+            if name.lower() == "imagenet":
+                mean = torch.Tensor([0.485, 0.456, 0.406])
+                std = torch.Tensor([0.229, 0.224, 0.225])
+            else:
+                mean, std = DatasetUtil(dataset).get_mean_and_std()
+            return (mean, std)
+
+        return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
     @staticmethod
     def __create_dataset_collection(
@@ -377,19 +376,15 @@ class DatasetCollection:
                 )
         return dataset_kwargs
 
-    def __get_label_indices(self, cache_dir):
+    def __get_label_indices(self, phase):
         with self.__lock:
-            cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
+            cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name, phase)
             pickle_file = os.path.join(cache_dir, "label_indices.pk")
-            label_indices = DatasetCollection.__read_data(pickle_file)
-            if label_indices is not None:
-                return label_indices
-            label_indices = dict()
-            for phase in MachineLearningPhase:
-                dataset_util = self.get_dataset_util(phase)
-                label_indices[phase] = dataset_util.split_by_label()
-            DatasetCollection.__write_data(pickle_file, label_indices)
-            return label_indices
+            dataset_util = self.get_dataset_util(phase)
+            return DatasetCollection.__get_cache_data(
+                pickle_file,
+                dataset_util.split_by_label,
+            )
 
     @staticmethod
     def __split_for_validation(cache_dir, splited_dataset, label_field=None):
@@ -401,6 +396,15 @@ class DatasetCollection:
         datasets = dataset_util.iid_split([1, 1])
         DatasetCollection.__write_data(pickle_file, [d.indices for d in datasets])
         return datasets
+
+    @staticmethod
+    def __get_cache_data(path, computation_fun: Callable):
+        data = DatasetCollection.__read_data(path)
+        if data is not None:
+            return data
+        data = computation_fun()
+        DatasetCollection.__write_data(path, data)
+        return data
 
     @staticmethod
     def __read_data(path):
@@ -508,9 +512,8 @@ class DatasetCollectionConfig:
                 "use training_dataset_label_map_path %s",
                 self.training_dataset_label_map_path,
             )
-            self.training_dataset_label_map = json.load(
-                open(self.training_dataset_label_map_path, "r")
-            )
+            with open(self.training_dataset_label_map_path, "r") as f:
+                self.training_dataset_label_map = json.load(f)
 
         if self.training_dataset_label_map is not None:
             training_dataset = replace_dataset_labels(
