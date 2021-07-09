@@ -64,7 +64,7 @@ class DatasetCollection:
 
     def transform_dataset_to_subset(self, phase: MachineLearningPhase, labels: set):
 
-        label_indices = self.__get_label_indices(self, phase)
+        label_indices = self.__get_label_indices(phase)
         assert labels.issubset(set(label_indices.keys()))
         total_indices = []
         for label, indices in label_indices.items():
@@ -439,6 +439,7 @@ class DatasetCollectionConfig:
     def __init__(self, dataset_name=None):
         self.dataset_name = dataset_name
         self.dataset_kwargs = dict()
+        self.sub_collection_labels = None
         self.training_dataset_percentage = None
         self.training_dataset_indices_path = None
         self.training_dataset_label_map_path = None
@@ -447,6 +448,7 @@ class DatasetCollectionConfig:
 
     def add_args(self, parser):
         parser.add_argument("--dataset_name", type=str, required=True)
+        parser.add_argument("--sub_collection_labels", type=str, default=None)
         parser.add_argument("--training_dataset_percentage", type=float, default=None)
         parser.add_argument("--training_dataset_indices_path", type=str, default=None)
         parser.add_argument(
@@ -473,6 +475,12 @@ class DatasetCollectionConfig:
             raise RuntimeError("dataset_name is None")
 
         dc = DatasetCollection.get_by_name(self.dataset_name, self.dataset_kwargs)
+
+        if self.sub_collection_labels is not None:
+            labels = self.sub_collection_labels.split("|")
+            for phase in MachineLearningPhase:
+                dc.transform_dataset_to_subset(phase, labels)
+
         dc.transform_dataset(
             MachineLearningPhase.Training,
             lambda dataset: self.__transform_training_dataset(dataset, save_dir),
