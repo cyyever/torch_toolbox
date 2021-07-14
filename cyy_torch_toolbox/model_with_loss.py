@@ -11,7 +11,7 @@ from ml_type import MachineLearningPhase, ModelType
 from model_util import ModelUtil
 
 
-class CheckPointBlock(nn.Module):
+class _CheckPointBlock(nn.Module):
     def __init__(self, block):
         super().__init__()
         self.block = nn.Sequential(*[m[1] for m in block])
@@ -33,7 +33,7 @@ class ModelWithLoss:
         loss_fun=None,
         model_type: ModelType = None,
     ):
-        self.__model = model
+        self.__model: torch.nn.Module = model
         self.__loss_fun: torch.nn.modules.loss._Loss = loss_fun
         if isinstance(loss_fun, str):
             if loss_fun == "CrossEntropyLoss":
@@ -86,7 +86,6 @@ class ModelWithLoss:
     def append_transform(self, transform):
         self.__model_transforms.append(transform)
 
-
     @property
     def checkpointed_model(self) -> torch.nn.Module:
         if self.__checkpointed_model is not None:
@@ -106,7 +105,7 @@ class ModelWithLoss:
                 if idx == 0:
                     checkpointed_model_util.set_attr(
                         submodule_name,
-                        CheckPointBlock(checkpointed_block),
+                        _CheckPointBlock(checkpointed_block),
                         as_parameter=False,
                     )
                 else:
