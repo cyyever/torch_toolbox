@@ -265,6 +265,10 @@ class ModelExecutor:
     def hyper_parameter(self):
         return self.__hyper_parameter
 
+    def set_model_with_loss(self, model_with_loss: ModelWithLoss):
+        self._wait_stream()
+        self._model_with_loss = model_with_loss
+
     def load_model(self, model_path):
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
 

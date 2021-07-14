@@ -86,9 +86,6 @@ class ModelWithLoss:
     def append_transform(self, transform):
         self.__model_transforms.append(transform)
 
-    def set_model(self, model: torch.nn.Module):
-        self.__model = model
-        self.__checkpointed_model = None
 
     @property
     def checkpointed_model(self) -> torch.nn.Module:
