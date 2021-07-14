@@ -242,7 +242,7 @@ class Trainer(ModelExecutor):
                             dataloader_time_counter.reset_start_time()
 
                     for inferencer in self.__inferencers.values():
-                        inferencer.set_model(self.model)
+                        inferencer.model.load_state_dict(self.model.state_dict())
                         inferencer.inference(epoch=epoch, use_grad=False)
 
                     self.exec_hooks(
