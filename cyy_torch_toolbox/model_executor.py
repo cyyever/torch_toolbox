@@ -265,9 +265,6 @@ class ModelExecutor:
     def hyper_parameter(self):
         return self.__hyper_parameter
 
-    def set_model(self, model: torch.nn.Module):
-        self._model_with_loss.set_model(model)
-
     def load_model(self, model_path):
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
 
