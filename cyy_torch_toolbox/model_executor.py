@@ -21,105 +21,12 @@ from model_with_loss import ModelWithLoss
 # from cyy_naive_lib.log import get_logger
 
 
-class ModelExecutor:
-    def __init__(
-        self,
-        model_with_loss: ModelWithLoss,
-        dataset_collection: DatasetCollection,
-        phase: MachineLearningPhase,
-        hyper_parameter: HyperParameter,
-        save_dir=None,
-    ):
-        self._model_with_loss = model_with_loss
-        self.__dataset_collection: DatasetCollection = dataset_collection
-        self.__phase = phase
-        self.__hyper_parameter = hyper_parameter
-        self.__device = get_device()
-        self.__dataloader = None
-        self.__cuda_stream = None
+class _ModelExecutorBase:
+    def __init__(self):
         self.__data: dict = dict()
         self.__hooks: Dict[ModelExecutorHookPoint, List[Dict[str, Callable]]] = dict()
         self.__stripable_hooks: set = set()
         self.__disabled_hooks: set = set()
-
-        self.__metric_tb: MetricTensorBoard = MetricTensorBoard()
-        self.__logger = ModelExecutorLogger()
-        self.append_hook(self.__logger)
-        self.__performance_metric = PerformanceMetric(self._model_with_loss.model_type)
-        self.append_hook(self.__performance_metric)
-        self.__performance_metric_logger = PerformanceMetricLogger()
-        self.append_hook(self.__performance_metric_logger)
-        self.debugging_mode = False
-        self.profiling_mode = False
-        self.__save_dir: Optional[str] = None
-        if save_dir is not None:
-            self.set_save_dir(save_dir)
-
-    @property
-    def visualizer(self):
-        return self.__metric_tb
-
-    @property
-    def phase(self):
-        return self.__phase
-
-    @property
-    def performance_metric(self):
-        return self.__performance_metric
-
-    @property
-    def performance_metric_logger(self):
-        return self.__performance_metric_logger
-
-    def set_save_dir(self, save_dir: str):
-        self.__save_dir = save_dir
-        log_dir = os.path.join(save_dir, "visualizer")
-        os.makedirs(log_dir, exist_ok=True)
-        self.__metric_tb.set_log_dir(log_dir)
-
-    @property
-    def save_dir(self):
-        return self.__save_dir
-
-    def disable_logger(self):
-        self.disable_hook(self.__logger)
-
-    def disable_performance_metric_logger(self):
-        self.disable_hook(self.__performance_metric_logger)
-
-    @property
-    def dataset(self):
-        return self.dataset_collection.get_dataset(phase=self.__phase)
-
-    def transform_dataset(self, transformer: Callable):
-        self.dataset_collection.transform_dataset(self.phase, transformer)
-
-    @property
-    def dataloader(self):
-        if self.__dataloader is None:
-            self.__dataloader = get_dataloader(
-                self.dataset_collection,
-                self._model_with_loss.model_type,
-                self.__phase,
-                self.__hyper_parameter,
-                device=self.device,
-            )
-        return self.__dataloader
-
-    @property
-    def loss_fun(self):
-        return self._model_with_loss.loss_fun
-
-    @property
-    def model(self) -> torch.nn.Module:
-        self._wait_stream()
-        return self._model_with_loss.model
-
-    def copy_model_with_loss(self, deepcopy=True):
-        self._wait_stream()
-        if deepcopy:
-            return copy.deepcopy(self._model_with_loss)
-        return copy.copy(self._model_with_loss)
 
     def get_data(self, key: str, default_value=None):
         return self.__data.get(key, default_value)
@@ -133,12 +40,8 @@ class ModelExecutor:
     def has_data(self, key: str):
         return key in self.__data
 
-    def _prepare_execution(self, **kwargs):
+    def clear_data(self):
         self.__data.clear()
-        for name in dir(self):
-            attr = getattr(self, name)
-            if hasattr(attr, "_is_cyy_torch_toolbox_metric"):
-                attr.clear_metric()
 
     def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs):
         for hook in self.__hooks.get(hook_point, []):
@@ -218,6 +121,110 @@ class ModelExecutor:
             for idx, hook in enumerate(hooks):
                 hook.pop(name, None)
                 hooks[idx] = hook
+
+
+class ModelExecutor(_ModelExecutorBase):
+    def __init__(
+        self,
+        model_with_loss: ModelWithLoss,
+        dataset_collection: DatasetCollection,
+        phase: MachineLearningPhase,
+        hyper_parameter: HyperParameter,
+        save_dir=None,
+    ):
+        super().__init__()
+        self._model_with_loss = model_with_loss
+        self.__dataset_collection: DatasetCollection = dataset_collection
+        self.__phase = phase
+        self.__hyper_parameter = hyper_parameter
+        self.__device = get_device()
+        self.__dataloader = None
+        self.__cuda_stream = None
+        self.__metric_tb: MetricTensorBoard = MetricTensorBoard()
+        self.__logger = ModelExecutorLogger()
+        self.append_hook(self.__logger)
+        self.__performance_metric = PerformanceMetric(self._model_with_loss.model_type)
+        self.append_hook(self.__performance_metric)
+        self.__performance_metric_logger = PerformanceMetricLogger()
+        self.append_hook(self.__performance_metric_logger)
+        self.debugging_mode = False
+        self.profiling_mode = False
+        self.__save_dir: Optional[str] = None
+        if save_dir is not None:
+            self.set_save_dir(save_dir)
+
+    @property
+    def visualizer(self):
+        return self.__metric_tb
+
+    @property
+    def phase(self):
+        return self.__phase
+
+    @property
+    def performance_metric(self):
+        return self.__performance_metric
+
+    @property
+    def performance_metric_logger(self):
+        return self.__performance_metric_logger
+
+    def set_save_dir(self, save_dir: str):
+        self.__save_dir = save_dir
+        log_dir = os.path.join(save_dir, "visualizer")
+        os.makedirs(log_dir, exist_ok=True)
+        self.__metric_tb.set_log_dir(log_dir)
+
+    @property
+    def save_dir(self):
+        return self.__save_dir
+
+    def disable_logger(self):
+        self.disable_hook(self.__logger)
+
+    def disable_performance_metric_logger(self):
+        self.disable_hook(self.__performance_metric_logger)
+
+    @property
+    def dataset(self):
+        return self.dataset_collection.get_dataset(phase=self.__phase)
+
+    def transform_dataset(self, transformer: Callable):
+        self.dataset_collection.transform_dataset(self.phase, transformer)
+
+    @property
+    def dataloader(self):
+        if self.__dataloader is None:
+            self.__dataloader = get_dataloader(
+                self.dataset_collection,
+                self._model_with_loss.model_type,
+                self.__phase,
+                self.__hyper_parameter,
+                device=self.device,
+            )
+        return self.__dataloader
+
+    @property
+    def loss_fun(self):
+        return self._model_with_loss.loss_fun
+
+    @property
+    def model(self) -> torch.nn.Module:
+        self._wait_stream()
+        return self._model_with_loss.model
+
+    def copy_model_with_loss(self, deepcopy=True):
+        self._wait_stream()
+        if deepcopy:
+            return copy.deepcopy(self._model_with_loss)
+        return copy.copy(self._model_with_loss)
+
+    def _prepare_execution(self, **kwargs):
+        self.clear_data()
+        for name in dir(self):
+            attr = getattr(self, name)
+            if hasattr(attr, "_is_cyy_torch_toolbox_metric"):
+                attr.clear_metric()
 
     @property
     def dataset_collection(self) -> DatasetCollection:
