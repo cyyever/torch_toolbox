@@ -65,7 +65,7 @@ class ModelWithLoss:
     def has_batch_norm(self):
         if self.__has_batch_norm is None:
             pass
-        self.__has_batch_norm = ModelUtil(self.__model).has_sub_module(
+        self.__has_batch_norm = ModelUtil(self.__get_real_model()).has_sub_module(
             torch.nn.BatchNorm2d
         )
         return self.__has_batch_norm
@@ -145,7 +145,7 @@ class ModelWithLoss:
         assert self.loss_fun is not None
         if self.__model_transforms is None:
             self.__model_transforms = list()
-            input_size = getattr(self.__model.__class__, "input_size", None)
+            input_size = getattr(self.__get_real_model().__class__, "input_size", None)
             if input_size is not None:
                 get_logger().warning("use input_size %s", input_size)
                 self.__model_transforms.append(
@@ -176,7 +176,7 @@ class ModelWithLoss:
         #     return None
         layers = [
             m
-            for _, m in ModelUtil(self.__model).get_sub_modules()
+            for _, m in ModelUtil(self.__get_real_model()).get_sub_modules()
             if not isinstance(
                 m,
                 (
@@ -201,13 +201,18 @@ class ModelWithLoss:
         get_logger().error("can't choose a loss function, model is %s", self.__model)
         raise NotImplementedError(type(last_layer))
 
+    def __get_real_model(self):
+        if isinstance(self.__model, torch.nn.QuantWrapperQuantWrapper):
+            return self.__model.module
+        return self.__model
+
     def __is_averaged_loss(self) -> bool:
         if hasattr(self.loss_fun, "reduction"):
             if self.loss_fun.reduction in ("mean", "elementwise_mean"):
                 return True
         return False
 
-    def __str__(self):
+    def __repr__(self):
         return "model: {}, loss_fun: {}".format(
             self.__model.__class__.__name__, self.loss_fun
         )
