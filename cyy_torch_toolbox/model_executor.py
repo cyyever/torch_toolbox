@@ -205,6 +205,11 @@ class ModelExecutor(_ModelExecutorBase):
         return self.__dataloader
 
     @property
+    def model_with_loss(self) -> ModelWithLoss:
+        self._wait_stream()
+        return self._model_with_loss
+
+    @property
     def loss_fun(self):
         return self._model_with_loss.loss_fun
 
