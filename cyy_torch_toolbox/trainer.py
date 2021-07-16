@@ -136,16 +136,7 @@ class Trainer(ModelExecutor):
         if kwargs.get("save_model", True) and self.save_dir is not None:
             self.enable_hook(self.__save_model_hook)
         self.__inferencers.clear()
-        for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
-            self.__inferencers[phase] = self.get_inferencer(phase)
-            self.__inferencers[phase].disable_logger()
-            self.__inferencers[phase].set_device(self.device)
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE, model_executor=self)
-
-        if self.cuda_stream is not None:
-            get_logger().debug("use cuda stream %s", self.cuda_stream)
-            for a in self.__inferencers.values():
-                a.set_stream(self.cuda_stream)
 
     def train(self, **kwargs):
         self._prepare_execution(**kwargs)
@@ -240,6 +231,16 @@ class Trainer(ModelExecutor):
 
                         if self.profiling_mode:
                             dataloader_time_counter.reset_start_time()
+
+                    if not self.__inferencers:
+                        for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
+                            inferencer = self.get_inferencer(phase)
+                            inferencer.disable_logger()
+                            inferencer.set_device(self.device)
+                            if self.cuda_stream is not None:
+                                get_logger().debug("use cuda stream %s", self.cuda_stream)
+                                inferencer.set_stream(self.cuda_stream)
+                            self.__inferencers[phase] = inferencer
 
                     for inferencer in self.__inferencers.values():
                         inferencer.model.load_state_dict(self.model.state_dict())
