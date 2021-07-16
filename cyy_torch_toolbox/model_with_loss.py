@@ -42,10 +42,10 @@ class ModelWithLoss:
                 raise RuntimeError("unknown loss function {}".format(loss_fun))
         self.__model_type = model_type
         self.__has_batch_norm = None
-        self.__model_transforms: list = list()
-        self.trace_input = False
+        self.__model_transforms: list = None
+        self.__trace_input = False
         self.__example_input = None
-        self.use_checkpoint = False
+        self.__use_checkpoint = False
         self.__checkpointed_model = None
         self.__current_phase = None
         self.__current_model_device = None
@@ -83,9 +83,6 @@ class ModelWithLoss:
     def set_loss_fun(self, loss_fun: torch.nn.modules.loss._Loss):
         self.__loss_fun = loss_fun
 
-    def append_transform(self, transform):
-        self.__model_transforms.append(transform)
-
     @property
     def checkpointed_model(self) -> torch.nn.Module:
         if self.__checkpointed_model is not None:
@@ -96,6 +93,7 @@ class ModelWithLoss:
             only_block_name=False,
         )
         assert checkpointed_blocks
+        assert self.__checkpointed_model is not None
         self.__checkpointed_model = copy.deepcopy(self.__model)
         self.__checkpointed_model.load_state_dict(self.__model.state_dict())
         checkpointed_model_util = ModelUtil(self.__checkpointed_model)
@@ -145,6 +143,14 @@ class ModelWithLoss:
                 self.__current_model_device = device
 
         assert self.loss_fun is not None
+        if self.__model_transforms is None:
+            self.__model_transforms = list()
+            input_size = getattr(self.__model.__class__, "input_size", None)
+            if input_size is not None:
+                get_logger().warning("use input_size %s", input_size)
+                self.__model_transforms.append(
+                    torchvision.transforms.Resize(input_size)
+                )
         if self.__model_transforms:
             if isinstance(self.__model_transforms, list):
                 self.__model_transforms = torchvision.transforms.Compose(
@@ -153,14 +159,14 @@ class ModelWithLoss:
             inputs = self.__model_transforms(inputs)
         if (
             self.__current_phase == MachineLearningPhase.Training
-            and self.use_checkpoint
+            and self.__use_checkpoint
         ):
             inputs.requires_grad_()
             output = self.checkpointed_model(inputs, *extra_inputs)
         else:
             output = self.__model(inputs, *extra_inputs)
         loss = self.loss_fun(output, targets)
-        if self.trace_input and self.__example_input is None:
+        if self.__trace_input and self.__example_input is None:
             self.__example_input = [inputs.detach()] + copy.deepcopy(extra_inputs)
         normalized_loss = loss
         if self.__is_averaged_loss():
