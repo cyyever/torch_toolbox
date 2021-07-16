@@ -176,7 +176,7 @@ class ModelWithLoss:
         #     return None
         layers = [
             m
-            for _, m in ModelUtil(self.__get_real_model()).get_sub_modules()
+            for _, m in ModelUtil(self.__model).get_sub_modules()
             if not isinstance(
                 m,
                 (
