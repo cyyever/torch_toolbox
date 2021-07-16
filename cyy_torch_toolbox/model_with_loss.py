@@ -151,12 +151,10 @@ class ModelWithLoss:
                 self.__model_transforms.append(
                     torchvision.transforms.Resize(input_size)
                 )
-        if self.__model_transforms:
-            if isinstance(self.__model_transforms, list):
-                self.__model_transforms = torchvision.transforms.Compose(
-                    self.__model_transforms
-                )
-            inputs = self.__model_transforms(inputs)
+            self.__model_transforms = torchvision.transforms.Compose(
+                self.__model_transforms
+            )
+        inputs = self.__model_transforms(inputs)
         if (
             self.__current_phase == MachineLearningPhase.Training
             and self.__use_checkpoint
