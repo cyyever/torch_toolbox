@@ -39,3 +39,8 @@ class TorchProcessTaskQueue(TaskQueue):
 
     def _get_extra_task_arguments(self, worker_id):
         return [self.__devices[worker_id % len(self.__devices)]]
+
+    def set_worker_fun(self, worker_fun, ctx=None):
+        if ctx is None:
+            ctx = torch.multiprocessing.get_context("spawn")
+        super().set_worker_fun(worker_fun, ctx=ctx)
