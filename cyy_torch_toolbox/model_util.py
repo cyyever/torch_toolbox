@@ -144,6 +144,9 @@ class ModelUtil:
             if module is None:
                 continue
             submodule_prefix = prefix + ("." if prefix else "") + name
+            if isinstance(module, nn.Conv2d):
+                result.append((submodule_prefix, module))
+                continue
             sub_result = self.get_sub_modules(module, submodule_prefix)
             if sub_result:
                 result += sub_result
