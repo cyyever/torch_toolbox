@@ -202,7 +202,7 @@ class ModelWithLoss:
         raise NotImplementedError(type(last_layer))
 
     def __get_real_model(self):
-        if isinstance(self.__model, torch.nn.QuantWrapperQuantWrapper):
+        if isinstance(self.__model, torch.quantization.stubs.QuantWrapper):
             return self.__model.module
         return self.__model
 
