@@ -101,12 +101,6 @@ def get_model(
                 loss_fun=loss_fun_name,
                 model_type=model_type,
             )
-            input_size = getattr(model_with_loss.model.__class__, "input_size", None)
-            if input_size is not None:
-                get_logger().warning("use input_size %s", input_size)
-                model_with_loss.append_transform(
-                    torchvision.transforms.Resize(input_size)
-                )
             get_logger().warning("use model arguments %s", model_kwargs | added_kwargs)
             return model_with_loss
         except TypeError as e:
