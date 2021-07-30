@@ -478,7 +478,7 @@ class DatasetCollectionConfig:
         dc = DatasetCollection.get_by_name(self.dataset_name, self.dataset_kwargs)
 
         if self.sub_collection_labels is not None:
-            labels = self.sub_collection_labels.split("|")
+            labels = set(self.sub_collection_labels.split("|"))
             for phase in MachineLearningPhase:
                 dc.transform_dataset_to_subset(phase, labels)
 
