@@ -65,16 +65,16 @@ class DatasetCollection:
     def transform_dataset_to_subset(self, phase: MachineLearningPhase, labels: set):
 
         label_indices = self.__get_label_indices(phase)
-        all_labels = set(label_indices.keys())
+        all_labels = self.get_label_names()
         if not labels.issubset(all_labels):
             get_logger().error(
                 "[%s] is not a subset of [%s]", " ".join(labels), " ".join(all_labels)
             )
             raise RuntimeError("invalid dataset labels")
         total_indices = []
-        for label, indices in label_indices.items():
-            if label in labels:
-                total_indices += indices
+        for label_index, indices in label_indices.items():
+            if all_labels[label_index] in labels:
+                total_indices += indices["indices"]
 
         self.transform_dataset(
             phase, lambda dataset: sub_dataset(dataset, total_indices)
@@ -138,20 +138,29 @@ class DatasetCollection:
         return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
     def get_label_names(self) -> List[str]:
-        if hasattr(self.get_training_dataset(), "classes"):
-            return getattr(self.get_training_dataset(), "classes")
+        cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
+        pickle_file = os.path.join(cache_dir, "label_names.pk")
 
-        vision_dataset_cls = DatasetCollection.get_dataset_constructor(
-            DatasetType.Vision
-        )
-        if self.name not in vision_dataset_cls:
-            get_logger().error("supported datasets are %s", vision_dataset_cls.keys())
+        def computation_fun():
+            if hasattr(self.get_training_dataset(), "classes"):
+                return getattr(self.get_training_dataset(), "classes")
+
+            for dataset_type in DatasetType:
+                dataset_constructors = DatasetCollection.get_dataset_constructor(
+                    dataset_type
+                )
+                if self.name not in dataset_constructors:
+                    continue
+                dataset_constructor = dataset_constructors[self.name]
+                if hasattr(dataset_constructor, "classes"):
+                    return getattr(dataset_constructor, "classes")
+                get_logger().error(
+                    "%s constructor %s has no classes", self.name, dataset_constructor
+                )
+                raise NotImplementedError(self.name)
             raise NotImplementedError(self.name)
-        vision_dataset_cls = vision_dataset_cls[self.name]
-        if hasattr(vision_dataset_cls, "classes"):
-            return getattr(vision_dataset_cls, "classes")
-        get_logger().error("%s has no classes", self.name)
-        raise NotImplementedError(self.name)
+
+        return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
     __dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
     __lock = threading.RLock()
@@ -187,19 +196,21 @@ class DatasetCollection:
         elif dataset_type == DatasetType.Audio:
             if has_torchaudio:
                 repositories = [torchaudio.datasets, local_audio_datasets]
-        datasets = dict()
+        dataset_constructors = dict()
         for repository in repositories:
             for name in dir(repository):
                 dataset_constructor = getattr(repository, name)
                 if dataset_type == DatasetType.Text:
                     if hasattr(dataset_constructor, "splits"):
-                        datasets[name] = getattr(dataset_constructor, "splits")
+                        dataset_constructors[name] = getattr(
+                            dataset_constructor, "splits"
+                        )
                         continue
                 if not inspect.isclass(dataset_constructor):
                     continue
                 if issubclass(dataset_constructor, torch.utils.data.Dataset):
-                    datasets[name] = dataset_constructor
-        return datasets
+                    dataset_constructors[name] = dataset_constructor
+        return dataset_constructors
 
     @staticmethod
     def get_by_name(name: str, dataset_kwargs=None):
