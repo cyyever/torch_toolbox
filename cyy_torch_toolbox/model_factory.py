@@ -3,7 +3,6 @@ import os
 import sys
 
 import torch
-import torchvision
 from cyy_naive_lib.log import get_logger
 
 from dataset_collection import DatasetCollection
