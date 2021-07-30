@@ -343,8 +343,9 @@ class DatasetCollection:
                 )
                 dc.append_transforms(
                     [
-                        transforms.Resize(256),
-                        transforms.CenterCrop(224),
+                        transforms.RandomResizedCrop(224),
+                        # transforms.Resize(256),
+                        # transforms.CenterCrop(224),
                     ],
                     phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
                 )
