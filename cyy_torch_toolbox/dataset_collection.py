@@ -63,7 +63,6 @@ class DatasetCollection:
         self.__datasets[phase] = transformer(dataset)
 
     def transform_dataset_to_subset(self, phase: MachineLearningPhase, labels: set):
-
         label_indices = self.__get_label_indices(phase)
         all_labels = self.get_label_names()
         if not labels.issubset(all_labels):
@@ -79,6 +78,9 @@ class DatasetCollection:
         self.transform_dataset(
             phase, lambda dataset: sub_dataset(dataset, total_indices)
         )
+        cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
+        pickle_file = os.path.join(cache_dir, "labels.pk")
+        os.remove(pickle_file)
 
     def get_training_dataset(self) -> torch.utils.data.Dataset:
         return self.get_dataset(MachineLearningPhase.Training)
@@ -160,7 +162,13 @@ class DatasetCollection:
                 raise NotImplementedError(self.name)
             raise NotImplementedError(self.name)
 
-        return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
+        all_label_names = DatasetCollection.__get_cache_data(
+            pickle_file, computation_fun
+        )
+        part_label_names = []
+        for label in self.get_labels():
+            part_label_names.append(all_label_names[label])
+        return part_label_names
 
     __dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
     __lock = threading.RLock()
