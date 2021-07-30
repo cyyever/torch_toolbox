@@ -65,7 +65,12 @@ class DatasetCollection:
     def transform_dataset_to_subset(self, phase: MachineLearningPhase, labels: set):
 
         label_indices = self.__get_label_indices(phase)
-        assert labels.issubset(set(label_indices.keys()))
+        all_labels = set(label_indices.keys())
+        if not labels.issubset(all_labels):
+            get_logger().error(
+                "[%s] is not a subset of [%s]", " ".join(labels), " ".join(all_labels)
+            )
+            raise RuntimeError("invalid dataset labels")
         total_indices = []
         for label, indices in label_indices.items():
             if label in labels:
