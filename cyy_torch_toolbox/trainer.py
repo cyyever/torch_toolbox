@@ -233,13 +233,13 @@ class Trainer(ModelExecutor):
                             dataloader_time_counter.reset_start_time()
 
                     if not self.__inferencers:
-                        for phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test):
+                        for phase in (
+                            MachineLearningPhase.Validation,
+                            MachineLearningPhase.Test,
+                        ):
                             inferencer = self.get_inferencer(phase)
-                            inferencer.disable_logger()
+                            # inferencer.disable_logger()
                             inferencer.set_device(self.device)
-                            if self.cuda_stream is not None:
-                                get_logger().debug("use cuda stream %s", self.cuda_stream)
-                                inferencer.set_stream(self.cuda_stream)
                             self.__inferencers[phase] = inferencer
 
                     for inferencer in self.__inferencers.values():
