@@ -66,7 +66,7 @@ def get_model(
 
     dataset_util = dataset_collection.get_dataset_util()
     added_kwargs = {
-        "num_classes": len(dataset_collection.get_labels()),
+        "num_classes": len(dataset_collection.get_labels(use_cache=False)),
     }
     if dataset_collection.dataset_type == DatasetType.Vision:
         added_kwargs |= {
@@ -80,7 +80,6 @@ def get_model(
         ]
 
     model_type = ModelType.Classification
-    # FIXME: use more robust method to determine detection models
     if "rcnn" in name.lower():
         model_type = ModelType.Detection
     if model_type == ModelType.Detection:

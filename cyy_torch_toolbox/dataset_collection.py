@@ -78,9 +78,6 @@ class DatasetCollection:
         self.transform_dataset(
             phase, lambda dataset: sub_dataset(dataset, total_indices)
         )
-        cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
-        pickle_file = os.path.join(cache_dir, "labels.pk")
-        os.remove(pickle_file)
 
     def get_training_dataset(self) -> torch.utils.data.Dataset:
         return self.get_dataset(MachineLearningPhase.Training)
@@ -128,7 +125,7 @@ class DatasetCollection:
     def name(self):
         return self.__name
 
-    def get_labels(self) -> set:
+    def get_labels(self, use_cache: bool = True) -> set:
         cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
         pickle_file = os.path.join(cache_dir, "labels.pk")
 
@@ -136,6 +133,9 @@ class DatasetCollection:
             if self.__label_field is not None:
                 return set(self.__label_field.vocab.stoi.values())
             return self.get_dataset_util(phase=MachineLearningPhase.Test).get_labels()
+
+        if not use_cache:
+            return computation_fun()
 
         return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
@@ -162,13 +162,7 @@ class DatasetCollection:
                 raise NotImplementedError(self.name)
             raise NotImplementedError(self.name)
 
-        all_label_names = DatasetCollection.__get_cache_data(
-            pickle_file, computation_fun
-        )
-        part_label_names = []
-        for label in self.get_labels():
-            part_label_names.append(all_label_names[label])
-        return part_label_names
+        return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
     __dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
     __lock = threading.RLock()
