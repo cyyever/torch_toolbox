@@ -168,13 +168,21 @@ class DatasetCollection:
     __lock = threading.RLock()
 
     @staticmethod
+    def get_dataset_root_dir(root_dir: str):
+        with DatasetCollection.__lock:
+            value = os.environ.get("pytorch_dataset_root_dir", None)
+            if value is None:
+                value = DatasetCollection.__dataset_root_dir
+            return value
+
+    @staticmethod
     def set_dataset_root_dir(root_dir: str):
         with DatasetCollection.__lock:
             DatasetCollection.__dataset_root_dir = root_dir
 
     @staticmethod
     def __get_dataset_dir(name: str):
-        dataset_dir = os.path.join(DatasetCollection.__dataset_root_dir, name)
+        dataset_dir = os.path.join(DatasetCollection.get_dataset_root_dir(), name)
         if not os.path.isdir(dataset_dir):
             os.makedirs(dataset_dir, exist_ok=True)
         return dataset_dir
