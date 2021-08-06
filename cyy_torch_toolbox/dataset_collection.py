@@ -170,7 +170,7 @@ class DatasetCollection:
     @staticmethod
     def get_dataset_root_dir():
         with DatasetCollection.__lock:
-            value = os.environ.get("pytorch_dataset_root_dir", None)
+            value = os.getenv("pytorch_dataset_root_dir", None)
             if value is None:
                 value = DatasetCollection.__dataset_root_dir
             return value
