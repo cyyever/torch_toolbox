@@ -226,11 +226,13 @@ class DatasetUtil:
                 )
 
     @staticmethod
-    def get_labels_from_target(target) -> set:
+    def __get_labels_from_target(target) -> set:
         if isinstance(target, int):
             return set([target])
         if isinstance(target, torch.Tensor):
-            return set(target.tolist())
+            return DatasetUtil.__get_labels_from_target(target.tolist())
+        if isinstance(target, list):
+            return set(target)
         if isinstance(target, dict):
             if "labels" in target:
                 return set(target["labels"].tolist())
@@ -238,7 +240,7 @@ class DatasetUtil:
 
     @staticmethod
     def get_label_from_target(target):
-        labels = DatasetUtil.get_labels_from_target(target)
+        labels = DatasetUtil.__get_labels_from_target(target)
         assert len(labels) == 1
         return next(iter(labels))
 
@@ -248,7 +250,7 @@ class DatasetUtil:
         if isinstance(dataset, torch.utils.data.Subset):
             return self.get_sample_label(dataset.indices[index], dataset.dataset)
         if hasattr(dataset, "targets") and dataset.target_transform is None:
-            return dataset.targets[index]
+            return DatasetUtil.get_label_from_target(dataset.targets[index])
         sample_and_target = dataset[index]
         if isinstance(sample_and_target, torchtext.legacy.data.example.Example):
             assert self.__label_field is not None
@@ -257,7 +259,7 @@ class DatasetUtil:
 
     def get_labels(self) -> set:
         def get_label(container: set, instance) -> set:
-            labels = DatasetUtil.get_labels_from_target(instance[1])
+            labels = DatasetUtil.__get_labels_from_target(instance[1])
             container.update(labels)
             return container
 
@@ -310,7 +312,7 @@ class DatasetUtil:
             sub_dataset_indices_list.append([])
 
         if by_label:
-            for _, v in self.split_by_label().items():
+            for v in self.split_by_label().values():
                 label_indices_list = sorted(v["indices"])
                 for i, part in enumerate(parts):
                     delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
