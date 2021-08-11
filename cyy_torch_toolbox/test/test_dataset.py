@@ -28,3 +28,9 @@ def test_dataset():
         <= 1
     )
     print("cifar10 labels are", cifar10.get_label_names())
+
+
+def test_dataset_labels():
+    for name in ("MNIST", "CIFAR10", "ImageNet"):
+        dc = DatasetCollection.get_by_name(name)
+        assert dc.get_labels()
