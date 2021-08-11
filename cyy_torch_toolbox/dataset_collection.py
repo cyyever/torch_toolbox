@@ -130,6 +130,9 @@ class DatasetCollection:
         pickle_file = os.path.join(cache_dir, "labels.pk")
 
         def computation_fun():
+            training_dataset = self.get_training_dataset()
+            if hasattr(training_dataset, "targets"):
+                return set(training_dataset.targets)
             if self.__label_field is not None:
                 return set(self.__label_field.vocab.stoi.values())
             return self.get_dataset_util(phase=MachineLearningPhase.Test).get_labels()
