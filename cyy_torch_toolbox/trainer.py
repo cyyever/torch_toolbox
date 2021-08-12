@@ -152,6 +152,9 @@ class Trainer(ModelExecutor):
                         model_executor=self,
                         epoch=epoch,
                     )
+                    # DALI iterators need reset
+                    if hasattr(self.dataloader, "reset"):
+                        self.dataloader.reset()
                     if self.profiling_mode:
                         dataloader_time_counter = TimeCounter()
                     for batch_index, batch in enumerate(self.dataloader):
