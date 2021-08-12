@@ -236,7 +236,7 @@ def get_dataloader(
         pipeline.build()
         return DALIClassificationIterator(
             pipeline,
-            auto_reset=True,
+            auto_reset=False,
             dynamic_shape=True,
             last_batch_policy=LastBatchPolicy.PARTIAL,
             last_batch_padded=True,

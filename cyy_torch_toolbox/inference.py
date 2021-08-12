@@ -38,6 +38,9 @@ class Inferencer(ModelExecutor):
                 model_executor=self,
                 epoch=epoch,
             )
+            # DALI iterators need reset
+            if hasattr(self.dataloader, "reset"):
+                self.dataloader.reset()
             for batch_index, batch in enumerate(self.dataloader):
                 inputs, targets, other_info = decode_batch(batch)
                 inputs = inputs.to(self.device, non_blocking=True)
