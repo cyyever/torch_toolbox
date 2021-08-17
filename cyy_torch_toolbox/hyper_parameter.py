@@ -137,10 +137,9 @@ class HyperParameter:
                 full_kwargs["milestones"] = [30, 80]
                 full_kwargs.update(kwargs)
                 return optim.lr_scheduler.MultiStepLR(optimizer, **full_kwargs)
-            else:
-                fun = getattr(optim.lr_scheduler, name)
-                if fun is not None:
-                    fun(optimizer=optimizer, **kwargs)
+            fun = getattr(optim.lr_scheduler, name)
+            if fun is not None:
+                return fun(optimizer=optimizer, **kwargs)
 
             raise RuntimeError("unknown learning rate scheduler:" + name)
 
