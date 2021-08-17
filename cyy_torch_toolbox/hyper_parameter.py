@@ -158,7 +158,7 @@ class HyperParameter:
             p.name for p in sig.parameters.values() if p.kind == p.POSITIONAL_OR_KEYWORD
         }
         return self.__optimizer_factory(
-            **{k: kwargs[k] for k in kwargs if k in parameter_names}
+            **{k: v for k, v in kwargs.items() if k in parameter_names}
         )
 
     # def set_dataloader_collate_fn(self, collate_fn):
