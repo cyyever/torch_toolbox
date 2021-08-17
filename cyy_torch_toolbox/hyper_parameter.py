@@ -1,5 +1,6 @@
 import copy
 import inspect
+import json
 from enum import IntEnum, auto
 from typing import Callable, Optional, Union
 
@@ -28,7 +29,6 @@ class HyperParameter:
         self.__learning_rate = learning_rate
         self.__weight_decay = weight_decay
         self.__momentum = momentum
-        # self.__collate_fn = None
         self.__lr_scheduler_factory: Optional[Callable] = None
         self.__optimizer_factory: Optional[Callable] = None
 
@@ -95,39 +95,52 @@ class HyperParameter:
         return isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR)
 
     @staticmethod
-    def get_lr_scheduler_factory(name, dataset_name=None):
+    def get_lr_scheduler_factory(name, dataset_name=None, **kwargs):
         def hook(hyper_parameter, trainer):
             nonlocal dataset_name
             nonlocal name
             optimizer = trainer.get_optimizer()
             training_dataset_size = len(trainer.dataset)
+            full_kwargs: dict = dict()
+            full_kwargs["optimizer"] = optimizer
             if name == "ReduceLROnPlateau":
                 patience = min(10, hyper_parameter.epoch + 9 // 10)
                 if dataset_name == "CIFAR10":
                     patience = 2
-                get_logger().info("ReduceLROnPlateau patience is %s", patience)
-                return optim.lr_scheduler.ReduceLROnPlateau(
-                    optimizer,
-                    verbose=True,
-                    factor=0.1,
-                    patience=patience,
+                full_kwargs["patience"] = patience
+                full_kwargs["factor"] = 0.1
+                full_kwargs["verbose"] = True
+                full_kwargs.update(kwargs)
+                get_logger().info(
+                    "ReduceLROnPlateau patience is %s", full_kwargs["patience"]
                 )
+                return optim.lr_scheduler.ReduceLROnPlateau(optimizer, **full_kwargs)
             if name == "OneCycleLR":
-                return optim.lr_scheduler.OneCycleLR(
-                    optimizer,
-                    pct_start=0.4,
-                    max_lr=10 * hyper_parameter.get_learning_rate(trainer),
-                    total_steps=hyper_parameter.epoch
+                full_kwargs["pct_start"] = 0.4
+                full_kwargs["max_lr"] = (
+                    10 * hyper_parameter.get_learning_rate(trainer),
+                )
+                full_kwargs["total_steps"] = (
+                    hyper_parameter.epoch
                     * hyper_parameter.get_iterations_per_epoch(training_dataset_size),
-                    anneal_strategy="linear",
-                    three_phase=True,
                 )
+                full_kwargs["anneal_strategy"] = "linear"
+                full_kwargs["three_phase"] = True
+                full_kwargs.update(kwargs)
+                return optim.lr_scheduler.OneCycleLR(optimizer, **full_kwargs)
             if name == "CosineAnnealingLR":
-                return optim.lr_scheduler.CosineAnnealingLR(
-                    optimizer, T_max=hyper_parameter.epoch
-                )
+                full_kwargs["T_max"] = hyper_parameter.epoch
+                full_kwargs.update(kwargs)
+                return optim.lr_scheduler.CosineAnnealingLR(optimizer, **full_kwargs)
             if name == "MultiStepLR":
-                return optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 80])
+                full_kwargs["T_max"] = hyper_parameter.epoch
+                full_kwargs["milestones"] = [30, 80]
+                full_kwargs.update(kwargs)
+                return optim.lr_scheduler.MultiStepLR(optimizer, **full_kwargs)
+            else:
+                fun = getattr(optim.lr_scheduler, name)
+                if fun is not None:
+                    fun(optimizer=optimizer, **kwargs)
 
             raise RuntimeError("unknown learning rate scheduler:" + name)
 
@@ -160,9 +173,6 @@ class HyperParameter:
         return self.__optimizer_factory(
             **{k: v for k, v in kwargs.items() if k in parameter_names}
         )
-
-    # def set_dataloader_collate_fn(self, collate_fn):
-    #     self.__collate_fn = collate_fn
 
     def __str__(self):
         s = (
@@ -216,14 +226,6 @@ def get_recommended_hyper_parameter(
     hyper_parameter.set_lr_scheduler_factory(
         HyperParameter.get_lr_scheduler_factory("ReduceLROnPlateau", dataset_name)
     )
-    # if model_name == "FasterRCNN":
-    #     hyper_parameter.set_dataloader_collate_fn(
-    #         lambda batch: (
-    #             [d[0] for d in batch],
-    #             [d[1] for d in batch],
-    #             torch.Tensor([d[2] for d in batch]),
-    #         )
-    #     )
     hyper_parameter.set_optimizer_factory(HyperParameter.get_optimizer_factory("SGD"))
     return hyper_parameter
 
@@ -248,8 +250,20 @@ class HyperParameterConfig:
         parser.add_argument("--momentum", type=float, default=None)
         parser.add_argument("--weight_decay", type=float, default=None)
         parser.add_argument("--optimizer_name", type=str, default=None)
+        parser.add_argument("--hyper_parameter_config_json", type=str, default=None)
 
     def load_args(self, args):
+        args = dict(args)
+        if "hyper_parameter_config_json" in args:
+            with open(args["hyper_parameter_config_json"], "rt") as f:
+                config = json.load(f)
+                assert isinstance(config, dict)
+                for k in config.keys() & args.keys():
+                    raise RuntimeError(
+                        f"you specify {k} in both argument and hyper_parameter_config_json"
+                    )
+                args.update(config)
+
         for attr in dir(args):
             if attr.startswith("_"):
                 continue
