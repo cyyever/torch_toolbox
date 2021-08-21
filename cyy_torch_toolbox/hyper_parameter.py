@@ -236,6 +236,7 @@ class HyperParameterConfig:
         self.find_learning_rate = True
         self.learning_rate = None
         self.learning_rate_scheduler = None
+        self.learning_rate_scheduler_arguments = dict()
         self.momentum = None
         self.weight_decay = None
         self.optimizer_name = None
@@ -298,6 +299,9 @@ class HyperParameterConfig:
             )
         if self.learning_rate_scheduler is not None:
             hyper_parameter.set_lr_scheduler_factory(
-                HyperParameter.get_lr_scheduler_factory(self.learning_rate_scheduler)
+                HyperParameter.get_lr_scheduler_factory(
+                    self.learning_rate_scheduler,
+                    **self.learning_rate_scheduler_arguments,
+                )
             )
         return hyper_parameter
