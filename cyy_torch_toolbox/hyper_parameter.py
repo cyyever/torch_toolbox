@@ -139,7 +139,7 @@ class HyperParameter:
                 return optim.lr_scheduler.MultiStepLR(**full_kwargs)
             fun = getattr(optim.lr_scheduler, name)
             if fun is not None:
-                return fun(**kwargs)
+                return fun(**full_kwargs)
 
             raise RuntimeError("unknown learning rate scheduler:" + name)
 
