@@ -569,6 +569,6 @@ class DatasetCollectionConfig:
 
         if self.training_dataset_label_map is not None:
             training_dataset = replace_dataset_labels(
-                training_dataset, self.training_dataset_label_map_path
+                training_dataset, self.training_dataset_label_map
             )
         return training_dataset
