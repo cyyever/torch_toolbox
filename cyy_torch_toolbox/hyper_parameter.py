@@ -257,12 +257,8 @@ class HyperParameterConfig:
             with open(args.hyper_parameter_config_json, "rt") as f:
                 config = json.load(f)
                 assert isinstance(config, dict)
-                for k in config.keys():
-                    if hasattr(args, k):
-                        raise RuntimeError(
-                            f"you specify {k} in both argument and hyper_parameter_config_json"
-                        )
-                args.update(config)
+                for k, v in config.items():
+                    setattr(args, k, v)
 
         for attr in dir(args):
             if attr.startswith("_"):
