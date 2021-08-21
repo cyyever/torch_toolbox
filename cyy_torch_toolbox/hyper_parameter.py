@@ -253,8 +253,7 @@ class HyperParameterConfig:
         parser.add_argument("--hyper_parameter_config_json", type=str, default=None)
 
     def load_args(self, args):
-        args = dict(args)
-        if "hyper_parameter_config_json" in args:
+        if hasattr(args, "hyper_parameter_config_json"):
             with open(args["hyper_parameter_config_json"], "rt") as f:
                 config = json.load(f)
                 assert isinstance(config, dict)
