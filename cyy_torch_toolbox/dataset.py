@@ -121,19 +121,20 @@ def sample_dataset(dataset: torch.utils.data.Dataset, index: int):
     return sub_dataset(dataset, [index])
 
 
-def dataset_with_indices(dataset: torch.utils.data.Dataset):
-    def add_index(index, item):
-        other_info = dict()
-        feature = None
-        target = None
-        if len(item) == 3:
-            feature, target, other_info = item
-        else:
-            feature, target = item
-        other_info["index"] = index
-        return (feature, target, other_info)
+def __add_index_to_item(index, item):
+    other_info = dict()
+    feature = None
+    target = None
+    if len(item) == 3:
+        feature, target, other_info = item
+    else:
+        feature, target = item
+    other_info["index"] = index
+    return (feature, target, other_info)
 
-    return DatasetMapper(dataset, [add_index])
+
+def dataset_with_indices(dataset: torch.utils.data.Dataset):
+    return DatasetMapper(dataset, [__add_index_to_item])
 
 
 def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
@@ -360,18 +361,19 @@ class DatasetUtil:
         return randomized_label_map
 
 
+def __replace_item_label(label_map, index, item):
+    if index in label_map:
+        assert label_map[index] != item[1]
+        item = list(item)
+        item[1] = label_map[index]
+        return tuple(item)
+    return item
+
+
 def replace_dataset_labels(dataset, label_map: dict):
     assert label_map
 
-    def mapper(index, item):
-        if index in label_map:
-            assert label_map[index] != item[1]
-            item = list(item)
-            item[1] = label_map[index]
-            return tuple(item)
-        return item
-
-    return DatasetMapper(dataset, [mapper])
+    return DatasetMapper(dataset, [functools.partial(__replace_item_label, label_map)])
 
 
 def decode_batch(batch):
