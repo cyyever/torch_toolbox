@@ -114,7 +114,7 @@ class HyperParameter:
                 get_logger().info(
                     "ReduceLROnPlateau patience is %s", full_kwargs["patience"]
                 )
-                return optim.lr_scheduler.ReduceLROnPlateau(optimizer, **full_kwargs)
+                return optim.lr_scheduler.ReduceLROnPlateau(**full_kwargs)
             if name == "OneCycleLR":
                 full_kwargs["pct_start"] = 0.4
                 full_kwargs["max_lr"] = (
@@ -127,19 +127,19 @@ class HyperParameter:
                 full_kwargs["anneal_strategy"] = "linear"
                 full_kwargs["three_phase"] = True
                 full_kwargs.update(kwargs)
-                return optim.lr_scheduler.OneCycleLR(optimizer, **full_kwargs)
+                return optim.lr_scheduler.OneCycleLR(**full_kwargs)
             if name == "CosineAnnealingLR":
                 full_kwargs["T_max"] = hyper_parameter.epoch
                 full_kwargs.update(kwargs)
-                return optim.lr_scheduler.CosineAnnealingLR(optimizer, **full_kwargs)
+                return optim.lr_scheduler.CosineAnnealingLR(**full_kwargs)
             if name == "MultiStepLR":
                 full_kwargs["T_max"] = hyper_parameter.epoch
                 full_kwargs["milestones"] = [30, 80]
                 full_kwargs.update(kwargs)
-                return optim.lr_scheduler.MultiStepLR(optimizer, **full_kwargs)
+                return optim.lr_scheduler.MultiStepLR(**full_kwargs)
             fun = getattr(optim.lr_scheduler, name)
             if fun is not None:
-                return fun(optimizer=optimizer, **kwargs)
+                return fun(**kwargs)
 
             raise RuntimeError("unknown learning rate scheduler:" + name)
 
