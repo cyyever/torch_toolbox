@@ -29,7 +29,7 @@ def list_local_models(local_dir):
     return entrypoints
 
 
-__model_info: dict = dict()
+__model_info: dict = {}
 
 
 def get_model_info():
@@ -37,7 +37,10 @@ def get_model_info():
     repos = [
         os.path.join(os.path.dirname(os.path.realpath(__file__)), "models"),
     ]
-    github_repos = ["pytorch/vision", "lukemelas/EfficientNet-PyTorch"]
+    github_repos = [
+        "pytorch/vision",
+        "lukemelas/EfficientNet-PyTorch",
+    ]
 
     if not __model_info:
         for repo in repos:
@@ -55,14 +58,6 @@ def get_model(
     name: str, dataset_collection: DatasetCollection, **model_kwargs
 ) -> ModelWithLoss:
     model_info = get_model_info()
-    model_repo_and_name = model_info.get(name.lower(), None)
-    if model_repo_and_name is None:
-        get_logger().error(
-            "Unknown model name: %s. These models are supported:%s",
-            name,
-            list(model_info.keys()),
-        )
-        raise RuntimeError("unknown model name:", name)
 
     dataset_util = dataset_collection.get_dataset_util()
     added_kwargs = {
@@ -84,18 +79,26 @@ def get_model(
         model_type = ModelType.Detection
     if model_type == ModelType.Detection:
         added_kwargs["num_classes"] += 1
-    repo, model_name, source = model_repo_and_name
     loss_fun_name = model_kwargs.pop("loss_fun_name", None)
-    for k in list(added_kwargs.keys()):
-        if k in model_kwargs:
-            added_kwargs.pop(k)
 
     while True:
         try:
-            model_with_loss = ModelWithLoss(
-                model=torch.hub.load(
+            model_repo_and_name = model_info.get(name.lower(), None)
+            if model_repo_and_name is not None:
+                repo, model_name, source = model_repo_and_name
+                model = torch.hub.load(
                     repo, model_name, source=source, **(added_kwargs | model_kwargs)
-                ),
+                )
+            else:
+                model = torch.hub.load(
+                    "huggingface/transformers",
+                    "model",
+                    name,
+                    source="github",
+                    **(added_kwargs | model_kwargs)
+                )
+            model_with_loss = ModelWithLoss(
+                model=model,
                 loss_fun=loss_fun_name,
                 model_type=model_type,
             )
