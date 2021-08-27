@@ -259,6 +259,11 @@ class DatasetUtil:
         return DatasetUtil.get_label_from_target(sample_and_target[1])
 
     def get_labels(self) -> set:
+        if hasattr(self.dataset, "targets") and self.dataset.target_transform is None:
+            return DatasetUtil.__get_labels_from_target(self.dataset.targets)
+        if self.__label_field is not None:
+            return set(self.__label_field.vocab.stoi.values())
+
         def get_label(container: set, instance) -> set:
             labels = DatasetUtil.__get_labels_from_target(instance[1])
             container.update(labels)
