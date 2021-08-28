@@ -139,6 +139,7 @@ class HyperParameter:
                 return optim.lr_scheduler.MultiStepLR(**full_kwargs)
             fun = getattr(optim.lr_scheduler, name)
             if fun is not None:
+                full_kwargs.update(kwargs)
                 return fun(**full_kwargs)
 
             raise RuntimeError("unknown learning rate scheduler:" + name)
@@ -254,7 +255,7 @@ class HyperParameterConfig:
 
     def load_args(self, args):
         if args.hyper_parameter_config_json is not None:
-            with open(args.hyper_parameter_config_json, "rt") as f:
+            with open(args.hyper_parameter_config_json, "rt", encoding="utf8") as f:
                 config = json.load(f)
                 assert isinstance(config, dict)
                 for k, v in config.items():
