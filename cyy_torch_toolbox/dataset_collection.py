@@ -420,7 +420,7 @@ class DatasetCollection:
         return dataset_kwargs
 
     def __get_label_indices(self, phase):
-        with self.__lock:
+        with DatasetCollection.__lock:
             cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name, phase)
             pickle_file = os.path.join(cache_dir, "label_indices.pk")
             dataset_util = self.get_dataset_util(phase)
