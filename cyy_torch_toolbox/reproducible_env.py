@@ -19,11 +19,10 @@ class ReproducibleEnv:
         self.enabled = False
 
     def enable(self):
+        """
+        https://pytorch.org/docs/stable/notes/randomness.html
+        """
         with ReproducibleEnv.lock:
-            """
-            https://pytorch.org/docs/stable/notes/randomness.html
-            """
-
             if self.enabled:
                 get_logger().warning("use reproducible env")
             else:
