@@ -32,6 +32,12 @@ class HyperParameter:
         self.__lr_scheduler_factory: Optional[Callable] = None
         self.__optimizer_factory: Optional[Callable] = None
 
+    def __getstate__(self):
+        # capture what is normally pickled
+        state = self.__dict__.copy()
+        state["_HyperParameter__lr_scheduler_factory"] = None
+        return state
+
     @property
     def epoch(self):
         return self.__epoch
