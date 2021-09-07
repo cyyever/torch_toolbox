@@ -111,9 +111,9 @@ def sub_dataset(dataset: torch.utils.data.Dataset, indices: Iterable):
     indices = sorted(set(indices))
     subset = torch.utils.data.Subset(dataset, indices)
     if hasattr(dataset, "sort_key"):
-        subset.sort_key = dataset.sort_key
+        setattr(subset, "sort_key", dataset.sort_key)
     if hasattr(dataset, "fields"):
-        subset.fields = dataset.fields
+        setattr(subset, "fields", dataset.fields)
     return subset
 
 
@@ -292,6 +292,23 @@ class DatasetUtil:
             self.dataset[idx][0].save(path)
             return
         torchvision.utils.save_image(self.dataset[idx][0], path)
+
+    @torch.no_grad()
+    def get_sample_image(self, idx) -> PIL.Image:
+        tensor = self.dataset[idx][0]
+        if isinstance(tensor, PIL.Image.Image):
+            return tensor
+        grid = torchvision.utils.make_grid(tensor)
+        # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
+        ndarr = (
+            grid.mul(255)
+            .add_(0.5)
+            .clamp_(0, 255)
+            .permute(1, 2, 0)
+            .to("cpu", torch.uint8)
+            .numpy()
+        )
+        return PIL.Image.fromarray(ndarr)
 
     def iid_split_indices(self, parts: list) -> list:
         return self.__get_split_indices(parts, by_label=True)
