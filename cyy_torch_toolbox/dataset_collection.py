@@ -151,7 +151,7 @@ class DatasetCollection:
                 return getattr(self.get_training_dataset(), "classes")
 
             for dataset_type in DatasetType:
-                dataset_constructors = DatasetCollection.get_dataset_constructor(
+                dataset_constructors = DatasetCollection.get_dataset_constructors(
                     dataset_type
                 )
                 if self.name not in dataset_constructors:
@@ -200,13 +200,13 @@ class DatasetCollection:
         return cache_dir
 
     @staticmethod
-    def get_dataset_constructor(dataset_type: DatasetType):
+    def get_dataset_constructors(dataset_type: DatasetType = None):
         repositories = []
-        if dataset_type == DatasetType.Vision:
+        if dataset_type is None or dataset_type == DatasetType.Vision:
             repositories = [torchvision.datasets, local_vision_datasets]
-        elif dataset_type == DatasetType.Text:
+        elif dataset_type is None or dataset_type == DatasetType.Text:
             repositories = [torchtext.legacy.datasets]
-        elif dataset_type == DatasetType.Audio:
+        elif dataset_type is None or dataset_type == DatasetType.Audio:
             if has_torchaudio:
                 repositories = [torchaudio.datasets, local_audio_datasets]
         dataset_constructors = dict()
@@ -230,7 +230,7 @@ class DatasetCollection:
         with DatasetCollection.__lock:
             all_dataset_constructors = set()
             for dataset_type in DatasetType:
-                dataset_constructor = DatasetCollection.get_dataset_constructor(
+                dataset_constructor = DatasetCollection.get_dataset_constructors(
                     dataset_type
                 )
                 if name in dataset_constructor:
