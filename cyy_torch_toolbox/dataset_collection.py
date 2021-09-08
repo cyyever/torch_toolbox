@@ -41,7 +41,7 @@ class DatasetCollection:
         assert training_dataset is not None
         assert validation_dataset is not None
         assert test_dataset is not None
-        self.__datasets: Dict[MachineLearningPhase, torch.utils.data.Dataset] = dict()
+        self.__datasets: Dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
         self.__datasets[MachineLearningPhase.Training] = training_dataset
         self.__datasets[MachineLearningPhase.Validation] = validation_dataset
         self.__datasets[MachineLearningPhase.Test] = test_dataset
@@ -142,6 +142,18 @@ class DatasetCollection:
 
         return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
+    def generate_raw_data(self, phase: MachineLearningPhase):
+        if self.dataset_type == DatasetType.Vision:
+            dataset_util = self.get_dataset_util(phase)
+            return (
+                (
+                    dataset_util.get_sample_image(i),
+                    dataset_util.get_sample_label(i),
+                )
+                for i in range(len(dataset_util))
+            )
+        raise RuntimeError("Unimplemented Code")
+
     def get_label_names(self) -> List[str]:
         cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
         pickle_file = os.path.join(cache_dir, "label_names.pk")
@@ -209,7 +221,7 @@ class DatasetCollection:
         elif dataset_type is None or dataset_type == DatasetType.Audio:
             if has_torchaudio:
                 repositories = [torchaudio.datasets, local_audio_datasets]
-        dataset_constructors = dict()
+        dataset_constructors = {}
         for repository in repositories:
             for name in dir(repository):
                 dataset_constructor = getattr(repository, name)
@@ -392,7 +404,7 @@ class DatasetCollection:
         name: str, dataset_type: DatasetType, sig, dataset_kwargs: dict = None
     ):
         if dataset_kwargs is None:
-            dataset_kwargs = dict()
+            dataset_kwargs = {}
         if "root" not in dataset_kwargs and "root" in sig.parameters:
             dataset_kwargs["root"] = DatasetCollection.__get_dataset_dir(name)
         if (
@@ -468,7 +480,7 @@ class DatasetCollection:
 class DatasetCollectionConfig:
     def __init__(self, dataset_name=None):
         self.dataset_name = dataset_name
-        self.dataset_kwargs = dict()
+        self.dataset_kwargs = {}
         self.sub_collection_labels = None
         self.training_dataset_percentage = None
         self.training_dataset_indices_path = None
