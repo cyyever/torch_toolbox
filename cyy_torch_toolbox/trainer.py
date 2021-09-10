@@ -39,6 +39,7 @@ class Trainer(ModelExecutor):
         self.__save_model_hook = SaveModelHook()
         self.append_hook(self.__save_model_hook)
         self.append_hook(self.visualizer)
+        self.__debugger = None
 
     def set_device(self, device):
         super().set_device(device)
@@ -126,6 +127,16 @@ class Trainer(ModelExecutor):
             self.enable_hook(self.__save_model_hook)
         self.__inferencers.clear()
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE, model_executor=self)
+        if self.debugging_mode:
+            get_logger().warning("train in debugging mode")
+            if self.__debugger is None:
+                self.__debugger = TrainerDebugger()
+                self.append_hook(self.__debugger)
+            else:
+                self.enable_hook(self.__debugger)
+        else:
+            if self.__debugger is not None:
+                self.disable_hook(self.__debugger)
 
     def train(self, **kwargs):
         self._prepare_execution(**kwargs)
