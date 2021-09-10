@@ -39,7 +39,6 @@ class Trainer(ModelExecutor):
         self.__save_model_hook = SaveModelHook()
         self.append_hook(self.__save_model_hook)
         self.append_hook(self.visualizer)
-        self.__debugger = None
 
     def set_device(self, device):
         super().set_device(device)
@@ -121,16 +120,6 @@ class Trainer(ModelExecutor):
 
     def _prepare_execution(self, **kwargs):
         super()._prepare_execution(**kwargs)
-        if self.debugging_mode:
-            get_logger().warning("train in debugging mode")
-            if self.__debugger is None:
-                self.__debugger = TrainerDebugger()
-                self.append_hook(self.__debugger)
-            else:
-                self.enable_hook(self.__debugger)
-        else:
-            if self.__debugger is not None:
-                self.disable_hook(self.__debugger)
 
         self.disable_hook(self.__save_model_hook)
         if kwargs.get("save_model", True) and self.save_dir is not None:
