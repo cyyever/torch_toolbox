@@ -4,12 +4,14 @@ import os
 from typing import Callable, Dict, List, Optional
 
 import torch
+from cyy_naive_lib.log import get_logger
 
 from dataloader import get_dataloader
 from dataset_collection import DatasetCollection
 from device import get_device
 from hook import Hook
 from hooks.model_executor_logger import ModelExecutorLogger
+from hooks.profiler import Profiler
 from hyper_parameter import HyperParameter
 from metric_visualizers.metric_tensorboard import MetricTensorBoard
 from metric_visualizers.performance_metric_logger import \
@@ -149,6 +151,8 @@ class ModelExecutor(_ModelExecutorBase):
         self.append_hook(self.__performance_metric_logger)
         self.debugging_mode = False
         self.profiling_mode = False
+        self.__debugger = None
+        self.__profiler = None
         self.__save_dir: Optional[str] = None
         if save_dir is not None:
             self.set_save_dir(save_dir)
@@ -230,6 +234,27 @@ class ModelExecutor(_ModelExecutorBase):
             attr = getattr(self, name)
             if hasattr(attr, "_is_cyy_torch_toolbox_metric"):
                 attr.clear_metric()
+        if self.debugging_mode:
+            get_logger().warning("train in debugging mode")
+            if self.__debugger is None:
+                self.__debugger = TrainerDebugger()
+                self.append_hook(self.__debugger)
+            else:
+                self.enable_hook(self.__debugger)
+        else:
+            if self.__debugger is not None:
+                self.disable_hook(self.__debugger)
+
+        if self.profiling_mode:
+            get_logger().warning("train in profiling mode")
+            if self.__profiler is None:
+                self.__profiler = Profiler()
+                self.append_hook(self.__profiler)
+            else:
+                self.enable_hook(self.__profiler)
+        else:
+            if self.__profiler is not None:
+                self.disable_hook(self.__profiler)
 
     @property
     def dataset_collection(self) -> DatasetCollection:
