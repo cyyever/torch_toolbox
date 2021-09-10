@@ -7,5 +7,5 @@ from .dataloader_profiler import DataLoaderProfiler
 class Profiler(Hook):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.cuda_memory_profiler = CUDAMemoryProfiler()
-        self.dataloader_profiler = DataLoaderProfiler()
+        self.__cuda_memory_profiler = CUDAMemoryProfiler()
+        self.__dataloader_profiler = DataLoaderProfiler()
