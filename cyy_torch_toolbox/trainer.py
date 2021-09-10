@@ -33,7 +33,7 @@ class Trainer(ModelExecutor):
             save_dir=save_dir,
         )
         self.append_hook(LearningRateHook())
-        self.__inferencers: dict = dict()
+        self.__inferencers: dict = {}
         self.__batch_loss_logger = BatchLossLogger()
         self.append_hook(self.__batch_loss_logger)
         self.__save_model_hook = SaveModelHook()
@@ -157,7 +157,14 @@ class Trainer(ModelExecutor):
                         self.dataloader.reset()
                     if self.profiling_mode:
                         dataloader_time_counter = TimeCounter()
+                    self.exec_hooks(
+                        ModelExecutorHookPoint.BEFORE_FETCH_BATCH, model_executor=self
+                    )
                     for batch_index, batch in enumerate(self.dataloader):
+                        self.exec_hooks(
+                            ModelExecutorHookPoint.AFTER_FETCH_BATCH,
+                            model_executor=self,
+                        )
                         if self.profiling_mode:
                             get_logger().warning(
                                 "fetching batch used %sms",
@@ -234,6 +241,10 @@ class Trainer(ModelExecutor):
 
                         if self.profiling_mode:
                             dataloader_time_counter.reset_start_time()
+                        self.exec_hooks(
+                            ModelExecutorHookPoint.BEFORE_FETCH_BATCH,
+                            model_executor=self,
+                        )
 
                     if not self.__inferencers:
                         for phase in (
