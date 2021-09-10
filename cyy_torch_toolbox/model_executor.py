@@ -25,8 +25,8 @@ from model_with_loss import ModelWithLoss
 
 class _ModelExecutorBase:
     def __init__(self):
-        self.__data: dict = dict()
-        self.__hooks: Dict[ModelExecutorHookPoint, List[Dict[str, Callable]]] = dict()
+        self.__data: dict = {}
+        self.__hooks: Dict[ModelExecutorHookPoint, List[Dict[str, Callable]]] = {}
         self.__stripable_hooks: set = set()
         self.__disabled_hooks: set = set()
 
@@ -151,7 +151,6 @@ class ModelExecutor(_ModelExecutorBase):
         self.append_hook(self.__performance_metric_logger)
         self.debugging_mode = False
         self.profiling_mode = False
-        self.__debugger = None
         self.__profiler = None
         self.__save_dir: Optional[str] = None
         if save_dir is not None:
@@ -234,16 +233,6 @@ class ModelExecutor(_ModelExecutorBase):
             attr = getattr(self, name)
             if hasattr(attr, "_is_cyy_torch_toolbox_metric"):
                 attr.clear_metric()
-        if self.debugging_mode:
-            get_logger().warning("train in debugging mode")
-            if self.__debugger is None:
-                self.__debugger = TrainerDebugger()
-                self.append_hook(self.__debugger)
-            else:
-                self.enable_hook(self.__debugger)
-        else:
-            if self.__debugger is not None:
-                self.disable_hook(self.__debugger)
 
         if self.profiling_mode:
             get_logger().warning("train in profiling mode")
