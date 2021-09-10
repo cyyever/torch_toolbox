@@ -270,7 +270,8 @@ class Trainer(ModelExecutor):
                             lr_scheduler.step()
             except StopExecutingException:
                 get_logger().warning("stop training")
-            self._wait_stream()
+            finally:
+                self._wait_stream()
         self.exec_hooks(
             ModelExecutorHookPoint.AFTER_EXECUTE,
             model_executor=self,
