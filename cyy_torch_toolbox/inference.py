@@ -41,7 +41,14 @@ class Inferencer(ModelExecutor):
             # DALI iterators need reset
             if hasattr(self.dataloader, "reset"):
                 self.dataloader.reset()
+            self.exec_hooks(
+                ModelExecutorHookPoint.BEFORE_FETCH_BATCH, model_executor=self
+            )
             for batch_index, batch in enumerate(self.dataloader):
+                self.exec_hooks(
+                    ModelExecutorHookPoint.AFTER_FETCH_BATCH,
+                    model_executor=self,
+                )
                 inputs, targets, other_info = decode_batch(batch)
                 inputs = inputs.to(self.device, non_blocking=True)
                 targets = targets.to(self.device, non_blocking=True)
@@ -64,6 +71,9 @@ class Inferencer(ModelExecutor):
                     batch_size=self.get_batch_size(targets),
                     result=result,
                     epoch=epoch,
+                )
+                self.exec_hooks(
+                    ModelExecutorHookPoint.BEFORE_FETCH_BATCH, model_executor=self
                 )
             self.exec_hooks(
                 ModelExecutorHookPoint.AFTER_EPOCH,
