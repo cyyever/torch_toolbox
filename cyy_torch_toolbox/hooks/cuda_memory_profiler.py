@@ -1,4 +1,4 @@
-from functools import partial
+import functools
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -6,24 +6,22 @@ from hook import Hook
 from torch.nn.modules.activation import ReLU
 
 
-class CUDAMemoryTracker(Hook):
+class CUDAMemoryProfiler(Hook):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__hooks = []
         self.__used_memory = None
 
-    def _before_epoch(self, **kwargs):
+    def _before_batch(self, **kwargs):
         assert not self.__hooks
         self.__used_memory = None
-
-    def _before_batch(self, **kwargs):
         model_executor = kwargs["model_executor"]
         if kwargs["batch_index"] != 2:
             return
         for module_name, module in model_executor.model.named_modules():
             self.__hooks.append(
                 module.register_forward_hook(
-                    partial(self.__compute_gpu_memory_assumption, module_name)
+                    functools.partial(self.__compute_gpu_memory_assumption, module_name)
                 )
             )
 
