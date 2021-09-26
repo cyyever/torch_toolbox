@@ -185,10 +185,9 @@ class DatasetCollection:
     @staticmethod
     def get_dataset_root_dir():
         with DatasetCollection.__lock:
-            value = os.getenv("pytorch_dataset_root_dir", None)
-            if value is None:
-                value = DatasetCollection.__dataset_root_dir
-            return value
+            return os.getenv(
+                "pytorch_dataset_root_dir", DatasetCollection.__dataset_root_dir
+            )
 
     @staticmethod
     def set_dataset_root_dir(root_dir: str):
@@ -409,7 +408,6 @@ class DatasetCollection:
             dataset_kwargs["root"] = DatasetCollection.__get_dataset_dir(name)
         if (
             "download" in sig.parameters
-            and "download" in sig.parameters
             and sig.parameters["download"].default is not None
         ):
             dataset_kwargs["download"] = True
@@ -454,12 +452,13 @@ class DatasetCollection:
 
     @staticmethod
     def __get_cache_data(path, computation_fun: Callable):
-        data = DatasetCollection.__read_data(path)
-        if data is not None:
+        with DatasetCollection.__lock:
+            data = DatasetCollection.__read_data(path)
+            if data is not None:
+                return data
+            data = computation_fun()
+            DatasetCollection.__write_data(path, data)
             return data
-        data = computation_fun()
-        DatasetCollection.__write_data(path, data)
-        return data
 
     @staticmethod
     def __read_data(path):
