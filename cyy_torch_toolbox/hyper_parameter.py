@@ -123,12 +123,11 @@ class HyperParameter:
                 return optim.lr_scheduler.ReduceLROnPlateau(**full_kwargs)
             if name == "OneCycleLR":
                 full_kwargs["pct_start"] = 0.4
-                full_kwargs["max_lr"] = (
-                    10 * hyper_parameter.get_learning_rate(trainer),
-                )
-                full_kwargs["total_steps"] = (
-                    hyper_parameter.epoch
-                    * hyper_parameter.get_iterations_per_epoch(training_dataset_size),
+                full_kwargs["max_lr"] = 10 * hyper_parameter.get_learning_rate(trainer)
+                full_kwargs[
+                    "total_steps"
+                ] = hyper_parameter.epoch * hyper_parameter.get_iterations_per_epoch(
+                    training_dataset_size
                 )
                 full_kwargs["anneal_strategy"] = "linear"
                 full_kwargs["three_phase"] = True
