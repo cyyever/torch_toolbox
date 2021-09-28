@@ -122,7 +122,7 @@ class DatasetCollection:
             DatasetUtil(dataset).prepend_transform(transform)
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.__name
 
     def get_labels(self, use_cache: bool = True) -> set:
@@ -130,6 +130,8 @@ class DatasetCollection:
         pickle_file = os.path.join(cache_dir, "labels.pk")
 
         def computation_fun():
+            if self.name().lower() == "imagenet":
+                return range(1000)
             training_dataset = self.get_training_dataset()
             if hasattr(training_dataset, "targets"):
                 return self.get_dataset_util(
