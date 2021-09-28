@@ -1,6 +1,5 @@
 import torch
 from cyy_naive_lib.log import get_logger
-from cyy_naive_lib.time_counter import TimeCounter
 
 from classification_inferencer import ClassificationInferencer
 from dataset import decode_batch
@@ -152,11 +151,6 @@ class Trainer(ModelExecutor):
                         model_executor=self,
                         epoch=epoch,
                     )
-                    # DALI iterators need reset
-                    if hasattr(self.dataloader, "reset"):
-                        self.dataloader.reset()
-                    if self.profiling_mode:
-                        dataloader_time_counter = TimeCounter()
                     self.exec_hooks(
                         ModelExecutorHookPoint.BEFORE_FETCH_BATCH, model_executor=self
                     )
@@ -165,11 +159,6 @@ class Trainer(ModelExecutor):
                             ModelExecutorHookPoint.AFTER_FETCH_BATCH,
                             model_executor=self,
                         )
-                        if self.profiling_mode:
-                            get_logger().warning(
-                                "fetching batch used %sms",
-                                dataloader_time_counter.elapsed_milliseconds(),
-                            )
 
                         optimizer = self.get_optimizer()
                         lr_scheduler = self.get_lr_scheduler()
@@ -239,8 +228,6 @@ class Trainer(ModelExecutor):
                             get_logger().debug("adjust lr after batch")
                             lr_scheduler.step()
 
-                        if self.profiling_mode:
-                            dataloader_time_counter.reset_start_time()
                         self.exec_hooks(
                             ModelExecutorHookPoint.BEFORE_FETCH_BATCH,
                             model_executor=self,
