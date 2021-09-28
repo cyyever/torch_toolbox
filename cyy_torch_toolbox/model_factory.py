@@ -61,7 +61,7 @@ def get_model(
 
     dataset_util = dataset_collection.get_dataset_util()
     added_kwargs = {
-        "num_classes": len(dataset_collection.get_labels(use_cache=False)),
+        "num_classes": len(dataset_collection.get_labels(use_cache=True)),
     }
     if dataset_collection.dataset_type == DatasetType.Vision:
         added_kwargs |= {
