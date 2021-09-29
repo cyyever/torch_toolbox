@@ -92,7 +92,6 @@ class ModelWithLoss:
             only_block_name=False,
         )
         assert checkpointed_blocks
-        assert self.__checkpointed_model is not None
         self.__checkpointed_model = copy.deepcopy(self.__model)
         self.__checkpointed_model.load_state_dict(self.__model.state_dict())
         checkpointed_model_util = ModelUtil(self.__checkpointed_model)
