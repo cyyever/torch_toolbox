@@ -45,9 +45,6 @@ class Trainer(ModelExecutor):
         for a in self.__inferencers.values():
             a.set_device(device)
 
-    def use_checkpoint(self):
-        self._model_with_loss.use_checkpoint = True
-
     @property
     def batch_loss_logger(self):
         return self.__batch_loss_logger
