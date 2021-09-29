@@ -38,9 +38,6 @@ class Inferencer(ModelExecutor):
                 model_executor=self,
                 epoch=epoch,
             )
-            # DALI iterators need reset
-            if hasattr(self.dataloader, "reset"):
-                self.dataloader.reset()
             self.exec_hooks(
                 ModelExecutorHookPoint.BEFORE_FETCH_BATCH, model_executor=self
             )
