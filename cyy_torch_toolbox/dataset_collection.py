@@ -19,7 +19,7 @@ from cyy_naive_lib.log import get_logger
 from torchvision import transforms
 
 if has_torchaudio:
-    import audio_datasets as local_audio_datasets
+    import datasets.audio as local_audio_datasets
 
 import datasets.vision as local_vision_datasets
 from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
