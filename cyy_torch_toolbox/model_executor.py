@@ -313,5 +313,9 @@ class ModelExecutor(_ModelExecutorBase):
         raise RuntimeError("invalid batch:" + str(batch))
 
     def offload_from_gpu(self):
+        self._wait_stream()
         self.model.cpu()
         torch.cuda.empty_cache()
+        if self.__dataloader is not None:
+            del self.__dataloader
+            self.__dataloader = None
