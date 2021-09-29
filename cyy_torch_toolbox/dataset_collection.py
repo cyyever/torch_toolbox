@@ -130,7 +130,7 @@ class DatasetCollection:
         pickle_file = os.path.join(cache_dir, "labels.pk")
 
         def computation_fun():
-            if self.name().lower() == "imagenet":
+            if self.name.lower() == "imagenet":
                 return range(1000)
             training_dataset = self.get_training_dataset()
             if hasattr(training_dataset, "targets"):
