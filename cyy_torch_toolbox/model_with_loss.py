@@ -9,6 +9,7 @@ from cyy_naive_lib.log import get_logger
 
 from ml_type import MachineLearningPhase, ModelType
 from model_util import ModelUtil
+from reproducible_env import global_reproducible_env
 
 
 class _CheckPointBlock(nn.Module):
@@ -19,6 +20,10 @@ class _CheckPointBlock(nn.Module):
         get_logger().debug("use checkpoint_block %s", self.__block_names)
 
     def forward(self, x):
+        if not global_reproducible_env.enabled:
+            return torch.utils.checkpoint.checkpoint(
+                self.block, x, preserve_rng_state=False
+            )
         return torch.utils.checkpoint.checkpoint(self.block, x)
 
 
