@@ -21,7 +21,7 @@ from trainer import Trainer
 
 class DefaultConfig:
     def __init__(self, dataset_name=None, model_name=None):
-        self.make_reproducible = False
+        self.make_reproducible_env = False
         self.reproducible_env_load_path = None
         self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
         self.hyper_parameter_config: HyperParameterConfig = HyperParameterConfig()
@@ -30,6 +30,7 @@ class DefaultConfig:
         self.pretrained = False
         self.debug = False
         self.profile = False
+        self.use_checkpointing = False
         self.save_dir = None
         self.model_kwarg_json_path = None
         self.log_level = None
@@ -43,13 +44,16 @@ class DefaultConfig:
         parser.add_argument("--pretrained", action="store_true", default=False)
         parser.add_argument("--save_dir", type=str, default=None)
         parser.add_argument("--reproducible_env_load_path", type=str, default=None)
-        parser.add_argument("--make_reproducible", action="store_true", default=False)
+        parser.add_argument(
+            "--make_reproducible_env", action="store_true", default=False
+        )
         parser.add_argument("--model_kwarg_json_path", type=str, default=None)
         self.dc_config.add_args(parser)
         self.hyper_parameter_config.add_args(parser)
         parser.add_argument("--log_level", type=str, default=None)
         parser.add_argument("--debug", action="store_true", default=False)
         parser.add_argument("--profile", action="store_true", default=False)
+        parser.add_argument("--use_checkpointing", action="store_true", default=False)
         args = parser.parse_args()
         self.dc_config.load_args(args)
         self.hyper_parameter_config.load_args(args)
@@ -95,6 +99,7 @@ class DefaultConfig:
             model_kwargs["pretrained"] = self.pretrained
 
         model_with_loss = get_model(self.model_name, dc, **model_kwargs)
+        model_with_loss.use_checkpointing = self.use_checkpointing
         trainer = Trainer(
             model_with_loss, dc, hyper_parameter, save_dir=self.get_save_dir()
         )
@@ -122,8 +127,8 @@ class DefaultConfig:
         if self.reproducible_env_load_path is not None:
             if not global_reproducible_env.enabled:
                 global_reproducible_env.load(self.reproducible_env_load_path)
-            self.make_reproducible = True
+            self.make_reproducible_env = True
 
-        if self.make_reproducible:
+        if self.make_reproducible_env:
             global_reproducible_env.enable()
             global_reproducible_env.save(self.get_save_dir())

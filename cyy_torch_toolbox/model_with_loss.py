@@ -19,7 +19,7 @@ class _CheckPointBlock(nn.Module):
         get_logger().debug("use checkpoint_block %s", self.__block_names)
 
     def forward(self, x):
-        return self.block(x)
+        return torch.utils.checkpoint.checkpoint(self.block, x)
 
 
 class ModelWithLoss:
@@ -42,10 +42,10 @@ class ModelWithLoss:
                 raise RuntimeError("unknown loss function {}".format(loss_fun))
         self.__model_type = model_type
         self.__has_batch_norm = None
-        self.__model_transforms: list = None
+        self.__model_transforms = None
         self.__trace_input = False
         self.__example_input = None
-        self.__use_checkpoint = False
+        self.use_checkpointing = False
         self.__checkpointed_model = None
         self.__current_phase = None
         self.__current_model_device = None
@@ -89,7 +89,6 @@ class ModelWithLoss:
             return self.__checkpointed_model
         checkpointed_blocks = ModelUtil(self.__model).get_sub_module_blocks(
             block_types={(nn.Conv2d, nn.BatchNorm2d)},
-            # block_types={},
             only_block_name=False,
         )
         assert checkpointed_blocks
@@ -157,7 +156,7 @@ class ModelWithLoss:
         inputs = self.__model_transforms(inputs)
         if (
             self.__current_phase == MachineLearningPhase.Training
-            and self.__use_checkpoint
+            and self.use_checkpointing
         ):
             inputs.requires_grad_()
             output = self.checkpointed_model(inputs, *extra_inputs)
