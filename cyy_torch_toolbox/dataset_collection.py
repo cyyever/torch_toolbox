@@ -21,7 +21,7 @@ from torchvision import transforms
 if has_torchaudio:
     import audio_datasets as local_audio_datasets
 
-import vision_datasets as local_vision_datasets
+import datasets.vision as local_vision_datasets
 from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
 from ml_type import DatasetType, MachineLearningPhase
 from pipelines.text_field import get_text_and_label_fields
