@@ -314,6 +314,7 @@ class ModelExecutor(_ModelExecutorBase):
 
     def offload_from_gpu(self):
         self._wait_stream()
+        self.model.zero_grad(set_to_none=True)
         self.model.cpu()
         torch.cuda.empty_cache()
         if self.__dataloader is not None:
