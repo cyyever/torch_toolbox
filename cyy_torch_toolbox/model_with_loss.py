@@ -116,6 +116,9 @@ class ModelWithLoss:
 
         return self.__checkpointed_model
 
+    def remove_checkpointed_model(self):
+        self.__checkpointed_model = None
+
     def __call__(
         self,
         inputs,
