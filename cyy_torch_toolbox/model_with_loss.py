@@ -116,7 +116,9 @@ class ModelWithLoss:
 
         return self.__checkpointed_model
 
-    def remove_checkpointed_model(self):
+    def offload_from_gpu(self):
+        self.model.zero_grad(set_to_none=True)
+        self.model.cpu()
         self.__checkpointed_model = None
 
     def __call__(
