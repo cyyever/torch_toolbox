@@ -227,6 +227,7 @@ def get_dataloader(
         pipeline = create_dali_pipeline(
             batch_size=hyper_parameter.batch_size,
             num_threads=2,
+            py_start_method="spwan",
             device_id=device_id,
             dc=dc,
             phase=phase,
