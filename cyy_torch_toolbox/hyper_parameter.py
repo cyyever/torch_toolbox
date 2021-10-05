@@ -6,6 +6,7 @@ from typing import Callable, Optional, Union
 
 import torch
 import torch.optim as optim
+from cyy_naive_lib.data_structure.thread_pool import ThreadPool
 from cyy_naive_lib.log import get_logger
 
 from algorithm.lr_finder import LRFinder
@@ -54,17 +55,23 @@ class HyperParameter:
 
     def get_learning_rate(self, trainer):
         if isinstance(self.__learning_rate, HyperParameterAction):
-            get_logger().warning("guess lr")
-            tmp_trainer = copy.deepcopy(trainer)
-            tmp_trainer.disable_stripable_hooks()
-            lr_finder = LRFinder()
-            tmp_trainer.prepend_hook(lr_finder)
-            tmp_trainer.train()
-            get_logger().warning(
-                "suggested_learning_rate is %s", lr_finder.suggested_learning_rate
-            )
-            self.__learning_rate = lr_finder.suggested_learning_rate
-            # self.__learning_rate = max(suggesstion_lrs.lr_min), suggesstion_lrs.lr_steep)
+
+            def get_learning_rate_from_thread():
+                get_logger().warning("guess lr")
+                tmp_trainer = copy.deepcopy(trainer)
+                tmp_trainer.disable_stripable_hooks()
+                lr_finder = LRFinder()
+                get_logger().warning("register lr_finder")
+                tmp_trainer.prepend_hook(lr_finder)
+                tmp_trainer.train()
+                get_logger().warning(
+                    "suggested_learning_rate is %s", lr_finder.suggested_learning_rate
+                )
+                self.__learning_rate = lr_finder.suggested_learning_rate
+
+            pool = ThreadPool()
+            pool.exec(get_learning_rate_from_thread)
+            pool.stop()
         return self.__learning_rate
 
     def set_learning_rate(self, learning_rate: Union[float, HyperParameterAction]):
