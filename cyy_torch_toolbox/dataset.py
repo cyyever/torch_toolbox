@@ -142,18 +142,13 @@ def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
 
 
 class DatasetUtil:
-    def __init__(
-        self, dataset: torch.utils.data.Dataset, label_field=None, dataloader=None
-    ):
+    def __init__(self, dataset: torch.utils.data.Dataset, label_field=None):
         self.dataset: torch.utils.data.Dataset = dataset
         self.__channel = None
         self.__len = None
         self.__label_field = label_field
-        self.__dataloader = dataloader
 
     def __get_dataloader(self):
-        if self.__dataloader is not None:
-            return self.__dataloader
         return torch.utils.data.DataLoader(
             self.dataset, batch_size=1, num_workers=2, prefetch_factor=1
         )
