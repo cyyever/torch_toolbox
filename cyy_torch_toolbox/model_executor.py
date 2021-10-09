@@ -98,8 +98,11 @@ class _ModelExecutorBase:
                 self.__hooks[hook_point].insert(pos, data)
 
     def insert_hook(self, pos, hook: Hook):
+        flag = False
         for hook_point, name, fun in hook.yield_hooks():
             self.insert_callback(pos, hook_point, name, fun, hook.stripable)
+            flag = True
+        assert flag
 
     def append_hook(self, hook: Hook):
         self.insert_hook(-1, hook)
