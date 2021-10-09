@@ -24,7 +24,7 @@ class Hook:
             yield name
 
     def _get_hook(self, cb_point):
-        method_name = "_" + str(cb_point).rsplit(".", maxsplit=1)[0].lower()
+        method_name = "_" + str(cb_point).split(".")[-1].lower()
         name = self.__class__.__name__ + "." + str(method_name)
         if hasattr(self, method_name):
             return (cb_point, name, getattr(self, method_name))
