@@ -149,12 +149,16 @@ if has_dali:
                 # ask nvJPEG to preallocate memory for the biggest sample in ImageNet for CPU and GPU to avoid reallocations in runtime
                 device_memory_padding = 211025920 if device is not None else 0
                 host_memory_padding = 140544512 if device is not None else 0
+                # disable nvJPEG to avoid leak
                 images = nvidia.dali.fn.decoders.image_random_crop(
                     image_files,
                     device="cpu" if device is None else "mixed",
                     device_memory_padding=device_memory_padding,
                     host_memory_padding=host_memory_padding,
                     num_attempts=5,
+                    hw_decoder_load=0,
+                    preallocate_width_hint=0,
+                    preallocate_height_hint=0,
                 )
                 images = nvidia.dali.fn.resize(
                     images,
