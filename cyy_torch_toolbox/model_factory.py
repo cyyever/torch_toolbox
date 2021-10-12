@@ -34,12 +34,12 @@ __model_info: dict = {}
 
 def get_model_info():
     global __model_info
-    repos = []
-    # os.path.join(os.path.dirname(os.path.realpath(__file__)), "models"),
+    repos = [
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), "models"),
+    ]
     github_repos = [
         "pytorch/vision:main",
         "lukemelas/EfficientNet-PyTorch:master",
-        "cyy/torch_toolbox/cyy_torch_toolbox/models",
     ]
 
     if not __model_info:
