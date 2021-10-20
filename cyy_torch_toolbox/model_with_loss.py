@@ -9,22 +9,7 @@ from cyy_naive_lib.log import get_logger
 
 from ml_type import MachineLearningPhase, ModelType
 from model_util import ModelUtil
-from reproducible_env import global_reproducible_env
-
-
-class _CheckPointBlock(nn.Module):
-    def __init__(self, block):
-        super().__init__()
-        self.block = nn.Sequential(*[m[1] for m in block])
-        self.__block_names = [m[0] for m in block]
-        get_logger().debug("use checkpoint_block %s", self.__block_names)
-
-    def forward(self, x):
-        if not global_reproducible_env.enabled:
-            return torch.utils.checkpoint.checkpoint(
-                self.block, x, preserve_rng_state=False
-            )
-        return torch.utils.checkpoint.checkpoint(self.block, x)
+from transformers.checkpointed_model import get_checkpointed_model
 
 
 class ModelWithLoss:
@@ -92,28 +77,7 @@ class ModelWithLoss:
     def checkpointed_model(self) -> torch.nn.Module:
         if self.__checkpointed_model is not None:
             return self.__checkpointed_model
-        checkpointed_blocks = ModelUtil(self.__model).get_sub_module_blocks(
-            block_types={(nn.Conv2d, nn.BatchNorm2d)},
-            only_block_name=False,
-        )
-        assert checkpointed_blocks
-        self.__checkpointed_model = copy.deepcopy(self.__model)
-        self.__checkpointed_model.load_state_dict(self.__model.state_dict())
-        checkpointed_model_util = ModelUtil(self.__checkpointed_model)
-        for checkpointed_block in checkpointed_blocks:
-            for idx, submodule in enumerate(checkpointed_block):
-                submodule_name = submodule[0]
-                if idx == 0:
-                    checkpointed_model_util.set_attr(
-                        submodule_name,
-                        _CheckPointBlock(checkpointed_block),
-                        as_parameter=False,
-                    )
-                else:
-                    checkpointed_model_util.set_attr(
-                        submodule_name, lambda x: x, as_parameter=False
-                    )
-
+        self.__checkpointed_model = get_checkpointed_model(self.__model)
         return self.__checkpointed_model
 
     def offload_from_gpu(self):
