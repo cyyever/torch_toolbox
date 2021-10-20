@@ -89,7 +89,7 @@ class DefaultConfig:
         )
 
         dc = self.dc_config.create_dataset_collection(self.get_save_dir())
-        model_kwargs = dict()
+        model_kwargs = {}
         if self.model_kwarg_json_path is not None:
             with open(self.model_kwarg_json_path, "rt") as f:
                 model_kwargs = json.load(f)
