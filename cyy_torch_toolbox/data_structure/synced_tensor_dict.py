@@ -1,11 +1,11 @@
 from typing import Generator
 
-from cyy_naive_cpp_extension.data_structure import \
-    SyncedSparseTensorDict as SyncedSparseTensorDict__
-from cyy_naive_cpp_extension.data_structure import \
-    SyncedTensorDict as SyncedTensorDict__
 from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from cyy_naive_lib.log import get_logger
+from cyy_torch_cpp_extension.data_structure import \
+    SyncedSparseTensorDict as SyncedSparseTensorDict__
+from cyy_torch_cpp_extension.data_structure import \
+    SyncedTensorDict as SyncedTensorDict__
 
 
 class SyncedTensorDict:
