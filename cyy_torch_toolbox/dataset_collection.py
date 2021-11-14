@@ -24,7 +24,7 @@ if has_torchaudio:
 import datasets.vision as local_vision_datasets
 from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
 from ml_type import DatasetType, MachineLearningPhase
-from pipelines.text_field import get_text_and_label_fields
+# from pipelines.text_field import get_text_and_label_fields
 
 
 class DatasetCollection:
@@ -285,12 +285,12 @@ class DatasetCollection:
         label_field = None
         if name == "IMDB":
             assert dataset_type == DatasetType.Text
-            text_field, label_field = get_text_and_label_fields()
-            training_dataset, test_dataset = dataset_constructor(
-                text_field, label_field
-            )
-            text_field.build_vocab(training_dataset, max_size=25000)
-            label_field.build_vocab(training_dataset)
+            # text_field, label_field = get_text_and_label_fields()
+            # training_dataset, test_dataset = dataset_constructor(
+            #     text_field, label_field
+            # )
+            # text_field.build_vocab(training_dataset, max_size=25000)
+            # label_field.build_vocab(training_dataset)
         else:
             for phase in MachineLearningPhase:
                 while True:
