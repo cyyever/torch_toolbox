@@ -67,11 +67,6 @@ class ExternalInputIterator:
             if not self.__tmp_indices:
                 break
             idx = self.__tmp_indices.pop()
-            # sample = self.__data[idx]
-            # if not isinstance(sample, numpy.ndarray):
-            #     sample = sample.numpy()
-            # sample = self.__transform(sample)
-            # label = self.__targets[idx]
             sample, label = self.__original_dataset[idx]
             sample = self.__transform(sample)
             batch.append(sample)
