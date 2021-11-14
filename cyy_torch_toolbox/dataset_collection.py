@@ -54,9 +54,9 @@ class DatasetCollection:
     def dataset_type(self):
         return self.__dataset_type
 
-    @property
-    def text_field(self) -> torchtext.legacy.data.Field:
-        return self.__text_field
+    # @property
+    # def text_field(self) -> torchtext.legacy.data.Field:
+    #     return self.__text_field
 
     def transform_dataset(self, phase: MachineLearningPhase, transformer: Callable):
         dataset = self.get_dataset(phase)
@@ -217,8 +217,8 @@ class DatasetCollection:
         repositories = []
         if dataset_type is None or dataset_type == DatasetType.Vision:
             repositories = [torchvision.datasets, local_vision_datasets]
-        elif dataset_type is None or dataset_type == DatasetType.Text:
-            repositories = [torchtext.legacy.datasets]
+        # elif dataset_type is None or dataset_type == DatasetType.Text:
+        #     repositories = [torchtext.legacy.datasets]
         elif dataset_type is None or dataset_type == DatasetType.Audio:
             if has_torchaudio:
                 repositories = [torchaudio.datasets, local_audio_datasets]
