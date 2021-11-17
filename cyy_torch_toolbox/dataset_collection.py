@@ -24,6 +24,7 @@ if has_torchaudio:
 import datasets.vision as local_vision_datasets
 from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
 from ml_type import DatasetType, MachineLearningPhase
+
 # from pipelines.text_field import get_text_and_label_fields
 
 
@@ -217,21 +218,26 @@ class DatasetCollection:
         repositories = []
         if dataset_type is None or dataset_type == DatasetType.Vision:
             repositories = [torchvision.datasets, local_vision_datasets]
-        # elif dataset_type is None or dataset_type == DatasetType.Text:
-        #     repositories = [torchtext.legacy.datasets]
+        elif dataset_type is None or dataset_type == DatasetType.Text:
+            repositories = [torchtext.datasets]
         elif dataset_type is None or dataset_type == DatasetType.Audio:
             if has_torchaudio:
                 repositories = [torchaudio.datasets, local_audio_datasets]
         dataset_constructors = {}
         for repository in repositories:
+            if hasattr(repository, "DATASETS"):
+                for name, dataset_constructor in getattr(
+                    repository, "DATASETS"
+                ).items():
+                    if dataset_type == DatasetType.Text:
+                        dataset_constructors[name] = dataset_constructor
+                        # if hasattr(dataset_constructor, "splits"):
+                        #     dataset_constructors[name] = getattr(
+                        #         dataset_constructor, "splits"
+                        #     )
+                        # else:
             for name in dir(repository):
                 dataset_constructor = getattr(repository, name)
-                if dataset_type == DatasetType.Text:
-                    if hasattr(dataset_constructor, "splits"):
-                        dataset_constructors[name] = getattr(
-                            dataset_constructor, "splits"
-                        )
-                        continue
                 if not inspect.isclass(dataset_constructor):
                     continue
                 if issubclass(dataset_constructor, torch.utils.data.Dataset):
@@ -283,8 +289,10 @@ class DatasetCollection:
 
         text_field = None
         label_field = None
-        if name == "IMDB":
-            assert dataset_type == DatasetType.Text
+        if False:
+            pass
+            # name == "IMDB":
+            # assert dataset_type == DatasetType.Text
             # text_field, label_field = get_text_and_label_fields()
             # training_dataset, test_dataset = dataset_constructor(
             #     text_field, label_field
@@ -577,7 +585,7 @@ class DatasetCollectionConfig:
                 "use training_dataset_label_map_path %s",
                 self.training_dataset_label_map_path,
             )
-            with open(self.training_dataset_label_map_path, "r") as f:
+            with open(self.training_dataset_label_map_path, "r", encoding="utf-8") as f:
                 self.training_dataset_label_map = json.load(f)
 
         if self.training_dataset_label_map is not None:
