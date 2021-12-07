@@ -34,6 +34,6 @@ def test_dataset_labels():
     for name in ("MNIST", "CIFAR10"):
         dc = DatasetCollection.get_by_name(name)
         assert len(dc.get_labels()) == 10
-    # for name in ("IMDB",):
-    #     dc = DatasetCollection.get_by_name(name)
-    #     assert dc.get_labels()
+    for name in ("IMDB",):
+        dc = DatasetCollection.get_by_name(name)
+        assert dc.get_labels()

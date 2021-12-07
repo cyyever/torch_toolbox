@@ -111,8 +111,6 @@ def sub_dataset(dataset: torch.utils.data.Dataset, indices: Iterable):
     subset = torch.utils.data.Subset(dataset, indices)
     if hasattr(dataset, "sort_key"):
         setattr(subset, "sort_key", dataset.sort_key)
-    if hasattr(dataset, "fields"):
-        setattr(subset, "fields", dataset.fields)
     return subset
 
 
@@ -141,7 +139,7 @@ def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
 
 
 class DatasetUtil:
-    def __init__(self, dataset: torch.utils.data.Dataset, label_field=None):
+    def __init__(self, dataset: torch.utils.data.Dataset):
         self.dataset: torch.utils.data.Dataset = dataset
         self.__channel = None
         self.__len = None

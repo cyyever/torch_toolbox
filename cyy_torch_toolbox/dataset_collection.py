@@ -24,6 +24,7 @@ if has_torchaudio:
 import datasets.vision as local_vision_datasets
 from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
 from ml_type import DatasetType, MachineLearningPhase
+from pipelines.text_pipeline import TokenizerAndVocab
 
 
 class DatasetCollection:
@@ -44,6 +45,7 @@ class DatasetCollection:
         self.__datasets[MachineLearningPhase.Test] = test_dataset
         self.__dataset_type = dataset_type
         self.__name = name
+        self.__tokenizer_and_vocab = None
 
     @property
     def dataset_type(self):
@@ -136,6 +138,20 @@ class DatasetCollection:
             return computation_fun()
 
         return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
+
+    def get_collate_fn(self):
+        if self.dataset_type != DatasetType.Text:
+            return None
+        if self.__tokenizer_and_vocab is None:
+            self.__tokenizer_and_vocab = TokenizerAndVocab(self.get_training_dataset())
+
+        def collate_batch(batch):
+            label_list, text_list = [], []
+            for (_label, _text) in batch:
+                label_list.append(int(_label))
+                processed_text = torch.tensor(self.__tokenizer_and_vocab(_text))
+                text_list.append(processed_text)
+            return text_list, label_list
 
     def generate_raw_data(self, phase: MachineLearningPhase):
         if self.dataset_type == DatasetType.Vision:

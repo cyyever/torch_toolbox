@@ -15,5 +15,9 @@ class TokenizerAndVocab:
         self.__tokenizer = tokenizer
         self.__vocab = vocab
 
+    @property
+    def vocab(self):
+        return self.__vocab
+
     def __call__(self, s):
         return self.__vocab(self.__tokenizer(s))

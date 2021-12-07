@@ -114,7 +114,7 @@ class HyperParameter:
             nonlocal name
             optimizer = trainer.get_optimizer()
             training_dataset_size = len(trainer.dataset)
-            full_kwargs: dict = dict()
+            full_kwargs: dict = {}
             full_kwargs["optimizer"] = optimizer
             if name == "ReduceLROnPlateau":
                 patience = min(10, hyper_parameter.epoch + 9 // 10)
@@ -249,7 +249,7 @@ class HyperParameterConfig:
         self.find_learning_rate = True
         self.learning_rate = None
         self.learning_rate_scheduler = None
-        self.learning_rate_scheduler_arguments = dict()
+        self.learning_rate_scheduler_arguments = {}
         self.momentum = None
         self.weight_decay = None
         self.optimizer_name = None
