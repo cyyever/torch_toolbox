@@ -10,7 +10,6 @@ from typing import Callable, Generator, Iterable
 # import numpy
 import PIL
 import torch
-import torchtext
 import torchvision
 from cyy_naive_lib.log import get_logger
 
@@ -146,7 +145,6 @@ class DatasetUtil:
         self.dataset: torch.utils.data.Dataset = dataset
         self.__channel = None
         self.__len = None
-        self.__label_field = label_field
 
     def __get_dataloader(self):
         return torch.utils.data.DataLoader(
@@ -248,9 +246,6 @@ class DatasetUtil:
         if hasattr(dataset, "targets") and dataset.target_transform is None:
             return DatasetUtil.get_label_from_target(dataset.targets[index])
         sample_and_target = dataset[index]
-        if isinstance(sample_and_target, torchtext.legacy.data.example.Example):
-            assert self.__label_field is not None
-            return self.__label_field.vocab.stoi[sample_and_target.label]
         return DatasetUtil.get_label_from_target(sample_and_target[1])
 
     def get_labels(self, check_targets=True) -> set:
@@ -260,8 +255,6 @@ class DatasetUtil:
                 and self.dataset.target_transform is None
             ):
                 return DatasetUtil.__get_labels_from_target(self.dataset.targets)
-        if self.__label_field is not None:
-            return set(self.__label_field.vocab.stoi.values())
 
         def get_label(container: set, instance) -> set:
             labels = DatasetUtil.__get_labels_from_target(instance[1])

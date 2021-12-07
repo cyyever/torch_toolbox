@@ -25,8 +25,6 @@ import datasets.vision as local_vision_datasets
 from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
 from ml_type import DatasetType, MachineLearningPhase
 
-# from pipelines.text_field import get_text_and_label_fields
-
 
 class DatasetCollection:
     def __init__(
@@ -35,9 +33,7 @@ class DatasetCollection:
         validation_dataset: torch.utils.data.Dataset,
         test_dataset: torch.utils.data.Dataset,
         dataset_type: DatasetType,
-        name,
-        text_field=None,
-        label_field=None,
+        name: str,
     ):
         assert training_dataset is not None
         assert validation_dataset is not None
@@ -48,22 +44,18 @@ class DatasetCollection:
         self.__datasets[MachineLearningPhase.Test] = test_dataset
         self.__dataset_type = dataset_type
         self.__name = name
-        self.__text_field = text_field
-        self.__label_field = label_field
 
     @property
     def dataset_type(self):
         return self.__dataset_type
 
-    # @property
-    # def text_field(self) -> torchtext.legacy.data.Field:
-    #     return self.__text_field
-
     def transform_dataset(self, phase: MachineLearningPhase, transformer: Callable):
         dataset = self.get_dataset(phase)
         self.__datasets[phase] = transformer(dataset)
 
-    def transform_dataset_to_subset(self, phase: MachineLearningPhase, labels: set):
+    def transform_dataset_to_subset(
+        self, phase: MachineLearningPhase, labels: set
+    ) -> None:
         label_indices = self.__get_label_indices(phase)
         all_labels = self.get_label_names()
         if not labels.issubset(all_labels):
@@ -98,7 +90,7 @@ class DatasetCollection:
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
-        return DatasetUtil(self.get_dataset(phase), self.__label_field)
+        return DatasetUtil(self.get_dataset(phase))
 
     def append_transforms(self, transforms, phases=None):
         origin_datasets = set()
@@ -205,7 +197,9 @@ class DatasetCollection:
         return dataset_dir
 
     @staticmethod
-    def __get_dataset_cache_dir(name: str, phase=None):
+    def __get_dataset_cache_dir(
+        name: str, phase: MachineLearningPhase | None = None
+    ) -> str:
         cache_dir = os.path.join(DatasetCollection.__get_dataset_dir(name), ".cache")
         if phase is not None:
             cache_dir = os.path.join(cache_dir, str(phase))
@@ -287,61 +281,44 @@ class DatasetCollection:
         validation_dataset = None
         test_dataset = None
 
-        text_field = None
-        label_field = None
-        if False:
-            pass
-            # name == "IMDB":
-            # assert dataset_type == DatasetType.Text
-            # text_field, label_field = get_text_and_label_fields()
-            # training_dataset, test_dataset = dataset_constructor(
-            #     text_field, label_field
-            # )
-            # text_field.build_vocab(training_dataset, max_size=25000)
-            # label_field.build_vocab(training_dataset)
-        else:
-            for phase in MachineLearningPhase:
-                while True:
-                    try:
-                        if "train" in sig.parameters:
-                            # Some dataset only have train and test parts
-                            if phase == MachineLearningPhase.Validation:
-                                break
-                            dataset_kwargs["train"] = (
-                                phase == MachineLearningPhase.Training
-                            )
-                        if "split" in sig.parameters:
-                            if phase == MachineLearningPhase.Training:
-                                dataset_kwargs["split"] = "train"
-                            elif phase == MachineLearningPhase.Validation:
-                                if dataset_type == DatasetType.Text:
-                                    dataset_kwargs["split"] = "valid"
-                                else:
-                                    dataset_kwargs["split"] = "val"
-                            else:
-                                dataset_kwargs["split"] = "test"
-                        if "subset" in sig.parameters:
-                            if phase == MachineLearningPhase.Training:
-                                dataset_kwargs["subset"] = "training"
-                            elif phase == MachineLearningPhase.Validation:
-                                dataset_kwargs["subset"] = "validation"
-                            else:
-                                dataset_kwargs["subset"] = "testing"
-                        dataset = dataset_constructor(**dataset_kwargs)
-                        if phase == MachineLearningPhase.Training:
-                            training_dataset = dataset
-                        elif phase == MachineLearningPhase.Validation:
-                            validation_dataset = dataset
-                        else:
-                            test_dataset = dataset
-                        break
-                    except Exception as e:
-                        split = dataset_kwargs.get("split", None)
-                        if split == "test":
+        for phase in MachineLearningPhase:
+            while True:
+                try:
+                    if "train" in sig.parameters:
+                        # Some dataset only have train and test parts
+                        if phase == MachineLearningPhase.Validation:
                             break
-                        raise e
-
-        cache_dir = DatasetCollection.__get_dataset_cache_dir(name)
+                        dataset_kwargs["train"] = phase == MachineLearningPhase.Training
+                    if "split" in sig.parameters:
+                        if phase == MachineLearningPhase.Training:
+                            dataset_kwargs["split"] = "train"
+                        elif phase == MachineLearningPhase.Validation:
+                            if dataset_type == DatasetType.Text:
+                                dataset_kwargs["split"] = "valid"
+                            else:
+                                dataset_kwargs["split"] = "val"
+                        else:
+                            dataset_kwargs["split"] = "test"
+                    if "subset" in sig.parameters:
+                        if phase == MachineLearningPhase.Training:
+                            dataset_kwargs["subset"] = "training"
+                        elif phase == MachineLearningPhase.Validation:
+                            dataset_kwargs["subset"] = "validation"
+                        else:
+                            dataset_kwargs["subset"] = "testing"
+                    dataset = dataset_constructor(**dataset_kwargs)
+                    if phase == MachineLearningPhase.Training:
+                        training_dataset = dataset
+                    elif phase == MachineLearningPhase.Validation:
+                        validation_dataset = dataset
+                    else:
+                        test_dataset = dataset
+                    break
+                except Exception as e:
+                    split = dataset_kwargs.get("split", None)
+                    if split == "test":
+                        break
+                    raise e
 
         splited_dataset = None
         if validation_dataset is None or test_dataset is None:
@@ -355,16 +332,10 @@ class DatasetCollection:
                 validation_dataset,
                 test_dataset,
             ) = DatasetCollection.__split_for_validation(
-                cache_dir, splited_dataset, label_field
+                DatasetCollection.__get_dataset_cache_dir(name), splited_dataset
             )
         dc = DatasetCollection(
-            training_dataset,
-            validation_dataset,
-            test_dataset,
-            dataset_type,
-            name,
-            text_field,
-            label_field,
+            training_dataset, validation_dataset, test_dataset, dataset_type, name
         )
 
         get_logger().info("training_dataset len %s", len(training_dataset))
@@ -399,6 +370,9 @@ class DatasetCollection:
                     ],
                     phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
                 )
+        elif dataset_type == DatasetType.Text:
+
+            pass
         # if dataset_type == DatasetType.Audio:
         #     if name == "SPEECHCOMMANDS_SIMPLIFIED":
         #         dc.append_transform(
@@ -450,9 +424,9 @@ class DatasetCollection:
             )
 
     @staticmethod
-    def __split_for_validation(cache_dir, splited_dataset, label_field=None):
+    def __split_for_validation(cache_dir, splited_dataset):
         pickle_file = os.path.join(cache_dir, "split_index_lists.pk")
-        dataset_util = DatasetUtil(splited_dataset, label_field)
+        dataset_util = DatasetUtil(splited_dataset)
         split_index_lists = DatasetCollection.__read_data(pickle_file)
         if split_index_lists is not None:
             return dataset_util.split_by_indices(split_index_lists)
@@ -518,7 +492,7 @@ class DatasetCollectionConfig:
             if value is not None:
                 setattr(self, attr, value)
         if args.dataset_arg_json_path is not None:
-            with open(args.dataset_arg_json_path, "rt") as f:
+            with open(args.dataset_arg_json_path, "rt", encoding="utf-8") as f:
                 self.dataset_kwargs = json.load(f)
 
     def create_dataset_collection(self, save_dir):
@@ -551,6 +525,7 @@ class DatasetCollectionConfig:
             with open(
                 os.path.join(save_dir, "training_dataset_indices.json"),
                 mode="wt",
+                encoding="utf-8",
             ) as f:
                 json.dump(subset_indices, f)
 
@@ -560,7 +535,7 @@ class DatasetCollectionConfig:
                 "use training_dataset_indices_path %s",
                 self.training_dataset_indices_path,
             )
-            with open(self.training_dataset_indices_path, "r") as f:
+            with open(self.training_dataset_indices_path, "r", encoding="utf-8") as f:
                 subset_indices = json.load(f)
         if subset_indices is not None:
             training_dataset = sub_dataset(training_dataset, subset_indices)
@@ -576,6 +551,7 @@ class DatasetCollectionConfig:
                     "training_dataset_label_map.json",
                 ),
                 mode="wt",
+                encoding="utf-8",
             ) as f:
                 json.dump(label_map, f)
 
