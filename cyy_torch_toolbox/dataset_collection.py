@@ -22,7 +22,8 @@ if has_torchaudio:
     import datasets.audio as local_audio_datasets
 
 import datasets.vision as local_vision_datasets
-from dataset import DatasetUtil, replace_dataset_labels, sub_dataset
+from dataset import (DatasetUtil, convert_iterable_dataset_to_map,
+                     replace_dataset_labels, sub_dataset)
 from ml_type import DatasetType, MachineLearningPhase
 from pipelines.text_pipeline import TokenizerAndVocab
 
@@ -46,6 +47,12 @@ class DatasetCollection:
         self.__dataset_type = dataset_type
         self.__name = name
         self.__tokenizer_and_vocab = None
+
+    @property
+    def tokenizer_and_vocab(self):
+        if self.__tokenizer_and_vocab is None:
+            self.__tokenizer_and_vocab = TokenizerAndVocab(self.get_training_dataset())
+        return self.__tokenizer_and_vocab
 
     @property
     def dataset_type(self):
@@ -142,14 +149,12 @@ class DatasetCollection:
     def get_collate_fn(self):
         if self.dataset_type != DatasetType.Text:
             return None
-        if self.__tokenizer_and_vocab is None:
-            self.__tokenizer_and_vocab = TokenizerAndVocab(self.get_training_dataset())
 
         def collate_batch(batch):
             label_list, text_list = [], []
             for (_label, _text) in batch:
                 label_list.append(int(_label))
-                processed_text = torch.tensor(self.__tokenizer_and_vocab(_text))
+                processed_text = torch.tensor(self.tokenizer_and_vocab(_text))
                 text_list.append(processed_text)
             return text_list, label_list
 
@@ -323,6 +328,10 @@ class DatasetCollection:
                         else:
                             dataset_kwargs["subset"] = "testing"
                     dataset = dataset_constructor(**dataset_kwargs)
+                    if isinstance(
+                        dataset, torchtext.data.datasets_utils._RawTextIterableDataset
+                    ):
+                        dataset = convert_iterable_dataset_to_map(dataset)
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
                     elif phase == MachineLearningPhase.Validation:
@@ -338,8 +347,8 @@ class DatasetCollection:
                     # #     break
                     raise e
 
-        splited_dataset = None
         if validation_dataset is None or test_dataset is None:
+            splited_dataset = None
             if validation_dataset is not None:
                 splited_dataset = validation_dataset
                 get_logger().warning("split validation dataset for %s", name)
