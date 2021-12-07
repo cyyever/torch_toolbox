@@ -22,7 +22,7 @@ class Trainer(ModelExecutor):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         hyper_parameter: HyperParameter,
-        save_dir=None,
+        save_dir: str | None = None,
     ):
         super().__init__(
             model_with_loss,
@@ -53,7 +53,7 @@ class Trainer(ModelExecutor):
         return self.__inferencers[phase].performance_metric
 
     def get_inferencer(
-        self, phase: MachineLearningPhase, copy_model=False
+        self, phase: MachineLearningPhase, copy_model: bool = False
     ) -> Inferencer:
         assert phase != MachineLearningPhase.Training
         model_with_loss = self.copy_model_with_loss(deepcopy=copy_model)
@@ -100,7 +100,7 @@ class Trainer(ModelExecutor):
         super().load_model(model_path)
         self.remove_optimizer()
 
-    def load_parameter_dict(self, parameter_dict: dict):
+    def load_parameter_dict(self, parameter_dict: dict) -> None:
         ModelUtil(self.model).load_parameter_dict(parameter_dict)
         self.remove_optimizer()
 
