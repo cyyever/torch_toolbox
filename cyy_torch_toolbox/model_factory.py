@@ -70,9 +70,9 @@ def get_model(
         }
     if dataset_collection.dataset_type == DatasetType.Text:
         added_kwargs["num_embeddings"] = len(dataset_collection.text_field.vocab)
-        added_kwargs["pad_idx"] = dataset_collection.text_field.vocab.stoi[
-            dataset_collection.text_field.pad_token
-        ]
+        # added_kwargs["pad_idx"] = dataset_collection.text_field.vocab.stoi[
+        #     dataset_collection.text_field.pad_token
+        # ]
 
     model_type = ModelType.Classification
     if "rcnn" in name.lower():

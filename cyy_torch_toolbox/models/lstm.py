@@ -7,7 +7,7 @@ class SimpleLSTM(nn.Module):
         self,
         num_embeddings,
         num_classes,
-        pad_idx,
+        padding_idx=None,
         n_layers=1,
         bidirectional=True,
         embedding_dim=250,
@@ -16,7 +16,7 @@ class SimpleLSTM(nn.Module):
     ):
         super().__init__()
         self.embedding = nn.Embedding(
-            num_embeddings, embedding_dim, padding_idx=pad_idx
+            num_embeddings, embedding_dim, padding_idx=padding_idx
         )
         self.rnn = nn.LSTM(
             embedding_dim,
