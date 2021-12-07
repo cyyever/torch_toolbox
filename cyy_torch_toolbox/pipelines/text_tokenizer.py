@@ -1,18 +1,19 @@
-from collections import Counter
-
-from dataset import DatasetMapper
 from torchtext.data.utils import get_tokenizer
-from torchtext.vocab import Vocab
+from torchtext.vocab import build_vocab_from_iterator
 
 
-class TextTokenizer(DatasetMapper):
-    def __init__(self, dataset, lang="basic_english"):
-        super().__init__(dataset=dataset, mappers=[])
-        self.__tokenizer = get_tokenizer(lang)
-        counter = Counter()
-        for (label, line) in self.dataset:
-            counter.update(self.__tokenizer(line))
-        self.__vocab = Vocab(counter, min_freq=1)
-        self.add_mapper(
-            lambda x: [self.__vocab[token] for token in self.__tokenizer(x)]
-        )
+class TokenizerAndVocab:
+    def __init__(self, dataset, lang="en_core_web_sm"):
+        tokenizer = get_tokenizer(tokenizer="spacy", language=lang)
+
+        def yield_tokens(data_iter):
+            for _, text in data_iter:
+                yield tokenizer(text)
+
+        vocab = build_vocab_from_iterator(yield_tokens(dataset), specials=["<unk>"])
+        vocab.set_default_index(vocab["<unk>"])
+        self.__tokenizer = tokenizer
+        self.__vocab = vocab
+
+    def __call__(self, s):
+        return self.__vocab(self.__tokenizer(s))
