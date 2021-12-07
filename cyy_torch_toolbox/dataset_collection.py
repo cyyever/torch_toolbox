@@ -153,17 +153,17 @@ class DatasetCollection:
                 text_list.append(processed_text)
             return text_list, label_list
 
-    def generate_raw_data(self, phase: MachineLearningPhase):
-        if self.dataset_type == DatasetType.Vision:
-            dataset_util = self.get_dataset_util(phase)
-            return (
-                (
-                    dataset_util.get_sample_image(i),
-                    dataset_util.get_sample_label(i),
-                )
-                for i in range(len(dataset_util))
-            )
-        raise RuntimeError("Unimplemented Code")
+    # def generate_raw_data(self, phase: MachineLearningPhase):
+    #     if self.dataset_type == DatasetType.Vision:
+    #         dataset_util = self.get_dataset_util(phase)
+    #         return (
+    #             (
+    #                 dataset_util.get_sample_image(i),
+    #                 dataset_util.get_sample_label(i),
+    #             )
+    #             for i in range(len(dataset_util))
+    #         )
+    #     raise RuntimeError("Unimplemented Code")
 
     def get_label_names(self) -> List[str]:
         cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
@@ -331,9 +331,11 @@ class DatasetCollection:
                         test_dataset = dataset
                     break
                 except Exception as e:
-                    split = dataset_kwargs.get("split", None)
-                    if split == "test":
+                    if "of splits is not supported for dataset" in str(e):
                         break
+                    # split = dataset_kwargs.get("split", None)
+                    # # if split == "test":
+                    # #     break
                     raise e
 
         splited_dataset = None
