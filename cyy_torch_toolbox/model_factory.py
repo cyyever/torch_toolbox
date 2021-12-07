@@ -69,7 +69,9 @@ def get_model(
             "channels": dataset_util.channel,
         }
     if dataset_collection.dataset_type == DatasetType.Text:
-        added_kwargs["num_embeddings"] = len(dataset_collection.text_field.vocab)
+        added_kwargs["num_embeddings"] = len(
+            dataset_collection.tokenizer_and_vocab.vocab
+        )
         # added_kwargs["pad_idx"] = dataset_collection.text_field.vocab.stoi[
         #     dataset_collection.text_field.pad_token
         # ]
@@ -102,7 +104,9 @@ def get_model(
                 loss_fun=loss_fun_name,
                 model_type=model_type,
             )
-            get_logger().warning("use model arguments %s", model_kwargs | added_kwargs)
+            get_logger().warning(
+                "use model arguments %s", model_kwargs | added_kwargs
+            )
             return model_with_loss
         except TypeError as e:
             retry = False

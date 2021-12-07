@@ -10,6 +10,7 @@ from typing import Callable, Generator, Iterable
 # import numpy
 import PIL
 import torch
+import torchtext
 import torchvision
 from cyy_naive_lib.log import get_logger
 
@@ -53,11 +54,33 @@ class DatasetMapper:
             item = mapper(index, item)
         return item
 
-    def add_mapper(self, mapper: Callable):
+    def add_mapper(self, mapper: Callable) -> None:
         self.__mappers.append(mapper)
 
     def __len__(self):
         return len(self.__dataset)
+
+
+class DictDataset(torch.utils.data.Dataset):
+    def __init__(self, items: dict):
+        super().__init__()
+        self.__items = items
+        # print("keys are",items.keys())
+
+    def __getitem__(self, index):
+        if index not in self.__items:
+            raise StopIteration()
+        return self.__items[index]
+
+    def __len__(self):
+        return len(self.__items)
+
+
+def convert_iterable_dataset_to_map(dataset: torch.utils.data.IterableDataset) -> dict:
+    items = {}
+    for idx, item in enumerate(dataset):
+        items[idx] = item
+    return DictDataset(items)
 
 
 # class DatasetToMelSpectrogram(torchvision.datasets.VisionDataset):
@@ -119,7 +142,7 @@ def sample_dataset(dataset: torch.utils.data.Dataset, index: int):
 
 
 def __add_index_to_item(index, item):
-    other_info = dict()
+    other_info = {}
     feature = None
     target = None
     if len(item) == 3:
@@ -223,6 +246,11 @@ class DatasetUtil:
             return set([target])
         if isinstance(target, torch.Tensor):
             return DatasetUtil.__get_labels_from_target(target.tolist())
+        if isinstance(target, str):
+            if target == "neg":
+                return set([0])
+            elif target == "pos":
+                return set([1])
         if isinstance(target, list):
             return set(target)
         if isinstance(target, dict):
@@ -233,6 +261,7 @@ class DatasetUtil:
     @staticmethod
     def get_label_from_target(target):
         labels = DatasetUtil.__get_labels_from_target(target)
+        print("labels is ", labels)
         assert len(labels) == 1
         return next(iter(labels))
 
@@ -246,7 +275,7 @@ class DatasetUtil:
         sample_and_target = dataset[index]
         return DatasetUtil.get_label_from_target(sample_and_target[1])
 
-    def get_labels(self, check_targets=True) -> set:
+    def get_labels(self, check_targets: bool = True) -> set:
         if check_targets:
             if (
                 hasattr(self.dataset, "targets")
@@ -263,13 +292,25 @@ class DatasetUtil:
 
     def split_by_label(self) -> dict:
         label_map: dict = {}
-        for index in range(len(self.dataset)):
-            label = self.get_sample_label(index)
-            if label not in label_map:
-                label_map[label] = []
-            label_map[label].append(index)
+        if isinstance(self.dataset, torch.utils.data.IterableDataset):
+            for index, item in enumerate(self.dataset):
+                if isinstance(
+                    self.dataset, torchtext.data.datasets_utils._RawTextIterableDataset
+                ):
+                    label = DatasetUtil.get_label_from_target(item[0])
+                else:
+                    label = DatasetUtil.get_label_from_target(item[1])
+                if label not in label_map:
+                    label_map[label] = []
+                label_map[label].append(index)
+        else:
+            for index in range(len(self.dataset)):
+                label = self.get_sample_label(index)
+                if label not in label_map:
+                    label_map[label] = []
+                label_map[label].append(index)
         for label, indices in label_map.items():
-            label_map[label] = dict()
+            label_map[label] = {}
             label_map[label]["indices"] = indices
         return label_map
 
@@ -352,7 +393,7 @@ class DatasetUtil:
 
     def iid_sample(self, percentage: float) -> dict:
         label_map = self.split_by_label()
-        sample_indices = dict()
+        sample_indices = {}
         for label, v in label_map.items():
             sample_size = int(len(v["indices"]) * percentage)
             if sample_size == 0:
@@ -364,7 +405,7 @@ class DatasetUtil:
     def randomize_subset_label(self, percentage: float) -> dict:
         sample_indices = self.iid_sample(percentage)
         labels = self.get_labels()
-        randomized_label_map = dict()
+        randomized_label_map = {}
         for label, indices in sample_indices.items():
             other_labels = list(set(labels) - set([label]))
             for index in indices:
