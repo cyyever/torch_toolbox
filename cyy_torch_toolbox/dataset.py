@@ -10,7 +10,6 @@ from typing import Callable, Generator, Iterable
 # import numpy
 import PIL
 import torch
-import torchtext
 import torchvision
 from cyy_naive_lib.log import get_logger
 
@@ -293,23 +292,11 @@ class DatasetUtil:
 
     def split_by_label(self) -> dict:
         label_map: dict = {}
-        if isinstance(self.dataset, torch.utils.data.IterableDataset):
-            for index, item in enumerate(self.dataset):
-                if isinstance(
-                    self.dataset, torchtext.data.datasets_utils._RawTextIterableDataset
-                ):
-                    label = DatasetUtil.get_label_from_target(item[0])
-                else:
-                    label = DatasetUtil.get_label_from_target(item[1])
-                if label not in label_map:
-                    label_map[label] = []
-                label_map[label].append(index)
-        else:
-            for index in range(len(self.dataset)):
-                label = self.get_sample_label(index)
-                if label not in label_map:
-                    label_map[label] = []
-                label_map[label].append(index)
+        for index in range(len(self.dataset)):
+            label = self.get_sample_label(index)
+            if label not in label_map:
+                label_map[label] = []
+            label_map[label].append(index)
         for label, indices in label_map.items():
             label_map[label] = {}
             label_map[label]["indices"] = indices

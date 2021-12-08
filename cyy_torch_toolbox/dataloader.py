@@ -2,7 +2,7 @@ import copy
 import random
 
 import torch
-import torchtext
+# import torchtext
 import torchvision
 from cyy_naive_lib.log import get_logger
 
@@ -35,7 +35,7 @@ class ExternalInputIterator:
             self.__indices = list(range(len(dataset)))
             assert dataset == original_dataset
         self.__data = original_dataset.data
-        self.__targets = original_dataset.targets
+        # self.__targets = original_dataset.targets
         assert len(self.__indices) == len(self.__dataset)
         assert len(self.__dataset) <= len(self.__data)
 
@@ -252,10 +252,13 @@ def get_dataloader(
             persistent_workers=False,
             pin_memory=True,
         )
-    return torchtext.legacy.data.BucketIterator.splits(
-        [dataset],
+    return torch.utils.data.DataLoader(
+        dataset,
         batch_size=hyper_parameter.batch_size,
         shuffle=(phase == MachineLearningPhase.Training),
-        sort_within_batch=True,
-        device=device,
-    )[0]
+        num_workers=2,
+        prefetch_factor=1,
+        persistent_workers=False,
+        pin_memory=True,
+        collate_fn=dc.get_collate_fn(),
+    )
