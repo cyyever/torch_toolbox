@@ -6,6 +6,7 @@ import threading
 from typing import Callable, Dict, List
 
 import torch
+from torch.nn.utils.rnn import pad_sequence
 
 try:
     import torchaudio
@@ -49,7 +50,7 @@ class DatasetCollection:
         self.__tokenizer_and_vocab = None
 
     @property
-    def tokenizer_and_vocab(self):
+    def tokenizer_and_vocab(self) -> TokenizerAndVocab:
         if self.__tokenizer_and_vocab is None:
             self.__tokenizer_and_vocab = TokenizerAndVocab(self.get_training_dataset())
         return self.__tokenizer_and_vocab
@@ -146,17 +147,26 @@ class DatasetCollection:
 
         return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
-    def get_collate_fn(self):
+    def get_collate_fn(self) -> Callable:
         if self.dataset_type != DatasetType.Text:
             return None
 
         def collate_batch(batch):
             label_list, text_list = [], []
             for (_label, _text) in batch:
-                label_list.append(int(_label))
+                if _label == "neg":
+                    _label = 0
+                if _label == "pos":
+                    _label = 1
+                label_list.append(_label)
                 processed_text = torch.tensor(self.tokenizer_and_vocab(_text))
                 text_list.append(processed_text)
-            return text_list, label_list
+            text_list = pad_sequence(
+                text_list, padding_value=self.tokenizer_and_vocab.vocab["<pad>"]
+            )
+            return text_list, torch.as_tensor(label_list)
+
+        return collate_batch
 
     # def generate_raw_data(self, phase: MachineLearningPhase):
     #     if self.dataset_type == DatasetType.Vision:

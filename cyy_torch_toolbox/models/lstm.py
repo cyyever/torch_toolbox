@@ -28,13 +28,14 @@ class SimpleLSTM(nn.Module):
         self.fc = nn.Linear(hidden_dim * 2, num_classes)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, text, text_lengths):
+    def forward(self, text):
         embedded = self.dropout(self.embedding(text))
         # pack sequence
         # lengths need to be on CPU!
-        packed_embedded = nn.utils.rnn.pack_padded_sequence(
-            embedded, text_lengths.to("cpu")
-        )
+        packed_embedded = embedded
+        # packed_embedded = nn.utils.rnn.pack_padded_sequence(
+        #     embedded, text_lengths.to("cpu")
+        # )
         packed_output, (hidden, cell) = self.rnn(packed_embedded)
         # unpack sequence
         # output, output_lengths = nn.utils.rnn.pad_packed_sequence(packed_output)

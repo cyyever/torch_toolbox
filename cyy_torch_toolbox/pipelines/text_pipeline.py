@@ -10,7 +10,9 @@ class TokenizerAndVocab:
             for _, text in data_iter:
                 yield tokenizer(text)
 
-        vocab = build_vocab_from_iterator(yield_tokens(dataset), specials=["<unk>"])
+        vocab = build_vocab_from_iterator(
+            yield_tokens(dataset), specials=["<pad>", "<unk>"]
+        )
         vocab.set_default_index(vocab["<unk>"])
         self.__tokenizer = tokenizer
         self.__vocab = vocab
