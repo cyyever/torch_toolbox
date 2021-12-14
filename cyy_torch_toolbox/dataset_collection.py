@@ -178,7 +178,7 @@ class DatasetCollection:
                     dataset_util.get_sample_image(i),
                     dataset_util.get_sample_label(i),
                 )
-                for i in range(len(dataset_util))
+                for i in range(len(dataset_util.dataset))
             )
         raise RuntimeError("Unimplemented Code")
 
