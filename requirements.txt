@@ -1,1 +1,4 @@
+torch
+torchtext
+torchvision
 git+git://github.com/cyyever/naive_python_lib@main#egg=cyy_naive_lib
