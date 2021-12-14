@@ -16,6 +16,7 @@ def test_dataset():
         )
         < 0.01
     )
+    assert next(mnist.generate_raw_data(MachineLearningPhase.Training))
     assert dataset.DatasetUtil(mnist_training).channel == 1
     assert len(dataset.sub_dataset(mnist_training, [1])) == 1
     cifar10 = DatasetCollection.get_by_name("CIFAR10")
