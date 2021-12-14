@@ -59,7 +59,9 @@ class DatasetCollection:
     def dataset_type(self):
         return self.__dataset_type
 
-    def transform_dataset(self, phase: MachineLearningPhase, transformer: Callable):
+    def transform_dataset(
+        self, phase: MachineLearningPhase, transformer: Callable
+    ) -> None:
         dataset = self.get_dataset(phase)
         self.__datasets[phase] = transformer(dataset)
 
@@ -176,7 +178,7 @@ class DatasetCollection:
                     dataset_util.get_sample_image(i),
                     dataset_util.get_sample_label(i),
                 )
-                for i in range(len(dataset_util))
+                for i in range(len(dataset_util.dataset))
             )
         raise RuntimeError("Unimplemented Code")
 
@@ -208,21 +210,19 @@ class DatasetCollection:
     __dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
     __lock = threading.RLock()
 
-    @staticmethod
-    def get_dataset_root_dir():
-        with DatasetCollection.__lock:
-            return os.getenv(
-                "pytorch_dataset_root_dir", DatasetCollection.__dataset_root_dir
-            )
+    @classmethod
+    def get_dataset_root_dir(cls):
+        with cls.__lock:
+            return os.getenv("pytorch_dataset_root_dir", cls.__dataset_root_dir)
 
-    @staticmethod
-    def set_dataset_root_dir(root_dir: str):
-        with DatasetCollection.__lock:
-            DatasetCollection.__dataset_root_dir = root_dir
+    @classmethod
+    def set_dataset_root_dir(cls, root_dir: str):
+        with cls.__lock:
+            cls.__dataset_root_dir = root_dir
 
-    @staticmethod
-    def __get_dataset_dir(name: str):
-        dataset_dir = os.path.join(DatasetCollection.get_dataset_root_dir(), name)
+    @classmethod
+    def __get_dataset_dir(cls, name: str):
+        dataset_dir = os.path.join(cls.get_dataset_root_dir(), name)
         if not os.path.isdir(dataset_dir):
             os.makedirs(dataset_dir, exist_ok=True)
         return dataset_dir
@@ -269,16 +269,14 @@ class DatasetCollection:
                     dataset_constructors[name] = dataset_constructor
         return dataset_constructors
 
-    @staticmethod
-    def get_by_name(name: str, dataset_kwargs=None):
-        with DatasetCollection.__lock:
+    @classmethod
+    def get_by_name(cls, name: str, dataset_kwargs: dict | None = None):
+        with cls.__lock:
             all_dataset_constructors = set()
             for dataset_type in DatasetType:
-                dataset_constructor = DatasetCollection.get_dataset_constructors(
-                    dataset_type
-                )
+                dataset_constructor = cls.get_dataset_constructors(dataset_type)
                 if name in dataset_constructor:
-                    return DatasetCollection.__create_dataset_collection(
+                    return cls.__create_dataset_collection(
                         name, dataset_type, dataset_constructor[name], dataset_kwargs
                     )
                 all_dataset_constructors |= dataset_constructor.keys()
@@ -300,12 +298,16 @@ class DatasetCollection:
 
         return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
-    @staticmethod
+    @classmethod
     def __create_dataset_collection(
-        name: str, dataset_type: DatasetType, dataset_constructor, dataset_kwargs=None
+        cls,
+        name: str,
+        dataset_type: DatasetType,
+        dataset_constructor,
+        dataset_kwargs=None,
     ):
         sig = inspect.signature(dataset_constructor)
-        dataset_kwargs = DatasetCollection.__prepare_dataset_kwargs(
+        dataset_kwargs = cls.__prepare_dataset_kwargs(
             name, dataset_type, sig, dataset_kwargs
         )
         training_dataset = None
@@ -365,22 +367,17 @@ class DatasetCollection:
             else:
                 splited_dataset = test_dataset
                 get_logger().warning("split test dataset for %s", name)
-            (
-                validation_dataset,
-                test_dataset,
-            ) = DatasetCollection.__split_for_validation(
-                DatasetCollection.__get_dataset_cache_dir(name), splited_dataset
+            (validation_dataset, test_dataset,) = cls.__split_for_validation(
+                cls.__get_dataset_cache_dir(name), splited_dataset
             )
-        dc = DatasetCollection(
-            training_dataset, validation_dataset, test_dataset, dataset_type, name
-        )
+        dc = cls(training_dataset, validation_dataset, test_dataset, dataset_type, name)
 
         get_logger().info("training_dataset len %s", len(training_dataset))
         get_logger().info("validation_dataset len %s", len(validation_dataset))
         get_logger().info("test_dataset len %s", len(test_dataset))
 
         if dataset_type == DatasetType.Vision:
-            mean, std = DatasetCollection.__get_mean_and_std(
+            mean, std = cls.__get_mean_and_std(
                 name, torch.utils.data.ConcatDataset(list(dc.__datasets.values()))
             )
             dc.append_transform(transforms.Normalize(mean=mean, std=std))
@@ -472,7 +469,7 @@ class DatasetCollection:
         return datasets
 
     @staticmethod
-    def __get_cache_data(path, computation_fun: Callable):
+    def __get_cache_data(path: str, computation_fun: Callable):
         with DatasetCollection.__lock:
             data = DatasetCollection.__read_data(path)
             if data is not None:
