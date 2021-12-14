@@ -75,10 +75,13 @@ class DictDataset(torch.utils.data.Dataset):
         return len(self.__items)
 
 
-def convert_iterable_dataset_to_map(dataset: torch.utils.data.IterableDataset) -> dict:
+def convert_iterable_dataset_to_map(dataset: torch.utils.data.IterableDataset, swap_item: bool = False) -> dict:
     items = {}
     for idx, item in enumerate(dataset):
-        items[idx] = item
+        if swap_item:
+            items[idx] = (item[1], item[0])
+        else:
+            items[idx] = item
     return DictDataset(items)
 
 
