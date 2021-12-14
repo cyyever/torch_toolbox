@@ -341,7 +341,9 @@ class DatasetCollection:
                             dataset_kwargs["subset"] = "testing"
                     dataset = dataset_constructor(**dataset_kwargs)
                     if isinstance(dataset, torch.utils.data.IterableDataset):
-                        dataset = convert_iterable_dataset_to_map(dataset)
+                        dataset = convert_iterable_dataset_to_map(
+                            dataset, name == "IMDB"
+                        )
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
                     elif phase == MachineLearningPhase.Validation:
@@ -351,6 +353,8 @@ class DatasetCollection:
                     break
                 except Exception as e:
                     if "of splits is not supported for dataset" in str(e):
+                        break
+                    if "for argument split. Valid values are" in str(e):
                         break
                     # split = dataset_kwargs.get("split", None)
                     # # if split == "test":
