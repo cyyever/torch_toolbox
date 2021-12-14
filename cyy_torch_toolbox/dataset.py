@@ -64,7 +64,6 @@ class DictDataset(torch.utils.data.Dataset):
     def __init__(self, items: dict):
         super().__init__()
         self.__items = items
-        # print("keys are",items.keys())
 
     def __getitem__(self, index):
         if index not in self.__items:
@@ -261,7 +260,6 @@ class DatasetUtil:
     @staticmethod
     def get_label_from_target(target):
         labels = DatasetUtil.__get_labels_from_target(target)
-        print("labels is ", labels)
         assert len(labels) == 1
         return next(iter(labels))
 
