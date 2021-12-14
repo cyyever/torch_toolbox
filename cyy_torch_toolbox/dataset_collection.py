@@ -340,9 +340,7 @@ class DatasetCollection:
                         else:
                             dataset_kwargs["subset"] = "testing"
                     dataset = dataset_constructor(**dataset_kwargs)
-                    if isinstance(
-                        dataset, torchtext.data.datasets_utils._RawTextIterableDataset
-                    ):
+                    if isinstance(dataset, torch.utils.data.IterableDataset):
                         dataset = convert_iterable_dataset_to_map(dataset)
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
