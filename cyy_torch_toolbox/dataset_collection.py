@@ -354,6 +354,8 @@ class DatasetCollection:
                 except Exception as e:
                     if "of splits is not supported for dataset" in str(e):
                         break
+                    if "for argument split. Valid values are" in str(e):
+                        break
                     # split = dataset_kwargs.get("split", None)
                     # # if split == "test":
                     # #     break
