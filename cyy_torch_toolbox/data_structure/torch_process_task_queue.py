@@ -22,14 +22,14 @@ class TorchProcessTaskQueue(TaskQueue):
                 worker_num = len(self.__devices)
             else:
                 worker_num = os.cpu_count()
-        ctx = torch.multiprocessing.get_context("spawn")
-        manager = None
-        if self.__use_manager:
-            manager = ctx.Manager()
-        super().__init__(
-            worker_fun=worker_fun, ctx=ctx, worker_num=worker_num, manager=manager
-        )
+        super().__init__(worker_fun=worker_fun, worker_num=worker_num)
         self.__move_data_in_cpu = move_data_in_cpu
+
+    def get_ctx(self):
+        ctx = torch.multiprocessing.get_context("spawn")
+        if self.__use_manager:
+            ctx = ctx.Manager()
+        return ctx
 
     def add_task(self, task):
         if self.__move_data_in_cpu:
@@ -38,8 +38,3 @@ class TorchProcessTaskQueue(TaskQueue):
 
     def _get_extra_task_arguments(self, worker_id):
         return [self.__devices[worker_id % len(self.__devices)]]
-
-    def set_worker_fun(self, worker_fun, ctx=None):
-        if ctx is None:
-            ctx = torch.multiprocessing.get_context("spawn")
-        super().set_worker_fun(worker_fun, ctx=ctx)
