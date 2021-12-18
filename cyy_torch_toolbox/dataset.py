@@ -74,7 +74,9 @@ class DictDataset(torch.utils.data.Dataset):
         return len(self.__items)
 
 
-def convert_iterable_dataset_to_map(dataset: torch.utils.data.IterableDataset, swap_item: bool = False) -> dict:
+def convert_iterable_dataset_to_map(
+    dataset: torch.utils.data.IterableDataset, swap_item: bool = False
+) -> dict:
     items = {}
     for idx, item in enumerate(dataset):
         if swap_item:
@@ -243,21 +245,35 @@ class DatasetUtil:
 
     @staticmethod
     def __get_labels_from_target(target) -> set:
-        match target:
-            case int():
-                return set([target])
-            case list():
-                return set(target)
-            case torch.Tensor():
-                return DatasetUtil.__get_labels_from_target(target.tolist())
-            case str():
-                if target == "neg":
-                    return set([0])
-                if target == "pos":
-                    return set([1])
-            case dict():
-                if "labels" in target:
-                    return set(target["labels"].tolist())
+        if isinstance(target, int):
+            return set([target])
+        if isinstance(target, list):
+            return set(target)
+        if isinstance(target, torch.Tensor):
+            return DatasetUtil.__get_labels_from_target(target.tolist())
+        if isinstance(target, str):
+            if target == "neg":
+                return set([0])
+            if target == "pos":
+                return set([1])
+        if isinstance(target, dict):
+            if "labels" in target:
+                return set(target["labels"].tolist())
+        # match target:
+        #     case int():
+        #         return set([target])
+        #     case list():
+        #         return set(target)
+        #     case torch.Tensor():
+        #         return DatasetUtil.__get_labels_from_target(target.tolist())
+        #     case str():
+        #         if target == "neg":
+        #             return set([0])
+        #         if target == "pos":
+        #             return set([1])
+        #     case dict():
+        #         if "labels" in target:
+        #             return set(target["labels"].tolist())
         raise RuntimeError("can't extract labels from target: " + str(target))
 
     @staticmethod
