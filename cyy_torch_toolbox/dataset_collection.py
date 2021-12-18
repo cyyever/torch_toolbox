@@ -229,7 +229,8 @@ class DatasetCollection:
 
     @staticmethod
     def __get_dataset_cache_dir(
-        name: str, phase: MachineLearningPhase | None = None
+        # name: str, phase: MachineLearningPhase | None = None
+        name: str, phase: MachineLearningPhase = None
     ) -> str:
         cache_dir = os.path.join(DatasetCollection.__get_dataset_dir(name), ".cache")
         if phase is not None:
@@ -270,7 +271,8 @@ class DatasetCollection:
         return dataset_constructors
 
     @classmethod
-    def get_by_name(cls, name: str, dataset_kwargs: dict | None = None):
+    # def get_by_name(cls, name: str, dataset_kwargs: dict | None = None):
+    def get_by_name(cls, name: str, dataset_kwargs: dict = None):
         with cls.__lock:
             all_dataset_constructors = set()
             for dataset_type in DatasetType:
