@@ -22,8 +22,8 @@ class TorchProcessTaskQueue(TaskQueue):
                 worker_num = len(self.__devices)
             else:
                 worker_num = os.cpu_count()
-        super().__init__(worker_fun=worker_fun, worker_num=worker_num)
         self.__move_data_in_cpu = move_data_in_cpu
+        super().__init__(worker_fun=worker_fun, worker_num=worker_num)
 
     def get_ctx(self):
         ctx = torch.multiprocessing.get_context("spawn")
