@@ -246,9 +246,9 @@ class DatasetCollection:
             repositories = [torchvision.datasets, local_vision_datasets]
         elif dataset_type is None or dataset_type == DatasetType.Text:
             repositories = [torchtext.datasets]
-        elif dataset_type is None or dataset_type == DatasetType.Audio:
-            if has_torchaudio:
-                repositories = [torchaudio.datasets, local_audio_datasets]
+        # elif dataset_type is None or dataset_type == DatasetType.Audio:
+        #     if has_torchaudio:
+        #         repositories = [torchaudio.datasets, local_audio_datasets]
         dataset_constructors = {}
         for repository in repositories:
             if hasattr(repository, "DATASETS"):
