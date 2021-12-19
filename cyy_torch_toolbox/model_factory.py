@@ -35,10 +35,11 @@ __model_info: dict = {}
 def get_model_info():
     global __model_info
     repos = [
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), "models"),
+        # os.path.join(os.path.dirname(os.path.realpath(__file__)), "models"),
     ]
     github_repos = [
         "pytorch/vision:main",
+        "cyyever/torch_models:main",
         "lukemelas/EfficientNet-PyTorch:master",
     ]
 
@@ -104,9 +105,7 @@ def get_model(
                 loss_fun=loss_fun_name,
                 model_type=model_type,
             )
-            get_logger().warning(
-                "use model arguments %s", model_kwargs | added_kwargs
-            )
+            get_logger().warning("use model arguments %s", model_kwargs | added_kwargs)
             return model_with_loss
         except TypeError as e:
             retry = False
