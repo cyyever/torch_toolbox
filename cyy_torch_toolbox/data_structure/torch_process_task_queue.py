@@ -26,10 +26,12 @@ class TorchProcessTaskQueue(TaskQueue):
         super().__init__(worker_fun=worker_fun, worker_num=worker_num)
 
     def get_ctx(self):
-        ctx = torch.multiprocessing.get_context("spawn")
+        return torch.multiprocessing.get_context("spawn")
+
+    def get_manager(self):
         if self.__use_manager:
-            ctx = ctx.Manager()
-        return ctx
+            return torch.multiprocessing.get_context("spawn").Manager()
+        return None
 
     def add_task(self, task):
         if self.__move_data_in_cpu:
