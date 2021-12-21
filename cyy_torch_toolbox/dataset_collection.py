@@ -170,6 +170,15 @@ class DatasetCollection:
 
         return collate_batch
 
+    def get_raw_data(self, phase: MachineLearningPhase, index: int):
+        if self.dataset_type == DatasetType.Vision:
+            dataset_util = self.get_dataset_util(phase)
+            return (
+                dataset_util.get_sample_image(index),
+                dataset_util.get_sample_label(index),
+            )
+        raise RuntimeError("Unimplemented Code")
+
     def generate_raw_data(self, phase: MachineLearningPhase):
         if self.dataset_type == DatasetType.Vision:
             dataset_util = self.get_dataset_util(phase)
@@ -230,7 +239,8 @@ class DatasetCollection:
     @staticmethod
     def __get_dataset_cache_dir(
         # name: str, phase: MachineLearningPhase | None = None
-        name: str, phase: MachineLearningPhase = None
+        name: str,
+        phase: MachineLearningPhase = None,
     ) -> str:
         cache_dir = os.path.join(DatasetCollection.__get_dataset_dir(name), ".cache")
         if phase is not None:
