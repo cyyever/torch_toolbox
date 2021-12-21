@@ -276,9 +276,9 @@ class DatasetUtil:
         #             return set(target["labels"].tolist())
         raise RuntimeError("can't extract labels from target: " + str(target))
 
-    @staticmethod
-    def get_label_from_target(target):
-        labels = DatasetUtil.__get_labels_from_target(target)
+    @classmethod
+    def get_label_from_target(cls, target):
+        labels = cls.__get_labels_from_target(target)
         assert len(labels) == 1
         return next(iter(labels))
 
@@ -289,8 +289,7 @@ class DatasetUtil:
             return self.get_sample_label(dataset.indices[index], dataset.dataset)
         if hasattr(dataset, "targets") and dataset.target_transform is None:
             return DatasetUtil.get_label_from_target(dataset.targets[index])
-        sample_and_target = dataset[index]
-        return DatasetUtil.get_label_from_target(sample_and_target[1])
+        return DatasetUtil.get_label_from_target(dataset[index][1])
 
     def get_labels(self, check_targets: bool = True) -> set:
         if check_targets:
