@@ -1,7 +1,9 @@
+from dataset_collection import DatasetCollection
+from model_factory import get_model
 from model_util import ModelUtil
-from models.lenet import LeNet5
 
 
 def test_get_submodules():
-    model_util = ModelUtil(LeNet5())
+    mnist = DatasetCollection.get_by_name("MNIST")
+    model_util = ModelUtil(get_model("LeNet5", mnist).model)
     model_util.get_sub_modules()
