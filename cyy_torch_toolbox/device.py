@@ -80,11 +80,8 @@ class CudaDeviceGreedyAllocator:
         self.__last_query_time = time.time()
 
     def get_device(self, max_needed_bytes=None):
-        for device in self.__sort_devices():
-            if (
-                max_needed_bytes is not None
-                and self.__free_memory_dict[device] < max_needed_bytes
-            ):
+        for device, memory in self.__sort_devices():
+            if max_needed_bytes is not None and memory < max_needed_bytes:
                 continue
             return device
         return None
