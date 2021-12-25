@@ -92,9 +92,7 @@ class CudaDeviceGreedyAllocator:
     def __sort_devices(self) -> list:
         self.__refresh_memory_info()
         return sorted(
-            self.__free_memory_dict.keys(),
-            key=lambda x: self.__free_memory_dict[x],
-            reverse=True,
+            self.__free_memory_dict.items(), key=lambda item: item[1], reverse=True
         )
 
 
