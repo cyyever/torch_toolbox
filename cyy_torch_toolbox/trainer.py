@@ -82,6 +82,7 @@ class Trainer(ModelExecutor):
         return self.get_data("optimizer")
 
     def remove_optimizer(self):
+        # Don't call this method until you are sure what you are doing in federated learning settings.
         self.remove_data("optimizer")
         self.remove_lr_scheduler()
 
