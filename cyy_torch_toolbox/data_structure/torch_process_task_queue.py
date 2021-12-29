@@ -35,6 +35,11 @@ class TorchProcessTaskQueue(TaskQueue):
                 self.__manager = torch.multiprocessing.get_context("spawn").Manager()
         return self.__manager
 
+    def __getstate__(self):
+        state = super().__getstate__()
+        state["_TorchProcessTaskQueue__manager"] = None
+        return state
+
     def add_task(self, task):
         if self.__move_data_in_cpu:
             task = put_data_to_device(task, get_cpu_device())
