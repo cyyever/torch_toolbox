@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 
-import concurrent.futures
 
 import torch
-from cyy_naive_lib.data_structure.executor_pool import ExecutorPool
+from cyy_naive_lib.data_structure.process_pool import ProcessPool
 
 
-class TorchProcessPool(ExecutorPool):
-    def __init__(self):
+class TorchProcessPool(ProcessPool):
+    def __init__(self, max_workers=None):
         super().__init__(
-            concurrent.futures.ProcessPoolExecutor(
-                mp_context=torch.multiprocessing.get_context("spawn")
-            ),
+            mp_context=torch.multiprocessing.get_context("spawn"),
+            max_workers=max_workers,
         )
