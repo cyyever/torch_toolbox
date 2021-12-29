@@ -17,6 +17,7 @@ class TorchProcessTaskQueue(TaskQueue):
     ):
         self.__devices = get_devices()
         self.__use_manager = use_manager
+        self.__manager = None
         if worker_num is None:
             if torch.cuda.is_available():
                 worker_num = len(self.__devices)
@@ -30,8 +31,9 @@ class TorchProcessTaskQueue(TaskQueue):
 
     def get_manager(self):
         if self.__use_manager:
-            return torch.multiprocessing.get_context("spawn").Manager()
-        return None
+            if self.__manager is None:
+                self.__manager = torch.multiprocessing.get_context("spawn").Manager()
+        return self.__manager
 
     def add_task(self, task):
         if self.__move_data_in_cpu:
