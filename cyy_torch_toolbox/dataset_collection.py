@@ -149,12 +149,12 @@ class DatasetCollection:
 
         return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
-    def get_collate_fn(self) -> Callable:
+    def get_collate_fn(self) -> Callable | None:
         if self.dataset_type != DatasetType.Text:
             return None
 
         def collate_batch(batch):
-            label_list, text_list = [], []
+            text_list, label_list = [], []
             for (_label, _text) in batch:
                 if _label == "neg":
                     _label = 0
