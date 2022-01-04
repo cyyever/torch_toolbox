@@ -1,5 +1,4 @@
 import copy
-import os
 import sys
 
 import torch
@@ -34,20 +33,14 @@ __model_info: dict = {}
 
 def get_model_info():
     global __model_info
-    repos = [
-        # os.path.join(os.path.dirname(os.path.realpath(__file__)), "models"),
-    ]
     github_repos = [
         "pytorch/vision:main",
         "cyyever/torch_models:main",
+        # "huggingface/transformers:master",
         "lukemelas/EfficientNet-PyTorch:master",
     ]
 
     if not __model_info:
-        for repo in repos:
-            for model_name in list_local_models(repo):
-                if model_name not in __model_info:
-                    __model_info[model_name.lower()] = (repo, model_name, "local")
         for repo in github_repos:
             for model_name in torch.hub.list(repo):
                 if model_name not in __model_info:
@@ -91,14 +84,6 @@ def get_model(
                 repo, model_name, source = model_repo_and_name
                 model = torch.hub.load(
                     repo, model_name, source=source, **(added_kwargs | model_kwargs)
-                )
-            else:
-                model = torch.hub.load(
-                    "huggingface/transformers",
-                    "model",
-                    name,
-                    source="github",
-                    **(added_kwargs | model_kwargs)
                 )
             model_with_loss = ModelWithLoss(
                 model=model,
