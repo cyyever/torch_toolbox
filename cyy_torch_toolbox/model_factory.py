@@ -80,11 +80,16 @@ def get_model(
     while True:
         try:
             model_repo_and_name = model_info.get(name.lower(), None)
-            if model_repo_and_name is not None:
-                repo, model_name, source = model_repo_and_name
-                model = torch.hub.load(
-                    repo, model_name, source=source, **(added_kwargs | model_kwargs)
+            if model_repo_and_name is None:
+                raise NotImplementedError(
+                    f"unsupported model {name}, supported models are "
+                    + str(model_info.keys())
                 )
+                return None
+            repo, model_name, source = model_repo_and_name
+            model = torch.hub.load(
+                repo, model_name, source=source, **(added_kwargs | model_kwargs)
+            )
             model_with_loss = ModelWithLoss(
                 model=model,
                 loss_fun=loss_fun_name,
