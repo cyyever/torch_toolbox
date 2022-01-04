@@ -155,7 +155,7 @@ class DatasetCollection:
 
         def collate_batch(batch):
             text_list, label_list = [], []
-            for (_label, _text) in batch:
+            for (_text, _label) in batch:
                 if _label == "neg":
                     _label = 0
                 if _label == "pos":
