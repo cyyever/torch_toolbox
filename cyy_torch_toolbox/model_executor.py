@@ -1,6 +1,5 @@
 import copy
 import os
-# import traceback
 from typing import Callable, Dict, List, Optional
 
 import torch
@@ -283,7 +282,6 @@ class ModelExecutor(_ModelExecutorBase):
 
     def _wait_stream(self):
         if self.__cuda_stream is not None:
-            # get_logger().debug("sync stream, %s", traceback.format_stack())
             self.__cuda_stream.synchronize()
             if self.debugging_mode:
                 assert self.__cuda_stream.query()
