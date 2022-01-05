@@ -165,7 +165,7 @@ class ModelWithLoss:
         ]
         last_layer = layers[-1]
 
-        get_logger().info("last module is %s", last_layer.__class__)
+        get_logger().debug("last module is %s", last_layer.__class__)
         if isinstance(last_layer, nn.LogSoftmax):
             return nn.NLLLoss()
         if isinstance(last_layer, nn.Linear):
