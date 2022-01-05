@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.utils.prune as prune
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
+from cyy_naive_lib.log import get_logger
 
 from tensor import cat_tensors_to_vector, load_tensor_dict
 
@@ -43,6 +44,14 @@ class ModelUtil:
         return cat_tensors_to_vector(
             (parameter.grad for parameter in self.__get_parameter_seq(detach=False))
         )
+
+    def remove_statistical_variables(self):
+        for k in list(self.model.state_dict().keys()):
+            if ".running_var" in k or ".running_mean" in k:
+                get_logger().debug("remove %s from model", k)
+                self.set_attr(k, None, as_parameter=False)
+            elif k.startswith(".running_"):
+                raise RuntimeError(f"unchecked key {k}")
 
     # def deepcopy(self, keep_pruning_mask: bool = True):
     #     if self.is_pruned and not keep_pruning_mask:
