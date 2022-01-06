@@ -48,7 +48,7 @@ class _ModelExecutorBase:
         for hook in self.__hooks.get(hook_point, []):
             for name, fun in hook.items():
                 if name not in self.__disabled_hooks:
-                    fun(**kwargs)
+                    fun(model_executor=self, **kwargs)
 
     def has_hook(
         self,
