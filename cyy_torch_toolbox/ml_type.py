@@ -29,6 +29,7 @@ class ModelExecutorHookPoint(IntEnum):
     AFTER_FETCH_BATCH = auto()
     BEFORE_BATCH = auto()
     AFTER_BATCH = auto()
+    AFTER_LOAD_MODEL = auto()
 
 
 try:
