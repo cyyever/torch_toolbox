@@ -123,7 +123,7 @@ class Trainer(ModelExecutor):
         if kwargs.get("save_model", True) and self.save_dir is not None:
             self.enable_hook(self.__save_model_hook)
         self.__inferencers.clear()
-        self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE, model_executor=self)
+        self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
         if self.debugging_mode:
             get_logger().warning("train in debugging mode")
             if self.__debugger is None:
@@ -146,17 +146,11 @@ class Trainer(ModelExecutor):
                         continue
                     self.exec_hooks(
                         ModelExecutorHookPoint.BEFORE_EPOCH,
-                        model_executor=self,
                         epoch=epoch,
                     )
-                    self.exec_hooks(
-                        ModelExecutorHookPoint.BEFORE_FETCH_BATCH, model_executor=self
-                    )
+                    self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH)
                     for batch_index, batch in enumerate(self.dataloader):
-                        self.exec_hooks(
-                            ModelExecutorHookPoint.AFTER_FETCH_BATCH,
-                            model_executor=self,
-                        )
+                        self.exec_hooks(ModelExecutorHookPoint.AFTER_FETCH_BATCH)
 
                         optimizer = self.get_optimizer()
                         lr_scheduler = self.get_lr_scheduler()
@@ -178,7 +172,6 @@ class Trainer(ModelExecutor):
 
                         self.exec_hooks(
                             ModelExecutorHookPoint.BEFORE_BATCH,
-                            model_executor=self,
                             batch_index=batch_index,
                             batch=batch,
                             batch_size=batch_size,
@@ -196,7 +189,6 @@ class Trainer(ModelExecutor):
 
                         self.exec_hooks(
                             ModelExecutorHookPoint.AFTER_BATCH,
-                            model_executor=self,
                             batch_index=batch_index,
                             batch=batch,
                             epoch=epoch,
@@ -209,26 +201,19 @@ class Trainer(ModelExecutor):
                             get_logger().debug("adjust lr after batch")
                             lr_scheduler.step()
                         if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
-                            self.exec_hooks(
-                                ModelExecutorHookPoint.OPTIMIZER_STEP,
-                                model_executor=self,
-                            )
+                            self.exec_hooks(ModelExecutorHookPoint.OPTIMIZER_STEP)
                         else:
                             optimizer.step()
 
                         self.exec_hooks(
                             ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
-                            model_executor=self,
                             epoch=epoch,
                             batch_index=batch_index,
                             batch=batch,
                             batch_size=batch_size,
                         )
 
-                        self.exec_hooks(
-                            ModelExecutorHookPoint.BEFORE_FETCH_BATCH,
-                            model_executor=self,
-                        )
+                        self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH)
 
                     if not self.__inferencers:
                         for phase in (
@@ -246,7 +231,6 @@ class Trainer(ModelExecutor):
 
                     self.exec_hooks(
                         ModelExecutorHookPoint.AFTER_EPOCH,
-                        model_executor=self,
                         epoch=epoch,
                     )
 
@@ -269,6 +253,5 @@ class Trainer(ModelExecutor):
                 self._wait_stream()
         self.exec_hooks(
             ModelExecutorHookPoint.AFTER_EXECUTE,
-            model_executor=self,
             epoch=self.hyper_parameter.epoch,
         )

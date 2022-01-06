@@ -25,27 +25,18 @@ class Inferencer(ModelExecutor):
         self._prepare_execution()
         use_grad = kwargs.get("use_grad", False)
         epoch = kwargs.get("epoch", 1)
-        self.exec_hooks(
-            ModelExecutorHookPoint.BEFORE_EXECUTE,
-            model_executor=self,
-        )
+        self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
         with torch.set_grad_enabled(use_grad):
             get_logger().debug("use device %s", self.device)
             if use_grad:
                 self.model.zero_grad(set_to_none=True)
             self.exec_hooks(
                 ModelExecutorHookPoint.BEFORE_EPOCH,
-                model_executor=self,
                 epoch=epoch,
             )
-            self.exec_hooks(
-                ModelExecutorHookPoint.BEFORE_FETCH_BATCH, model_executor=self
-            )
+            self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH)
             for batch_index, batch in enumerate(self.dataloader):
-                self.exec_hooks(
-                    ModelExecutorHookPoint.AFTER_FETCH_BATCH,
-                    model_executor=self,
-                )
+                self.exec_hooks(ModelExecutorHookPoint.AFTER_FETCH_BATCH)
                 inputs, targets, other_info = decode_batch(batch)
                 inputs = inputs.to(self.device, non_blocking=True)
                 targets = targets.to(self.device, non_blocking=True)
@@ -60,7 +51,6 @@ class Inferencer(ModelExecutor):
 
                 self.exec_hooks(
                     ModelExecutorHookPoint.AFTER_BATCH,
-                    model_executor=self,
                     batch=batch,
                     batch_loss=batch_loss,
                     normalized_batch_loss=result["normalized_loss"],
@@ -69,12 +59,9 @@ class Inferencer(ModelExecutor):
                     result=result,
                     epoch=epoch,
                 )
-                self.exec_hooks(
-                    ModelExecutorHookPoint.BEFORE_FETCH_BATCH, model_executor=self
-                )
+                self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH)
             self.exec_hooks(
                 ModelExecutorHookPoint.AFTER_EPOCH,
-                model_executor=self,
                 epoch=epoch,
             )
             return
