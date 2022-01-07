@@ -4,6 +4,7 @@ from cyy_naive_lib.log import get_logger
 from classification_inferencer import ClassificationInferencer
 from dataset import decode_batch
 from dataset_collection import DatasetCollection
+from hooks.keep_best_model import KeepBestModelHook
 from hooks.learning_rate_hook import LearningRateHook
 from hooks.save_model import SaveModelHook
 from hooks.trainer_debugger import TrainerDebugger
@@ -37,6 +38,8 @@ class Trainer(ModelExecutor):
         self.append_hook(self.__batch_loss_logger)
         self.__save_model_hook = SaveModelHook()
         self.append_hook(self.__save_model_hook)
+        self.__keep_best_model_hook = KeepBestModelHook()
+        self.append_hook(self.__keep_best_model_hook)
         self.append_hook(self.visualizer)
         self.__debugger = None
 
@@ -120,8 +123,11 @@ class Trainer(ModelExecutor):
         super()._prepare_execution(**kwargs)
 
         self.disable_hook(self.__save_model_hook)
-        if kwargs.get("save_model", True) and self.save_dir is not None:
+        if kwargs.get("save_model", False) and self.save_dir is not None:
             self.enable_hook(self.__save_model_hook)
+        self.disable_hook(self.__keep_best_model_hook)
+        if kwargs.get("keep_best_model", False):
+            self.enable_hook(self.__keep_best_model_hook)
         self.__inferencers.clear()
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
         if self.debugging_mode:
