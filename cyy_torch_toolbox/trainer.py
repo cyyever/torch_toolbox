@@ -52,6 +52,10 @@ class Trainer(ModelExecutor):
     def batch_loss_logger(self):
         return self.__batch_loss_logger
 
+    @property
+    def best_model(self):
+        return self.__keep_best_model_hook.best_model
+
     def get_inferencer_performance_metric(self, phase):
         return self.__inferencers[phase].performance_metric
 
