@@ -145,7 +145,7 @@ class ModelUtil:
                 return True
         return False
 
-    def remove_sub_modules(self, module_names=set(), module_classes=set()):
+    def remove_sub_modules(self, module_names=None, module_classes=None):
         if module_names is None:
             module_names = set()
         else:
