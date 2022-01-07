@@ -173,7 +173,8 @@ class ModelUtil:
                         removed_name = name
                         break
                     remove_sub_module_impl(module, submodule_prefix)
-                del model._modules[removed_name]
+                if removed_name is not None:
+                    del model._modules[removed_name]
                 flag = True
                 result = True
 
