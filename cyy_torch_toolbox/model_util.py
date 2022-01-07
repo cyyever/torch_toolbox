@@ -145,41 +145,41 @@ class ModelUtil:
                 return True
         return False
 
-    def remove_sub_modules(self, module_names=None, module_classes=None):
-        if module_names is None:
-            module_names = set()
-        else:
-            module_names = set(module_names)
-        if module_classes is None:
-            module_classes = tuple()
-        else:
-            module_classes = tuple(set(module_classes))
+    # def remove_sub_modules(self, module_names=None, module_classes=None):
+    #     if module_names is None:
+    #         module_names = set()
+    #     else:
+    #         module_names = set(module_names)
+    #     if module_classes is None:
+    #         module_classes = tuple()
+    #     else:
+    #         module_classes = tuple(set(module_classes))
 
-        result = False
+    #     result = False
 
-        def remove_sub_module_impl(model, prefix):
-            nonlocal result
-            flag = True
-            while flag:
-                flag = False
-                removed_name = None
-                for name, module in model._modules.items():
-                    if module is None:
-                        continue
-                    submodule_prefix = prefix + ("." if prefix else "") + name
-                    if name in module_names or (
-                        module_classes and isinstance(module, module_classes)
-                    ):
-                        removed_name = name
-                        break
-                    remove_sub_module_impl(module, submodule_prefix)
-                if removed_name is not None:
-                    del model._modules[removed_name]
-                flag = True
-                result = True
+    #     def remove_sub_module_impl(model, prefix):
+    #         nonlocal result
+    #         flag = True
+    #         while flag:
+    #             flag = False
+    #             removed_name = None
+    #             for name, module in model._modules.items():
+    #                 if module is None:
+    #                     continue
+    #                 submodule_prefix = prefix + ("." if prefix else "") + name
+    #                 if name in module_names or (
+    #                     module_classes and isinstance(module, module_classes)
+    #                 ):
+    #                     removed_name = name
+    #                     break
+    #                 remove_sub_module_impl(module, submodule_prefix)
+    #             if removed_name is not None:
+    #                 del model._modules[removed_name]
+    #             flag = True
+    #             result = True
 
-        remove_sub_module_impl(self.model, "")
-        return result
+    #     remove_sub_module_impl(self.model, "")
+    #     return result
 
     def get_sub_modules(self) -> list:
         def get_sub_module_impl(model, prefix):
