@@ -162,6 +162,7 @@ class ModelUtil:
             flag = True
             while flag:
                 flag = False
+                name = None
                 for name, module in model._modules.items():
                     if module is None:
                         continue
@@ -169,11 +170,11 @@ class ModelUtil:
                     if name in module_names or (
                         module_classes and isinstance(module, module_classes)
                     ):
-                        del model._modules[name]
-                        flag = True
-                        result = True
                         break
                     remove_sub_module_impl(module, submodule_prefix)
+                del model._modules[name]
+                flag = True
+                result = True
 
         remove_sub_module_impl(self.model, "")
         return result
