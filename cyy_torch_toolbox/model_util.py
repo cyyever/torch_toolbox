@@ -106,7 +106,7 @@ class ModelUtil:
         return True
 
     def get_original_parameters_for_pruning(self):
-        res = dict()
+        res = {}
         for layer in self.model.modules():
             for name, parameter in layer.named_parameters(recurse=False):
                 real_name = name
@@ -132,7 +132,7 @@ class ModelUtil:
             prune.remove(layer, name)
 
     def change_sub_modules(self, sub_module_type: Type, f: Callable):
-        changed_modules: dict = dict()
+        changed_modules: dict = {}
         for k, v in self.model.named_modules():
             if isinstance(v, sub_module_type):
                 changed_modules[k] = f(k, v)
@@ -145,23 +145,57 @@ class ModelUtil:
                 return True
         return False
 
-    def get_sub_modules(self, model=None, prefix="") -> list:
-        if model is None:
-            model = self.model
-        result = []
-        for name, module in model._modules.items():
-            if module is None:
-                continue
-            submodule_prefix = prefix + ("." if prefix else "") + name
-            if isinstance(module, nn.Conv2d):
-                result.append((submodule_prefix, module))
-                continue
-            sub_result = self.get_sub_modules(module, submodule_prefix)
-            if sub_result:
-                result += sub_result
-            else:
-                result.append((submodule_prefix, module))
+    def remove_sub_modules(self, module_names=set(), module_classes=set()):
+        if module_names is None:
+            module_names = set()
+        else:
+            module_names = set(module_names)
+        if module_classes is None:
+            module_classes = tuple()
+        else:
+            module_classes = tuple(set(module_classes))
+
+        result = False
+
+        def remove_sub_module_impl(model, prefix):
+            nonlocal result
+            flag = True
+            while flag:
+                flag = False
+                for name, module in model._modules.items():
+                    if module is None:
+                        continue
+                    submodule_prefix = prefix + ("." if prefix else "") + name
+                    if name in module_names or (
+                        module_classes and isinstance(module, module_classes)
+                    ):
+                        del model._modules[name]
+                        flag = True
+                        result = True
+                        break
+                    remove_sub_module_impl(module, submodule_prefix)
+
+        remove_sub_module_impl(self.model, "")
         return result
+
+    def get_sub_modules(self) -> list:
+        def get_sub_module_impl(model, prefix):
+            result = []
+            for name, module in model._modules.items():
+                if module is None:
+                    continue
+                submodule_prefix = prefix + ("." if prefix else "") + name
+                if isinstance(module, nn.Conv2d):
+                    result.append((submodule_prefix, module))
+                    continue
+                sub_result = get_sub_module_impl(module, submodule_prefix)
+                if sub_result:
+                    result += sub_result
+                else:
+                    result.append((submodule_prefix, module))
+            return result
+
+        return get_sub_module_impl(self.model, "")
 
     def get_sub_module_blocks(
         self,
@@ -236,7 +270,7 @@ class ModelUtil:
 
     def get_pruning_mask_list(self):
         assert self.is_pruned
-        res = dict()
+        res = {}
         for name, parameter in self.model.named_parameters():
             if name.endswith("_orig"):
                 real_name = name[:-5]
@@ -279,7 +313,7 @@ class ModelUtil:
         assert not self.is_pruned
         if self.__parameter_dict is not None:
             return self.__parameter_dict
-        res: dict = dict()
+        res: dict = {}
         for name, parameter in self.model.named_parameters():
             if detach:
                 parameter = parameter.detach()
