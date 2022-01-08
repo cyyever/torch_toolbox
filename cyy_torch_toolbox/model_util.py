@@ -298,7 +298,7 @@ class ModelUtil:
     def load_parameter_dict(
         self,
         parameter_dict: dict,
-        check_parameter: bool = False,
+        check_parameter: bool = True,
         as_parameter: bool = True,
     ):
         assert not self.is_pruned
