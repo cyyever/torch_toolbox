@@ -80,6 +80,7 @@ if has_dali:
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
         device,
+        stream,
     ):
         dataset = dc.get_dataset(phase)
         original_dataset = dc.get_original_dataset(phase)
@@ -102,7 +103,11 @@ if has_dali:
             )
             is_external_source = True
             images, labels = nvidia.dali.fn.external_source(
-                source=external_source, layout=("CHW", ""), num_outputs=2
+                source=external_source,
+                num_outputs=2,
+                batch=False,
+                parallel=True,
+                cuda_stream=stream,
             )
             # images = nvidia.dali.fn.decoders.image(images, device="cpu" if device is None else "mixed")
 
@@ -191,6 +196,7 @@ def get_dataloader(
     phase: MachineLearningPhase,
     hyper_parameter: HyperParameter,
     device=None,
+    stream=None,
 ):
     dataset = dc.get_dataset(phase)
     original_dataset = dc.get_original_dataset(phase)
@@ -214,6 +220,7 @@ def get_dataloader(
             phase=phase,
             hyper_parameter=hyper_parameter,
             device=device,
+            stream=stream,
         )
         pipeline.build()
         return DALIClassificationIterator(

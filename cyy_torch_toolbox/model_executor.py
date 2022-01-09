@@ -206,6 +206,7 @@ class ModelExecutor(_ModelExecutorBase):
                 self.__phase,
                 self.__hyper_parameter,
                 device=self.device,
+                stream=self.cuda_stream,
             )
         return self.__dataloader
 
