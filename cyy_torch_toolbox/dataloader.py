@@ -24,7 +24,7 @@ from ml_type import DatasetType, MachineLearningPhase, ModelType
 
 class ExternalInputIterator:
     def __init__(self, dataset, original_dataset, batch_size: int, shuffle: bool):
-        self.__original_dataset = copy.copy(original_dataset)
+        self.__original_dataset = copy.deepcopy(original_dataset)
         setattr(self.__original_dataset, "transform", None)
         setattr(self.__original_dataset, "transforms", None)
 
@@ -35,28 +35,38 @@ class ExternalInputIterator:
             self.__indices = list(range(len(dataset)))
             assert dataset is original_dataset
         assert len(self.__indices) == len(dataset)
+        self.full_iterations = len(self.__indices) // batch_size
+        self.__transform = torchvision.transforms.ToTensor()
         self.__shuffle = shuffle
         if self.__shuffle:
             self.__manager = Manager()
-            self.__indices = self.__manager.list(self.__indices)
-        self.__transform = torchvision.transforms.ToTensor()
-        self.full_iterations = len(self.__indices) // batch_size
-        self.__get_indices()
+            self.__global_indices = self.__manager.list(self.__indices)
+            self.shuffle_indices()
 
-    def __get_indices(self):
-        if not self.__shuffle:
-            return
-        random.shuffle(self.__indices)
+    def shuffle_indices(self):
+        if self.__shuffle:
+            random.shuffle(self.__global_indices)
+            self.__indices = None
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state["_ExternalInputIterator__manager"] = None
+        return state
 
     def __call__(self, sample_info):
         sample_idx = sample_info.idx_in_epoch
         if sample_info.iteration >= self.full_iterations:
             # Indicate end of the epoch
-            self.__get_indices()
+            if self.__shuffle:
+                self.shuffle_indices()
             raise StopIteration()
+
+        if self.__indices is None:
+            self.__indices = list(self.__global_indices)
+
         sample, label = self.__original_dataset[self.__indices[sample_idx]]
         sample = self.__transform(sample)
-        return sample, label
+        return sample, torch.as_tensor(label)
 
 
 def get_raw_transformers(obj) -> list:
@@ -105,6 +115,7 @@ if has_dali:
             images, labels = nvidia.dali.fn.external_source(
                 source=external_source,
                 num_outputs=2,
+                layout=("CHW", ""),
                 batch=False,
                 parallel=True,
                 cuda_stream=stream,
@@ -214,7 +225,7 @@ def get_dataloader(
         pipeline = create_dali_pipeline(
             batch_size=hyper_parameter.batch_size,
             num_threads=2,
-            py_start_method="spwan",
+            py_start_method="spawn",
             device_id=device_id,
             dc=dc,
             phase=phase,
