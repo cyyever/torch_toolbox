@@ -207,13 +207,13 @@ class Trainer(ModelExecutor):
                             normalized_batch_loss=result["normalized_loss"],
                             batch_size=batch_size,
                         )
-                        if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                            get_logger().debug("adjust lr after batch")
-                            lr_scheduler.step()
                         if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
                             self.exec_hooks(ModelExecutorHookPoint.OPTIMIZER_STEP)
                         else:
                             optimizer.step()
+                        if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+                            get_logger().debug("adjust lr after batch")
+                            lr_scheduler.step()
 
                         self.exec_hooks(
                             ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
