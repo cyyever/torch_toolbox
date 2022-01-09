@@ -1,5 +1,6 @@
 import copy
 import random
+from multiprocessing import Manager
 
 import torch
 # import torchtext
@@ -23,7 +24,6 @@ from ml_type import DatasetType, MachineLearningPhase, ModelType
 
 class ExternalInputIterator:
     def __init__(self, dataset, original_dataset, batch_size: int, shuffle: bool):
-        self.__dataset = dataset
         self.__original_dataset = copy.copy(original_dataset)
         setattr(self.__original_dataset, "transform", None)
         setattr(self.__original_dataset, "transforms", None)
@@ -33,48 +33,30 @@ class ExternalInputIterator:
             self.__indices = dataset.indices
         else:
             self.__indices = list(range(len(dataset)))
-            assert dataset == original_dataset
-        self.__data = original_dataset.data
-        # self.__targets = original_dataset.targets
-        assert len(self.__indices) == len(self.__dataset)
-        assert len(self.__dataset) <= len(self.__data)
-
-        self.__tmp_indices = None
-        self.__batch_size = batch_size
+            assert dataset is original_dataset
+        assert len(self.__indices) == len(dataset)
         self.__shuffle = shuffle
-        self.__transform = torchvision.transforms.ToTensor()
-        self.__use_iter = False
-
-    def __iter__(self):
-        assert not self.__use_iter
-        self.__use_iter = True
-        self.__reset()
-        return self
-
-    def __reset(self):
-        self.__tmp_indices = copy.deepcopy(self.__indices)
-        self.__tmp_indices.reverse()
         if self.__shuffle:
-            random.shuffle(self.__tmp_indices)
+            self.__manager = Manager()
+            self.__indices = self.__manager.list(self.__indices)
+        self.__transform = torchvision.transforms.ToTensor()
+        self.full_iterations = len(self.__indices) // batch_size
+        self.__get_indices()
 
-    def __next__(self):
-        batch = []
-        labels = []
-        if not self.__tmp_indices:
-            self.__reset()
+    def __get_indices(self):
+        if not self.__shuffle:
+            return
+        random.shuffle(self.__indices)
+
+    def __call__(self, sample_info):
+        sample_idx = sample_info.idx_in_epoch
+        if sample_info.iteration >= self.full_iterations:
+            # Indicate end of the epoch
+            self.__get_indices()
             raise StopIteration()
-        for _ in range(self.__batch_size):
-            if not self.__tmp_indices:
-                break
-            idx = self.__tmp_indices.pop()
-            sample, label = self.__original_dataset[idx]
-            sample = self.__transform(sample)
-            batch.append(sample)
-            labels.append(label)
-        return (batch, torch.LongTensor(labels))
-
-    def __len__(self):
-        return len(self.__dataset)
+        sample, label = self.__original_dataset[self.__indices[sample_idx]]
+        sample = self.__transform(sample)
+        return sample, label
 
 
 def get_raw_transformers(obj) -> list:
