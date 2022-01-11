@@ -6,6 +6,7 @@ import threading
 from typing import Callable, Dict, List
 
 import torch
+from ssd_checker import is_ssd
 from torch.nn.utils.rnn import pad_sequence
 
 try:
@@ -234,6 +235,9 @@ class DatasetCollection:
         dataset_dir = os.path.join(cls.get_dataset_root_dir(), name)
         if not os.path.isdir(dataset_dir):
             os.makedirs(dataset_dir, exist_ok=True)
+        if name.lower() == "imagenet":
+            if not is_ssd(dataset_dir):
+                get_logger().warning("dataset %s is not on a SSD disk", name)
         return dataset_dir
 
     @staticmethod
