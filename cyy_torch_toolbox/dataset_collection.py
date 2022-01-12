@@ -150,26 +150,25 @@ class DatasetCollection:
 
         return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
+    def text_task_collate(self, batch):
+        text_list, label_list = [], []
+        for (_text, _label) in batch:
+            if _label == "neg":
+                _label = 0
+            if _label == "pos":
+                _label = 1
+            label_list.append(_label)
+            processed_text = torch.tensor(self.tokenizer_and_vocab(_text))
+            text_list.append(processed_text)
+        text_list = pad_sequence(
+            text_list, padding_value=self.tokenizer_and_vocab.vocab["<pad>"]
+        )
+        return text_list, torch.as_tensor(label_list)
+
     def get_collate_fn(self) -> Callable | None:
         if self.dataset_type != DatasetType.Text:
             return None
-
-        def collate_batch(batch):
-            text_list, label_list = [], []
-            for (_text, _label) in batch:
-                if _label == "neg":
-                    _label = 0
-                if _label == "pos":
-                    _label = 1
-                label_list.append(_label)
-                processed_text = torch.tensor(self.tokenizer_and_vocab(_text))
-                text_list.append(processed_text)
-            text_list = pad_sequence(
-                text_list, padding_value=self.tokenizer_and_vocab.vocab["<pad>"]
-            )
-            return text_list, torch.as_tensor(label_list)
-
-        return collate_batch
+        return self.text_task_collate
 
     def get_raw_data(self, phase: MachineLearningPhase, index: int):
         if self.dataset_type == DatasetType.Vision:
