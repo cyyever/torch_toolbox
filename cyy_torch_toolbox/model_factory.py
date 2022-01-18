@@ -31,7 +31,7 @@ def list_local_models(local_dir):
 __model_info: dict = {}
 
 
-def get_model_info():
+def get_model_info() -> dict:
     global __model_info
     github_repos = [
         "pytorch/vision:main",
@@ -66,9 +66,6 @@ def get_model(
         added_kwargs["num_embeddings"] = len(
             dataset_collection.tokenizer_and_vocab.vocab
         )
-        # added_kwargs["pad_idx"] = dataset_collection.text_field.vocab.stoi[
-        #     dataset_collection.text_field.pad_token
-        # ]
 
     model_type = ModelType.Classification
     if "rcnn" in name.lower():
