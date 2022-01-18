@@ -1,5 +1,4 @@
 import copy
-import sys
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -7,26 +6,6 @@ from cyy_naive_lib.log import get_logger
 from dataset_collection import DatasetCollection
 from ml_type import DatasetType, ModelType
 from model_with_loss import ModelWithLoss
-
-
-def list_local_models(local_dir):
-    sys.path.insert(0, local_dir)
-
-    hub_module = torch.hub.import_module(
-        torch.hub.MODULE_HUBCONF, local_dir + "/" + torch.hub.MODULE_HUBCONF
-    )
-
-    sys.path.remove(local_dir)
-
-    # We take functions starts with '_' as internal helper functions
-    entrypoints = [
-        f
-        for f in dir(hub_module)
-        if callable(getattr(hub_module, f)) and not f.startswith("_")
-    ]
-
-    return entrypoints
-
 
 __model_info: dict = {}
 
@@ -82,7 +61,6 @@ def get_model(
                     f"unsupported model {name}, supported models are "
                     + str(model_info.keys())
                 )
-                return None
             repo, model_name, source = model_repo_and_name
             model = torch.hub.load(
                 repo, model_name, source=source, **(added_kwargs | model_kwargs)
