@@ -165,7 +165,8 @@ class DatasetCollection:
         )
         return text_list, torch.as_tensor(label_list)
 
-    def get_collate_fn(self) -> Callable | None:
+    # def get_collate_fn(self) -> Callable | None:
+    def get_collate_fn(self):
         if self.dataset_type != DatasetType.Text:
             return None
         return self.text_task_collate
