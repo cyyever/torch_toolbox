@@ -23,7 +23,8 @@ class Trainer(ModelExecutor):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         hyper_parameter: HyperParameter,
-        save_dir: str | None = None,
+        save_dir = None,
+        # save_dir: str | None = None,
     ):
         super().__init__(
             model_with_loss,
