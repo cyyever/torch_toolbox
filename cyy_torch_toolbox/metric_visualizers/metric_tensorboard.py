@@ -38,7 +38,7 @@ class MetricTensorBoard(MetricVisualizer):
             + str(model_executor.model.__class__.__name__)
             + "_"
             + str(threading.get_native_id())
-            + "_{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now())
+            + "_{date:%Y-%m-%d_%H_%M_%S}".format(date=datetime.datetime.now())
         )
 
     def set_session_name(self, name: str):
