@@ -72,7 +72,7 @@ class DefaultConfig:
                 "session",
                 self.dc_config.dataset_name,
                 self.model_name,
-                "{date:%Y-%m-%d_%H:%M:%S}".format(date=datetime.datetime.now()),
+                "{date:%Y-%m-%d_%H_%M_%S}".format(date=datetime.datetime.now()),
                 str(uuid.uuid4()),
             )
         os.makedirs(self.save_dir, exist_ok=True)
