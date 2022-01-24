@@ -40,10 +40,15 @@ class TorchProcessTaskQueue(TaskQueue):
         state["_TorchProcessTaskQueue__manager"] = None
         return state
 
-    def add_task(self, task):
+    def add_task(self, task, **kwargs):
         if self.__move_data_in_cpu:
             task = put_data_to_device(task, get_cpu_device())
-        super().add_task(task)
+        super().add_task(task, **kwargs)
+
+    def put_result(self, result, **kwargs):
+        if self.__move_data_in_cpu:
+            result = put_data_to_device(result, get_cpu_device())
+        super().put_result(result, **kwargs)
 
     def _get_extra_task_arguments(self, worker_id):
         return super()._get_extra_task_arguments(worker_id) | {
