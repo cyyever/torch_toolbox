@@ -46,4 +46,6 @@ class TorchProcessTaskQueue(TaskQueue):
         super().add_task(task)
 
     def _get_extra_task_arguments(self, worker_id):
-        return [self.__devices[worker_id % len(self.__devices)]]
+        return super()._get_extra_task_arguments() | {
+            "device": self.__devices[worker_id % len(self.__devices)]
+        }
