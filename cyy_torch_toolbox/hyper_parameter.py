@@ -23,13 +23,12 @@ class HyperParameter:
         batch_size: int,
         learning_rate: Union[float, HyperParameterAction],
         weight_decay: float,
-        momentum: float = 0.9,
     ):
         self.__epoch = epoch
         self.__batch_size = batch_size
         self.__learning_rate = learning_rate
         self.__weight_decay = weight_decay
-        self.__momentum = momentum
+        self.__momentum = 0.9
         self.__lr_scheduler_factory: Optional[Callable] = None
         self.__optimizer_factory: Optional[Callable] = None
 
@@ -163,11 +162,15 @@ class HyperParameter:
 
     @staticmethod
     def get_optimizer_factory(name: str):
-        if name == "SGD":
-            return optim.SGD
-        if name == "Adam":
-            return optim.Adam
-        raise RuntimeError("unknown optimizer:" + name)
+        optimizer_classes = {
+            name: getattr(optim, name)
+            for name in dir(optim)
+            if issubclass(getattr(optim, name), optim.Optimizer)
+        }
+        optimizer_class = optimizer_classes.get(name, None)
+        if optimizer_class is None:
+            raise RuntimeError("unknown optimizer:" + name)
+        return optimizer_class
 
     def get_optimizer(self, trainer):
         assert self.__optimizer_factory is not None
