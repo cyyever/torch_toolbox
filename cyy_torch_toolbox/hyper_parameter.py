@@ -93,7 +93,7 @@ class HyperParameter:
     def set_lr_scheduler_factory(self, lr_scheduler_factory: Callable):
         self.__lr_scheduler_factory = lr_scheduler_factory
 
-    def get_iterations_per_epoch(self, training_dataset_size):
+    def __get_iterations_per_epoch(self, training_dataset_size):
         if self.batch_size == 1:
             return training_dataset_size
         return (training_dataset_size + self.batch_size - 1) // self.batch_size
@@ -108,7 +108,7 @@ class HyperParameter:
 
     @staticmethod
     def get_lr_scheduler_factory(name, dataset_name=None, **kwargs):
-        def hook(hyper_parameter, trainer):
+        def hook(hyper_parameter: HyperParameter, trainer):
             nonlocal dataset_name
             nonlocal name
             optimizer = trainer.get_optimizer()
@@ -132,7 +132,7 @@ class HyperParameter:
                 full_kwargs["max_lr"] = 10 * hyper_parameter.get_learning_rate(trainer)
                 full_kwargs[
                     "total_steps"
-                ] = hyper_parameter.epoch * hyper_parameter.get_iterations_per_epoch(
+                ] = hyper_parameter.epoch * hyper_parameter.__get_iterations_per_epoch(
                     training_dataset_size
                 )
                 full_kwargs["anneal_strategy"] = "linear"
@@ -163,6 +163,9 @@ class HyperParameter:
     @staticmethod
     def get_optimizer_names():
         return sorted(HyperParameter.__get_optimizer_classes.keys())
+
+    def get_lr_scheduler_names():
+        return ["ReduceLROnPlateau", "OneCycleLR", "CosineAnnealingLR", "MultiStepLR"]
 
     @staticmethod
     def get_optimizer_factory(name: str):
