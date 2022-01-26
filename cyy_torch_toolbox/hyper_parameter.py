@@ -199,7 +199,8 @@ class HyperParameter:
         optimizer_classes = {
             name: getattr(optim, name)
             for name in dir(optim)
-            if issubclass(getattr(optim, name), optim.Optimizer)
+            if inspect.isclass(getattr(optim, name))
+            and issubclass(getattr(optim, name), optim.Optimizer)
         }
         return optimizer_classes
 
