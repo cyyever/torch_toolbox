@@ -161,16 +161,16 @@ class HyperParameter:
         self.__optimizer_factory = optimizer_factory
 
     @staticmethod
+    def get_optimizer_names():
+        return sorted(HyperParameter.__get_optimizer_classes.keys())
+
+    @staticmethod
     def get_optimizer_factory(name: str):
-        optimizer_classes = {
-            name: getattr(optim, name)
-            for name in dir(optim)
-            if issubclass(getattr(optim, name), optim.Optimizer)
-        }
-        optimizer_class = optimizer_classes.get(name, None)
+        optimizer_class = HyperParameter.__get_optimizer_classes().get(name, None)
         if optimizer_class is None:
             raise RuntimeError(
-                f"unknown optimizer:{name}, supported names are:{optimizer_classes.keys()}"
+                f"unknown optimizer:{name}, supported names are:"
+                + str(HyperParameter.get_optimizer_names())
             )
         return optimizer_class
 
@@ -190,6 +190,15 @@ class HyperParameter:
         return self.__optimizer_factory(
             **{k: v for k, v in kwargs.items() if k in parameter_names}
         )
+
+    @staticmethod
+    def __get_optimizer_classes():
+        optimizer_classes = {
+            name: getattr(optim, name)
+            for name in dir(optim)
+            if issubclass(getattr(optim, name), optim.Optimizer)
+        }
+        return optimizer_classes
 
     def __str__(self):
         s = (
