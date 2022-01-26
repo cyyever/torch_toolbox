@@ -169,7 +169,9 @@ class HyperParameter:
         }
         optimizer_class = optimizer_classes.get(name, None)
         if optimizer_class is None:
-            raise RuntimeError("unknown optimizer:" + name)
+            raise RuntimeError(
+                f"unknown optimizer:{name}, supported names are:{optimizer_classes.keys()}"
+            )
         return optimizer_class
 
     def get_optimizer(self, trainer):
