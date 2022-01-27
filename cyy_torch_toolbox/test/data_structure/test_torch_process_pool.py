@@ -21,7 +21,7 @@ def train(worker_id):
     trainer.train()
 
 
-def test_process_task_queue():
+def test_process_pool():
     pool = TorchProcessPool()
     for worker_id in range(2):
         pool.exec(train, worker_id)
