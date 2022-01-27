@@ -26,8 +26,13 @@ def get_devices():
     return [torch.device("cpu")]
 
 
-def put_data_to_device(data, device):
+def put_data_to_device(data, device, stream=None):
     if isinstance(data, torch.Tensor):
+        if data.is_cuda:
+            if stream is not None:
+                stream.synchronize()
+            else:
+                torch.cuda.synchronize(device=data.device)
         return data.to(device)
     if isinstance(data, list):
         for idx, element in enumerate(data):
