@@ -74,6 +74,15 @@ class _ModelExecutorBase:
     ):
         self.insert_callback(-1, hook_point, name, fun, stripable)
 
+    def prepend_named_hook(
+        self,
+        hook_point: ModelExecutorHookPoint,
+        name: str,
+        fun: Callable,
+        stripable=False,
+    ):
+        self.insert_callback(0, hook_point, name, fun, stripable)
+
     def insert_callback(
         self,
         pos,
