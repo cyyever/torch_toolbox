@@ -28,6 +28,9 @@ class SyncedTensorDict:
     def release(self):
         self.__tensor_dict.release()
 
+    def get_storage_dir(self):
+        self.__tensor_dict.get_storage_dir()
+
     def keys(self) -> set:
         return {self.__key_type(k) for k in self.__tensor_dict.keys()}
 
