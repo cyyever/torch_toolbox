@@ -162,14 +162,14 @@ class HyperParameter:
 
     @staticmethod
     def get_optimizer_names():
-        return sorted(HyperParameter.__get_optimizer_classes.keys())
+        return sorted(HyperParameter.__get_optimizer_classes().keys())
 
     def get_lr_scheduler_names():
         return ["ReduceLROnPlateau", "OneCycleLR", "CosineAnnealingLR", "MultiStepLR"]
 
-    @staticmethod
-    def get_optimizer_factory(name: str):
-        optimizer_class = HyperParameter.__get_optimizer_classes().get(name, None)
+    @classmethod
+    def get_optimizer_factory(cls, name: str):
+        optimizer_class = cls.__get_optimizer_classes().get(name, None)
         if optimizer_class is None:
             raise RuntimeError(
                 f"unknown optimizer:{name}, supported names are:"
