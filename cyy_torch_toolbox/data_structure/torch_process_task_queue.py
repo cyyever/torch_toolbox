@@ -13,7 +13,7 @@ class TorchProcessTaskQueue(TaskQueue):
         worker_fun: Callable = None,
         worker_num: int | None = None,
         use_manager: bool = False,
-        move_data_in_cpu: bool = False,
+        move_data_in_cpu: bool = True,
     ):
         self.__devices = get_devices()
         self.__use_manager = use_manager
