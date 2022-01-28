@@ -80,6 +80,6 @@ class SyncedTensorDict:
         m.set_permanent_storage()
         if cache_size is not None:
             m.set_in_memory_number(cache_size)
-        get_logger().info("tensor_dict use cache size %s", cache_size)
+        get_logger().info("tensor_dict use cache size %s", m.get_in_memory_number())
         m.set_logging(False)
         return SyncedTensorDict(tensor_dict=m, key_type=key_type)
