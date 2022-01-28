@@ -30,17 +30,17 @@ class ModelUtil:
         self.load_parameter_dict(parameter_dict, as_parameter=as_parameter)
 
     def get_gradient_list(self):
-        if self.is_pruned:
-            for layer in self.model.modules():
-                for name, parameter in layer.named_parameters(recurse=False):
-                    if not name.endswith("_orig"):
-                        assert not hasattr(layer, name + "_mask")
-                        continue
-                    assert parameter.grad is not None
-                    real_name = name[:-5]
-                    mask = getattr(layer, real_name + "_mask", None)
-                    assert mask is not None
-                    parameter.grad = parameter.grad * mask
+        # if self.is_pruned:
+        #     for layer in self.model.modules():
+        #         for name, parameter in layer.named_parameters(recurse=False):
+        #             if not name.endswith("_orig"):
+        #                 assert not hasattr(layer, name + "_mask")
+        #                 continue
+        #             assert parameter.grad is not None
+        #             real_name = name[:-5]
+        #             mask = getattr(layer, real_name + "_mask", None)
+        #             assert mask is not None
+        #             parameter.grad = parameter.grad * mask
         return cat_tensors_to_vector(
             (parameter.grad for parameter in self.__get_parameter_seq(detach=False))
         )
