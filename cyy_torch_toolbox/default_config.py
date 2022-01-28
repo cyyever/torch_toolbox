@@ -91,7 +91,7 @@ class DefaultConfig:
         dc = self.dc_config.create_dataset_collection(self.get_save_dir())
         model_kwargs = {}
         if self.model_kwarg_json_path is not None:
-            with open(self.model_kwarg_json_path, "rt") as f:
+            with open(self.model_kwarg_json_path, "rt", encoding="utf8") as f:
                 model_kwargs = json.load(f)
         if self.pretrained:
             if "pretrained" in model_kwargs:
@@ -125,8 +125,8 @@ class DefaultConfig:
 
     def __set_reproducible_env(self):
         if self.reproducible_env_load_path is not None:
-            if not global_reproducible_env.enabled:
-                global_reproducible_env.load(self.reproducible_env_load_path)
+            assert not global_reproducible_env.enabled
+            global_reproducible_env.load(self.reproducible_env_load_path)
             self.make_reproducible_env = True
 
         if self.make_reproducible_env:
