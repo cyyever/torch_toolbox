@@ -8,8 +8,8 @@ import torchvision
 from cyy_naive_lib.log import get_logger
 
 from ml_type import MachineLearningPhase, ModelType
+from model_transformers.checkpointed_model import get_checkpointed_model
 from model_util import ModelUtil
-from transformers.checkpointed_model import get_checkpointed_model
 
 
 class ModelWithLoss:

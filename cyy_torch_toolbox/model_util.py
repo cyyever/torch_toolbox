@@ -53,19 +53,6 @@ class ModelUtil:
             elif k.startswith(".running_"):
                 raise RuntimeError(f"unchecked key {k}")
 
-    # def deepcopy(self, keep_pruning_mask: bool = True):
-    #     if self.is_pruned and not keep_pruning_mask:
-    #         for layer in self.model.modules():
-    #             for name, _ in layer.named_parameters(recurse=False):
-    #                 if not name.endswith("_orig"):
-    #                     assert not hasattr(layer, name + "_mask")
-    #                     continue
-    #                 real_name = name[:-5]
-    #                 assert hasattr(layer, real_name + "_mask")
-    #                 if hasattr(layer, real_name):
-    #                     delattr(layer, real_name)
-    #     return copy.deepcopy(self.model)
-
     def set_attr(self, name: str, value, as_parameter=True):
         model = self.model
         components = name.split(".")
