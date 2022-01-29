@@ -13,17 +13,26 @@ class ReproducibleEnv:
     lock = threading.RLock()
 
     def __init__(self):
-        self.torch_seed = None
-        self.randomlib_state = None
-        self.numpy_state = None
-        self.enabled = False
+        self.__torch_seed = None
+        self.__randomlib_state = None
+        self.__numpy_state = None
+        self.__enabled = False
+        self.__last_seed_path = None
+
+    @property
+    def enabled(self):
+        return self.__enabled
+
+    @property
+    def last_seed_path(self):
+        return self.__last_seed_path
 
     def enable(self):
         """
         https://pytorch.org/docs/stable/notes/randomness.html
         """
         with ReproducibleEnv.lock:
-            if self.enabled:
+            if self.__enabled:
                 get_logger().warning("use reproducible env")
             else:
                 get_logger().warning("initialize and use reproducible env")
@@ -34,31 +43,31 @@ class ReproducibleEnv:
             torch.set_deterministic(True)
             torch.use_deterministic_algorithms(True)
 
-            if self.torch_seed is not None:
+            if self.__torch_seed is not None:
                 get_logger().warning("overwrite torch seed")
-                assert isinstance(self.torch_seed, int)
-                torch.manual_seed(self.torch_seed)
+                assert isinstance(self.__torch_seed, int)
+                torch.manual_seed(self.__torch_seed)
             else:
                 get_logger().warning("collect torch seed")
-                self.torch_seed = torch.initial_seed()
-            assert self.torch_seed is not None
+                self.__torch_seed = torch.initial_seed()
+            assert self.__torch_seed is not None
 
-            if self.randomlib_state is not None:
+            if self.__randomlib_state is not None:
                 get_logger().warning("overwrite random lib state")
-                random.setstate(self.randomlib_state)
+                random.setstate(self.__randomlib_state)
             else:
                 get_logger().warning("get random lib state")
-                self.randomlib_state = random.getstate()
-            assert self.randomlib_state is not None
+                self.__randomlib_state = random.getstate()
+            assert self.__randomlib_state is not None
 
-            if self.numpy_state is not None:
+            if self.__numpy_state is not None:
                 get_logger().warning("overwrite numpy random lib state")
-                numpy.random.set_state(copy.deepcopy(self.numpy_state))
+                numpy.random.set_state(copy.deepcopy(self.__numpy_state))
             else:
                 get_logger().warning("get numpy random lib state")
-                self.numpy_state = numpy.random.get_state()
-            assert self.numpy_state is not None
-            self.enabled = True
+                self.__numpy_state = numpy.random.get_state()
+            assert self.__numpy_state is not None
+            self.__enabled = True
 
     def disable(self):
         with ReproducibleEnv.lock:
@@ -79,30 +88,31 @@ class ReproducibleEnv:
 
     def save(self, save_dir: str):
         with ReproducibleEnv.lock:
-            assert self.enabled
+            assert self.__enabled
             os.makedirs(save_dir, exist_ok=True)
-            env_path = os.path.join(save_dir, "reproducible_env")
-            get_logger().warning("save reproducible env to %s", env_path)
-            with open(env_path, "wb") as f:
+            seed_path = os.path.join(save_dir, "random_seed")
+            get_logger().warning("save reproducible env to %s", seed_path)
+            self.__last_seed_path = seed_path
+            with open(seed_path, "wb") as f:
                 return pickle.dump(
                     {
-                        "torch_seed": self.torch_seed,
-                        "randomlib_state": self.randomlib_state,
-                        "numpy_state": self.numpy_state,
+                        "torch_seed": self.__torch_seed,
+                        "randomlib_state": self.__randomlib_state,
+                        "numpy_state": self.__numpy_state,
                     },
                     f,
                 )
 
     def load(self, path: str):
         with ReproducibleEnv.lock:
-            assert not self.enabled
+            assert not self.__enabled
             with open(path, "rb") as f:
                 get_logger().warning("load reproducible env from %s", path)
                 obj: dict = pickle.load(f)
-                self.torch_seed = obj["torch_seed"]
-                self.randomlib_state = obj["randomlib_state"]
-                self.numpy_state = obj["numpy_state"]
-                self.enabled = False
+                self.__torch_seed = obj["torch_seed"]
+                self.__randomlib_state = obj["randomlib_state"]
+                self.__numpy_state = obj["numpy_state"]
+                self.__enabled = False
 
 
 global_reproducible_env: ReproducibleEnv = ReproducibleEnv()
