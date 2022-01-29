@@ -40,7 +40,6 @@ class ReproducibleEnv:
             os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
-            torch.set_deterministic(True)
             torch.use_deterministic_algorithms(True)
 
             if self.__torch_seed is not None:
@@ -74,8 +73,8 @@ class ReproducibleEnv:
             os.environ.pop("CUBLAS_WORKSPACE_CONFIG")
             torch.backends.cudnn.deterministic = False
             torch.backends.cudnn.benchmark = True
-            torch.set_deterministic(False)
             torch.use_deterministic_algorithms(False)
+            self.__enabled = False
 
     def __enter__(self):
         self.enable()
@@ -112,7 +111,6 @@ class ReproducibleEnv:
                 self.__torch_seed = obj["torch_seed"]
                 self.__randomlib_state = obj["randomlib_state"]
                 self.__numpy_state = obj["numpy_state"]
-                self.__enabled = False
 
     def load_last_seed(self):
         self.load(self.last_seed_path)
