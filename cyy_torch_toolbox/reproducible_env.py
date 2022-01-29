@@ -114,5 +114,8 @@ class ReproducibleEnv:
                 self.__numpy_state = obj["numpy_state"]
                 self.__enabled = False
 
+    def load_last_seed(self):
+        self.load(self.last_seed_path)
+
 
 global_reproducible_env: ReproducibleEnv = ReproducibleEnv()
