@@ -15,7 +15,12 @@ from hyper_parameter import HyperParameterConfig
 from inference import Inferencer
 from ml_type import MachineLearningPhase
 from model_factory import get_model
-from reproducible_env import global_reproducible_env
+
+try:
+    from cyy_torch_toolbox.reproducible_env import global_reproducible_env
+except ImportError:
+    from reproducible_env import global_reproducible_env
+
 from trainer import Trainer
 
 
