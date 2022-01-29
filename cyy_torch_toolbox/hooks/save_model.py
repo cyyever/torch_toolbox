@@ -15,7 +15,7 @@ class SaveModelHook(Hook):
 
     def _before_execute(self, **kwargs):
         self.__best_epoch = None
-        self.__model_paths = dict()
+        self.__model_paths = {}
         self.__model_dir = None
 
     def _after_epoch(self, **kwargs):
