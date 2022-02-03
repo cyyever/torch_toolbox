@@ -28,8 +28,8 @@ class SyncedTensorDict:
     def release(self):
         self.__tensor_dict.release()
 
-    def get_storage_dir(self):
-        self.__tensor_dict.get_storage_dir()
+    def get_storage_dir(self) -> str:
+        return self.__tensor_dict.get_storage_dir()
 
     def keys(self) -> set:
         return {self.__key_type(k) for k in self.__tensor_dict.keys()}
@@ -62,8 +62,9 @@ class SyncedTensorDict:
             for k in chunk:
                 yield (self.__key_type(k), self.__tensor_dict[k])
 
-    @staticmethod
+    @classmethod
     def create(
+        cls,
         key_type=int,
         cache_size=None,
         mask=None,
@@ -82,4 +83,4 @@ class SyncedTensorDict:
             m.set_in_memory_number(cache_size)
         get_logger().info("tensor_dict use cache size %s", m.get_in_memory_number())
         m.set_logging(False)
-        return SyncedTensorDict(tensor_dict=m, key_type=key_type)
+        return cls(tensor_dict=m, key_type=key_type)
