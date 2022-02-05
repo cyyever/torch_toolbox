@@ -35,10 +35,11 @@ class TorchProcessTaskQueue(TaskQueue):
                 self.__manager = torch.multiprocessing.get_context("spawn").Manager()
         return self.__manager
 
-    def stop(self):
-        super().stop()
+    def release(self):
+        super().release()
         if self.__manager is not None:
-            self.__manager.stop()
+            self.__manager.shutdown()
+            self.__manager = None
 
     def __getstate__(self):
         state = super().__getstate__()
