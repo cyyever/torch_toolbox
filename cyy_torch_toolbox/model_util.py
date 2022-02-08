@@ -23,11 +23,15 @@ class ModelUtil:
     def get_parameter_list(self, detach=True):
         return cat_tensors_to_vector(self.__get_parameter_seq(detach=detach))
 
-    def load_parameter_list(self, parameter_list: torch.Tensor, as_parameter=True):
+    def load_parameter_list(
+        self, parameter_list: torch.Tensor, check_parameter=True, as_parameter=True
+    ):
         parameter_dict = self.get_parameter_dict(detach=True)
         assert parameter_dict is not None
         load_tensor_dict(parameter_dict, parameter_list)
-        self.load_parameter_dict(parameter_dict, as_parameter=as_parameter)
+        self.load_parameter_dict(
+            parameter_dict, check_parameter=check_parameter, as_parameter=as_parameter
+        )
 
     def get_gradient_list(self):
         # if self.is_pruned:
@@ -288,7 +292,7 @@ class ModelUtil:
         check_parameter: bool = True,
         as_parameter: bool = True,
     ):
-        assert not self.is_pruned
+        # assert not self.is_pruned
         assert parameter_dict
         for name, parameter in parameter_dict.items():
             if check_parameter:
@@ -300,16 +304,16 @@ class ModelUtil:
             self.__parameter_dict = None
 
     def get_parameter_dict(self, detach=True) -> dict:
-        assert not self.is_pruned
+        # assert not self.is_pruned
         if self.__parameter_dict is not None:
             return self.__parameter_dict
         res: dict = {}
         for name, parameter in self.model.named_parameters():
             if detach:
                 parameter = parameter.detach()
-            if self.is_pruned and name.endswith("_orig"):
-                res[name[:-5]] = parameter
-                continue
+            # if self.is_pruned and name.endswith("_orig"):
+            #     res[name[:-5]] = parameter
+            #     continue
             res[name] = parameter
         self.__parameter_dict = res
         return self.__parameter_dict
