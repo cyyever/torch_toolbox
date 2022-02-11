@@ -52,6 +52,10 @@ class ModelWithLoss:
         return self.__model
 
     @property
+    def model_util(self) -> ModelUtil:
+        return ModelUtil(self.__model)
+
+    @property
     def has_batch_norm(self):
         if self.__has_batch_norm is None:
             pass
