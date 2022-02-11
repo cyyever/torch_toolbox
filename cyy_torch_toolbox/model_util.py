@@ -21,7 +21,7 @@ class ModelUtil:
         return self.__model
 
     def get_parameter_list(self, detach=True):
-        return cat_tensors_to_vector(self.__get_parameter_seq(detach=detach))
+        return cat_tensors_to_vector(self.get_parameter_seq(detach=detach))
 
     def load_parameter_list(
         self, parameter_list: torch.Tensor, check_parameter=True, as_parameter=True
@@ -46,7 +46,7 @@ class ModelUtil:
         #             assert mask is not None
         #             parameter.grad = parameter.grad * mask
         return cat_tensors_to_vector(
-            (parameter.grad for parameter in self.__get_parameter_seq(detach=False))
+            (parameter.grad for parameter in self.get_parameter_seq(detach=False))
         )
 
     def remove_statistical_variables(self):
@@ -318,6 +318,6 @@ class ModelUtil:
         self.__parameter_dict = res
         return self.__parameter_dict
 
-    def __get_parameter_seq(self, detach=True):
+    def get_parameter_seq(self, detach=True):
         res = self.get_parameter_dict(detach=detach)
         return get_mapping_values_by_key_order(res)
