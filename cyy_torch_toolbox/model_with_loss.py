@@ -29,7 +29,7 @@ class ModelWithLoss:
             if loss_fun == "CrossEntropyLoss":
                 self.__loss_fun = nn.CrossEntropyLoss()
             else:
-                raise RuntimeError("unknown loss function {}".format(loss_fun))
+                raise RuntimeError(f"unknown loss function {loss_fun}")
         self.__model_type = model_type
         self.__has_batch_norm = None
         self.__model_transforms = None
@@ -120,10 +120,10 @@ class ModelWithLoss:
 
         assert self.loss_fun is not None
         if self.__model_transforms is None:
-            self.__model_transforms = list()
+            self.__model_transforms = []
             input_size = getattr(self.__get_real_model().__class__, "input_size", None)
             if input_size is not None:
-                get_logger().warning("use input_size %s", input_size)
+                get_logger().debug("resize input to %s", input_size)
                 self.__model_transforms.append(
                     torchvision.transforms.Resize(input_size)
                 )
@@ -189,9 +189,7 @@ class ModelWithLoss:
         return False
 
     def __repr__(self):
-        return "model: {}, loss_fun: {}".format(
-            self.__model.__class__.__name__, self.loss_fun
-        )
+        return f"model: {self.__model.__class__.__name__}, loss_fun: {self.loss_fun}"
 
     def __set_model_mode(self, phase: MachineLearningPhase):
         if phase == MachineLearningPhase.Training:
