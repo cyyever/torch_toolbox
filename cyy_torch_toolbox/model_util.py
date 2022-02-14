@@ -26,9 +26,14 @@ class ModelUtil:
     def load_parameter_list(
         self, parameter_list: torch.Tensor, check_parameter=True, as_parameter=True
     ):
-        parameter_dict = self.get_parameter_dict(detach=True)
+        parameter_dict = self.get_parameter_dict(detach=False)
         assert parameter_dict is not None
-        load_tensor_dict(parameter_dict, parameter_list)
+        if isinstance(parameter_list, torch.Tensor):
+            load_tensor_dict(parameter_dict, parameter_list)
+        else:
+            for name in sorted(parameter_dict.keys()):
+                parameter_dict[name] = parameter_list.pop(0)
+            assert not parameter_list
         self.load_parameter_dict(
             parameter_dict, check_parameter=check_parameter, as_parameter=as_parameter
         )
