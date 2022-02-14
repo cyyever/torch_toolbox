@@ -21,7 +21,7 @@ class AccuracyMetric(Metric):
     def _after_batch(self, **kwargs):
         batch = kwargs["batch"]
         targets = batch[1].detach()
-        output = kwargs["result"]["output"].detach()
+        output = kwargs["result"]["output"].detach().cpu()
         correct_count = torch.eq(torch.max(output, dim=1)[1], targets).view(-1).sum()
         self.__process_pending_count()
         self.__pending_count = correct_count
