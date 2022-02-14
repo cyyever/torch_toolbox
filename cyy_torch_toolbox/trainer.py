@@ -23,7 +23,7 @@ class Trainer(ModelExecutor):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         hyper_parameter: HyperParameter,
-        save_dir = None,
+        save_dir=None,
         # save_dir: str | None = None,
     ):
         super().__init__(
@@ -167,10 +167,6 @@ class Trainer(ModelExecutor):
                         lr_scheduler = self.get_lr_scheduler()
 
                         sample_inputs, sample_targets, other_info = decode_batch(batch)
-                        sample_inputs = sample_inputs.to(self.device, non_blocking=True)
-                        sample_targets = sample_targets.to(
-                            self.device, non_blocking=True
-                        )
                         batch = (sample_inputs, sample_targets, other_info)
                         batch_size = self.get_batch_size(sample_targets)
                         if (
