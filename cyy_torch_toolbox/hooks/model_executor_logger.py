@@ -30,7 +30,8 @@ class ModelExecutorLogger(Hook):
             )
         if hasattr(model_executor, "get_lr_scheduler"):
             get_logger().info(
-                "lr_scheduler is %s", getattr(model_executor, "get_lr_scheduler")()
+                "lr_scheduler is %s",
+                type(getattr(model_executor, "get_lr_scheduler")()),
             )
 
     def _after_execute(self, **kwargs):

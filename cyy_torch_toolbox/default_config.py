@@ -105,9 +105,8 @@ class DefaultConfig:
 
         model_with_loss = get_model(self.model_name, dc, **model_kwargs)
         model_with_loss.use_checkpointing = self.use_checkpointing
-        trainer = Trainer(
-            model_with_loss, dc, hyper_parameter, save_dir=self.get_save_dir()
-        )
+        trainer = Trainer(model_with_loss, dc, hyper_parameter)
+        trainer.set_save_dir(self.get_save_dir())
         if self.debug:
             get_logger().warning("debug the trainer")
             trainer.debugging_mode = True

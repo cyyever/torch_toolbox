@@ -4,8 +4,8 @@ from cyy_naive_lib.log import get_logger
 from dataset import decode_batch
 from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
-from ml_type import MachineLearningPhase
-from model_executor import ModelExecutor, ModelExecutorHookPoint
+from ml_type import MachineLearningPhase, ModelExecutorHookPoint
+from model_executor import ModelExecutor
 from model_util import ModelUtil
 from model_with_loss import ModelWithLoss
 
