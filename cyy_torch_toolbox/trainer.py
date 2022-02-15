@@ -14,7 +14,6 @@ from metric_visualizers.batch_loss_logger import BatchLossLogger
 from ml_type import (MachineLearningPhase, ModelExecutorHookPoint, ModelType,
                      StopExecutingException)
 from model_executor import ModelExecutor
-from model_util import ModelUtil
 from model_with_loss import ModelWithLoss
 
 
@@ -108,7 +107,7 @@ class Trainer(ModelExecutor):
         self.remove_optimizer()
 
     def load_parameter_dict(self, parameter_dict: dict) -> None:
-        ModelUtil(self.model).load_parameter_dict(parameter_dict)
+        self.model_util.load_parameter_dict(parameter_dict)
         self.remove_optimizer()
 
     def offload_from_gpu(self):
