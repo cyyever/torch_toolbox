@@ -2,7 +2,6 @@ import os
 
 from cyy_naive_lib.log import get_logger
 from hook import Hook
-from model_util import ModelUtil
 
 
 class ModelExecutorLogger(Hook):
@@ -11,7 +10,7 @@ class ModelExecutorLogger(Hook):
 
     def _before_execute(self, **kwargs):
         model_executor = kwargs["model_executor"]
-        model_util = ModelUtil(model_executor.model)
+        model_util = model_executor.model_util
         if os.getenv("draw_torch_model") is not None:
             model_executor._model_with_loss.trace_input = True
         get_logger().info("dataset is %s", model_executor.dataset)

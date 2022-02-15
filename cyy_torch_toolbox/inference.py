@@ -6,7 +6,6 @@ from dataset_collection import DatasetCollection
 from hyper_parameter import HyperParameter
 from ml_type import MachineLearningPhase, ModelExecutorHookPoint
 from model_executor import ModelExecutor
-from model_util import ModelUtil
 from model_with_loss import ModelWithLoss
 
 
@@ -66,4 +65,4 @@ class Inferencer(ModelExecutor):
 
     def get_gradient(self):
         self.inference(use_grad=True)
-        return ModelUtil(self.model).get_gradient_list()
+        return self.model_util.get_gradient_list()
