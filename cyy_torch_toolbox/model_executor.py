@@ -1,6 +1,6 @@
 import copy
 import os
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Optional
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -8,7 +8,6 @@ from cyy_naive_lib.log import get_logger
 from dataloader import get_dataloader
 from dataset_collection import DatasetCollection
 from device import get_device
-from hook import Hook
 from hooks.model_executor_logger import ModelExecutorLogger
 from hooks.profiler import Profiler
 from hyper_parameter import HyperParameter
@@ -16,134 +15,19 @@ from metric_visualizers.metric_tensorboard import MetricTensorBoard
 from metric_visualizers.performance_metric_logger import \
     PerformanceMetricLogger
 from metrics.performance_metric import PerformanceMetric
-from ml_type import MachineLearningPhase, ModelExecutorHookPoint
+from ml_type import MachineLearningPhase
+from model_executor_base import ModelExecutorBase
+from model_util import ModelUtil
 from model_with_loss import ModelWithLoss
 
-# from cyy_naive_lib.log import get_logger
 
-
-class _ModelExecutorBase:
-    def __init__(self):
-        self.__data: dict = {}
-        self.__hooks: Dict[ModelExecutorHookPoint, List[Dict[str, Callable]]] = {}
-        self.__stripable_hooks: set = set()
-        self.__disabled_hooks: set = set()
-
-    def get_data(self, key: str, default_value=None):
-        return self.__data.get(key, default_value)
-
-    def set_data(self, key: str, value):
-        self.__data[key] = value
-
-    def remove_data(self, key: str):
-        self.__data.pop(key, None)
-
-    def has_data(self, key: str):
-        return key in self.__data
-
-    def clear_data(self):
-        self.__data.clear()
-
-    def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs):
-        for hook in self.__hooks.get(hook_point, []):
-            for name, fun in hook.items():
-                if name not in self.__disabled_hooks:
-                    fun(model_executor=self, **kwargs)
-
-    def has_hook(
-        self,
-        hook_point: ModelExecutorHookPoint,
-    ):
-        return hook_point in self.__hooks
-
-    def hooks(self):
-        return self.__hooks
-
-    def disable_stripable_hooks(self):
-        self.__disabled_hooks.update(self.__stripable_hooks)
-
-    def enable_all_hooks(self):
-        self.__disabled_hooks.clear()
-
-    def append_named_hook(
-        self,
-        hook_point: ModelExecutorHookPoint,
-        name: str,
-        fun: Callable,
-        stripable=False,
-    ):
-        self.insert_callback(-1, hook_point, name, fun, stripable)
-
-    def prepend_named_hook(
-        self,
-        hook_point: ModelExecutorHookPoint,
-        name: str,
-        fun: Callable,
-        stripable=False,
-    ):
-        self.insert_callback(0, hook_point, name, fun, stripable)
-
-    def insert_callback(
-        self,
-        pos,
-        hook_point: ModelExecutorHookPoint,
-        name: str,
-        fun: Callable,
-        stripable=False,
-    ):
-        if stripable:
-            self.__stripable_hooks.add(name)
-        data = {name: fun}
-        if hook_point not in self.__hooks:
-            self.__hooks[hook_point] = [data]
-        else:
-            for d in self.__hooks[hook_point]:
-                if name in d:
-                    raise RuntimeError(name + " has registered")
-            if pos < 0:
-                self.__hooks[hook_point].append(data)
-            else:
-                self.__hooks[hook_point].insert(pos, data)
-
-    def insert_hook(self, pos, hook: Hook):
-        flag = False
-        for hook_point, name, fun in hook.yield_hooks():
-            self.insert_callback(pos, hook_point, name, fun, hook.stripable)
-            flag = True
-        assert flag
-
-    def append_hook(self, hook: Hook):
-        self.insert_hook(-1, hook)
-
-    def prepend_hook(self, hook: Hook):
-        self.insert_hook(0, hook)
-
-    def enable_hook(self, hook: Hook):
-        for name in hook.yield_hook_names():
-            if name in self.__disabled_hooks:
-                self.__disabled_hooks.remove(name)
-
-    def disable_hook(self, hook: Hook):
-        for name in hook.yield_hook_names():
-            self.__disabled_hooks.add(name)
-
-    def remove_hook(self, name: str, hook_point: ModelExecutorHookPoint = None):
-        for cur_hook_point, hooks in self.__hooks.items():
-            if hook_point is not None and cur_hook_point != hook_point:
-                continue
-            for idx, hook in enumerate(hooks):
-                hook.pop(name, None)
-                hooks[idx] = hook
-
-
-class ModelExecutor(_ModelExecutorBase):
+class ModelExecutor(ModelExecutorBase):
     def __init__(
         self,
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
-        save_dir=None,
     ):
         super().__init__()
         self._model_with_loss = model_with_loss
@@ -164,8 +48,6 @@ class ModelExecutor(_ModelExecutorBase):
         self.profiling_mode = False
         self.__profiler = None
         self.__save_dir: Optional[str] = None
-        if save_dir is not None:
-            self.set_save_dir(save_dir)
 
     @property
     def visualizer(self):
@@ -185,9 +67,10 @@ class ModelExecutor(_ModelExecutorBase):
 
     def set_save_dir(self, save_dir: str):
         self.__save_dir = save_dir
-        log_dir = os.path.join(save_dir, "visualizer")
-        os.makedirs(log_dir, exist_ok=True)
-        self.__metric_tb.set_log_dir(log_dir)
+        if save_dir is not None:
+            log_dir = os.path.join(save_dir, "visualizer")
+            os.makedirs(log_dir, exist_ok=True)
+            self.__metric_tb.set_log_dir(log_dir)
 
     @property
     def save_dir(self):
@@ -223,6 +106,10 @@ class ModelExecutor(_ModelExecutorBase):
     def model_with_loss(self) -> ModelWithLoss:
         self._wait_stream()
         return self._model_with_loss
+
+    @property
+    def model_util(self) -> ModelUtil:
+        return self.model_with_loss.model_util
 
     @property
     def loss_fun(self):

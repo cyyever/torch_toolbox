@@ -11,8 +11,9 @@ from hooks.trainer_debugger import TrainerDebugger
 from hyper_parameter import HyperParameter
 from inference import Inferencer
 from metric_visualizers.batch_loss_logger import BatchLossLogger
-from ml_type import MachineLearningPhase, ModelType, StopExecutingException
-from model_executor import ModelExecutor, ModelExecutorHookPoint
+from ml_type import (MachineLearningPhase, ModelExecutorHookPoint, ModelType,
+                     StopExecutingException)
+from model_executor import ModelExecutor
 from model_util import ModelUtil
 from model_with_loss import ModelWithLoss
 
@@ -23,15 +24,12 @@ class Trainer(ModelExecutor):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         hyper_parameter: HyperParameter,
-        save_dir=None,
-        # save_dir: str | None = None,
     ):
         super().__init__(
             model_with_loss,
             dataset_collection,
             MachineLearningPhase.Training,
             hyper_parameter,
-            save_dir=save_dir,
         )
         self.append_hook(LearningRateHook())
         self.__inferencers: dict = {}
