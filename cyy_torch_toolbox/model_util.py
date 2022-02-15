@@ -303,10 +303,7 @@ class ModelUtil:
             if check_parameter:
                 assert self.has_attr(name)
             self.set_attr(name, parameter, as_parameter=as_parameter)
-        if not as_parameter:
-            self.__parameter_dict = parameter_dict
-        else:
-            self.__parameter_dict = None
+        self.__parameter_dict = None
 
     def get_parameter_dict(self, detach=True) -> dict:
         # assert not self.is_pruned
