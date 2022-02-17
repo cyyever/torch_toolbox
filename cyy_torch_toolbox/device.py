@@ -2,8 +2,10 @@
 
 import time
 
-import pynvml
 import torch
+
+if torch.cuda.is_available():
+    import pynvml
 from cyy_naive_lib.log import get_logger
 
 
@@ -69,11 +71,6 @@ class CudaDeviceGreedyAllocator:
         self.__last_query_time = None
 
     def __refresh_memory_info(self):
-        # if (
-        #     self.__last_query_time is not None
-        #     and time.time() < self.__last_query_time + 60 * 10
-        # ):
-        #     return
         pynvml.nvmlInit()
         for device in self.__free_memory_dict:
             h = pynvml.nvmlDeviceGetHandleByIndex(device.index)
