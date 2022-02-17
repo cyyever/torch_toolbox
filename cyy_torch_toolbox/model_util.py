@@ -31,9 +31,9 @@ class ModelUtil:
         if isinstance(parameter_list, torch.Tensor):
             load_tensor_dict(parameter_dict, parameter_list)
         else:
+            assert len(parameter_list) == len(parameter_dict)
             for name in sorted(parameter_dict.keys()):
                 parameter_dict[name] = parameter_list.pop(0)
-            assert not parameter_list
         self.load_parameter_dict(
             parameter_dict, check_parameter=check_parameter, as_parameter=as_parameter
         )
@@ -303,7 +303,10 @@ class ModelUtil:
             if check_parameter:
                 assert self.has_attr(name)
             self.set_attr(name, parameter, as_parameter=as_parameter)
-        self.__parameter_dict = None
+        if as_parameter:
+            self.__parameter_dict = None
+        elif self.__parameter_dict is not None:
+            self.__parameter_dict = {k: None for k in self.__parameter_dict}
 
     def get_parameter_dict(self, detach=True) -> dict:
         # assert not self.is_pruned
