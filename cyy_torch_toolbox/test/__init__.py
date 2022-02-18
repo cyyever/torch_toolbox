@@ -1,4 +1,8 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
+module_dir = os.path.realpath(
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")
+)
+if module_dir not in sys.path:
+    sys.path.append(module_dir)
