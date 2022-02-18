@@ -12,7 +12,7 @@ except ImportError:
     from dataset_collection import DatasetCollectionConfig
 
 from hyper_parameter import HyperParameterConfig
-from inference import Inferencer
+from inferencer import Inferencer
 from ml_type import MachineLearningPhase
 from model_factory import get_model
 
