@@ -9,7 +9,7 @@ from hooks.learning_rate_hook import LearningRateHook
 from hooks.save_model import SaveModelHook
 from hooks.trainer_debugger import TrainerDebugger
 from hyper_parameter import HyperParameter
-from inference import Inferencer
+from inferencer import Inferencer
 from metric_visualizers.batch_loss_logger import BatchLossLogger
 from ml_type import (MachineLearningPhase, ModelExecutorHookPoint, ModelType,
                      StopExecutingException)
