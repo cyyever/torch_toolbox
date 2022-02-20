@@ -1,8 +1,9 @@
 from cyy_naive_lib.log import get_logger
-from default_config import DefaultConfig
-from ml_type import ModelExecutorHookPoint, StopExecutingException
-
-from data_structure.torch_process_pool import TorchProcessPool
+from cyy_torch_toolbox.data_structure.torch_process_pool import \
+    TorchProcessPool
+from cyy_torch_toolbox.default_config import DefaultConfig
+from cyy_torch_toolbox.ml_type import (ModelExecutorHookPoint,
+                                       StopExecutingException)
 
 
 def stop_training(*args, **kwargs):
