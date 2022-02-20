@@ -9,7 +9,7 @@ import torch.optim as optim
 from cyy_naive_lib.data_structure.thread_pool import ThreadPool
 from cyy_naive_lib.log import get_logger
 
-from algorithm.lr_finder import LRFinder
+from cyy_torch_toolbox.algorithm.lr_finder import LRFinder
 
 
 class HyperParameterAction(IntEnum):

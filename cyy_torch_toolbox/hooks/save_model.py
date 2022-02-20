@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from hook import Hook
+from cyy_torch_toolbox.hook import Hook
 from ml_type import MachineLearningPhase
 
 

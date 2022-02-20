@@ -1,5 +1,5 @@
-from dataset import dataset_with_indices
-from hook import Hook
+from cyy_torch_toolbox.dataset import dataset_with_indices
+from cyy_torch_toolbox.hook import Hook
 
 
 class AddIndexToDataset(Hook):
