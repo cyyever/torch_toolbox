@@ -6,22 +6,13 @@ import uuid
 
 from cyy_naive_lib.log import get_logger
 
-try:
-    from cyy_torch_toolbox.dataset_collection import DatasetCollectionConfig
-except ImportError:
-    from dataset_collection import DatasetCollectionConfig
-
-from hyper_parameter import HyperParameterConfig
-from inferencer import Inferencer
-from ml_type import MachineLearningPhase
-from model_factory import get_model
-
-try:
-    from cyy_torch_toolbox.reproducible_env import global_reproducible_env
-except ImportError:
-    from reproducible_env import global_reproducible_env
-
-from trainer import Trainer
+from cyy_torch_toolbox.dataset_collection import DatasetCollectionConfig
+from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
+from cyy_torch_toolbox.inferencer import Inferencer
+from cyy_torch_toolbox.ml_type import MachineLearningPhase
+from cyy_torch_toolbox.model_factory import get_model
+from cyy_torch_toolbox.reproducible_env import global_reproducible_env
+from cyy_torch_toolbox.trainer import Trainer
 
 
 class DefaultConfig:

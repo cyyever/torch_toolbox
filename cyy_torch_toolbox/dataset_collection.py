@@ -21,13 +21,14 @@ from cyy_naive_lib.log import get_logger
 from torchvision import transforms
 
 if has_torchaudio:
-    import datasets.audio as local_audio_datasets
+    import cyy_torch_toolbox.datasets.audio as local_audio_datasets
 
-import datasets.vision as local_vision_datasets
-from dataset import (DatasetUtil, convert_iterable_dataset_to_map,
-                     replace_dataset_labels, sub_dataset)
-from ml_type import DatasetType, MachineLearningPhase
-from pipelines.text_pipeline import TokenizerAndVocab
+import cyy_torch_toolbox.datasets.vision as local_vision_datasets
+from cyy_torch_toolbox.dataset import (DatasetUtil,
+                                       convert_iterable_dataset_to_map,
+                                       replace_dataset_labels, sub_dataset)
+from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
+from cyy_torch_toolbox.pipelines.text_pipeline import TokenizerAndVocab
 
 
 class DatasetCollection:

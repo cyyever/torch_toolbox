@@ -1,7 +1,7 @@
 from typing import Callable, Dict, List
 
-from hook import Hook
-from ml_type import ModelExecutorHookPoint
+from cyy_torch_toolbox.hook import Hook
+from cyy_torch_toolbox.ml_type import ModelExecutorHookPoint
 
 
 class ModelExecutorBase:
