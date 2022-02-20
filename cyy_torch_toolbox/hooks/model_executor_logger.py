@@ -1,7 +1,7 @@
 import os
 
 from cyy_naive_lib.log import get_logger
-from hook import Hook
+from cyy_torch_toolbox.hook import Hook
 
 
 class ModelExecutorLogger(Hook):

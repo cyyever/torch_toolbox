@@ -1,5 +1,5 @@
 import torch
-from hook import Hook
+from cyy_torch_toolbox.hook import Hook
 
 from .gradient_sanitizer import GradientSanitizer
 

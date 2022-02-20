@@ -1,7 +1,7 @@
 from cyy_naive_lib.log import get_logger
-from device import get_cpu_device
-from hook import Hook
-from ml_type import MachineLearningPhase
+from cyy_torch_toolbox.device import get_cpu_device
+from cyy_torch_toolbox.hook import Hook
+from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
 class KeepBestModelHook(Hook):
@@ -20,7 +20,9 @@ class KeepBestModelHook(Hook):
         ).get_epoch_metric(epoch, "accuracy")
         if not self.__best_epoch or acc > self.__best_epoch[1]:
             self.__best_epoch = (epoch, acc)
-            self.__best_model = trainer.copy_model_with_loss().model.to(get_cpu_device())
+            self.__best_model = trainer.copy_model_with_loss().model.to(
+                get_cpu_device()
+            )
 
     @property
     def best_model(self):
