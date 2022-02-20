@@ -3,7 +3,6 @@ import random
 from multiprocessing import Manager
 
 import torch
-# import torchtext
 import torchvision
 from cyy_naive_lib.log import get_logger
 

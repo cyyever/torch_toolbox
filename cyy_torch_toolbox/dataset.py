@@ -259,6 +259,9 @@ class DatasetUtil:
         if isinstance(target, dict):
             if "labels" in target:
                 return set(target["labels"].tolist())
+            if all(isinstance(s, str) and s.isnumeric() for s in target):
+                return set(int(s) for s in target)
+
         # match target:
         #     case int():
         #         return set([target])

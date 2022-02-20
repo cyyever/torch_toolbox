@@ -32,9 +32,5 @@ class ModelExecutorHookPoint(IntEnum):
     AFTER_LOAD_MODEL = auto()
 
 
-try:
-    from cyy_torch_toolbox.ml_type import StopExecutingException
-except ImportError:
-
-    class StopExecutingException(Exception):
-        pass
+class StopExecutingException(Exception):
+    pass

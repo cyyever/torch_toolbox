@@ -228,7 +228,7 @@ class Trainer(ModelExecutor):
                             MachineLearningPhase.Test,
                         ):
                             inferencer = self.get_inferencer(phase)
-                            # inferencer.disable_logger()
+                            inferencer.disable_logger()
                             inferencer.set_device(self.device)
                             self.__inferencers[phase] = inferencer
 

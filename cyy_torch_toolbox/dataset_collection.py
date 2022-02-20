@@ -6,27 +6,15 @@ import threading
 from typing import Callable, Dict, List
 
 import torch
+from cyy_naive_lib.log import get_logger
 from ssd_checker import is_ssd
 from torch.nn.utils.rnn import pad_sequence
-
-try:
-    import torchaudio
-
-    has_torchaudio = True
-except ModuleNotFoundError:
-    has_torchaudio = False
-import torchtext
-import torchvision
-from cyy_naive_lib.log import get_logger
 from torchvision import transforms
 
-if has_torchaudio:
-    import cyy_torch_toolbox.datasets.audio as local_audio_datasets
-
-import cyy_torch_toolbox.datasets.vision as local_vision_datasets
 from cyy_torch_toolbox.dataset import (DatasetUtil,
                                        convert_iterable_dataset_to_map,
                                        replace_dataset_labels, sub_dataset)
+from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 from cyy_torch_toolbox.pipelines.text_pipeline import TokenizerAndVocab
 
@@ -202,9 +190,7 @@ class DatasetCollection:
                 return getattr(self.get_training_dataset(), "classes")
 
             for dataset_type in DatasetType:
-                dataset_constructors = DatasetCollection.get_dataset_constructors(
-                    dataset_type
-                )
+                dataset_constructors = get_dataset_constructors(dataset_type)
                 if self.name not in dataset_constructors:
                     continue
                 dataset_constructor = dataset_constructors[self.name]
@@ -241,9 +227,11 @@ class DatasetCollection:
                 get_logger().warning("dataset %s is not on a SSD disk", name)
         return dataset_dir
 
-    @staticmethod
-    def __get_dataset_cache_dir(
         # name: str, phase: MachineLearningPhase | None = None
+
+    @classmethod
+    def __get_dataset_cache_dir(
+        cls,
         name: str,
         phase: MachineLearningPhase = None,
     ) -> str:
@@ -254,44 +242,13 @@ class DatasetCollection:
             os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
 
-    @staticmethod
-    def get_dataset_constructors(dataset_type: DatasetType = None):
-        repositories = []
-        if dataset_type is None or dataset_type == DatasetType.Vision:
-            repositories = [torchvision.datasets, local_vision_datasets]
-        elif dataset_type is None or dataset_type == DatasetType.Text:
-            repositories = [torchtext.datasets]
-        # elif dataset_type is None or dataset_type == DatasetType.Audio:
-        #     if has_torchaudio:
-        #         repositories = [torchaudio.datasets, local_audio_datasets]
-        dataset_constructors = {}
-        for repository in repositories:
-            if hasattr(repository, "DATASETS"):
-                for name, dataset_constructor in getattr(
-                    repository, "DATASETS"
-                ).items():
-                    if dataset_type == DatasetType.Text:
-                        dataset_constructors[name] = dataset_constructor
-                        # if hasattr(dataset_constructor, "splits"):
-                        #     dataset_constructors[name] = getattr(
-                        #         dataset_constructor, "splits"
-                        #     )
-                        # else:
-            for name in dir(repository):
-                dataset_constructor = getattr(repository, name)
-                if not inspect.isclass(dataset_constructor):
-                    continue
-                if issubclass(dataset_constructor, torch.utils.data.Dataset):
-                    dataset_constructors[name] = dataset_constructor
-        return dataset_constructors
-
     @classmethod
     # def get_by_name(cls, name: str, dataset_kwargs: dict | None = None):
     def get_by_name(cls, name: str, dataset_kwargs: dict = None):
         with cls.__lock:
             all_dataset_constructors = set()
             for dataset_type in DatasetType:
-                dataset_constructor = cls.get_dataset_constructors(dataset_type)
+                dataset_constructor = get_dataset_constructors(dataset_type)
                 if name in dataset_constructor:
                     return cls.__create_dataset_collection(
                         name, dataset_type, dataset_constructor[name], dataset_kwargs
@@ -300,9 +257,9 @@ class DatasetCollection:
             get_logger().error("supported datasets are %s", all_dataset_constructors)
             raise NotImplementedError(name)
 
-    @staticmethod
-    def __get_mean_and_std(name: str, dataset):
-        cache_dir = os.path.join(DatasetCollection.__get_dataset_dir(name), ".cache")
+    @classmethod
+    def __get_mean_and_std(cls, name: str, dataset):
+        cache_dir = cls.__get_dataset_cache_dir(name)
         pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
 
         def computation_fun():
@@ -313,7 +270,7 @@ class DatasetCollection:
                 mean, std = DatasetUtil(dataset).get_mean_and_std()
             return (mean, std)
 
-        return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
+        return cls.__get_cache_data(pickle_file, computation_fun)
 
     @classmethod
     def __create_dataset_collection(
