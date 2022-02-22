@@ -33,9 +33,10 @@ def get_model(
     model_info = get_model_info()
 
     dataset_util = dataset_collection.get_dataset_util()
-    added_kwargs = {
-        "num_classes": len(dataset_collection.get_labels(use_cache=True)),
-    }
+    if model_kwargs is None or "num_classes" not in model_kwargs:
+        added_kwargs = {
+            "num_classes": len(dataset_collection.get_labels(use_cache=True)),
+        }
     if dataset_collection.dataset_type == DatasetType.Vision:
         added_kwargs |= {
             "input_channels": dataset_util.channel,
