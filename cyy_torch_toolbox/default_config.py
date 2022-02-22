@@ -28,6 +28,7 @@ class DefaultConfig:
         self.profile = False
         self.use_checkpointing = False
         self.save_dir = None
+        self.model_kwargs = None
         self.model_kwarg_json_path = None
         self.log_level = None
 
@@ -89,6 +90,8 @@ class DefaultConfig:
         if self.model_kwarg_json_path is not None:
             with open(self.model_kwarg_json_path, "rt", encoding="utf8") as f:
                 model_kwargs = json.load(f)
+        if self.model_kwargs is not None:
+            model_kwargs |= self.model_kwargs
         if self.pretrained:
             if "pretrained" in model_kwargs:
                 raise RuntimeError("specify pretrained twice")

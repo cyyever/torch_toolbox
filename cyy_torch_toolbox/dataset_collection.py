@@ -38,6 +38,7 @@ class DatasetCollection:
         self.__dataset_type = dataset_type
         self.__name = name
         self.__tokenizer_and_vocab = None
+        self.__collate_fn = None
 
     @property
     def tokenizer_and_vocab(self) -> TokenizerAndVocab:
@@ -54,6 +55,14 @@ class DatasetCollection:
     ) -> None:
         dataset = self.get_dataset(phase)
         self.__datasets[phase] = transformer(dataset)
+
+    def transform_all_datasets(self, transformer: Callable) -> None:
+        for phase in (
+            MachineLearningPhase.Training,
+            MachineLearningPhase.Test,
+            MachineLearningPhase.Validation,
+        ):
+            self.transform_dataset(phase, transformer)
 
     def transform_dataset_to_subset(
         self, phase: MachineLearningPhase, labels: set
@@ -155,7 +164,12 @@ class DatasetCollection:
         return text_list, torch.as_tensor(label_list)
 
     # def get_collate_fn(self) -> Callable | None:
+    def set_collate_fn(self, collate_fn):
+        self.__collate_fn = collate_fn
+
     def get_collate_fn(self):
+        if self.__collate_fn is not None:
+            return self.__collate_fn
         if self.dataset_type != DatasetType.Text:
             return None
         return self.text_task_collate
