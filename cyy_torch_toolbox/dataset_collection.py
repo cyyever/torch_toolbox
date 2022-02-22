@@ -496,7 +496,8 @@ class DatasetCollectionConfig:
         self.training_dataset_label_noise_percentage = None
 
     def add_args(self, parser):
-        parser.add_argument("--dataset_name", type=str, required=True)
+        if self.dataset_name is None:
+            parser.add_argument("--dataset_name", type=str, required=True)
         parser.add_argument("--sub_collection_labels", type=str, default=None)
         parser.add_argument("--training_dataset_percentage", type=float, default=None)
         parser.add_argument("--training_dataset_indices_path", type=str, default=None)

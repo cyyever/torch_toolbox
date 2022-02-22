@@ -36,7 +36,8 @@ class DefaultConfig:
         if parser is None:
             parser = argparse.ArgumentParser()
 
-        parser.add_argument("--model_name", type=str, required=True)
+        if self.model_name is None:
+            parser.add_argument("--model_name", type=str, required=True)
         parser.add_argument("--model_path", type=str, default=None)
         parser.add_argument("--pretrained", action="store_true", default=False)
         parser.add_argument("--save_dir", type=str, default=None)
