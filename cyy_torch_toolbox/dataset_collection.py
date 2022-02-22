@@ -168,6 +168,7 @@ class DatasetCollection:
         self.__collate_fn = collate_fn
 
     def get_collate_fn(self):
+        return None
         if self.__collate_fn is not None:
             return self.__collate_fn
         if self.dataset_type != DatasetType.Text:
