@@ -16,7 +16,7 @@ class PerformanceMetricLogger(MetricLogger):
             phase_str = "test"
 
         metric_str = ""
-        for k in ("loss", "accuracy", "class_accuracy"):
+        for k in ("loss", "accuracy", "class_accuracy", "perplexity"):
             value = model_executor.performance_metric.get_epoch_metric(epoch, k)
             if value is not None:
                 metric_str = metric_str + "{}:{}, ".format(k, value)
