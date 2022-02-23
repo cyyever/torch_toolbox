@@ -23,7 +23,9 @@ class PerformanceMetric(Metric):
     def _after_epoch(self, **kwargs):
         epoch = kwargs.get("epoch")
         epoch_end_time_point = time.time()
-        self._set_epoch_metric(epoch, "loss", self.__loss_metric.get_loss(epoch))
+        loss_metric = self.__loss_metric.get_epoch_metric(epoch)
+        for k, v in loss_metric.items():
+            self._set_epoch_metric(epoch, k, v)
         self._set_epoch_metric(
             epoch, "duration", epoch_end_time_point - self.__epoch_time_point
         )

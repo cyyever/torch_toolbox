@@ -10,10 +10,12 @@ class Metric(Hook):
     def _before_execute(self, **__):
         self.__epoch_metrics.clear()
 
-    def get_epoch_metric(self, epoch, name):
+    def get_epoch_metric(self, epoch, name=None):
         epoch_data = self.__epoch_metrics.get(epoch, None)
         if epoch_data is None:
             return None
+        if name is None:
+            return epoch_data
         return epoch_data.get(name, None)
 
     def _set_epoch_metric(self, epoch, name, data):
