@@ -11,7 +11,6 @@ __model_info: dict = {}
 
 
 def get_model_info() -> dict:
-    global __model_info
     github_repos = [
         "pytorch/vision:main",
         "cyyever/torch_models:main",
@@ -34,29 +33,30 @@ def get_model(
 
     dataset_util = dataset_collection.get_dataset_util()
     added_kwargs: dict = {}
-    try:
-        added_kwargs |= {
-            "num_classes": len(dataset_collection.get_labels(use_cache=True)),
-        }
-    except Exception:
-        pass
     if dataset_collection.dataset_type == DatasetType.Vision:
         added_kwargs |= {
             "input_channels": dataset_util.channel,
             "channels": dataset_util.channel,
         }
-    # if dataset_collection.dataset_type == DatasetType.Text:
-    #     added_kwargs["num_embeddings"] = len(
-    #         dataset_collection.tokenizer_and_vocab.vocab
-    #     )
+    if dataset_collection.dataset_type == DatasetType.Text:
+        if "num_embeddings" not in model_kwargs:
+            added_kwargs["num_embeddings"] = len(
+                dataset_collection.tokenizer_and_vocab.vocab
+            )
 
     model_type = ModelType.Classification
     if "rcnn" in name.lower():
         model_type = ModelType.Detection
-    if model_type == ModelType.Detection:
-        added_kwargs["num_classes"] += 1
+    try:
+        if "num_classes" not in model_kwargs:
+            added_kwargs |= {
+                "num_classes": len(dataset_collection.get_labels(use_cache=True)),
+            }
+            if model_type == ModelType.Detection:
+                added_kwargs["num_classes"] += 1
+    except Exception:
+        pass
     loss_fun_name = model_kwargs.pop("loss_fun_name", None)
-
     while True:
         try:
             model_repo_and_name = model_info.get(name.lower(), None)
