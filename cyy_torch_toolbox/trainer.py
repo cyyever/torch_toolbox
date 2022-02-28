@@ -159,9 +159,14 @@ class Trainer(ModelExecutor):
                         ModelExecutorHookPoint.BEFORE_EPOCH,
                         epoch=epoch,
                     )
-                    self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH)
+                    self.exec_hooks(
+                        ModelExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0
+                    )
                     for batch_index, batch in enumerate(self.dataloader):
-                        self.exec_hooks(ModelExecutorHookPoint.AFTER_FETCH_BATCH)
+                        self.exec_hooks(
+                            ModelExecutorHookPoint.AFTER_FETCH_BATCH,
+                            batch_index=batch_index,
+                        )
 
                         optimizer = self.get_optimizer()
                         lr_scheduler = self.get_lr_scheduler()
@@ -220,7 +225,10 @@ class Trainer(ModelExecutor):
                             batch_size=batch_size,
                         )
 
-                        self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH)
+                        self.exec_hooks(
+                            ModelExecutorHookPoint.BEFORE_FETCH_BATCH,
+                            batch_index=batch_index + 1,
+                        )
 
                     if not self.__inferencers:
                         for phase in (
