@@ -1,45 +1,44 @@
 import os
 import shutil
 
+from cyy_torch_toolbox.device import get_cpu_device
 from cyy_torch_toolbox.hook import Hook
 from ml_type import MachineLearningPhase
 
 
 class SaveModelHook(Hook):
-    def __init__(self):
-        super().__init__()
-        self.__best_epoch = None
-        self.__last_epoch = None
-        self.__model_paths = None
-        self.__model_dir = None
+    __best_model = None
+    __last_model = None
+    save_epoch = False
 
     def _before_execute(self, **kwargs):
-        self.__best_epoch = None
-        self.__model_paths = {}
-        self.__model_dir = None
+        self.__best_model = None
+        self.__last_model = None
 
     def _after_epoch(self, **kwargs):
         trainer = kwargs["model_executor"]
         epoch = kwargs["epoch"]
-        self.__model_dir = os.path.join(trainer.save_dir, "model")
-        os.makedirs(self.__model_dir, exist_ok=True)
-        model_path = os.path.join(self.__model_dir, "epoch_" + str(epoch) + ".pt")
-        trainer.save_model(model_path)
-        self.__model_paths[epoch] = model_path
+        if self.save_epoch:
+            model_dir = os.path.join(trainer.save_dir, "model")
+            os.makedirs(model_dir, exist_ok=True)
+            model_path = os.path.join(model_dir, "epoch_" + str(epoch) + ".pt")
+            trainer.save_model(model_path)
+
         acc = trainer.get_inferencer_performance_metric(
             MachineLearningPhase.Validation
         ).get_epoch_metric(epoch, "accuracy")
-        if not self.__best_epoch or acc > self.__best_epoch[1]:
-            self.__best_epoch = (epoch, acc)
-        self.__last_epoch = epoch
+        if not self.__best_model or acc > self.__best_model[1]:
+            self.__best_model = (
+                trainer.copy_model_with_loss().model.to(get_cpu_device()),
+                acc,
+            )
 
     def _after_execute(self, **kwargs):
-        if self.__last_epoch is not None:
-            shutil.copy(
-                self.__model_paths[self.__last_epoch],
-                os.path.join(self.__model_dir, "last.pt"),
-            )
-            shutil.copy(
-                self.__model_paths[self.__best_epoch[0]],
-                os.path.join(self.__model_dir, "best_acc.pt"),
-            )
+        trainer = kwargs["model_executor"]
+        model_dir = os.path.join(trainer.save_dir, "model")
+        os.makedirs(model_dir, exist_ok=True)
+        trainer.save_model(os.path.join(model_dir, "last.pt"))
+        shutil.copy(
+            self.__best_model[0],
+            os.path.join(model_dir, "best_acc.pt"),
+        )
