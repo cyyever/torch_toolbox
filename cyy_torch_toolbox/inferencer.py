@@ -27,42 +27,46 @@ class Inferencer(ModelExecutor):
         epoch = kwargs.get("epoch", 1)
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
         with torch.set_grad_enabled(use_grad):
-            get_logger().debug("use device %s", self.device)
-            if use_grad:
-                self.model.zero_grad(set_to_none=True)
-            self.exec_hooks(
-                ModelExecutorHookPoint.BEFORE_EPOCH,
-                epoch=epoch,
-            )
-            self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH)
-            for batch_index, batch in enumerate(self.dataloader):
-                self.exec_hooks(ModelExecutorHookPoint.AFTER_FETCH_BATCH)
-                inputs, targets, other_info = decode_batch(batch)
-                batch = (inputs, targets, other_info)
-                result = self._model_with_loss(
-                    inputs, targets, phase=self.phase, device=self.device
-                )
-                batch_loss = result["loss"]
+            with torch.cuda.stream(self.cuda_stream):
                 if use_grad:
-                    real_batch_loss = result["normalized_loss"] / len(self.dataset)
-                    real_batch_loss.backward()
-
+                    self.model.zero_grad(set_to_none=True)
                 self.exec_hooks(
-                    ModelExecutorHookPoint.AFTER_BATCH,
-                    batch=batch,
-                    batch_loss=batch_loss,
-                    normalized_batch_loss=result["normalized_loss"],
-                    batch_index=batch_index,
-                    batch_size=self.get_batch_size(targets),
-                    result=result,
+                    ModelExecutorHookPoint.BEFORE_EPOCH,
                     epoch=epoch,
                 )
                 self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH)
-            self.exec_hooks(
-                ModelExecutorHookPoint.AFTER_EPOCH,
-                epoch=epoch,
-            )
-            return
+                for batch_index, batch in enumerate(self.dataloader):
+                    self.exec_hooks(ModelExecutorHookPoint.AFTER_FETCH_BATCH)
+                    inputs, targets, other_info = decode_batch(batch)
+                    batch = (inputs, targets, other_info)
+                    result = self._model_with_loss(
+                        inputs,
+                        targets,
+                        phase=self.phase,
+                        device=self.device,
+                        non_blocking=True,
+                    )
+                    batch_loss = result["loss"]
+                    if use_grad:
+                        real_batch_loss = result["normalized_loss"] / len(self.dataset)
+                        real_batch_loss.backward()
+
+                    self.exec_hooks(
+                        ModelExecutorHookPoint.AFTER_BATCH,
+                        batch=batch,
+                        batch_loss=batch_loss,
+                        normalized_batch_loss=result["normalized_loss"],
+                        batch_index=batch_index,
+                        batch_size=self.get_batch_size(targets),
+                        result=result,
+                        epoch=epoch,
+                    )
+                    self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH)
+                self.exec_hooks(
+                    ModelExecutorHookPoint.AFTER_EPOCH,
+                    epoch=epoch,
+                )
+        self.exec_hooks(ModelExecutorHookPoint.AFTER_EXECUTE)
 
     def get_gradient(self):
         self.inference(use_grad=True)
