@@ -12,7 +12,9 @@ class TrainerDebugger(Hook):
     def _before_execute(self, **kwargs):
         torch.autograd.set_detect_anomaly(True)
         torch.set_anomaly_enabled(True)
+        torch.cuda.set_sync_debug_mode(1)
 
     def _after_execute(self, **kwargs):
         torch.autograd.set_detect_anomaly(False)
         torch.set_anomaly_enabled(False)
+        torch.cuda.set_sync_debug_mode(0)

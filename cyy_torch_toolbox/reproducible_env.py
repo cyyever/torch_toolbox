@@ -41,6 +41,7 @@ class ReproducibleEnv:
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
             torch.use_deterministic_algorithms(True)
+            torch.set_deterministic_debug_mode(2)
 
             if self.__torch_seed is not None:
                 get_logger().warning("overwrite torch seed")
@@ -74,6 +75,7 @@ class ReproducibleEnv:
             torch.backends.cudnn.deterministic = False
             torch.backends.cudnn.benchmark = True
             torch.use_deterministic_algorithms(False)
+            torch.set_deterministic_debug_mode(0)
             self.__enabled = False
 
     def __enter__(self):
