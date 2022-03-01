@@ -145,7 +145,13 @@ class ModelWithLoss:
         normalized_loss = loss
         if self.__is_averaged_loss():
             normalized_loss = loss * targets.shape[0]
-        return {"loss": loss, "normalized_loss": normalized_loss, "output": output}
+        return {
+            "loss": loss,
+            "normalized_loss": normalized_loss,
+            "output": output,
+            "inputs": inputs,
+            "targets": targets,
+        }
 
     def __choose_loss_function(self) -> Optional[torch.nn.modules.loss._Loss]:
         # if isinstance(self.__model, GeneralizedRCNN):

@@ -1,3 +1,4 @@
+import copy
 import functools
 import os
 import random
@@ -69,22 +70,6 @@ class DictDataset(torch.utils.data.Dataset):
         return len(self.__items)
 
 
-class CachedDataset:
-    def __init__(self, dataset: torch.utils.data.Dataset):
-        self.__dataset = dataset
-        self.__items = {}
-
-    def __getitem__(self, index):
-        if index in self.__items:
-            return self.__items[index]
-        item = self.__dataset.__getitem__(index)
-        self.__items[index] = item
-        return item
-
-    def __len__(self):
-        return len(self.__dataset)
-
-
 def convert_iterable_dataset_to_map(
     dataset: torch.utils.data.IterableDataset, swap_item: bool = False
 ) -> dict:
@@ -137,6 +122,22 @@ class DatasetUtil:
         self.dataset: torch.utils.data.Dataset = dataset
         self.__channel = None
         self.__len = None
+
+    def get_transforms(self):
+        transforms = []
+        if hasattr(self.dataset, "transform"):
+            transforms = [self.dataset.transform]
+        i = 0
+        print("before transforms", transforms)
+        while i < len(transforms):
+            if isinstance(transforms[i], torchvision.transforms.Compose):
+                transforms = (
+                    transforms[:i] + transforms[i].transforms + transforms[i + 1:]
+                )
+            else:
+                i += 1
+        print("transforms", transforms)
+        return transforms
 
     def __get_dataloader(self):
         return torch.utils.data.DataLoader(
@@ -389,17 +390,44 @@ class DatasetUtil:
         return randomized_label_map
 
 
-def __replace_item_label(label_map, index, item):
-    if index in label_map:
-        assert label_map[index] != item[1]
-        item = list(item)
-        item[1] = label_map[index]
-        return tuple(item)
-    return item
+class CachedVisionDataset(torch.utils.data.Dataset):
+    def __init__(self, dataset: torch.utils.data.Dataset):
+        self.__dataset = copy.deepcopy(dataset)
+        transforms = DatasetUtil(self.__dataset).get_transforms()
+        remain_transforms = []
+        while transforms:
+            t = transforms[0]
+            transforms.pop(0)
+            if isinstance(t, torchvision.transforms.ToTensor):
+                remain_transforms.append(t)
+        self.__dataset.transform = torchvision.transforms.Compose(remain_transforms)
+        self.transform = torchvision.transforms.Compose(transforms)
+
+        self.__items: dict = {}
+
+    def __getitem__(self, index):
+        if index in self.__items:
+            item = self.__items[index]
+        else:
+            item = self.__dataset[index]
+            self.__items[index] = item
+        img, target = item
+        return self.transform(img), target
+
+    def __len__(self):
+        return len(self.__dataset)
 
 
 def replace_dataset_labels(dataset, label_map: dict):
     assert label_map
+
+    def __replace_item_label(label_map, index, item):
+        if index in label_map:
+            assert label_map[index] != item[1]
+            item = list(item)
+            item[1] = label_map[index]
+            return tuple(item)
+        return item
 
     return DatasetMapper(dataset, [functools.partial(__replace_item_label, label_map)])
 
