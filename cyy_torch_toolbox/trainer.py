@@ -52,7 +52,7 @@ class Trainer(ModelExecutor):
 
     @property
     def best_model(self):
-        return self.__keep_model_hook.best_model
+        return self.__keep_model_hook.best_model[0]
 
     def get_inferencer_performance_metric(self, phase):
         return self.__inferencers[phase].performance_metric

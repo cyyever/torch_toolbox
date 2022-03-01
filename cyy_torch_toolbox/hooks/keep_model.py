@@ -36,6 +36,8 @@ class KeepModelHook(Hook):
             )
 
     def _after_execute(self, **kwargs):
+        if not self.save_flag:
+            return
         trainer = kwargs["model_executor"]
         model_dir = os.path.join(trainer.save_dir, "model")
         os.makedirs(model_dir, exist_ok=True)
