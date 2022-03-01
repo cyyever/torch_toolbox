@@ -15,6 +15,6 @@ class BatchLossLogger(MetricLogger):
                 self.prefix,
                 kwargs["epoch"],
                 batch_index,
-                model_executor.get_data("cur_learning_rates", None),
+                model_executor.get_data("cur_learning_rates", None)[0],
                 kwargs["batch_loss"].item(),
             )
