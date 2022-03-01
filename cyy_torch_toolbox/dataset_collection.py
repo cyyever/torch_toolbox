@@ -39,11 +39,11 @@ class DatasetCollection:
         self.__tokenizer_and_vocab = None
         self.__collate_fn = None
 
-    @property
-    def tokenizer_and_vocab(self) -> TokenizerAndVocab:
-        if self.__tokenizer_and_vocab is None:
-            self.__tokenizer_and_vocab = TokenizerAndVocab(self.get_training_dataset())
-        return self.__tokenizer_and_vocab
+    # @property
+    # def tokenizer_and_vocab(self) -> TokenizerAndVocab:
+    #     if self.__tokenizer_and_vocab is None:
+    #         self.__tokenizer_and_vocab = TokenizerAndVocab(self.get_training_dataset())
+    #     return self.__tokenizer_and_vocab
 
     @property
     def dataset_type(self):
@@ -394,9 +394,12 @@ class DatasetCollection:
             )
         dc = cls(training_dataset, validation_dataset, test_dataset, dataset_type, name)
 
-        get_logger().info("training_dataset len %s", len(training_dataset))
-        get_logger().info("validation_dataset len %s", len(validation_dataset))
-        get_logger().info("test_dataset len %s", len(test_dataset))
+        try:
+            get_logger().info("training_dataset len %s", len(training_dataset))
+            get_logger().info("validation_dataset len %s", len(validation_dataset))
+            get_logger().info("test_dataset len %s", len(test_dataset))
+        except BaseException:
+            pass
 
         if dataset_type == DatasetType.Vision:
             mean, std = cls.__get_mean_and_std(
