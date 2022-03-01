@@ -259,5 +259,5 @@ def get_dataloader(
         prefetch_factor=1,
         persistent_workers=False,
         pin_memory=True,
-        collate_fn=dc.get_collate_fn(),
+        # collate_fn=dc.get_collate_fn(),
     )

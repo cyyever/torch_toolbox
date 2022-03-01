@@ -124,7 +124,6 @@ class Trainer(ModelExecutor):
     def _prepare_execution(self, **kwargs):
         super()._prepare_execution(**kwargs)
 
-        self.disable_hook(self.__keep_model_hook)
         self.__keep_model_hook.save_flag = (
             kwargs.get("save_model", False) and self.save_dir is not None
         )
