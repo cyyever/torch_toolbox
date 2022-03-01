@@ -17,8 +17,8 @@ class LossMetric(Metric):
         else:
             epoch_loss += real_batch_loss
         self._set_epoch_metric(epoch, "loss", epoch_loss)
-        if os.getenv("compute_perplexity") is not None:
-            self._set_epoch_metric(epoch, "perplexity", epoch_loss.exp())
+        # if os.getenv("compute_perplexity") is not None:
+        self._set_epoch_metric(epoch, "perplexity", epoch_loss.exp())
 
     def get_loss(self, epoch):
         return self.get_epoch_metric(epoch, "loss")
