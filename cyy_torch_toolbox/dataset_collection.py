@@ -11,8 +11,8 @@ from ssd_checker import is_ssd
 from torch.nn.utils.rnn import pad_sequence
 from torchvision import transforms
 
-from cyy_torch_toolbox.dataset import (  # convert_iterable_dataset_to_map,
-    CachedVisionDataset, DatasetUtil, replace_dataset_labels, sub_dataset)
+from cyy_torch_toolbox.dataset import (  # convert_iterable_dataset_to_map,; CachedVisionDataset,
+    DatasetUtil, replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 from cyy_torch_toolbox.pipelines.text_pipeline import TokenizerAndVocab
@@ -545,7 +545,7 @@ class DatasetCollectionConfig:
             with open(args.dataset_arg_json_path, "rt", encoding="utf-8") as f:
                 self.dataset_kwargs = json.load(f)
 
-    def create_dataset_collection(self, save_dir):
+    def create_dataset_collection(self, save_dir=None):
         if self.dataset_name is None:
             raise RuntimeError("dataset_name is None")
 
