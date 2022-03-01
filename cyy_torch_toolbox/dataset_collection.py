@@ -11,9 +11,8 @@ from ssd_checker import is_ssd
 from torch.nn.utils.rnn import pad_sequence
 from torchvision import transforms
 
-from cyy_torch_toolbox.dataset import (DatasetUtil,
-                                       convert_iterable_dataset_to_map,
-                                       replace_dataset_labels, sub_dataset)
+from cyy_torch_toolbox.dataset import (  # convert_iterable_dataset_to_map,
+    CachedDataset, DatasetUtil, replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 from cyy_torch_toolbox.pipelines.text_pipeline import TokenizerAndVocab
@@ -250,7 +249,7 @@ class DatasetCollection:
         name: str,
         phase: MachineLearningPhase = None,
     ) -> str:
-        cache_dir = os.path.join(DatasetCollection.__get_dataset_dir(name), ".cache")
+        cache_dir = os.path.join(cls.__get_dataset_dir(name), ".cache")
         if phase is not None:
             cache_dir = os.path.join(cache_dir, str(phase))
         if not os.path.isdir(cache_dir):
@@ -284,6 +283,21 @@ class DatasetCollection:
             else:
                 mean, std = DatasetUtil(dataset).get_mean_and_std()
             return (mean, std)
+
+        return cls.__get_cache_data(pickle_file, computation_fun)
+
+    @classmethod
+    def __get_dataset_size(cls, name: str):
+        dataset_dir = cls.__get_dataset_dir(name)
+        cache_dir = cls.__get_dataset_cache_dir(name)
+        pickle_file = os.path.join(cache_dir, "dataset_size")
+
+        def computation_fun():
+            size = 0
+            for path, _, files in os.walk(dataset_dir):
+                for f in files:
+                    size += os.path.getsize(os.path.join(path, f))
+            return size
 
         return cls.__get_cache_data(pickle_file, computation_fun)
 
@@ -329,10 +343,10 @@ class DatasetCollection:
                         else:
                             dataset_kwargs["subset"] = "testing"
                     dataset = dataset_constructor(**dataset_kwargs)
-                    if isinstance(dataset, torch.utils.data.IterableDataset):
-                        dataset = convert_iterable_dataset_to_map(
-                            dataset, name == "IMDB"
-                        )
+                    # if isinstance(dataset, torch.utils.data.IterableDataset):
+                    #     dataset = convert_iterable_dataset_to_map(
+                    #         dataset, name == "IMDB"
+                    #     )
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
                     elif phase == MachineLearningPhase.Validation:
@@ -349,6 +363,14 @@ class DatasetCollection:
                     # # if split == "test":
                     # #     break
                     raise e
+        # cache the datasets in memory to avoid IO and decoding
+        if cls.__get_dataset_size(name) / (1024 * 1024 * 1024) <= 1:
+            get_logger().warning("cache dataset")
+            training_dataset = CachedDataset(training_dataset)
+            if validation_dataset is not None:
+                validation_dataset = CachedDataset(validation_dataset)
+            if test_dataset is not None:
+                test_dataset = CachedDataset(test_dataset)
 
         if validation_dataset is None or test_dataset is None:
             splited_dataset = None
@@ -407,14 +429,14 @@ class DatasetCollection:
         #         )
         return dc
 
-    @staticmethod
+    @classmethod
     def __prepare_dataset_kwargs(
         name: str, dataset_type: DatasetType, sig, dataset_kwargs: dict = None
     ):
         if dataset_kwargs is None:
             dataset_kwargs = {}
         if "root" not in dataset_kwargs and "root" in sig.parameters:
-            dataset_kwargs["root"] = DatasetCollection.__get_dataset_dir(name)
+            dataset_kwargs["root"] = cls.__get_dataset_dir(name)
         if (
             "download" in sig.parameters
             and sig.parameters["download"].default is not None

@@ -69,6 +69,22 @@ class DictDataset(torch.utils.data.Dataset):
         return len(self.__items)
 
 
+class CachedDataset:
+    def __init__(self, dataset: torch.utils.data.Dataset):
+        self.__dataset = dataset
+        self.__items = {}
+
+    def __getitem__(self, index):
+        if index in self.__items:
+            return self.__items[index]
+        item = self.__dataset.__getitem__(index)
+        self.__items[index] = item
+        return item
+
+    def __len__(self):
+        return len(self.__dataset)
+
+
 def convert_iterable_dataset_to_map(
     dataset: torch.utils.data.IterableDataset, swap_item: bool = False
 ) -> dict:
