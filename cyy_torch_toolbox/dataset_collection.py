@@ -12,7 +12,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torchvision import transforms
 
 from cyy_torch_toolbox.dataset import (  # convert_iterable_dataset_to_map,
-    CachedDataset, DatasetUtil, replace_dataset_labels, sub_dataset)
+    CachedVisionDataset, DatasetUtil, replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 from cyy_torch_toolbox.pipelines.text_pipeline import TokenizerAndVocab
@@ -363,14 +363,15 @@ class DatasetCollection:
                     # # if split == "test":
                     # #     break
                     raise e
+
         # cache the datasets in memory to avoid IO and decoding
-        if cls.__get_dataset_size(name) / (1024 * 1024 * 1024) <= 1:
-            get_logger().warning("cache dataset")
-            training_dataset = CachedDataset(training_dataset)
-            if validation_dataset is not None:
-                validation_dataset = CachedDataset(validation_dataset)
-            if test_dataset is not None:
-                test_dataset = CachedDataset(test_dataset)
+        # if cls.__get_dataset_size(name) / (1024 * 1024 * 1024) <= 1:
+        #     get_logger().warning("cache dataset")
+        #     training_dataset = CachedVisionDataset(training_dataset)
+        #     if validation_dataset is not None:
+        #         validation_dataset = CachedVisionDataset(validation_dataset)
+        #     if test_dataset is not None:
+        #         test_dataset = CachedVisionDataset(test_dataset)
 
         if validation_dataset is None or test_dataset is None:
             splited_dataset = None
@@ -427,11 +428,12 @@ class DatasetCollection:
         #                 (0, 16000 - tensor.shape[-1]), 0
         #             )(tensor)
         #         )
+
         return dc
 
     @classmethod
     def __prepare_dataset_kwargs(
-        name: str, dataset_type: DatasetType, sig, dataset_kwargs: dict = None
+        cls, name: str, dataset_type: DatasetType, sig, dataset_kwargs: dict = None
     ):
         if dataset_kwargs is None:
             dataset_kwargs = {}
