@@ -207,6 +207,7 @@ def get_dataloader(
     hyper_parameter: HyperParameter,
     device=None,
     stream=None,
+    persistent_workers=False,
 ):
     dataset = dc.get_dataset(phase)
     original_dataset = dc.get_original_dataset(phase)
@@ -248,7 +249,7 @@ def get_dataloader(
             shuffle=(phase == MachineLearningPhase.Training),
             num_workers=2,
             prefetch_factor=1,
-            persistent_workers=False,
+            persistent_workers=persistent_workers,
             pin_memory=True,
         )
     return torch.utils.data.DataLoader(
@@ -257,7 +258,7 @@ def get_dataloader(
         shuffle=(phase == MachineLearningPhase.Training),
         num_workers=2,
         prefetch_factor=1,
-        persistent_workers=False,
+        persistent_workers=persistent_workers,
         pin_memory=True,
         # collate_fn=dc.get_collate_fn(),
     )

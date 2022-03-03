@@ -67,6 +67,11 @@ class HyperParameter:
                     "suggested_learning_rate is %s", lr_finder.suggested_learning_rate
                 )
                 self.__learning_rate = lr_finder.suggested_learning_rate
+                if (
+                    hasattr(tmp_trainer.dataloader, "_iterator")
+                    and tmp_trainer.dataloader._iterator is not None
+                ):
+                    tmp_trainer.dataloader._iterator._shutdown_workers()
 
             pool = ThreadPool()
             pool.exec(get_learning_rate_from_thread)
