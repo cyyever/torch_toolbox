@@ -17,7 +17,7 @@ class KeepModelHook(Hook):
     def _before_execute(self, **kwargs):
         self.__best_model = None
 
-    def _after_epoch(self, **kwargs):
+    def _after_validation(self, **kwargs):
         trainer = kwargs["model_executor"]
         epoch = kwargs["epoch"]
         if self.save_flag:

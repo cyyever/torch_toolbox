@@ -222,6 +222,11 @@ class Trainer(ModelExecutor):
                             batch_index=batch_index + 1,
                         )
 
+                    self.exec_hooks(
+                        ModelExecutorHookPoint.AFTER_EPOCH,
+                        epoch=epoch,
+                    )
+
                     if not self.__inferencers:
                         for phase in (
                             MachineLearningPhase.Validation,
@@ -237,11 +242,10 @@ class Trainer(ModelExecutor):
                         inferencer.inference(epoch=epoch, use_grad=False)
 
                     self.exec_hooks(
-                        ModelExecutorHookPoint.AFTER_EPOCH,
+                        ModelExecutorHookPoint.AFTER_VALIDATION,
                         epoch=epoch,
                     )
-
-                    # update model parameters
+                    # adjust learning rate
                     if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                         if isinstance(
                             lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau

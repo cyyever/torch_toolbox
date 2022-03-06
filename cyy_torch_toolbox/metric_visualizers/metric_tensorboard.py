@@ -63,7 +63,7 @@ class MetricTensorBoard(MetricVisualizer):
     def __del__(self):
         self.close()
 
-    def _after_epoch(self, **kwargs):
+    def _after_validation(self, **kwargs):
         if not self.__enable:
             return
         trainer = kwargs["model_executor"]

@@ -30,6 +30,7 @@ class ModelExecutorHookPoint(IntEnum):
     BEFORE_BATCH = auto()
     AFTER_BATCH = auto()
     AFTER_LOAD_MODEL = auto()
+    AFTER_VALIDATION = auto()
 
 
 class StopExecutingException(Exception):
