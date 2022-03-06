@@ -189,11 +189,14 @@ class HyperParameter:
             "lr": self.get_learning_rate(trainer),
             "momentum": self.momentum,
             "weight_decay": self.weight_decay / len(trainer.dataset),
+            "foreach": True,
         }
 
         sig = inspect.signature(self.__optimizer_factory)
         parameter_names = {
-            p.name for p in sig.parameters.values() if p.kind == p.POSITIONAL_OR_KEYWORD
+            p.name
+            for p in sig.parameters.values()
+            if p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)
         }
         return self.__optimizer_factory(
             **{k: v for k, v in kwargs.items() if k in parameter_names}
