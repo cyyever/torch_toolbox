@@ -1,4 +1,3 @@
-from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.time_counter import TimeCounter
 from cyy_torch_toolbox.hook import Hook
 
@@ -7,17 +6,20 @@ class DataloaderProfiler(Hook):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__dataloader_time_counter = TimeCounter()
+        self.__accumulated_time = 0
+
+    def _before_epoch(self, **kwargs):
+        self.__accumulated_time = 0
 
     def _before_fetch_batch(self, **kwargs):
-        batch_index = kwargs["batch_index"]
-        if batch_index == 0 or batch_index % 100 == 0:
-            self.__dataloader_time_counter.reset_start_time()
+        self.__dataloader_time_counter.reset_start_time()
 
     def _after_fetch_batch(self, **kwargs):
-        batch_index = kwargs["batch_index"]
-        if batch_index == 0 or batch_index % 100 == 0:
-            get_logger().warning(
-                "fetching batch %s used %sms",
-                batch_index,
-                self.__dataloader_time_counter.elapsed_milliseconds(),
-            )
+        self.__accumulated_time += self.__dataloader_time_counter.elapsed_milliseconds()
+
+    def _after_epoch(self, **kwargs):
+        model_executor = kwargs["model_executor"]
+        epoch = kwargs.get("epoch")
+        model_executor.performance_metric.set_epoch_metric(
+            epoch, "data_waiting_time", self.__accumulated_time / 1000
+        )

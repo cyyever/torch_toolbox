@@ -109,6 +109,10 @@ class ModelExecutorBase:
         for name in hook.yield_hook_names():
             self.__disabled_hooks.add(name)
 
+    def remove_hook_obj(self, hook: Hook):
+        for hook_point, name, fun in hook.yield_hooks():
+            self.remove_hook(name, hook_point)
+
     def remove_hook(self, name: str, hook_point: ModelExecutorHookPoint = None):
         for cur_hook_point, hooks in self.__hooks.items():
             if hook_point is not None and cur_hook_point != hook_point:
