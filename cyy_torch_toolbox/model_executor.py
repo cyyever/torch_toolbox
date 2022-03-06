@@ -44,7 +44,6 @@ class ModelExecutor(ModelExecutorBase):
         self.__performance_metric = PerformanceMetric(self._model_with_loss.model_type)
         self.append_hook(self.__performance_metric)
         self.__performance_metric_logger = PerformanceMetricLogger()
-        self.append_hook(self.__performance_metric_logger)
         self.debugging_mode = False
         self.profiling_mode = False
         self.__profiler = None
@@ -146,6 +145,10 @@ class ModelExecutor(ModelExecutorBase):
         else:
             if self.__profiler is not None:
                 self.disable_hook(self.__profiler)
+        self.remove_hook_obj(self.performance_metric_logger)
+        self.append_hook(self.performance_metric_logger)
+        self.remove_hook_obj(self.visualizer)
+        self.append_hook(self.visualizer)
 
     @property
     def dataset_collection(self) -> DatasetCollection:

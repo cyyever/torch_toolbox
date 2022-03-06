@@ -38,7 +38,6 @@ class Trainer(ModelExecutor):
         self.append_hook(self.__batch_loss_logger)
         self.__keep_model_hook = KeepModelHook()
         self.append_hook(self.__keep_model_hook)
-        self.append_hook(self.visualizer)
         self.__debugger = None
 
     def set_device(self, device):
@@ -122,13 +121,10 @@ class Trainer(ModelExecutor):
         self.set_data(key, old_data)
 
     def _prepare_execution(self, **kwargs):
-        super()._prepare_execution(**kwargs)
-
         self.__keep_model_hook.save_flag = (
             kwargs.get("save_model", False) and self.save_dir is not None
         )
         self.__inferencers.clear()
-        self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
         if self.debugging_mode:
             get_logger().warning("train in debugging mode")
             if self.__debugger is None:
@@ -139,6 +135,8 @@ class Trainer(ModelExecutor):
         else:
             if self.__debugger is not None:
                 self.disable_hook(self.__debugger)
+        super()._prepare_execution(**kwargs)
+        self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
 
     def train(self, **kwargs):
         self._prepare_execution(**kwargs)

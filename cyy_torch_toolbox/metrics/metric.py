@@ -18,9 +18,12 @@ class Metric(Hook):
             return epoch_data
         return epoch_data.get(name, None)
 
+    def set_epoch_metric(self, epoch, name, data):
+        self._set_epoch_metric(epoch, name, data)
+
     def _set_epoch_metric(self, epoch, name, data):
         if epoch not in self.__epoch_metrics:
-            self.__epoch_metrics[epoch] = dict()
+            self.__epoch_metrics[epoch] = {}
         self.__epoch_metrics[epoch][name] = data
 
     def clear_metric(self):
