@@ -207,7 +207,7 @@ def get_dataloader(
     hyper_parameter: HyperParameter,
     device=None,
     stream=None,
-    persistent_workers=False,
+    persistent_workers=True,
 ):
     dataset = dc.get_dataset(phase)
     original_dataset = dc.get_original_dataset(phase)
