@@ -7,7 +7,7 @@ from typing import Callable, Dict, List
 import torch
 from cyy_naive_lib.log import get_logger
 from ssd_checker import is_ssd
-from torch.nn.utils.rnn import pad_sequence
+# from torch.nn.utils.rnn import pad_sequence
 from torchvision import transforms
 
 from cyy_torch_toolbox.dataset import DatasetUtil  # CachedVisionDataset,
@@ -47,7 +47,6 @@ class DatasetCollection:
             self.__target_transforms[phase] = []
         self.__name = name
         self.__tokenizer: Tokenizer = None
-        self.__collate_fn = None
 
     @property
     def tokenizer(self) -> Tokenizer:
@@ -195,10 +194,9 @@ class DatasetCollection:
                 for f in target_transforms:
                     target = f(target)
                 targets.append(target)
-            return inputs, targets
+            return torch.stack(inputs), torch.stack(targets)
 
         return collate_fn
-
 
     def get_raw_data(self, phase: MachineLearningPhase, index: int):
         if self.dataset_type == DatasetType.Vision:
