@@ -1,7 +1,8 @@
 import functools
-import inspect
 
 import torch
+import torchtext
+import torchvision
 
 try:
     import torchaudio
@@ -9,8 +10,6 @@ try:
     has_torchaudio = True
 except ModuleNotFoundError:
     has_torchaudio = False
-import torchtext
-import torchvision
 
 if has_torchaudio:
     import cyy_torch_toolbox.datasets.audio as local_audio_datasets
@@ -23,6 +22,7 @@ except ModuleNotFoundError:
     has_medmnist = False
 import cyy_torch_toolbox.datasets.vision as local_vision_datasets
 from cyy_torch_toolbox.ml_type import DatasetType
+from cyy_torch_toolbox.reflection import get_class_attrs
 
 
 def get_dataset_constructors(dataset_type: DatasetType = None) -> dict:
@@ -41,12 +41,10 @@ def get_dataset_constructors(dataset_type: DatasetType = None) -> dict:
                 if dataset_type == DatasetType.Text:
                     dataset_constructors[name] = dataset_constructor
             continue
-        for name in dir(repository):
-            dataset_constructor = getattr(repository, name)
-            if not inspect.isclass(dataset_constructor):
-                continue
-            if issubclass(dataset_constructor, torch.utils.data.Dataset):
-                dataset_constructors[name] = dataset_constructor
+        dataset_constructors |= get_class_attrs(
+            repository,
+            filter_fun=lambda k, v: issubclass(v, torch.utils.data.Dataset),
+        )
     if has_medmnist and (dataset_type is None or dataset_type == DatasetType.Vision):
         INFO = medmnist.info.INFO
         for name, item in INFO.items():

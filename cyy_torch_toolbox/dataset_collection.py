@@ -1,4 +1,3 @@
-import inspect
 import json
 import os
 import pickle
@@ -16,6 +15,7 @@ from cyy_torch_toolbox.dataset import (  # convert_iterable_dataset_to_map,; Cac
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 from cyy_torch_toolbox.pipelines.text_pipeline import TokenizerAndVocab
+from cyy_torch_toolbox.reflection import get_kwarg_names
 
 
 class DatasetCollection:
@@ -315,11 +315,11 @@ class DatasetCollection:
         name: str,
         dataset_type: DatasetType,
         dataset_constructor,
-        dataset_kwargs=None,
+        dataset_kwargs: dict = None,
     ):
-        sig = inspect.signature(dataset_constructor)
+        constructor_kwargs = get_kwarg_names(dataset_constructor)
         dataset_kwargs = cls.__prepare_dataset_kwargs(
-            name, dataset_type, sig, dataset_kwargs
+            name, dataset_type, constructor_kwargs, dataset_kwargs
         )
         training_dataset = None
         validation_dataset = None
@@ -328,12 +328,12 @@ class DatasetCollection:
         for phase in MachineLearningPhase:
             while True:
                 try:
-                    if "train" in sig.parameters:
+                    if "train" in constructor_kwargs:
                         # Some dataset only have train and test parts
                         if phase == MachineLearningPhase.Validation:
                             break
                         dataset_kwargs["train"] = phase == MachineLearningPhase.Training
-                    if "split" in sig.parameters:
+                    if "split" in constructor_kwargs:
                         if phase == MachineLearningPhase.Training:
                             dataset_kwargs["split"] = "train"
                         elif phase == MachineLearningPhase.Validation:
@@ -343,7 +343,7 @@ class DatasetCollection:
                                 dataset_kwargs["split"] = "val"
                         else:
                             dataset_kwargs["split"] = "test"
-                    if "subset" in sig.parameters:
+                    if "subset" in constructor_kwargs:
                         if phase == MachineLearningPhase.Training:
                             dataset_kwargs["subset"] = "training"
                         elif phase == MachineLearningPhase.Validation:
@@ -429,9 +429,6 @@ class DatasetCollection:
                     ],
                     phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
                 )
-        elif dataset_type == DatasetType.Text:
-
-            pass
         # if dataset_type == DatasetType.Audio:
         #     if name == "SPEECHCOMMANDS_SIMPLIFIED":
         #         dc.append_transform(
@@ -444,21 +441,27 @@ class DatasetCollection:
 
     @classmethod
     def __prepare_dataset_kwargs(
-        cls, name: str, dataset_type: DatasetType, sig, dataset_kwargs: dict = None
+        cls,
+        name: str,
+        dataset_type: DatasetType,
+        constructor_kwargs: set,
+        dataset_kwargs: dict = None,
     ):
         if dataset_kwargs is None:
             dataset_kwargs = {}
-        if "root" not in dataset_kwargs and "root" in sig.parameters:
+        if "root" not in dataset_kwargs:
             dataset_kwargs["root"] = cls.__get_dataset_dir(name)
-        if (
-            "download" in sig.parameters
-            and sig.parameters["download"].default is not None
-        ):
+        if "download" not in dataset_kwargs:
             dataset_kwargs["download"] = True
+        if dataset_type == DatasetType.Vision:
+            if "transform" not in dataset_kwargs:
+                dataset_kwargs["transform"] = transforms.Compose(
+                    [transforms.ToTensor()]
+                )
 
         discarded_dataset_kwargs = set()
         for k in dataset_kwargs:
-            if k not in sig.parameters:
+            if k not in constructor_kwargs:
                 discarded_dataset_kwargs.add(k)
         if discarded_dataset_kwargs:
             get_logger().warning(
@@ -466,11 +469,6 @@ class DatasetCollection:
             )
             for k in discarded_dataset_kwargs:
                 dataset_kwargs.pop(k)
-        if dataset_type == DatasetType.Vision:
-            if "transform" not in dataset_kwargs:
-                dataset_kwargs["transform"] = transforms.Compose(
-                    [transforms.ToTensor()]
-                )
         return dataset_kwargs
 
     def __get_label_indices(self, phase):
