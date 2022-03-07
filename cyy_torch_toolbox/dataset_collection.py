@@ -195,15 +195,6 @@ class DatasetCollection:
             targets.append(target)
         return torch.stack(inputs), torch.LongTensor(targets)
 
-    def collate_training_batch(self, batch):
-        return self.collate_batch(batch, phase=MachineLearningPhase.Training)
-
-    def collate_test_batch(self, batch):
-        return self.collate_batch(batch, phase=MachineLearningPhase.Test)
-
-    def collate_validation_batch(self, batch):
-        return self.collate_batch(batch, phase=MachineLearningPhase.Validation)
-
     def get_raw_data(self, phase: MachineLearningPhase, index: int):
         if self.dataset_type == DatasetType.Vision:
             dataset_util = self.get_dataset_util(phase)

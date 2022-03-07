@@ -1,5 +1,5 @@
 from cyy_naive_lib.log import get_logger
-from ml_type import MachineLearningPhase
+from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 
 from .metric_logger import MetricLogger
 
@@ -16,7 +16,10 @@ class PerformanceMetricLogger(MetricLogger):
             phase_str = "test"
 
         metric_str = ""
-        for k in ("loss", "accuracy", "class_accuracy", "perplexity"):
+        metrics = ("loss", "accuracy", "class_accuracy")
+        if model_executor.dataset_collection.dataset_type == DatasetType.Text:
+            metrics = metrics + ("perplexity",)
+        for k in metrics:
             value = model_executor.performance_metric.get_epoch_metric(epoch, k)
             if value is not None:
                 metric_str = metric_str + "{}:{}, ".format(k, value)

@@ -1,4 +1,5 @@
 import copy
+import functools
 import random
 from multiprocessing import Manager
 
@@ -236,11 +237,7 @@ def get_dataloader(
             last_batch_policy=LastBatchPolicy.PARTIAL,
             last_batch_padded=True,
         )
-    collate_fn = dc.collate_training_batch
-    if phase == MachineLearningPhase.Validation:
-        collate_fn = dc.collate_validation_batch
-    elif phase == MachineLearningPhase.Test:
-        collate_fn = dc.collate_test_batch
+    collate_fn = functools.partial(dc.collate_batch, phase=phase)
     return torch.utils.data.DataLoader(
         dataset,
         batch_size=hyper_parameter.batch_size,
