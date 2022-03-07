@@ -7,6 +7,7 @@ from typing import Callable, Dict, List
 import torch
 from cyy_naive_lib.log import get_logger
 from ssd_checker import is_ssd
+from torch.utils.data._utils.collate import default_collate
 # from torch.nn.utils.rnn import pad_sequence
 from torchvision import transforms
 
@@ -184,16 +185,27 @@ class DatasetCollection:
     def collate_batch(self, batch, phase):
         inputs = []
         targets = []
+        other_info = []
         transforms = self.get_transforms(phase)
         target_transforms = self.get_target_transforms(phase)
-        for (input, target) in batch:
+        for item in batch:
+            if len(item) == 3:
+                input, target, tmp = item
+                other_info.append(tmp)
+            else:
+                input, target = item
             for f in transforms:
                 input = f(input)
             inputs.append(input)
             for f in target_transforms:
                 target = f(target)
             targets.append(target)
-        return torch.stack(inputs), torch.LongTensor(targets)
+        inputs = default_collate(inputs)
+        targets = default_collate(targets)
+        if other_info:
+            other_info = default_collate(other_info)
+            return inputs, targets, other_info
+        return inputs, targets
 
     def get_raw_data(self, phase: MachineLearningPhase, index: int):
         if self.dataset_type == DatasetType.Vision:
