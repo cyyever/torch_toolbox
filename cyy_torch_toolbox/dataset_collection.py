@@ -10,12 +10,12 @@ from ssd_checker import is_ssd
 from torch.nn.utils.rnn import pad_sequence
 from torchvision import transforms
 
-from cyy_torch_toolbox.dataset import (  # CachedVisionDataset,
-    DatasetUtil, convert_iterable_dataset_to_map, replace_dataset_labels,
-    sub_dataset)
+from cyy_torch_toolbox.dataset import DatasetUtil  # CachedVisionDataset,
+from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
+                                       replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
+from cyy_torch_toolbox.dataset_transformers.tokenizer import Tokenizer
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
-# from cyy_torch_toolbox.pipelines.text_pipeline import TokenizerAndVocab
 from cyy_torch_toolbox.reflection import get_kwarg_names
 
 
@@ -37,14 +37,14 @@ class DatasetCollection:
         self.__datasets[MachineLearningPhase.Test] = test_dataset
         self.__dataset_type = dataset_type
         self.__name = name
-        self.__tokenizer_and_vocab = None
+        self.__tokenizer: Tokenizer = None
         self.__collate_fn = None
 
-    # @property
-    # def tokenizer_and_vocab(self) -> TokenizerAndVocab:
-    #     if self.__tokenizer_and_vocab is None:
-    #         self.__tokenizer_and_vocab = TokenizerAndVocab(self.get_training_dataset())
-    #     return self.__tokenizer_and_vocab
+    @property
+    def tokenizer(self) -> Tokenizer:
+        if self.__tokenizer is None:
+            self.__tokenizer = Tokenizer(self)
+        return self.__tokenizer
 
     @property
     def dataset_type(self):

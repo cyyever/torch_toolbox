@@ -128,7 +128,6 @@ class DatasetUtil:
         if hasattr(self.dataset, "transform"):
             transforms = [self.dataset.transform]
         i = 0
-        print("before transforms", transforms)
         while i < len(transforms):
             if isinstance(transforms[i], torchvision.transforms.Compose):
                 transforms = (
@@ -136,7 +135,6 @@ class DatasetUtil:
                 )
             else:
                 i += 1
-        print("transforms", transforms)
         return transforms
 
     def __get_dataloader(self):
