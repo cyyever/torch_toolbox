@@ -1,15 +1,14 @@
 import copy
-import inspect
 import json
 from enum import IntEnum, auto
 from typing import Callable, Optional, Union
 
 import torch
-import torch.optim as optim
 from cyy_naive_lib.data_structure.thread_pool import ThreadPool
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.algorithm.lr_finder import LRFinder
+from cyy_torch_toolbox.reflection import call_fun, get_class_attrs
 
 
 class HyperParameterAction(IntEnum):
@@ -131,7 +130,7 @@ class HyperParameter:
                 get_logger().info(
                     "ReduceLROnPlateau patience is %s", full_kwargs["patience"]
                 )
-                return optim.lr_scheduler.ReduceLROnPlateau(**full_kwargs)
+                return torch.optim.lr_scheduler.ReduceLROnPlateau(**full_kwargs)
             if name == "OneCycleLR":
                 full_kwargs["pct_start"] = 0.4
                 full_kwargs["max_lr"] = 10 * hyper_parameter.get_learning_rate(trainer)
@@ -143,17 +142,17 @@ class HyperParameter:
                 full_kwargs["anneal_strategy"] = "linear"
                 full_kwargs["three_phase"] = True
                 full_kwargs.update(kwargs)
-                return optim.lr_scheduler.OneCycleLR(**full_kwargs)
+                return torch.optim.lr_scheduler.OneCycleLR(**full_kwargs)
             if name == "CosineAnnealingLR":
                 full_kwargs["T_max"] = hyper_parameter.epoch
                 full_kwargs.update(kwargs)
-                return optim.lr_scheduler.CosineAnnealingLR(**full_kwargs)
+                return torch.optim.lr_scheduler.CosineAnnealingLR(**full_kwargs)
             if name == "MultiStepLR":
                 full_kwargs["T_max"] = hyper_parameter.epoch
                 full_kwargs["milestones"] = [30, 80]
                 full_kwargs.update(kwargs)
-                return optim.lr_scheduler.MultiStepLR(**full_kwargs)
-            fun = getattr(optim.lr_scheduler, name)
+                return torch.optim.lr_scheduler.MultiStepLR(**full_kwargs)
+            fun = getattr(torch.optim.lr_scheduler, name)
             if fun is not None:
                 full_kwargs.update(kwargs)
                 return fun(**full_kwargs)
@@ -169,7 +168,7 @@ class HyperParameter:
     def get_optimizer_names():
         return sorted(HyperParameter.__get_optimizer_classes().keys())
 
-    def get_lr_scheduler_names():
+    def get_lr_scheduler_names() -> list:
         return ["ReduceLROnPlateau", "OneCycleLR", "CosineAnnealingLR", "MultiStepLR"]
 
     @classmethod
@@ -191,26 +190,16 @@ class HyperParameter:
             "weight_decay": self.weight_decay / len(trainer.dataset),
             "foreach": True,
         }
-
-        sig = inspect.signature(self.__optimizer_factory)
-        parameter_names = {
-            p.name
-            for p in sig.parameters.values()
-            if p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)
-        }
-        return self.__optimizer_factory(
-            **{k: v for k, v in kwargs.items() if k in parameter_names}
-        )
+        return call_fun(self.__optimizer_factory, kwargs)
 
     @staticmethod
     def __get_optimizer_classes():
-        optimizer_classes = {
-            name: getattr(optim, name)
-            for name in dir(optim)
-            if inspect.isclass(getattr(optim, name))
-            and issubclass(getattr(optim, name), optim.Optimizer)
-        }
-        return optimizer_classes
+        return get_class_attrs(
+            torch.optim,
+            filter_fun=lambda k, _: issubclass(
+                getattr(torch.optim, k), torch.optim.Optimizer
+            ),
+        )
 
     def __str__(self):
         s = (
