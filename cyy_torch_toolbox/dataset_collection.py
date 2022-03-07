@@ -14,7 +14,7 @@ from cyy_torch_toolbox.dataset import (  # convert_iterable_dataset_to_map,; Cac
     DatasetUtil, replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
-from cyy_torch_toolbox.pipelines.text_pipeline import TokenizerAndVocab
+# from cyy_torch_toolbox.pipelines.text_pipeline import TokenizerAndVocab
 from cyy_torch_toolbox.reflection import get_kwarg_names
 
 
