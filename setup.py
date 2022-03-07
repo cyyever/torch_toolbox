@@ -17,7 +17,7 @@ setuptools.setup(
         "cyy_torch_toolbox/datasets/vision",
         "cyy_torch_toolbox/datasets/audio",
         "cyy_torch_toolbox/model_transformers",
-        "cyy_torch_toolbox/pipelines",
+        "cyy_torch_toolbox/dataset_transformers",
         "cyy_torch_toolbox/metrics",
         "cyy_torch_toolbox/hooks",
         "cyy_torch_toolbox/metric_visualizers",

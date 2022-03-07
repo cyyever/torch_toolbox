@@ -8,9 +8,7 @@ class Tokenizer:
 
         def yield_tokens():
             for dataset in dc.foreach_dataset():
-                for target, text in dataset:
-                    print(target)
-                    print(text)
+                for text, target in dataset:
                     yield tokenizer(text)
                     yield tokenizer(target)
 
