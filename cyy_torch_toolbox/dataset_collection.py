@@ -36,6 +36,8 @@ class DatasetCollection:
         self.__datasets[MachineLearningPhase.Validation] = validation_dataset
         self.__datasets[MachineLearningPhase.Test] = test_dataset
         self.__dataset_type = dataset_type
+        self.__transforms: dict = {}
+        self.__target_transforms: dict = {}
         self.__name = name
         self.__tokenizer: Tokenizer = None
         self.__collate_fn = None
@@ -72,31 +74,30 @@ class DatasetCollection:
         ):
             self.transform_dataset(phase, transformer)
 
-    def transform_dataset_to_subset(
-        self, phase: MachineLearningPhase, labels: set
-    ) -> None:
-        label_indices = self.__get_label_indices(phase)
-        all_labels = self.get_label_names()
-        if not labels.issubset(all_labels):
-            get_logger().error(
-                "[%s] is not a subset of [%s]", " ".join(labels), " ".join(all_labels)
-            )
-            raise RuntimeError("invalid dataset labels")
-        total_indices = []
-        for label_index, indices in label_indices.items():
-            if all_labels[label_index] in labels:
-                total_indices += indices["indices"]
+    # def transform_dataset_to_subset(
+    #     self, phase: MachineLearningPhase, labels: set
+    # ) -> None:
+    #     label_indices = self.__get_label_indices(phase)
+    #     all_labels = self.get_label_names()
+    #     if not labels.issubset(all_labels):
+    #         get_logger().error(
+    #             "[%s] is not a subset of [%s]", " ".join(labels), " ".join(all_labels)
+    #         )
+    #         raise RuntimeError("invalid dataset labels")
+    #     total_indices = []
+    #     for label_index, indices in label_indices.items():
+    #         if all_labels[label_index] in labels:
+    #             total_indices += indices["indices"]
 
-        self.transform_dataset(
-            phase, lambda dataset: sub_dataset(dataset, total_indices)
-        )
+    #     self.transform_dataset(
+    #         phase, lambda dataset: sub_dataset(dataset, total_indices)
+    #     )
+
+    def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
+        return self.__datasets[phase]
 
     def get_training_dataset(self) -> torch.utils.data.Dataset:
         return self.get_dataset(MachineLearningPhase.Training)
-
-    def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
-        assert phase in self.__datasets
-        return self.__datasets[phase]
 
     def get_original_dataset(
         self, phase: MachineLearningPhase
@@ -112,26 +113,23 @@ class DatasetCollection:
         return DatasetUtil(self.get_dataset(phase))
 
     def append_transforms(self, transforms, phases=None):
-        origin_datasets = set()
         for k in MachineLearningPhase:
             if phases is not None and k not in phases:
                 continue
-            origin_datasets.add(self.get_original_dataset(k))
-        for dataset in origin_datasets:
-            for t in transforms:
-                DatasetUtil(dataset).append_transform(t)
+            if k not in self.__transforms:
+                self.__transforms[k] = []
+            self.__transforms[k] += transforms
 
     def append_transform(self, transform, phases=None):
         return self.append_transforms([transform], phases)
 
     def prepend_transform(self, transform, phase=None):
-        origin_datasets = set()
         for k in MachineLearningPhase:
             if phase is not None and k != phase:
                 continue
-            origin_datasets.add(self.get_original_dataset(k))
-        for dataset in origin_datasets:
-            DatasetUtil(dataset).prepend_transform(transform)
+            if k not in self.__transforms:
+                self.__transforms[k] = []
+            self.__transforms[k].insert(0, transform)
 
     @property
     def name(self) -> str:
@@ -250,8 +248,6 @@ class DatasetCollection:
                 get_logger().warning("dataset %s is not on a SSD disk", name)
         return dataset_dir
 
-        # name: str, phase: MachineLearningPhase | None = None
-
     @classmethod
     def __get_dataset_cache_dir(
         cls,
@@ -266,7 +262,6 @@ class DatasetCollection:
         return cache_dir
 
     @classmethod
-    # def get_by_name(cls, name: str, dataset_kwargs: dict | None = None):
     def get_by_name(cls, name: str, dataset_kwargs: dict = None):
         with cls.__lock:
             all_dataset_constructors = set()
@@ -447,7 +442,7 @@ class DatasetCollection:
         dataset_type: DatasetType,
         constructor_kwargs: set,
         dataset_kwargs: dict = None,
-    ):
+    ) -> dict:
         if dataset_kwargs is None:
             dataset_kwargs = {}
         if "root" not in dataset_kwargs:
@@ -494,7 +489,7 @@ class DatasetCollection:
         return datasets
 
     @staticmethod
-    def __get_cache_data(path: str, computation_fun: Callable):
+    def __get_cache_data(path: str, computation_fun: Callable) -> dict:
         with DatasetCollection.__lock:
             data = DatasetCollection.__read_data(path)
             if data is not None:
@@ -523,7 +518,7 @@ class DatasetCollectionConfig:
     def __init__(self, dataset_name=None):
         self.dataset_name = dataset_name
         self.dataset_kwargs = {}
-        self.sub_collection_labels = None
+        # self.sub_collection_labels = None
         self.training_dataset_percentage = None
         self.training_dataset_indices_path = None
         self.training_dataset_label_map_path = None
@@ -533,7 +528,7 @@ class DatasetCollectionConfig:
     def add_args(self, parser):
         if self.dataset_name is None:
             parser.add_argument("--dataset_name", type=str, required=True)
-        parser.add_argument("--sub_collection_labels", type=str, default=None)
+        # parser.add_argument("--sub_collection_labels", type=str, default=None)
         parser.add_argument("--training_dataset_percentage", type=float, default=None)
         parser.add_argument("--training_dataset_indices_path", type=str, default=None)
         parser.add_argument(
