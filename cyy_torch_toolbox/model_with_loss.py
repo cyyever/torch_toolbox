@@ -20,7 +20,7 @@ class ModelWithLoss:
     def __init__(
         self,
         model: torch.nn.Module,
-        loss_fun=None,
+        loss_fun: str = None,
         model_type: ModelType = None,
     ):
         self.__model: torch.nn.Module = model
@@ -124,9 +124,7 @@ class ModelWithLoss:
             input_size = getattr(self.__get_real_model().__class__, "input_size", None)
             if input_size is not None:
                 get_logger().debug("resize input to %s", input_size)
-                self.__data_transforms.append(
-                    torchvision.transforms.Resize(input_size)
-                )
+                self.__data_transforms.append(torchvision.transforms.Resize(input_size))
             self.__data_transforms = torchvision.transforms.Compose(
                 self.__data_transforms
             )
