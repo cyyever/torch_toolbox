@@ -11,7 +11,8 @@ from torch.nn.utils.rnn import pad_sequence
 from torchvision import transforms
 
 from cyy_torch_toolbox.dataset import (  # convert_iterable_dataset_to_map,; CachedVisionDataset,
-    DatasetUtil, replace_dataset_labels, sub_dataset)
+    DatasetUtil, convert_iterable_dataset_to_map, replace_dataset_labels,
+    sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 # from cyy_torch_toolbox.pipelines.text_pipeline import TokenizerAndVocab
@@ -351,10 +352,10 @@ class DatasetCollection:
                         else:
                             dataset_kwargs["subset"] = "testing"
                     dataset = dataset_constructor(**dataset_kwargs)
-                    # if isinstance(dataset, torch.utils.data.IterableDataset):
-                    #     dataset = convert_iterable_dataset_to_map(
-                    #         dataset, name == "IMDB"
-                    #     )
+                    if name == "IMDB":
+                        dataset = convert_iterable_dataset_to_map(
+                            dataset, swap_item=True
+                        )
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
                     elif phase == MachineLearningPhase.Validation:
