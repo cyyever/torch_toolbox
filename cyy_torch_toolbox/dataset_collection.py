@@ -181,22 +181,28 @@ class DatasetCollection:
     # def set_collate_fn(self, collate_fn):
     #     self.__collate_fn = collate_fn
 
-    def get_collate_fn(self, phase):
-        def collate_fn(batch):
-            inputs = []
-            targets = []
-            transforms = self.get_transforms(phase)
-            target_transforms = self.get_target_transforms(phase)
-            for (input, target) in batch:
-                for f in transforms:
-                    input = f(input)
-                inputs.append(input)
-                for f in target_transforms:
-                    target = f(target)
-                targets.append(target)
-            return torch.stack(inputs), torch.stack(targets)
+    def collate_batch(self, batch, phase):
+        inputs = []
+        targets = []
+        transforms = self.get_transforms(phase)
+        target_transforms = self.get_target_transforms(phase)
+        for (input, target) in batch:
+            for f in transforms:
+                input = f(input)
+            inputs.append(input)
+            for f in target_transforms:
+                target = f(target)
+            targets.append(target)
+        return torch.stack(inputs), torch.LongTensor(targets)
 
-        return collate_fn
+    def collate_training_batch(self, batch):
+        return self.collate_batch(batch, phase=MachineLearningPhase.Training)
+
+    def collate_test_batch(self, batch):
+        return self.collate_batch(batch, phase=MachineLearningPhase.Test)
+
+    def collate_validation_batch(self, batch):
+        return self.collate_batch(batch, phase=MachineLearningPhase.Validation)
 
     def get_raw_data(self, phase: MachineLearningPhase, index: int):
         if self.dataset_type == DatasetType.Vision:
