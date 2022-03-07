@@ -7,8 +7,8 @@ from typing import Callable, Dict, List
 import torch
 from cyy_naive_lib.log import get_logger
 from ssd_checker import is_ssd
+from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data._utils.collate import default_collate
-# from torch.nn.utils.rnn import pad_sequence
 from torchvision import transforms
 
 from cyy_torch_toolbox.dataset import DatasetUtil  # CachedVisionDataset,
@@ -135,17 +135,17 @@ class DatasetCollection:
                 continue
             self.__transforms[k] += transforms
 
-    def append_input_batch_transforms(self, transforms, phases=None):
+    def append_input_batch_transform(self, transform, phases=None):
         for k in MachineLearningPhase:
             if phases is not None and k not in phases:
                 continue
-            self.__input_batch_transforms[k] += transforms
+            self.__input_batch_transforms[k].append(transform)
 
-    def append_target_transforms(self, transforms, phases=None):
+    def append_target_transform(self, transform, phases=None):
         for k in MachineLearningPhase:
             if phases is not None and k not in phases:
                 continue
-            self.__target_transforms[k] += transforms
+            self.__target_transforms[k].append(transform)
 
     def append_transform(self, transform, phases=None):
         return self.append_transforms([transform], phases)
@@ -217,11 +217,12 @@ class DatasetCollection:
             for f in target_transforms:
                 target = f(target)
             targets.append(target)
-        inputs = default_collate(inputs)
+        if input_batch_transforms:
+            for f in input_batch_transforms:
+                inputs = f(inputs)
+        else:
+            inputs = default_collate(inputs)
         targets = default_collate(targets)
-        for f in input_batch_transforms:
-            inputs = f(inputs)
-
         if other_info:
             other_info = default_collate(other_info)
             return inputs, targets, other_info
@@ -476,7 +477,13 @@ class DatasetCollection:
                 dc.append_transform(
                     lambda text: torch.tensor(dc.tokenizer(text)),
                 )
-                dc.append_target_transforms(lambda label: 0 if label == "neg" else 1)
+                dc.append_target_transform(lambda label: 0 if label == "neg" else 1)
+                dc.append_input_batch_transform(
+                    lambda inputs: pad_sequence(
+                        inputs, padding_value=dc.tokenizer.vocab["<pad>"]
+                    )
+                )
+
         # if dataset_type == DatasetType.Audio:
         #     if name == "SPEECHCOMMANDS_SIMPLIFIED":
         #         dc.append_transform(
