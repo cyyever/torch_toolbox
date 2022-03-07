@@ -39,6 +39,7 @@ class DatasetCollection:
         self.__dataset_type = dataset_type
         self.__transforms: dict = {}
         self.__target_transforms: dict = {}
+        self.__input_batch_transforms: dict = {}
         for phase in (
             MachineLearningPhase.Training,
             MachineLearningPhase.Test,
@@ -46,6 +47,7 @@ class DatasetCollection:
         ):
             self.__transforms[phase] = []
             self.__target_transforms[phase] = []
+            self.__input_batch_transforms[phase] = []
         self.__name = name
         self.__tokenizer: Tokenizer = None
 
@@ -119,17 +121,31 @@ class DatasetCollection:
     ) -> DatasetUtil:
         return DatasetUtil(self.get_dataset(phase))
 
-    def get_transforms(self, phase) -> list:
-        return self.__transforms[phase]
+    # def get_transforms(self, phase) -> list:
+    #     return self.__transforms[phase]
 
-    def get_target_transforms(self, phase) -> list:
-        return self.__target_transforms[phase]
+    # def get_target_transforms(self, phase) -> list:
+    #     return self.__target_transforms[phase]
+    # def get_target_transforms(self, phase) -> list:
+    #     return self.__target_transforms[phase]
 
     def append_transforms(self, transforms, phases=None):
         for k in MachineLearningPhase:
             if phases is not None and k not in phases:
                 continue
             self.__transforms[k] += transforms
+
+    def append_input_batch_transforms(self, transforms, phases=None):
+        for k in MachineLearningPhase:
+            if phases is not None and k not in phases:
+                continue
+            self.__input_batch_transforms[k] += transforms
+
+    def append_target_transforms(self, transforms, phases=None):
+        for k in MachineLearningPhase:
+            if phases is not None and k not in phases:
+                continue
+            self.__target_transforms[k] += transforms
 
     def append_transform(self, transform, phases=None):
         return self.append_transforms([transform], phases)
@@ -186,8 +202,9 @@ class DatasetCollection:
         inputs = []
         targets = []
         other_info = []
-        transforms = self.get_transforms(phase)
-        target_transforms = self.get_target_transforms(phase)
+        transforms = self.__transforms[phase]
+        input_batch_transforms = self.__input_batch_transforms[phase]
+        target_transforms = self.__target_transforms[phase]
         for item in batch:
             if len(item) == 3:
                 input, target, tmp = item
@@ -202,6 +219,9 @@ class DatasetCollection:
             targets.append(target)
         inputs = default_collate(inputs)
         targets = default_collate(targets)
+        for f in input_batch_transforms:
+            inputs = f(inputs)
+
         if other_info:
             other_info = default_collate(other_info)
             return inputs, targets, other_info
@@ -451,6 +471,12 @@ class DatasetCollection:
                     ],
                     phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
                 )
+        if dataset_type == DatasetType.Text:
+            if name == "IMDB":
+                dc.append_transform(
+                    lambda text: torch.tensor(dc.tokenizer(text)),
+                )
+                dc.append_target_transforms(lambda label: 0 if label == "neg" else 1)
         # if dataset_type == DatasetType.Audio:
         #     if name == "SPEECHCOMMANDS_SIMPLIFIED":
         #         dc.append_transform(
