@@ -38,6 +38,13 @@ class DatasetCollection:
         self.__dataset_type = dataset_type
         self.__transforms: dict = {}
         self.__target_transforms: dict = {}
+        for phase in (
+            MachineLearningPhase.Training,
+            MachineLearningPhase.Test,
+            MachineLearningPhase.Validation,
+        ):
+            self.__transforms[phase] = []
+            self.__target_transforms[phase] = []
         self.__name = name
         self.__tokenizer: Tokenizer = None
         self.__collate_fn = None
@@ -112,12 +119,16 @@ class DatasetCollection:
     ) -> DatasetUtil:
         return DatasetUtil(self.get_dataset(phase))
 
+    def get_transforms(self, phase) -> list:
+        return self.__transforms[phase]
+
+    def get_target_transforms(self, phase) -> list:
+        return self.__target_transforms[phase]
+
     def append_transforms(self, transforms, phases=None):
         for k in MachineLearningPhase:
             if phases is not None and k not in phases:
                 continue
-            if k not in self.__transforms:
-                self.__transforms[k] = []
             self.__transforms[k] += transforms
 
     def append_transform(self, transform, phases=None):
@@ -127,8 +138,6 @@ class DatasetCollection:
         for k in MachineLearningPhase:
             if phase is not None and k != phase:
                 continue
-            if k not in self.__transforms:
-                self.__transforms[k] = []
             self.__transforms[k].insert(0, transform)
 
     @property
@@ -154,32 +163,42 @@ class DatasetCollection:
 
         return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
-    def text_task_collate(self, batch):
-        text_list, label_list = [], []
-        for (_text, _label) in batch:
-            if _label == "neg":
-                _label = 0
-            if _label == "pos":
-                _label = 1
-            label_list.append(_label)
-            processed_text = torch.tensor(self.tokenizer_and_vocab(_text))
-            text_list.append(processed_text)
-        text_list = pad_sequence(
-            text_list, padding_value=self.tokenizer_and_vocab.vocab["<pad>"]
-        )
-        return text_list, torch.as_tensor(label_list)
+    # def text_task_collate(self, batch):
+    #     text_list, label_list = [], []
+    #     for (_text, _label) in batch:
+    #         if _label == "neg":
+    #             _label = 0
+    #         if _label == "pos":
+    #             _label = 1
+    #         label_list.append(_label)
+    #         processed_text = torch.tensor(self.tokenizer_and_vocab(_text))
+    #         text_list.append(processed_text)
+    #     text_list = pad_sequence(
+    #         text_list, padding_value=self.tokenizer_and_vocab.vocab["<pad>"]
+    #     )
+    #     return text_list, torch.as_tensor(label_list)
 
-    # def get_collate_fn(self) -> Callable | None:
-    def set_collate_fn(self, collate_fn):
-        self.__collate_fn = collate_fn
+    # # def get_collate_fn(self) -> Callable | None:
+    # def set_collate_fn(self, collate_fn):
+    #     self.__collate_fn = collate_fn
 
-    def get_collate_fn(self):
-        return None
-        if self.__collate_fn is not None:
-            return self.__collate_fn
-        if self.dataset_type != DatasetType.Text:
-            return None
-        return self.text_task_collate
+    def get_collate_fn(self, phase):
+        def collate_fn(batch):
+            inputs = []
+            targets = []
+            transforms = self.get_transforms(phase)
+            target_transforms = self.get_target_transforms(phase)
+            for (input, target) in batch:
+                for f in transforms:
+                    input = f(input)
+                inputs.append(input)
+                for f in target_transforms:
+                    target = f(target)
+                targets.append(target)
+            return inputs, targets
+
+        return collate_fn
+
 
     def get_raw_data(self, phase: MachineLearningPhase, index: int):
         if self.dataset_type == DatasetType.Vision:

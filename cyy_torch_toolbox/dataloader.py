@@ -121,20 +121,17 @@ if has_dali:
             )
             # images = nvidia.dali.fn.decoders.image(images, device="cpu" if device is None else "mixed")
 
-        raw_transforms = get_raw_transformers(original_dataset.transforms)
+        raw_transforms = dc.get_transforms(phase=phase)
         raw_transforms = [
             t
             for t in raw_transforms
             if not isinstance(t, torchvision.transforms.transforms.ToTensor)
         ]
-        raw_transform_dict = dict(enumerate(raw_transforms))
-        get_logger().debug("raw_transforms are %s", raw_transform_dict)
-        # crop_size = None
+        get_logger().debug("raw_transforms are %s", raw_transforms)
         horizontal_mirror = False
         mean_and_std = None
-        raw_transform_dict_copy = copy.copy(raw_transform_dict)
-        for idx in sorted(raw_transform_dict_copy):
-            transform = raw_transform_dict_copy[idx]
+        new_transforms = []
+        for idx, transform in enumerate(raw_transforms):
             if isinstance(
                 transform, torchvision.transforms.transforms.RandomResizedCrop
             ):
@@ -159,8 +156,6 @@ if has_dali:
                     resize_x=transform.size[0],
                     resize_y=transform.size[1],
                 )
-                # crop_size = transform.size
-                raw_transform_dict.pop(idx)
                 continue
             if isinstance(
                 transform, torchvision.transforms.transforms.RandomHorizontalFlip
@@ -168,12 +163,11 @@ if has_dali:
                 horizontal_mirror = nvidia.dali.fn.random.coin_flip(
                     probability=transform.p
                 )
-                raw_transform_dict.pop(idx)
                 continue
             if isinstance(transform, torchvision.transforms.transforms.Normalize):
                 mean_and_std = (copy.deepcopy(transform.mean), transform.std)
-                raw_transform_dict.pop(idx)
                 continue
+            new_transforms.append(transform)
         assert mean_and_std is not None
         scale = 1.0
         if not is_external_source:
@@ -191,9 +185,9 @@ if has_dali:
             mirror=horizontal_mirror,
         )
 
-        if raw_transform_dict:
-            get_logger().error("remaining raw_transforms are %s", raw_transform_dict)
-        assert not raw_transform_dict
+        if new_transforms:
+            get_logger().error("remaining raw_transforms are %s", new_transforms)
+        assert not new_transforms
 
         if device is not None:
             labels = labels.gpu()
@@ -242,16 +236,6 @@ def get_dataloader(
             last_batch_policy=LastBatchPolicy.PARTIAL,
             last_batch_padded=True,
         )
-    if dc.dataset_type != DatasetType.Text:
-        return torch.utils.data.DataLoader(
-            dataset,
-            batch_size=hyper_parameter.batch_size,
-            shuffle=(phase == MachineLearningPhase.Training),
-            num_workers=2,
-            prefetch_factor=1,
-            persistent_workers=persistent_workers,
-            pin_memory=True,
-        )
     return torch.utils.data.DataLoader(
         dataset,
         batch_size=hyper_parameter.batch_size,
@@ -260,5 +244,5 @@ def get_dataloader(
         prefetch_factor=1,
         persistent_workers=persistent_workers,
         pin_memory=True,
-        # collate_fn=dc.get_collate_fn(),
+        collate_fn=dc.get_collate_fn(phase=phase),
     )
