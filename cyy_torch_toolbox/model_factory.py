@@ -34,10 +34,11 @@ def get_model(
     dataset_util = dataset_collection.get_dataset_util()
     added_kwargs: dict = {}
     if dataset_collection.dataset_type == DatasetType.Vision:
-        added_kwargs |= {
-            "input_channels": dataset_util.channel,
-            "channels": dataset_util.channel,
-        }
+        for k in ("input_channels", "channels"):
+            if k not in model_kwargs:
+                added_kwargs |= {
+                    k: dataset_util.channel,
+                }
     # if dataset_collection.dataset_type == DatasetType.Text:
     #     if "num_embeddings" not in model_kwargs:
     #         added_kwargs["num_embeddings"] = len(

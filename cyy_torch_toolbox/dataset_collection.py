@@ -10,7 +10,7 @@ from ssd_checker import is_ssd
 from torch.nn.utils.rnn import pad_sequence
 from torchvision import transforms
 
-from cyy_torch_toolbox.dataset import (  # convert_iterable_dataset_to_map,; CachedVisionDataset,
+from cyy_torch_toolbox.dataset import (  # CachedVisionDataset,
     DatasetUtil, convert_iterable_dataset_to_map, replace_dataset_labels,
     sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
