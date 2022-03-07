@@ -32,7 +32,7 @@ class ModelWithLoss:
                 raise RuntimeError(f"unknown loss function {loss_fun}")
         self.__model_type = model_type
         self.__has_batch_norm = None
-        self.__model_transforms = None
+        self.__data_transforms = None
         self.__trace_input = False
         self.__example_input = None
         self.use_checkpointing = False
@@ -119,18 +119,18 @@ class ModelWithLoss:
                 self.__current_model_device = device
 
         assert self.loss_fun is not None
-        if self.__model_transforms is None:
-            self.__model_transforms = []
+        if self.__data_transforms is None:
+            self.__data_transforms = []
             input_size = getattr(self.__get_real_model().__class__, "input_size", None)
             if input_size is not None:
                 get_logger().debug("resize input to %s", input_size)
-                self.__model_transforms.append(
+                self.__data_transforms.append(
                     torchvision.transforms.Resize(input_size)
                 )
-            self.__model_transforms = torchvision.transforms.Compose(
-                self.__model_transforms
+            self.__data_transforms = torchvision.transforms.Compose(
+                self.__data_transforms
             )
-        inputs = self.__model_transforms(inputs)
+        inputs = self.__data_transforms(inputs)
         if (
             self.__current_phase == MachineLearningPhase.Training
             and self.use_checkpointing

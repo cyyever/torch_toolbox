@@ -196,9 +196,7 @@ class HyperParameter:
     def __get_optimizer_classes():
         return get_class_attrs(
             torch.optim,
-            filter_fun=lambda k, _: issubclass(
-                getattr(torch.optim, k), torch.optim.Optimizer
-            ),
+            filter_fun=lambda _, v: issubclass(v, torch.optim.Optimizer),
         )
 
     def __str__(self):
