@@ -70,6 +70,7 @@ class CudaDeviceGreedyAllocator:
             self.__free_memory_dict[device] = 0
 
     def __refresh_memory_info(self):
+        torch.cuda.empty_cache()
         pynvml.nvmlInit()
         for device in self.__free_memory_dict:
             h = pynvml.nvmlDeviceGetHandleByIndex(device.index)
