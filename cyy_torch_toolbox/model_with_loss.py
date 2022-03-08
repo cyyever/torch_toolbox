@@ -200,5 +200,5 @@ class ModelWithLoss:
     def __set_model_mode(self, phase: MachineLearningPhase):
         if phase == MachineLearningPhase.Training:
             self.__model.train()
-            return
-        self.__model.eval()
+        else:
+            self.__model.eval()

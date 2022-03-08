@@ -83,25 +83,6 @@ class DatasetCollection:
         ):
             self.transform_dataset(phase, transformer)
 
-    # def transform_dataset_to_subset(
-    #     self, phase: MachineLearningPhase, labels: set
-    # ) -> None:
-    #     label_indices = self.__get_label_indices(phase)
-    #     all_labels = self.get_label_names()
-    #     if not labels.issubset(all_labels):
-    #         get_logger().error(
-    #             "[%s] is not a subset of [%s]", " ".join(labels), " ".join(all_labels)
-    #         )
-    #         raise RuntimeError("invalid dataset labels")
-    #     total_indices = []
-    #     for label_index, indices in label_indices.items():
-    #         if all_labels[label_index] in labels:
-    #             total_indices += indices["indices"]
-
-    #     self.transform_dataset(
-    #         phase, lambda dataset: sub_dataset(dataset, total_indices)
-    #     )
-
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
         return self.__datasets[phase]
 
@@ -124,8 +105,6 @@ class DatasetCollection:
     # def get_transforms(self, phase) -> list:
     #     return self.__transforms[phase]
 
-    # def get_target_transforms(self, phase) -> list:
-    #     return self.__target_transforms[phase]
     # def get_target_transforms(self, phase) -> list:
     #     return self.__target_transforms[phase]
 
@@ -179,25 +158,6 @@ class DatasetCollection:
 
         return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
-    # def text_task_collate(self, batch):
-    #     text_list, label_list = [], []
-    #     for (_text, _label) in batch:
-    #         if _label == "neg":
-    #             _label = 0
-    #         if _label == "pos":
-    #             _label = 1
-    #         label_list.append(_label)
-    #         processed_text = torch.tensor(self.tokenizer_and_vocab(_text))
-    #         text_list.append(processed_text)
-    #     text_list = pad_sequence(
-    #         text_list, padding_value=self.tokenizer_and_vocab.vocab["<pad>"]
-    #     )
-    #     return text_list, torch.as_tensor(label_list)
-
-    # # def get_collate_fn(self) -> Callable | None:
-    # def set_collate_fn(self, collate_fn):
-    #     self.__collate_fn = collate_fn
-
     def collate_batch(self, batch, phase):
         inputs = []
         targets = []
@@ -228,7 +188,7 @@ class DatasetCollection:
             return inputs, targets, other_info
         return inputs, targets
 
-    def get_raw_data(self, phase: MachineLearningPhase, index: int):
+    def get_raw_data(self, phase: MachineLearningPhase, index: int) -> tuple:
         if self.dataset_type == DatasetType.Vision:
             dataset_util = self.get_dataset_util(phase)
             return (
@@ -484,14 +444,6 @@ class DatasetCollection:
                     )
                 )
 
-        # if dataset_type == DatasetType.Audio:
-        #     if name == "SPEECHCOMMANDS_SIMPLIFIED":
-        #         dc.append_transform(
-        #             lambda tensor: torch.nn.ConstantPad1d(
-        #                 (0, 16000 - tensor.shape[-1]), 0
-        #             )(tensor)
-        #         )
-
         return dc
 
     @classmethod
@@ -526,15 +478,15 @@ class DatasetCollection:
                 dataset_kwargs.pop(k)
         return dataset_kwargs
 
-    def __get_label_indices(self, phase):
-        with DatasetCollection.__lock:
-            cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name, phase)
-            pickle_file = os.path.join(cache_dir, "label_indices.pk")
-            dataset_util = self.get_dataset_util(phase)
-            return DatasetCollection.__get_cache_data(
-                pickle_file,
-                dataset_util.split_by_label,
-            )
+    # def __get_label_indices(self, phase):
+    #     with DatasetCollection.__lock:
+    #         cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name, phase)
+    #         pickle_file = os.path.join(cache_dir, "label_indices.pk")
+    #         dataset_util = self.get_dataset_util(phase)
+    #         return DatasetCollection.__get_cache_data(
+    #             pickle_file,
+    #             dataset_util.split_by_label,
+    #         )
 
     @staticmethod
     def __split_for_validation(cache_dir, splited_dataset):
@@ -577,7 +529,6 @@ class DatasetCollectionConfig:
     def __init__(self, dataset_name=None):
         self.dataset_name = dataset_name
         self.dataset_kwargs = {}
-        # self.sub_collection_labels = None
         self.training_dataset_percentage = None
         self.training_dataset_indices_path = None
         self.training_dataset_label_map_path = None
@@ -587,7 +538,6 @@ class DatasetCollectionConfig:
     def add_args(self, parser):
         if self.dataset_name is None:
             parser.add_argument("--dataset_name", type=str, required=True)
-        # parser.add_argument("--sub_collection_labels", type=str, default=None)
         parser.add_argument("--training_dataset_percentage", type=float, default=None)
         parser.add_argument("--training_dataset_indices_path", type=str, default=None)
         parser.add_argument(
@@ -614,12 +564,6 @@ class DatasetCollectionConfig:
             raise RuntimeError("dataset_name is None")
 
         dc = DatasetCollection.get_by_name(self.dataset_name, self.dataset_kwargs)
-
-        # We need to remap labels for the loss function to work
-        # if self.sub_collection_labels is not None:
-        #     labels = set(self.sub_collection_labels.split("|"))
-        #     for phase in MachineLearningPhase:
-        #         dc.transform_dataset_to_subset(phase, labels)
 
         dc.transform_dataset(
             MachineLearningPhase.Training,

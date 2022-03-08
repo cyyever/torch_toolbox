@@ -1,10 +1,9 @@
 import torch
-from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset import decode_batch
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.hyper_parameter import HyperParameter
-from cyy_torch_toolbox.ml_type import (MachineLearningPhase,
+from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        ModelExecutorHookPoint)
 from cyy_torch_toolbox.model_executor import ModelExecutor
 from cyy_torch_toolbox.model_with_loss import ModelWithLoss
@@ -26,6 +25,10 @@ class Inferencer(ModelExecutor):
         use_grad = kwargs.get("use_grad", False)
         epoch = kwargs.get("epoch", 1)
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
+        phase = self.phase
+        if use_grad and self.dataset_collection.dataset_type == DatasetType.Text:
+            # cudnn rnn backward needs training model
+            phase = MachineLearningPhase.Training
         with torch.set_grad_enabled(use_grad):
             with torch.cuda.stream(self.cuda_stream):
                 if use_grad:
@@ -42,7 +45,7 @@ class Inferencer(ModelExecutor):
                     result = self._model_with_loss(
                         inputs,
                         targets,
-                        phase=self.phase,
+                        phase=phase,
                         device=self.device,
                         non_blocking=True,
                     )
