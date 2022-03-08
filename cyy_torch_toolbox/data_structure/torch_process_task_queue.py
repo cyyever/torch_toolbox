@@ -4,7 +4,9 @@ from typing import Callable
 
 import torch.multiprocessing
 from cyy_naive_lib.data_structure.task_queue import TaskQueue
-from device import get_cpu_device, get_devices, put_data_to_device
+from cyy_torch_toolbox.device import (CudaDeviceGreedyAllocator,
+                                      get_cpu_device, get_devices,
+                                      put_data_to_device)
 
 
 class TorchProcessTaskQueue(TaskQueue):
@@ -14,8 +16,13 @@ class TorchProcessTaskQueue(TaskQueue):
         worker_num: int | None = None,
         use_manager: bool = False,
         move_data_in_cpu: bool = True,
+        max_needed_cuda_bytes=None,
     ):
         self.__devices = get_devices()
+        if max_needed_cuda_bytes is not None:
+            self.__devices = CudaDeviceGreedyAllocator().get_devices(
+                max_needed_cuda_bytes
+            )
         self.__use_manager = use_manager
         self.__manager = None
         if worker_num is None:

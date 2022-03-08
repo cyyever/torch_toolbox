@@ -79,6 +79,13 @@ class CudaDeviceGreedyAllocator:
             )
         pynvml.nvmlShutdown()
 
+    def get_devices(self, max_needed_bytes):
+        return [
+            device
+            for device, memory in self.__sort_devices()
+            if memory >= max_needed_bytes
+        ]
+
     def get_device(self, max_needed_bytes=None):
         for device, memory in self.__sort_devices():
             if max_needed_bytes is not None and memory < max_needed_bytes:
