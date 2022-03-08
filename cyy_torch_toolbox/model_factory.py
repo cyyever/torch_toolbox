@@ -1,4 +1,5 @@
 import copy
+import sys
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -22,7 +23,15 @@ def get_model_info() -> dict:
         for repo in github_repos:
             for model_name in torch.hub.list(repo):
                 if model_name not in __model_info:
-                    __model_info[model_name.lower()] = (repo, model_name, "github")
+                    repo_dir = torch.hub._get_cache_or_reload(
+                        repo, force_reload=False, verbose=False, skip_validation=True
+                    )
+                    __model_info[model_name.lower()] = (
+                        repo,
+                        model_name,
+                        "github",
+                        repo_dir,
+                    )
     return __model_info
 
 
@@ -64,7 +73,7 @@ def get_model(
                     f"unsupported model {name}, supported models are "
                     + str(model_info.keys())
                 )
-            repo, model_name, source = model_repo_and_name
+            repo, model_name, source, repo_dir = model_repo_and_name
             model = torch.hub.load(
                 repo, model_name, source=source, **(added_kwargs | model_kwargs)
             )
@@ -74,6 +83,8 @@ def get_model(
                 model_type=model_type,
             )
             get_logger().warning("use model arguments %s", model_kwargs | added_kwargs)
+            # we need the path to pickle models
+            sys.path.append(repo_dir)
             return model_with_loss
         except TypeError as e:
             retry = False
