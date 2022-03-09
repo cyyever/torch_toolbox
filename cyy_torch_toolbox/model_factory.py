@@ -52,9 +52,9 @@ def get_model(
     if dataset_collection.dataset_type == DatasetType.Text:
         if "num_embeddings" not in model_kwargs:
             added_kwargs["num_embeddings"] = len(dataset_collection.tokenizer.vocab)
-    if global_reproducible_env.enabled:
-        # some bug in pytorch's Dropout
-        added_kwargs["dropout"] = 0
+    # if global_reproducible_env.enabled:
+    #     # some bug in pytorch's Dropout
+    #     added_kwargs["dropout"] = 0
 
     model_type = ModelType.Classification
     if "rcnn" in name.lower():
