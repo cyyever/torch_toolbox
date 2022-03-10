@@ -14,6 +14,7 @@ class ReproducibleEnv:
 
     def __init__(self):
         self.__torch_seed = None
+        self.__torch_cuda_rng_state = None
         self.__randomlib_state = None
         self.__numpy_state = None
         self.__enabled = False
@@ -33,9 +34,9 @@ class ReproducibleEnv:
         """
         with ReproducibleEnv.lock:
             if self.__enabled:
-                get_logger().warning("use reproducible env")
+                get_logger().warning("%s use reproducible env", id(self))
             else:
-                get_logger().warning("initialize and use reproducible env")
+                get_logger().warning(f"{id(self)} initialize and use reproducible env")
 
             os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
             torch.backends.cudnn.deterministic = True
@@ -50,7 +51,12 @@ class ReproducibleEnv:
             else:
                 get_logger().warning("collect torch seed")
                 self.__torch_seed = torch.initial_seed()
-            assert self.__torch_seed is not None
+            if self.__torch_cuda_rng_state is not None:
+                get_logger().warning("overwrite torch cuda rng state")
+                torch.cuda.set_rng_state_all(self.__torch_cuda_rng_state)
+            else:
+                get_logger().warning("collect torch cuda rng state")
+                self.__torch_cuda_rng_state = torch.cuda.get_rng_state_all()
 
             if self.__randomlib_state is not None:
                 get_logger().warning("overwrite random lib state")
@@ -70,6 +76,7 @@ class ReproducibleEnv:
             self.__enabled = True
 
     def disable(self):
+        get_logger().warning("disable reproducible env")
         with ReproducibleEnv.lock:
             os.environ.pop("CUBLAS_WORKSPACE_CONFIG")
             torch.backends.cudnn.deterministic = False
@@ -88,16 +95,17 @@ class ReproducibleEnv:
         self.disable()
 
     def save(self, save_dir: str):
+        seed_path = os.path.join(save_dir, "random_seed")
+        get_logger().warning("%s save reproducible env to %s", id(self), seed_path)
         with ReproducibleEnv.lock:
             assert self.__enabled
             os.makedirs(save_dir, exist_ok=True)
-            seed_path = os.path.join(save_dir, "random_seed")
-            get_logger().warning("save reproducible env to %s", seed_path)
             self.__last_seed_path = seed_path
             with open(seed_path, "wb") as f:
                 return pickle.dump(
                     {
                         "torch_seed": self.__torch_seed,
+                        "torch_cuda_rng_state": self.__torch_cuda_rng_state,
                         "randomlib_state": self.__randomlib_state,
                         "numpy_state": self.__numpy_state,
                     },
@@ -108,9 +116,10 @@ class ReproducibleEnv:
         with ReproducibleEnv.lock:
             assert not self.__enabled
             with open(path, "rb") as f:
-                get_logger().warning("load reproducible env from %s", path)
+                get_logger().warning("%s load reproducible env from %s", id(self), path)
                 obj: dict = pickle.load(f)
                 self.__torch_seed = obj["torch_seed"]
+                self.__torch_cuda_rng_state = obj["torch_cuda_rng_state"]
                 self.__randomlib_state = obj["randomlib_state"]
                 self.__numpy_state = obj["numpy_state"]
 
