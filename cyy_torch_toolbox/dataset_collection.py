@@ -195,6 +195,12 @@ class DatasetCollection:
                 dataset_util.get_sample_image(index),
                 dataset_util.get_sample_label(index),
             )
+        elif self.dataset_type == DatasetType.Text:
+            dataset_util = self.get_dataset_util(phase)
+            return (
+                dataset_util.get_sample_text(index),
+                dataset_util.get_sample_label(index),
+            )
         raise RuntimeError("Unimplemented Code")
 
     def generate_raw_data(self, phase: MachineLearningPhase):
