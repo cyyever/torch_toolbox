@@ -315,6 +315,9 @@ class DatasetUtil:
         )
         return PIL.Image.fromarray(ndarr)
 
+    def get_sample_text(self, idx) -> str:
+        return self.dataset[idx][0]
+
     def iid_split_indices(self, parts: list) -> list:
         return self.__get_split_indices(parts, by_label=True)
 
