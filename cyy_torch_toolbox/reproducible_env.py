@@ -14,6 +14,7 @@ class ReproducibleEnv:
 
     def __init__(self):
         self.__torch_seed = None
+        self.__torch_rng_state = None
         self.__torch_cuda_rng_state = None
         self.__randomlib_state = None
         self.__numpy_state = None
@@ -36,7 +37,7 @@ class ReproducibleEnv:
             if self.__enabled:
                 get_logger().warning("%s use reproducible env", id(self))
             else:
-                get_logger().warning(f"{id(self)} initialize and use reproducible env")
+                get_logger().warning("%s initialize and use reproducible env", id(self))
 
             os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
             torch.backends.cudnn.deterministic = True
@@ -49,11 +50,11 @@ class ReproducibleEnv:
 
             if self.__torch_seed is not None:
                 get_logger().debug("overwrite torch seed")
-                assert isinstance(self.__torch_seed, int)
                 torch.manual_seed(self.__torch_seed)
             else:
                 get_logger().debug("collect torch seed")
                 self.__torch_seed = torch.initial_seed()
+
             if self.__torch_cuda_rng_state is not None:
                 get_logger().debug("overwrite torch cuda rng state")
                 torch.cuda.set_rng_state_all(self.__torch_cuda_rng_state)
@@ -61,13 +62,19 @@ class ReproducibleEnv:
                 get_logger().debug("collect torch cuda rng state")
                 self.__torch_cuda_rng_state = torch.cuda.get_rng_state_all()
 
+            if self.__torch_rng_state is not None:
+                get_logger().debug("overwrite torch cuda rng state")
+                torch.set_rng_state(self.__torch_rng_state)
+            else:
+                get_logger().debug("collect torch rng state")
+                self.__torch_rng_state = torch.get_rng_state()
+
             if self.__randomlib_state is not None:
                 get_logger().debug("overwrite random lib state")
                 random.setstate(self.__randomlib_state)
             else:
                 get_logger().debug("get random lib state")
                 self.__randomlib_state = random.getstate()
-            assert self.__randomlib_state is not None
 
             if self.__numpy_state is not None:
                 get_logger().debug("overwrite numpy random lib state")
@@ -75,7 +82,6 @@ class ReproducibleEnv:
             else:
                 get_logger().debug("get numpy random lib state")
                 self.__numpy_state = numpy.random.get_state()
-            assert self.__numpy_state is not None
             self.__enabled = True
 
     def disable(self):
@@ -112,6 +118,7 @@ class ReproducibleEnv:
                     {
                         "torch_seed": self.__torch_seed,
                         "torch_cuda_rng_state": self.__torch_cuda_rng_state,
+                        "torch_rng_state": self.__torch_rng_state,
                         "randomlib_state": self.__randomlib_state,
                         "numpy_state": self.__numpy_state,
                     },
