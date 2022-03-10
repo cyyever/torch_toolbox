@@ -146,12 +146,9 @@ class DatasetCollection:
         def computation_fun():
             if self.name.lower() == "imagenet":
                 return range(1000)
-            training_dataset = self.get_training_dataset()
-            if hasattr(training_dataset, "targets"):
-                return self.get_dataset_util(
-                    phase=MachineLearningPhase.Training
-                ).get_labels()
-            return self.get_dataset_util(phase=MachineLearningPhase.Test).get_labels()
+            return self.get_dataset_util(
+                phase=MachineLearningPhase.Training
+            ).get_labels()
 
         if not use_cache:
             return computation_fun()
@@ -220,21 +217,12 @@ class DatasetCollection:
         pickle_file = os.path.join(cache_dir, "label_names.pk")
 
         def computation_fun():
-            if hasattr(self.get_training_dataset(), "classes"):
-                return getattr(self.get_training_dataset(), "classes")
-
-            for dataset_type in DatasetType:
-                dataset_constructors = get_dataset_constructors(dataset_type)
-                if self.name not in dataset_constructors:
-                    continue
-                dataset_constructor = dataset_constructors[self.name]
-                if hasattr(dataset_constructor, "classes"):
-                    return getattr(dataset_constructor, "classes")
-                get_logger().error(
-                    "%s constructor %s has no classes", self.name, dataset_constructor
-                )
-                raise NotImplementedError(self.name)
-            raise NotImplementedError(self.name)
+            label_names = self.get_dataset_util(
+                phase=MachineLearningPhase.Training
+            ).get_label_names()
+            if not label_names:
+                raise NotImplementedError(f"failed to get label names for {self.name}")
+            return label_names
 
         return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
 
@@ -512,6 +500,9 @@ class DatasetCollection:
             if data is not None:
                 return data
             data = computation_fun()
+            if data is None:
+                raise RuntimeError("data is None")
+            print("data is", data)
             DatasetCollection.__write_data(path, data)
             return data
 

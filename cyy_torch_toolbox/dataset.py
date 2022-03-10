@@ -263,11 +263,12 @@ class DatasetUtil:
 
     def get_labels(self, check_targets: bool = True) -> set:
         if check_targets:
-            if (
-                hasattr(self.dataset, "targets")
-                and self.dataset.target_transform is None
-            ):
-                return DatasetUtil.__get_labels_from_target(self.dataset.targets)
+            if hasattr(self.dataset, "targets"):
+                if (
+                    not hasattr(self.dataset, "target_transform")
+                    or self.dataset.target_transform is None
+                ):
+                    return DatasetUtil.__get_labels_from_target(self.dataset.targets)
 
         def get_label(container: set, instance) -> set:
             labels = DatasetUtil.__get_labels_from_target(instance[1])
@@ -275,6 +276,24 @@ class DatasetUtil:
             return container
 
         return functools.reduce(get_label, self.dataset, set())
+
+    def get_label_names(self) -> dict:
+        if hasattr(self.dataset, "classes"):
+            classes = getattr(self.dataset, "classes")
+            if classes:
+                if isinstance(classes[0], str):
+                    return dict(enumerate(classes))
+
+        def get_label_name(container: set, instance) -> set:
+            label = instance[1]
+            if isinstance(label, str):
+                container.add(label)
+            return container
+
+        label_names = functools.reduce(get_label_name, self.dataset, set())
+        if label_names:
+            return dict(enumerate(sorted(label_names)))
+        return None
 
     def split_by_label(self) -> dict:
         label_map: dict = {}
