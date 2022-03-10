@@ -130,5 +130,5 @@ class DefaultConfig:
 
         if self.make_reproducible_env:
             global_reproducible_env.enable()
-        if self.reproducible_env_load_path is None:
-            global_reproducible_env.save(self.get_save_dir())
+            if self.reproducible_env_load_path is None:
+                global_reproducible_env.save(self.get_save_dir())
