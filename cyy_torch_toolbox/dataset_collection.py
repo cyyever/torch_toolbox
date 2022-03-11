@@ -424,11 +424,18 @@ class DatasetCollection:
                     phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
                 )
         if dataset_type == DatasetType.Text:
+            label_names = None
+            if isinstance(next(iter(dc.get_training_dataset()))[1], str):
+                label_names = dc.get_label_names()
+
+            dc.append_transform(
+                lambda text: torch.tensor(dc.tokenizer(text)),
+            )
+            if label_names is not None:
+                reversed_label_names = {v: k for k, v in label_names.items()}
+                dc.append_target_transform(lambda label: reversed_label_names[label])
+                get_logger().warning("covert string label to int")
             if name == "IMDB":
-                dc.append_transform(
-                    lambda text: torch.tensor(dc.tokenizer(text)),
-                )
-                dc.append_target_transform(lambda label: 0 if label == "neg" else 1)
                 dc.append_input_batch_transform(
                     lambda inputs: pad_sequence(
                         inputs, padding_value=dc.tokenizer.vocab["<pad>"]
