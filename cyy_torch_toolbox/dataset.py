@@ -1,4 +1,4 @@
-import copy
+# import copy
 import functools
 import os
 import random
@@ -118,29 +118,33 @@ def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
 
 
 class DatasetUtil:
-    def __init__(self, dataset: torch.utils.data.Dataset):
+    def __init__(
+        self, dataset: torch.utils.data.Dataset, transforms=None, target_transforms=None
+    ):
         self.dataset: torch.utils.data.Dataset = dataset
         self.__channel = None
         self.__len = None
+        if transforms is None:
+            transforms = []
+        self.__transforms = transforms
 
-    def get_transforms(self):
-        transforms = []
-        if hasattr(self.dataset, "transform"):
-            transforms = [self.dataset.transform]
-        i = 0
-        while i < len(transforms):
-            if isinstance(transforms[i], torchvision.transforms.Compose):
-                transforms = (
-                    transforms[:i] + transforms[i].transforms + transforms[i + 1:]
-                )
-            else:
-                i += 1
-        return transforms
+        if target_transforms is None:
+            target_transforms = []
+        self.__target_transforms = target_transforms
 
-    def __get_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.dataset, batch_size=1, num_workers=2, prefetch_factor=1
-        )
+    # def get_transforms(self):
+    #     transforms = []
+    #     if hasattr(self.dataset, "transform"):
+    #         transforms = [self.dataset.transform]
+    #     i = 0
+    #     while i < len(transforms):
+    #         if isinstance(transforms[i], torchvision.transforms.Compose):
+    #             transforms = (
+    #                 transforms[:i] + transforms[i].transforms + transforms[i + 1:]
+    #             )
+    #         else:
+    #             i += 1
+    #     return transforms
 
     @property
     def len(self):
@@ -150,74 +154,41 @@ class DatasetUtil:
 
     @property
     def channel(self):
+        if isinstance(self.dataset, torch.utils.data.IterableDataset):
+            raise RuntimeError("IterableDataset is not supported")
         if self.__channel is not None:
             return self.__channel
-        channel = 0
-        for x, _ in self.__get_dataloader():
-            channel = x.shape[1]
-            break
-        self.__channel = channel
+        x = next(iter(self.dataset))[0]
+        self.__channel = x.shape[0]
+        assert self.__channel <= 3
         return self.__channel
 
     def get_mean_and_std(self):
         mean = torch.zeros(self.channel)
-        dataloader = self.__get_dataloader()
-        for x, _ in dataloader:
+        for idx in len(self.dataset):
             for i in range(self.channel):
-                mean[i] += x[:, i, :, :].mean()
+                mean[i] += self.dataset[idx][i, :, :].mean()
         mean.div_(self.len)
 
         wh = None
         std = torch.zeros(self.channel)
-        for x, _ in dataloader:
+        for idx in len(self.dataset):
+            x = self.dataset[idx]
             if wh is None:
-                wh = x.shape[2] * x.shape[3]
+                wh = x.shape[1] * x.shape[2]
             for i in range(self.channel):
-                std[i] += torch.sum((x[:, i, :, :] - mean[i].data.item()) ** 2) / wh
+                std[i] += torch.sum((x[i, :, :] - mean[i].data.item()) ** 2) / wh
         std = std.div(self.len).sqrt()
         return mean, std
 
-    def append_transform(self, transform):
-        if hasattr(self.dataset, "transform"):
-            if self.dataset.transform is None:
-                self.dataset.transform = transform
-            else:
-                self.dataset.transform = torchvision.transforms.Compose(
-                    [self.dataset.transform, transform]
-                )
-        if hasattr(self.dataset, "transforms"):
-            if self.dataset.transforms is None:
-                self.dataset.transforms = transform
-            else:
-                self.dataset.transforms = torchvision.transforms.Compose(
-                    [self.dataset.transforms, transform]
-                )
-
-    def prepend_transform(self, transform):
-        assert transform is not None
-        if hasattr(self.dataset, "transform"):
-            if self.dataset.transform is None:
-                self.dataset.transform = transform
-            else:
-                self.dataset.transform = torchvision.transforms.Compose(
-                    [transform, self.dataset.transform]
-                )
-        if hasattr(self.dataset, "transforms"):
-            if self.dataset.transforms is None:
-                self.dataset.transforms = transform
-            else:
-                self.dataset.transforms = torchvision.transforms.Compose(
-                    [transform, self.dataset.transforms]
-                )
-
-    @staticmethod
-    def __get_labels_from_target(target) -> set:
+    @classmethod
+    def __decode_target(cls, target) -> set:
         if isinstance(target, int):
             return set([target])
         if isinstance(target, list):
             return set(target)
         if isinstance(target, torch.Tensor):
-            return DatasetUtil.__get_labels_from_target(target.tolist())
+            return cls.__decode_target(target.tolist())
         if isinstance(target, str):
             if target == "neg":
                 return set([0])
@@ -235,7 +206,7 @@ class DatasetUtil:
         #     case list():
         #         return set(target)
         #     case torch.Tensor():
-        #         return DatasetUtil.__get_labels_from_target(target.tolist())
+        #         return DatasetUtil.__decode_target(target.tolist())
         #     case str():
         #         if target == "neg":
         #             return set([0])
@@ -246,43 +217,35 @@ class DatasetUtil:
         #             return set(target["labels"].tolist())
         raise RuntimeError("can't extract labels from target: " + str(target))
 
-    @classmethod
-    def get_label_from_target(cls, target):
-        labels = cls.__get_labels_from_target(target)
-        assert len(labels) == 1
-        return next(iter(labels))
-
-    def get_sample_label(self, index, dataset=None):
+    def get_sample_labels(self, index, dataset=None):
         if dataset is None:
             dataset = self.dataset
         if isinstance(dataset, torch.utils.data.Subset):
             return self.get_sample_label(dataset.indices[index], dataset.dataset)
-        if hasattr(dataset, "targets") and dataset.target_transform is None:
-            return DatasetUtil.get_label_from_target(dataset.targets[index])
-        return DatasetUtil.get_label_from_target(dataset[index][1])
+        if hasattr(dataset, "targets"):
+            target = dataset.targets[index]
+        else:
+            target = dataset[index][1]
+        for f in self.__target_transforms:
+            target = f(target)
+        return DatasetUtil.__decode_target(target)
 
-    def get_labels(self, check_targets: bool = True) -> set:
-        if check_targets:
-            if hasattr(self.dataset, "targets"):
-                if (
-                    not hasattr(self.dataset, "target_transform")
-                    or self.dataset.target_transform is None
-                ):
-                    return DatasetUtil.__get_labels_from_target(self.dataset.targets)
+    def get_sample_label(self, index):
+        labels = self.get_sample_labels(index)
+        assert len(labels) == 1
+        return next(iter(labels))
 
-        def get_label(container: set, instance) -> set:
-            labels = DatasetUtil.__get_labels_from_target(instance[1])
-            container.update(labels)
-            return container
-
-        return functools.reduce(get_label, self.dataset, set())
+    def get_labels(self) -> set:
+        labels = set()
+        for i in range(len(self.dataset)):
+            labels.update(self.get_sample_labels(index=i))
+        return labels
 
     def get_label_names(self) -> dict:
         if hasattr(self.dataset, "classes"):
             classes = getattr(self.dataset, "classes")
-            if classes:
-                if isinstance(classes[0], str):
-                    return dict(enumerate(classes))
+            if classes and isinstance(classes[0], str):
+                return dict(enumerate(classes))
 
         def get_label_name(container: set, instance) -> set:
             label = instance[1]
@@ -310,7 +273,7 @@ class DatasetUtil:
     def get_label_number(self) -> int:
         return len(self.get_labels())
 
-    def save_sample_image(self, idx, path: str):
+    def save_sample_image(self, idx: int, path: str):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         if isinstance(self.dataset[idx][0], PIL.Image.Image):
             self.dataset[idx][0].save(path)
@@ -318,7 +281,7 @@ class DatasetUtil:
         torchvision.utils.save_image(self.dataset[idx][0], path)
 
     @torch.no_grad()
-    def get_sample_image(self, idx) -> PIL.Image:
+    def get_sample_image(self, idx: int) -> PIL.Image:
         tensor = self.dataset[idx][0]
         if isinstance(tensor, PIL.Image.Image):
             return tensor
@@ -334,7 +297,7 @@ class DatasetUtil:
         )
         return PIL.Image.fromarray(ndarr)
 
-    def get_sample_text(self, idx) -> str:
+    def get_sample_text(self, idx: int) -> str:
         return self.dataset[idx][0]
 
     def iid_split_indices(self, parts: list) -> list:
@@ -410,32 +373,32 @@ class DatasetUtil:
         return randomized_label_map
 
 
-class CachedVisionDataset(torch.utils.data.Dataset):
-    def __init__(self, dataset: torch.utils.data.Dataset):
-        self.__dataset = copy.deepcopy(dataset)
-        transforms = DatasetUtil(self.__dataset).get_transforms()
-        remain_transforms = []
-        while transforms:
-            t = transforms[0]
-            transforms.pop(0)
-            if isinstance(t, torchvision.transforms.ToTensor):
-                remain_transforms.append(t)
-        self.__dataset.transform = torchvision.transforms.Compose(remain_transforms)
-        self.transform = torchvision.transforms.Compose(transforms)
+# class CachedVisionDataset(torch.utils.data.Dataset):
+#     def __init__(self, dataset: torch.utils.data.Dataset):
+#         self.__dataset = copy.deepcopy(dataset)
+#         transforms = DatasetUtil(self.__dataset).get_transforms()
+#         remain_transforms = []
+#         while transforms:
+#             t = transforms[0]
+#             transforms.pop(0)
+#             if isinstance(t, torchvision.transforms.ToTensor):
+#                 remain_transforms.append(t)
+#         self.__dataset.transform = torchvision.transforms.Compose(remain_transforms)
+#         self.transform = torchvision.transforms.Compose(transforms)
 
-        self.__items: dict = {}
+#         self.__items: dict = {}
 
-    def __getitem__(self, index):
-        if index in self.__items:
-            item = self.__items[index]
-        else:
-            item = self.__dataset[index]
-            self.__items[index] = item
-        img, target = item
-        return self.transform(img), target
+#     def __getitem__(self, index):
+#         if index in self.__items:
+#             item = self.__items[index]
+#         else:
+#             item = self.__dataset[index]
+#             self.__items[index] = item
+#         img, target = item
+#         return self.transform(img), target
 
-    def __len__(self):
-        return len(self.__dataset)
+#     def __len__(self):
+#         return len(self.__dataset)
 
 
 def replace_dataset_labels(dataset, label_map: dict):

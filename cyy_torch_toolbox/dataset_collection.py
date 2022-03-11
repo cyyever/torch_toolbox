@@ -100,13 +100,11 @@ class DatasetCollection:
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
-        return DatasetUtil(self.get_dataset(phase))
-
-    # def get_transforms(self, phase) -> list:
-    #     return self.__transforms[phase]
-
-    # def get_target_transforms(self, phase) -> list:
-    #     return self.__target_transforms[phase]
+        return DatasetUtil(
+            self.get_dataset(phase),
+            transforms=self.__transforms[phase],
+            target_transforms=self.__target_transforms[phase],
+        )
 
     def append_transforms(self, transforms, phases=None):
         for k in MachineLearningPhase:
@@ -192,7 +190,7 @@ class DatasetCollection:
                 dataset_util.get_sample_image(index),
                 dataset_util.get_sample_label(index),
             )
-        elif self.dataset_type == DatasetType.Text:
+        if self.dataset_type == DatasetType.Text:
             dataset_util = self.get_dataset_util(phase)
             return (
                 dataset_util.get_sample_text(index),
@@ -285,26 +283,25 @@ class DatasetCollection:
             if name.lower() == "imagenet":
                 mean = torch.Tensor([0.485, 0.456, 0.406])
                 std = torch.Tensor([0.229, 0.224, 0.225])
-            else:
-                mean, std = DatasetUtil(dataset).get_mean_and_std()
-            return (mean, std)
+                return (mean, std)
+            return DatasetUtil(dataset).get_mean_and_std()
 
         return cls.__get_cache_data(pickle_file, computation_fun)
 
-    @classmethod
-    def __get_dataset_size(cls, name: str):
-        dataset_dir = cls.__get_dataset_dir(name)
-        cache_dir = cls.__get_dataset_cache_dir(name)
-        pickle_file = os.path.join(cache_dir, "dataset_size")
+    # @classmethod
+    # def __get_dataset_size(cls, name: str):
+    #     dataset_dir = cls.__get_dataset_dir(name)
+    #     cache_dir = cls.__get_dataset_cache_dir(name)
+    #     pickle_file = os.path.join(cache_dir, "dataset_size")
 
-        def computation_fun():
-            size = 0
-            for path, _, files in os.walk(dataset_dir):
-                for f in files:
-                    size += os.path.getsize(os.path.join(path, f))
-            return size
+    #     def computation_fun():
+    #         size = 0
+    #         for path, _, files in os.walk(dataset_dir):
+    #             for f in files:
+    #                 size += os.path.getsize(os.path.join(path, f))
+    #         return size
 
-        return cls.__get_cache_data(pickle_file, computation_fun)
+    #     return cls.__get_cache_data(pickle_file, computation_fun)
 
     @classmethod
     def __create_dataset_collection(
