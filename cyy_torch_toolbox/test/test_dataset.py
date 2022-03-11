@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import dataset
-from dataset_collection import DatasetCollection
-from ml_type import MachineLearningPhase
+from cyy_torch_toolbox.dataset import DatasetUtil, sub_dataset
+from cyy_torch_toolbox.dataset_collection import DatasetCollection
+from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
 def test_dataset():
@@ -17,12 +17,12 @@ def test_dataset():
         < 0.01
     )
     assert next(mnist.generate_raw_data(MachineLearningPhase.Training))
-    assert dataset.DatasetUtil(mnist_training).channel == 1
-    assert len(dataset.sub_dataset(mnist_training, [1])) == 1
+    assert DatasetUtil(mnist_training).channel == 1
+    assert len(sub_dataset(mnist_training, [1])) == 1
     cifar10 = DatasetCollection.get_by_name("CIFAR10")
     cifar10_training = cifar10.get_dataset(MachineLearningPhase.Training)
-    assert dataset.DatasetUtil(cifar10_training).channel == 3
-    assert dataset.DatasetUtil(cifar10_training).get_label_number() == 10
+    assert DatasetUtil(cifar10_training).channel == 3
+    assert DatasetUtil(cifar10_training).get_label_number() == 10
     assert abs(
         len(cifar10.get_dataset(MachineLearningPhase.Test))
         - len(cifar10.get_dataset(MachineLearningPhase.Validation))
