@@ -186,6 +186,8 @@ class DatasetUtil:
     def __decode_target(cls, target) -> set:
         if isinstance(target, int):
             return set([target])
+        if isinstance(target, str):
+            return set([target])
         if isinstance(target, list):
             return set(target)
         if isinstance(target, torch.Tensor):
