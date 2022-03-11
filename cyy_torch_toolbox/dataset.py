@@ -88,8 +88,8 @@ def sub_dataset(dataset: torch.utils.data.Dataset, indices: Iterable):
     """
     indices = sorted(set(indices))
     subset = torch.utils.data.Subset(dataset, indices)
-    if hasattr(dataset, "sort_key"):
-        setattr(subset, "sort_key", dataset.sort_key)
+    # if hasattr(dataset, "sort_key"):
+    #     setattr(subset, "sort_key", dataset.sort_key)
     return subset
 
 
