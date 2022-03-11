@@ -165,15 +165,16 @@ class DatasetUtil:
 
     def get_mean_and_std(self):
         mean = torch.zeros(self.channel)
-        for idx in len(self.dataset):
+        for idx in range(len(self.dataset)):
+            x = self.dataset[idx][0]
             for i in range(self.channel):
-                mean[i] += self.dataset[idx][i, :, :].mean()
+                mean[i] += x[i, :, :].mean()
         mean.div_(self.len)
 
         wh = None
         std = torch.zeros(self.channel)
-        for idx in len(self.dataset):
-            x = self.dataset[idx]
+        for idx in range(len(self.dataset)):
+            x = self.dataset[idx][0]
             if wh is None:
                 wh = x.shape[1] * x.shape[2]
             for i in range(self.channel):
