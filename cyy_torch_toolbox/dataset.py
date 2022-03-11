@@ -190,11 +190,6 @@ class DatasetUtil:
             return set(target)
         if isinstance(target, torch.Tensor):
             return cls.__decode_target(target.tolist())
-        if isinstance(target, str):
-            if target == "neg":
-                return set([0])
-            if target == "pos":
-                return set([1])
         if isinstance(target, dict):
             if "labels" in target:
                 return set(target["labels"].tolist())
