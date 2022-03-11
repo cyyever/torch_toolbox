@@ -499,7 +499,6 @@ class DatasetCollection:
             data = computation_fun()
             if data is None:
                 raise RuntimeError("data is None")
-            print("data is", data)
             DatasetCollection.__write_data(path, data)
             return data
 
