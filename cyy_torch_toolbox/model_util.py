@@ -132,8 +132,6 @@ class ModelUtil:
         for k, v in self.model.named_modules():
             if isinstance(v, sub_module_type):
                 changed_modules[k] = f(k, v)
-        for k, v in changed_modules.items():
-            self.set_attr(k, v, as_parameter=False)
 
     def has_sub_module(self, sub_module_type: Type):
         for _, v in self.model.named_modules():

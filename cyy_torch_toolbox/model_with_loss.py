@@ -37,7 +37,7 @@ class ModelWithLoss:
         self.__example_input = None
         self.use_checkpointing = False
         self.__checkpointed_model = None
-        self.__current_phase = None
+        self.__model_in_trainig_mode = None
         self.__current_model_device = None
 
     @property
@@ -47,7 +47,7 @@ class ModelWithLoss:
 
     @property
     def model(self) -> torch.nn.Module:
-        self.__current_phase = None
+        self.__model_in_trainig_mode = None
         self.__current_model_device = None
         return self.__model
 
@@ -98,14 +98,12 @@ class ModelWithLoss:
         non_blocking=False,
     ) -> dict:
         if phase is not None:
-            if self.__current_phase != phase:
-                self.__set_model_mode(phase)
-            self.__current_phase = phase
+            self.set_model_mode(phase)
         else:
             if self.__model.training:
-                self.__current_phase = MachineLearningPhase.Training
+                self.__model_in_trainig_mode = True
             else:
-                self.__current_phase = None
+                self.__model_in_trainig_mode = False
 
         extra_inputs = []
         if isinstance(inputs, tuple):
@@ -129,10 +127,7 @@ class ModelWithLoss:
                 self.__data_transforms
             )
         inputs = self.__data_transforms(inputs)
-        if (
-            self.__current_phase == MachineLearningPhase.Training
-            and self.use_checkpointing
-        ):
+        if self.__model_in_trainig_mode and self.use_checkpointing:
             inputs.requires_grad_()
             output = self.checkpointed_model(inputs, *extra_inputs)
         else:
@@ -197,8 +192,12 @@ class ModelWithLoss:
     def __repr__(self):
         return f"model: {self.__model.__class__.__name__}, loss_fun: {self.loss_fun}"
 
-    def __set_model_mode(self, phase: MachineLearningPhase):
+    def set_model_mode(self, phase: MachineLearningPhase):
         if phase == MachineLearningPhase.Training:
+            if self.__model_in_trainig_mode:
+                return
             self.__model.train()
-        else:
-            self.__model.eval()
+            self.__model_in_trainig_mode = True
+            return
+        self.__model.eval()
+        self.__model_in_trainig_mode = False
