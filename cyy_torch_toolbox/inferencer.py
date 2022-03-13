@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 from cyy_torch_toolbox.dataset import decode_batch
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
@@ -25,10 +26,12 @@ class Inferencer(ModelExecutor):
         use_grad = kwargs.get("use_grad", False)
         epoch = kwargs.get("epoch", 1)
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
-        phase = self.phase
         if use_grad and self.dataset_collection.dataset_type == DatasetType.Text:
             # cudnn rnn backward needs training model
-            phase = MachineLearningPhase.Training
+            self.model_with_loss.set_model_mode(self.phase)
+            self.model_with_loss.model_util.change_sub_modules(
+                nn.RNNBase, lambda _, v: v.train()
+            )
         with torch.set_grad_enabled(use_grad):
             with torch.cuda.stream(self.cuda_stream):
                 if use_grad:
@@ -45,7 +48,7 @@ class Inferencer(ModelExecutor):
                     result = self._model_with_loss(
                         inputs,
                         targets,
-                        phase=phase,
+                        phase=self.phase,
                         device=self.device,
                         non_blocking=True,
                     )
