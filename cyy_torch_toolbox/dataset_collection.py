@@ -432,8 +432,9 @@ class DatasetCollection:
             dc.append_transform(dc.tokenizer)
             dc.append_transform(torch.tensor)
             if label_names is not None:
-                reversed_label_names = {v: k for k, v in label_names.items()}
-                dc.append_target_transform(lambda label: reversed_label_names[label])
+                dc.append_target_transform(
+                    functools.partial(cls.get_label, label_names=label_names)
+                )
                 get_logger().warning("covert string label to int")
             if name == "IMDB":
                 dc.append_input_batch_transform(
@@ -523,6 +524,11 @@ class DatasetCollection:
         fd = os.open(path, flags=os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         with os.fdopen(fd, "wb") as f:
             pickle.dump(data, f)
+
+    @classmethod
+    def get_label(cls, label_name, label_names):
+        reversed_label_names = {v: k for k, v in label_names.items()}
+        return reversed_label_names[label_name]
 
 
 class DatasetCollectionConfig:
