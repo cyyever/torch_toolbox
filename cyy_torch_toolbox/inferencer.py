@@ -28,8 +28,8 @@ class Inferencer(ModelExecutor):
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
         if use_grad and self.dataset_collection.dataset_type == DatasetType.Text:
             # cudnn rnn backward needs training model
-            self.model_with_loss.set_model_mode(self.phase)
-            self.model_with_loss.model_util.change_sub_modules(
+            self._model_with_loss.set_model_mode(self.phase)
+            self._model_with_loss.model_util.change_sub_modules(
                 nn.RNNBase, lambda _, v: v.train()
             )
         with torch.set_grad_enabled(use_grad):
