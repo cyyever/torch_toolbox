@@ -26,5 +26,5 @@ class AccuracyMetric(Metric):
 
     def _after_epoch(self, **kwargs):
         epoch = kwargs["epoch"]
-        accuracy = self.__correct_count.cpu() / self.__dataset_size
+        accuracy = self.__correct_count / self.__dataset_size
         self._set_epoch_metric(epoch, "accuracy", accuracy)
