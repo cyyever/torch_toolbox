@@ -128,10 +128,9 @@ class ModelUtil:
             prune.remove(layer, name)
 
     def change_sub_modules(self, sub_module_type: Type, f: Callable):
-        changed_modules: dict = {}
         for k, v in self.model.named_modules():
             if isinstance(v, sub_module_type):
-                changed_modules[k] = f(k, v)
+                f(k, v)
 
     def has_sub_module(self, sub_module_type: Type):
         for _, v in self.model.named_modules():

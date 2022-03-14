@@ -199,5 +199,6 @@ class ModelWithLoss:
             self.__model.train()
             self.__model_in_trainig_mode = True
             return
-        self.__model.eval()
-        self.__model_in_trainig_mode = False
+        if self.__model_in_trainig_mode is None:
+            self.__model.eval()
+            self.__model_in_trainig_mode = False
