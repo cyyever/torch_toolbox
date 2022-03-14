@@ -47,7 +47,6 @@ class ModelWithLoss:
 
     @property
     def model(self) -> torch.nn.Module:
-        self.__model_in_trainig_mode = None
         self.__current_model_device = None
         return self.__model
 
