@@ -87,9 +87,6 @@ class ReproducibleEnv:
     def disable(self):
         get_logger().warning("disable reproducible env")
         with ReproducibleEnv.lock:
-            os.environ.pop("CUBLAS_WORKSPACE_CONFIG")
-            torch.backends.cudnn.deterministic = False
-            torch.backends.cudnn.benchmark = True
             torch.use_deterministic_algorithms(False)
             try:
                 torch.set_deterministic_debug_mode(0)
