@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-from cyy_torch_toolbox.dataset import decode_batch
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.hyper_parameter import HyperParameter
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
@@ -43,7 +42,7 @@ class Inferencer(ModelExecutor):
                 self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH)
                 for batch_index, batch in enumerate(self.dataloader):
                     self.exec_hooks(ModelExecutorHookPoint.AFTER_FETCH_BATCH)
-                    inputs, targets, other_info = decode_batch(batch)
+                    inputs, targets, other_info = self.decode_batch(batch)
                     batch = (inputs, targets, other_info)
                     result = self._model_with_loss(
                         inputs,

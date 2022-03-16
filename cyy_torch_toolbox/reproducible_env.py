@@ -3,6 +3,7 @@ import os
 import pickle
 import random
 import threading
+from typing import Any
 
 import numpy
 import torch
@@ -103,7 +104,7 @@ class ReproducibleEnv:
             return
         self.disable()
 
-    def save(self, save_dir: str):
+    def save(self, save_dir: str) -> Any:
         seed_path = os.path.join(save_dir, "random_seed")
         get_logger().warning("%s save reproducible env to %s", id(self), seed_path)
         with ReproducibleEnv.lock:
@@ -122,7 +123,7 @@ class ReproducibleEnv:
                     f,
                 )
 
-    def load(self, path: str):
+    def load(self, path: str) -> None:
         with ReproducibleEnv.lock:
             assert not self.__enabled
             with open(path, "rb") as f:
