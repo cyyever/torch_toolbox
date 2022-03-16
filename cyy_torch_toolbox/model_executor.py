@@ -221,3 +221,17 @@ class ModelExecutor(ModelExecutorBase):
         if self.__dataloader is not None:
             del self.__dataloader
             self.__dataloader = None
+
+    @classmethod
+    def decode_batch(cls, batch):
+        # if len(batch) == 1:
+        #     batch = batch[0]
+        #     assert isinstance(batch, dict)
+        #     sample_inputs = batch["data"]
+        #     sample_targets = batch["label"].squeeze(-1).long()
+        # else:
+        sample_inputs = batch[0]
+        sample_targets = batch[1]
+        if len(batch) == 3:
+            return (sample_inputs, sample_targets, batch[2])
+        return (sample_inputs, sample_targets, {})

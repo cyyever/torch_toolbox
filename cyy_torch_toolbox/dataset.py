@@ -87,10 +87,7 @@ def sub_dataset(dataset: torch.utils.data.Dataset, indices: Iterable):
     Subset of a dataset at specified indices in order.
     """
     indices = sorted(set(indices))
-    subset = torch.utils.data.Subset(dataset, indices)
-    # if hasattr(dataset, "sort_key"):
-    #     setattr(subset, "sort_key", dataset.sort_key)
-    return subset
+    return torch.utils.data.Subset(dataset, indices)
 
 
 def sample_dataset(dataset: torch.utils.data.Dataset, index: int):
@@ -124,9 +121,9 @@ class DatasetUtil:
         self.dataset: torch.utils.data.Dataset = dataset
         self.__channel = None
         self.__len = None
-        if transforms is None:
-            transforms = []
-        self.__transforms = transforms
+        # if transforms is None:
+        #     transforms = []
+        # self.__transforms = transforms
 
         if target_transforms is None:
             target_transforms = []
@@ -184,42 +181,27 @@ class DatasetUtil:
 
     @classmethod
     def __decode_target(cls, target) -> set:
-        if isinstance(target, int):
-            return set([target])
-        if isinstance(target, str):
-            return set([target])
-        if isinstance(target, list):
-            return set(target)
-        if isinstance(target, torch.Tensor):
-            return cls.__decode_target(target.tolist())
-        if isinstance(target, dict):
-            if "labels" in target:
-                return set(target["labels"].tolist())
-            if all(isinstance(s, str) and s.isnumeric() for s in target):
-                return set(int(s) for s in target)
-
-        # match target:
-        #     case int():
-        #         return set([target])
-        #     case list():
-        #         return set(target)
-        #     case torch.Tensor():
-        #         return DatasetUtil.__decode_target(target.tolist())
-        #     case str():
-        #         if target == "neg":
-        #             return set([0])
-        #         if target == "pos":
-        #             return set([1])
-        #     case dict():
-        #         if "labels" in target:
-        #             return set(target["labels"].tolist())
+        match target:
+            case int() | str():
+                return set([target])
+            case list():
+                return set(target)
+            case torch.Tensor():
+                return cls.__decode_target(target.tolist())
+            case dict():
+                if "labels" in target:
+                    return set(target["labels"].tolist())
+                if all(isinstance(s, str) and s.isnumeric() for s in target):
+                    return set(int(s) for s in target)
         raise RuntimeError("can't extract labels from target: " + str(target))
 
     def get_sample_labels(self, index, dataset=None):
         if dataset is None:
             dataset = self.dataset
         if isinstance(dataset, torch.utils.data.Subset):
-            return self.get_sample_label(dataset.indices[index], dataset.dataset)
+            return self.get_sample_labels(
+                index=dataset.indices[index], dataset=dataset.dataset
+            )
         if hasattr(dataset, "targets"):
             target = dataset.targets[index]
         else:
@@ -411,19 +393,3 @@ def replace_dataset_labels(dataset, label_map: dict):
         return item
 
     return DatasetMapper(dataset, [functools.partial(__replace_item_label, label_map)])
-
-
-def decode_batch(batch):
-    if hasattr(batch, "text"):
-        return (getattr(batch, "text"), getattr(batch, "label"), {})
-    if len(batch) == 1:
-        batch = batch[0]
-        assert isinstance(batch, dict)
-        sample_inputs = batch["data"]
-        sample_targets = batch["label"].squeeze(-1).long()
-    else:
-        sample_inputs = batch[0]
-        sample_targets = batch[1]
-        if len(batch) == 3:
-            return (sample_inputs, sample_targets, batch[2])
-    return (sample_inputs, sample_targets, {})
