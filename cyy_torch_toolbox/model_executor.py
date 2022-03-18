@@ -224,12 +224,6 @@ class ModelExecutor(ModelExecutorBase):
 
     @classmethod
     def decode_batch(cls, batch):
-        # if len(batch) == 1:
-        #     batch = batch[0]
-        #     assert isinstance(batch, dict)
-        #     sample_inputs = batch["data"]
-        #     sample_targets = batch["label"].squeeze(-1).long()
-        # else:
         sample_inputs = batch[0]
         sample_targets = batch[1]
         if len(batch) == 3:
