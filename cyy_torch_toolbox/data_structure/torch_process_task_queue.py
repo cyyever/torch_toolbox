@@ -10,6 +10,9 @@ from cyy_torch_toolbox.device import (CudaDeviceGreedyAllocator,
 
 
 class TorchProcessTaskQueue(TaskQueue):
+    ctx = None
+    manager = None
+
     def __init__(
         self,
         worker_fun: Callable = None,
@@ -24,7 +27,6 @@ class TorchProcessTaskQueue(TaskQueue):
                 max_needed_cuda_bytes
             )
         self.__use_manager = use_manager
-        self.__manager = None
         if worker_num is None:
             if torch.cuda.is_available():
                 worker_num = len(self.__devices)
@@ -34,13 +36,14 @@ class TorchProcessTaskQueue(TaskQueue):
         super().__init__(worker_fun=worker_fun, worker_num=worker_num)
 
     def get_ctx(self):
-        return torch.multiprocessing.get_context("spawn")
+        if TorchProcessTaskQueue.ctx is None:
+            TorchProcessTaskQueue.ctx = torch.multiprocessing.get_context("spawn")
+        return TorchProcessTaskQueue.ctx
 
     def get_manager(self):
-        if self.__use_manager:
-            if self.__manager is None:
-                self.__manager = self.get_ctx().Manager()
-        return self.__manager
+        if TorchProcessTaskQueue.manager is None:
+            TorchProcessTaskQueue.manager = self.get_ctx().Manager()
+        return TorchProcessTaskQueue.manager
 
     def release(self):
         super().release()
