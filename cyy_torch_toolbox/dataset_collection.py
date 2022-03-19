@@ -573,7 +573,7 @@ class DatasetCollectionConfig:
 
         dc.transform_dataset(
             MachineLearningPhase.Training,
-            lambda dataset: self.__transform_training_dataset(dataset, save_dir),
+            functools.partial(self.__transform_training_dataset, save_dir=save_dir),
         )
         return dc
 
