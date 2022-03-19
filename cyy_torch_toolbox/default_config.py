@@ -76,17 +76,17 @@ class DefaultConfig:
         os.makedirs(self.save_dir, exist_ok=True)
         return self.save_dir
 
-    def create_trainer(self, apply_global_config=True) -> Trainer:
-        get_logger().info(
-            "use dataset %s and model %s", self.dc_config.dataset_name, self.model_name
-        )
-        if apply_global_config:
-            self.apply_global_config()
+    def create_dataset_collection(self):
+        get_logger().info("use dataset %s", self.dc_config.dataset_name)
+        return self.dc_config.create_dataset_collection(self.get_save_dir())
+
+    def create_trainer(self) -> Trainer:
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
             self.dc_config.dataset_name, self.model_name
         )
 
-        dc = self.dc_config.create_dataset_collection(self.get_save_dir())
+        dc = self.create_dataset_collection()
+        get_logger().info("use model %s", self.model_name)
         model_kwargs = {}
         if self.model_kwarg_json_path is not None:
             with open(self.model_kwarg_json_path, "rt", encoding="utf8") as f:
