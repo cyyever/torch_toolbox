@@ -235,7 +235,6 @@ class Trainer(ModelExecutor):
                         ):
                             inferencer = self.get_inferencer(phase)
                             inferencer.disable_logger()
-                            inferencer.set_device(self.device)
                             self.__inferencers[phase] = inferencer
 
                     for inferencer in self.__inferencers.values():
