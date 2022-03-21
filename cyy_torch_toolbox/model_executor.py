@@ -35,7 +35,7 @@ class ModelExecutor(ModelExecutorBase):
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
-        self.__device = get_device()
+        self.__device = None
         self.__dataloader = None
         self.__cuda_stream = None
         self.__metric_tb: MetricTensorBoard = MetricTensorBoard()
@@ -156,11 +156,15 @@ class ModelExecutor(ModelExecutorBase):
 
     @property
     def device(self):
+        if self.__device is None:
+            self.__device = get_device()
+            get_logger().info("use device %s", self.__device)
         return self.__device
 
     def set_device(self, device):
         self._wait_stream()
         self.__device = device
+        get_logger().info("use device %s", self.__device)
         self.__cuda_stream = None
         self.__dataloader = None
 
