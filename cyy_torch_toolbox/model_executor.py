@@ -168,10 +168,6 @@ class ModelExecutor(ModelExecutorBase):
         self.__cuda_stream = None
         self.__dataloader = None
 
-    def set_stream(self, stream):
-        self._wait_stream()
-        self.__cuda_stream = stream
-
     def __getstate__(self):
         # capture what is normally pickled
         state = self.__dict__.copy()

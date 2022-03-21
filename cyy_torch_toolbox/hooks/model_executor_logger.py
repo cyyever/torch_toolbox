@@ -21,7 +21,6 @@ class ModelExecutorLogger(Hook):
             "parameter number is %s",
             len(model_util.get_parameter_list()),
         )
-        get_logger().info("use device %s", model_executor.device)
         get_logger().info("hyper_parameter is %s", model_executor.hyper_parameter)
         if hasattr(model_executor, "get_optimizer"):
             get_logger().info(
