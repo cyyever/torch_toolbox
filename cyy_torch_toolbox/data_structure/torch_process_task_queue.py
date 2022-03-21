@@ -45,11 +45,11 @@ class TorchProcessTaskQueue(TaskQueue):
             TorchProcessTaskQueue.manager = self.get_ctx().Manager()
         return TorchProcessTaskQueue.manager
 
-    def release(self):
-        super().release()
-        if self.__manager is not None:
-            self.__manager.shutdown()
-            self.__manager = None
+    # def release(self):
+    #     super().release()
+    #     if self.__manager is not None:
+    #         self.__manager.shutdown()
+    #         self.__manager = None
 
     def __getstate__(self):
         state = super().__getstate__()
