@@ -157,14 +157,13 @@ class ModelExecutor(ModelExecutorBase):
     @property
     def device(self):
         if self.__device is None:
-            self.__device = get_device()
-            get_logger().info("use device %s", self.__device)
+            self.set_device(get_device())
         return self.__device
 
     def set_device(self, device):
         self._wait_stream()
         self.__device = device
-        get_logger().info("use device %s", self.__device)
+        get_logger().info("%s use device %s", str(self.__phase), self.__device)
         self.__cuda_stream = None
         self.__dataloader = None
 
