@@ -28,24 +28,21 @@ def get_devices():
     return [torch.device("cpu")]
 
 
-def put_data_to_device(data, device, stream=None):
-    if isinstance(data, torch.Tensor):
-        if data.is_cuda:
-            if stream is not None:
-                stream.synchronize()
-            else:
-                torch.cuda.synchronize(device=data.device)
-        return data.to(device)
-    if isinstance(data, list):
-        for idx, element in enumerate(data):
-            data[idx] = put_data_to_device(element, device)
-        return data
-    if isinstance(data, tuple):
-        return tuple(put_data_to_device(list(data), device))
-    if isinstance(data, dict):
-        for k, v in data.items():
-            data[k] = put_data_to_device(v, device)
-        return data
+def put_data_to_device(data, device):
+    match data:
+        case torch.Tensor():
+            if data.is_cuda:
+                return data.to(device)
+        case list():
+            for idx, element in enumerate(data):
+                data[idx] = put_data_to_device(element, device)
+            return data
+        case tuple():
+            return tuple(put_data_to_device(list(data), device))
+        case dict():
+            for k, v in data.items():
+                data[k] = put_data_to_device(v, device)
+            return data
     return data
 
 
