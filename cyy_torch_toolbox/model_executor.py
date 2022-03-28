@@ -117,8 +117,7 @@ class ModelExecutor(ModelExecutorBase):
 
     @property
     def model(self) -> torch.nn.Module:
-        self._wait_stream()
-        return self._model_with_loss.model
+        self.model_with_loss.model
 
     def copy_model_with_loss(self, deepcopy=True):
         self._wait_stream()
@@ -205,21 +204,22 @@ class ModelExecutor(ModelExecutorBase):
         torch.save(self.model.state_dict(), model_path)
 
     def get_batch_size(self, batch):
-        if isinstance(batch, tuple):
-            return self.get_batch_size(batch[0])
-        if isinstance(batch, torch.Tensor):
-            return batch.shape[0]
-        if isinstance(batch, list):
-            return len(batch)
+        match batch:
+            case tuple():
+                return self.get_batch_size(batch[0])
+            case torch.Tensor():
+                return batch.shape[0]
         raise RuntimeError("invalid batch:" + str(batch))
+        # if isinstance(batch, list):
+        #     return len(batch)
 
     def offload_from_gpu(self):
         self._wait_stream()
         self._model_with_loss.offload_from_gpu()
-        torch.cuda.empty_cache()
         if self.__dataloader is not None:
             del self.__dataloader
             self.__dataloader = None
+        torch.cuda.empty_cache()
 
     @classmethod
     def decode_batch(cls, batch):
