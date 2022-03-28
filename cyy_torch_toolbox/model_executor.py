@@ -117,7 +117,7 @@ class ModelExecutor(ModelExecutorBase):
 
     @property
     def model(self) -> torch.nn.Module:
-        self.model_with_loss.model
+        return self.model_with_loss.model
 
     def copy_model_with_loss(self, deepcopy=True):
         self._wait_stream()
