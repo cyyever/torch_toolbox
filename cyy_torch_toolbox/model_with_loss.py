@@ -24,12 +24,9 @@ class ModelWithLoss:
         model_type: ModelType = None,
     ):
         self.__model: torch.nn.Module = model
-        self.__loss_fun: torch.nn.modules.loss._Loss = loss_fun
-        if isinstance(loss_fun, str):
-            if loss_fun == "CrossEntropyLoss":
-                self.__loss_fun = nn.CrossEntropyLoss()
-            else:
-                raise RuntimeError(f"unknown loss function {loss_fun}")
+
+        self.__loss_fun: torch.nn.modules.loss._Loss | None = None
+        self.set_loss_fun(loss_fun)
         self.__model_type = model_type
         self.__has_batch_norm = None
         self.__data_transforms = None
@@ -73,8 +70,14 @@ class ModelWithLoss:
             self.__loss_fun = self.__choose_loss_function()
         return self.__loss_fun
 
-    def set_loss_fun(self, loss_fun: torch.nn.modules.loss._Loss):
-        self.__loss_fun = loss_fun
+    def set_loss_fun(self, loss_fun: torch.nn.modules.loss._Loss | str):
+        if isinstance(loss_fun, str):
+            if loss_fun == "CrossEntropyLoss":
+                self.__loss_fun = nn.CrossEntropyLoss()
+            else:
+                raise RuntimeError(f"unknown loss function {loss_fun}")
+        else:
+            self.__loss_fun = loss_fun
 
     @property
     def checkpointed_model(self) -> torch.nn.Module:
