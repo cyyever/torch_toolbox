@@ -15,6 +15,7 @@ class ModelUtil:
         self.__model = model
         self.__is_pruned = None
         self.__parameter_dict: Optional[dict] = None
+        self.__parameter_shapes: Optional[dict] = None
 
     @property
     def model(self):
@@ -26,11 +27,13 @@ class ModelUtil:
     def load_parameter_list(
         self, parameter_list: torch.Tensor, check_parameter=True, as_parameter=True
     ):
-        parameter_dict = self.get_parameter_dict(detach=False)
-        assert parameter_dict is not None
         if isinstance(parameter_list, torch.Tensor):
+            parameter_shapes = self.get_parameter_shapes()
+            assert parameter_shapes
             load_tensor_dict(parameter_dict, parameter_list)
         else:
+            parameter_dict = self.get_parameter_dict()
+            assert parameter_dict
             assert len(parameter_list) == len(parameter_dict)
             for name in sorted(parameter_dict.keys()):
                 parameter_dict[name] = parameter_list.pop(0)
@@ -300,10 +303,7 @@ class ModelUtil:
             if check_parameter:
                 assert self.has_attr(name)
             self.set_attr(name, parameter, as_parameter=as_parameter)
-        if as_parameter:
-            self.__parameter_dict = None
-        elif self.__parameter_dict is not None:
-            self.__parameter_dict = {k: None for k in self.__parameter_dict}
+        self.__parameter_dict = None
 
     def get_parameter_dict(self, detach=True) -> dict:
         # assert not self.is_pruned
@@ -319,6 +319,16 @@ class ModelUtil:
             res[name] = parameter
         self.__parameter_dict = res
         return self.__parameter_dict
+
+    def get_parameter_shapes(self) -> dict:
+        # assert not self.is_pruned
+        if self.__parameter_shapes is not None:
+            return self.__parameter_shapes
+        res: dict = {}
+        for name, parameter in self.model.named_parameters():
+            res[name] = parameter.shape
+        self.__parameter_shapes = res
+        return self.__parameter_shapes
 
     def get_parameter_seq(self, detach=True):
         res = self.get_parameter_dict(detach=detach)
