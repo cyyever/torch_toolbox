@@ -5,19 +5,20 @@ import torch
 import torch.nn as nn
 
 
-def cat_tensors_to_vector(tensors) -> torch.Tensor:
+def cat_tensors_to_vector(tensors: list) -> torch.Tensor:
     return nn.utils.parameters_to_vector([t.reshape(-1) for t in tensors])
 
 
-def load_tensor_dict(data: dict, tensor: torch.Tensor):
+def load_tensor_dict(shapes: dict, tensor: torch.Tensor) -> dict:
     bias = 0
-    for name in sorted(data.keys()):
-        shape = data[name].shape
+    result = {}
+    for name in sorted(shapes.keys()):
+        shape = shapes[name]
         param_element_num = numpy.prod(shape)
-        data[name] = tensor.narrow(0, bias, param_element_num).view(*shape)
+        result[name] = tensor.narrow(0, bias, param_element_num).view(*shape)
         bias += param_element_num
     assert bias == tensor.shape[0]
-    return data
+    return result
 
 
 def split_tensor_to_dict(name_and_shapes: list, tensor: torch.Tensor) -> dict:
@@ -31,7 +32,7 @@ def split_tensor_to_dict(name_and_shapes: list, tensor: torch.Tensor) -> dict:
     return data
 
 
-def split_tensor_to_list(shapes: list, tensor: torch.Tensor) -> torch.Tensor:
+def split_tensor_to_list(shapes: list, tensor: torch.Tensor) -> list:
     data = []
     bias = 0
     for shape in shapes:
