@@ -30,7 +30,7 @@ class ModelUtil:
         if isinstance(parameter_list, torch.Tensor):
             parameter_shapes = self.get_parameter_shapes()
             assert parameter_shapes
-            load_tensor_dict(parameter_dict, parameter_list)
+            parameter_dict = load_tensor_dict(parameter_shapes, parameter_list)
         else:
             parameter_dict = self.get_parameter_dict()
             assert parameter_dict
