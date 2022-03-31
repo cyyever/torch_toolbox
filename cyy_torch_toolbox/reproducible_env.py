@@ -39,7 +39,7 @@ class ReproducibleEnv:
                 get_logger().warning("%s use reproducible env", id(self))
             else:
                 get_logger().warning("%s initialize and use reproducible env", id(self))
-
+            os.environ["reseed_dropout"] = "1"
             os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
