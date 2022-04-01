@@ -1,7 +1,7 @@
 import functools
 import os
 import random
-from typing import Callable, Generator, Iterable
+from typing import Iterable
 
 import PIL
 import torch
@@ -13,11 +13,15 @@ from .dataset import sub_dataset
 
 class DatasetUtil:
     def __init__(
-        self, dataset: torch.utils.data.Dataset, transforms=None, target_transforms=None
+        self,
+        dataset: torch.utils.data.Dataset,
+        transforms=None,
+        target_transforms=None,
+        name=None,
     ):
         self.dataset: torch.utils.data.Dataset = dataset
-        self.__channel = None
         self.__len = None
+        self.name = name
         if transforms is None:
             transforms = []
         self.__transforms = transforms
@@ -45,36 +49,6 @@ class DatasetUtil:
         if self.__len is None:
             self.__len = len(self.dataset)
         return self.__len
-
-    @property
-    def channel(self):
-        if isinstance(self.dataset, torch.utils.data.IterableDataset):
-            raise RuntimeError("IterableDataset is not supported")
-        if self.__channel is not None:
-            return self.__channel
-        x = next(iter(self.dataset))[0]
-        self.__channel = x.shape[0]
-        assert self.__channel <= 3
-        return self.__channel
-
-    def get_mean_and_std(self):
-        mean = torch.zeros(self.channel)
-        for idx in range(len(self.dataset)):
-            x = self.dataset[idx][0]
-            for i in range(self.channel):
-                mean[i] += x[i, :, :].mean()
-        mean.div_(self.len)
-
-        wh = None
-        std = torch.zeros(self.channel)
-        for idx in range(len(self.dataset)):
-            x = self.dataset[idx][0]
-            if wh is None:
-                wh = x.shape[1] * x.shape[2]
-            for i in range(self.channel):
-                std[i] += torch.sum((x[i, :, :] - mean[i].data.item()) ** 2) / wh
-        std = std.div(self.len).sqrt()
-        return mean, std
 
     @classmethod
     def __decode_target(cls, target) -> set:
@@ -243,6 +217,10 @@ class VisionDatasetUtil(DatasetUtil):
         return self.__channel
 
     def get_mean_and_std(self):
+        if self.name is not None and self.name.lower() == "imagenet":
+            mean = torch.Tensor([0.485, 0.456, 0.406])
+            std = torch.Tensor([0.229, 0.224, 0.225])
+            return (mean, std)
         mean = torch.zeros(self.channel)
         for idx in range(len(self.dataset)):
             x = self.dataset[idx][0]
