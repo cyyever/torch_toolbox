@@ -113,6 +113,7 @@ class DatasetCollection:
             self.get_dataset(phase),
             transforms=self.__transforms[phase],
             target_transforms=self.__target_transforms[phase],
+            name=self.name,
         )
 
     def append_transforms(self, transforms, phases=None):
@@ -289,10 +290,6 @@ class DatasetCollection:
         pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
 
         def computation_fun():
-            if name.lower() == "imagenet":
-                mean = torch.Tensor([0.485, 0.456, 0.406])
-                std = torch.Tensor([0.229, 0.224, 0.225])
-                return (mean, std)
             return DatasetUtil(dataset).get_mean_and_std()
 
         return cls.__get_cache_data(pickle_file, computation_fun)
