@@ -87,10 +87,7 @@ class DatasetUtil:
         return next(iter(labels))
 
     def get_labels(self) -> set:
-        labels = set()
-        for i in range(len(self.dataset)):
-            labels.update(self.get_sample_labels(index=i))
-        return labels
+        return {self.get_sample_labels(index=i) for i in range(self.len)}
 
     def get_label_names(self) -> dict:
         if hasattr(self.dataset, "classes"):
@@ -109,6 +106,8 @@ class DatasetUtil:
             return dict(enumerate(sorted(label_names)))
         return None
 
+
+class DatasetSplitter(DatasetUtil):
     def split_by_label(self) -> dict:
         label_map: dict = {}
         for index in range(len(self.dataset)):
@@ -200,7 +199,7 @@ class DatasetUtil:
         return randomized_label_map
 
 
-class VisionDatasetUtil(DatasetUtil):
+class VisionDatasetUtil(DatasetSplitter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__channel = None
@@ -264,6 +263,6 @@ class VisionDatasetUtil(DatasetUtil):
         return PIL.Image.fromarray(ndarr)
 
 
-class TextDatasetUtil(DatasetUtil):
+class TextDatasetUtil(DatasetSplitter):
     def get_sample_text(self, idx: int) -> str:
         return self.dataset[idx][0]
