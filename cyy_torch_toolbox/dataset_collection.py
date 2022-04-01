@@ -12,11 +12,12 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data._utils.collate import default_collate
 from torchvision import transforms
 
-from cyy_torch_toolbox.dataset import DatasetUtil  # CachedVisionDataset,
 from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
                                        replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transformers.tokenizer import Tokenizer
+from cyy_torch_toolbox.dataset_util import (  # CachedVisionDataset,
+    DatasetUtil, TextDatasetUtil, VisionDatasetUtil)
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 from cyy_torch_toolbox.reflection import get_kwarg_names
 
@@ -101,7 +102,14 @@ class DatasetCollection:
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
-        return DatasetUtil(
+        match self.dataset_type:
+            case DatasetType.Vision:
+                class_name = VisionDatasetUtil
+            case DatasetType.Text:
+                class_name = TextDatasetUtil
+            case _:
+                class_name = DatasetUtil
+        return class_name(
             self.get_dataset(phase),
             transforms=self.__transforms[phase],
             target_transforms=self.__target_transforms[phase],
