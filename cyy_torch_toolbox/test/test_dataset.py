@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from cyy_torch_toolbox.dataset import DatasetUtil, sub_dataset
+from cyy_torch_toolbox.dataset import sub_dataset
+from cyy_torch_toolbox.dataset_util import DatasetUtil
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
