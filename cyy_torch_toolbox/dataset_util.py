@@ -110,7 +110,7 @@ class DatasetUtil:
 class DatasetSplitter(DatasetUtil):
     def split_by_label(self) -> dict:
         label_map: dict = {}
-        for index in range(len(self.dataset)):
+        for index in range(self.len):
             label = self.get_sample_label(index)
             if label not in label_map:
                 label_map[label] = []
@@ -145,7 +145,7 @@ class DatasetSplitter(DatasetUtil):
         assert parts
         sub_dataset_indices_list: list = []
         if len(parts) == 1:
-            sub_dataset_indices_list.append(list(range(len(self.dataset))))
+            sub_dataset_indices_list.append(list(range(self.len)))
             return sub_dataset_indices_list
         for _ in parts:
             sub_dataset_indices_list.append([])
@@ -221,7 +221,7 @@ class VisionDatasetUtil(DatasetSplitter):
             std = torch.Tensor([0.229, 0.224, 0.225])
             return (mean, std)
         mean = torch.zeros(self.channel)
-        for idx in range(len(self.dataset)):
+        for idx in range(self.len):
             x = self.dataset[idx][0]
             for i in range(self.channel):
                 mean[i] += x[i, :, :].mean()
@@ -229,7 +229,7 @@ class VisionDatasetUtil(DatasetSplitter):
 
         wh = None
         std = torch.zeros(self.channel)
-        for idx in range(len(self.dataset)):
+        for idx in range(self.len):
             x = self.dataset[idx][0]
             if wh is None:
                 wh = x.shape[1] * x.shape[2]
