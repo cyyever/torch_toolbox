@@ -17,7 +17,7 @@ from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transformers.tokenizer import Tokenizer
 from cyy_torch_toolbox.dataset_util import (  # CachedVisionDataset,
-    DatasetUtil, TextDatasetUtil, VisionDatasetUtil)
+    DatasetSplitter, DatasetUtil, TextDatasetUtil, VisionDatasetUtil)
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 from cyy_torch_toolbox.reflection import get_kwarg_names
 
@@ -290,7 +290,7 @@ class DatasetCollection:
         pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
 
         def computation_fun():
-            return DatasetUtil(dataset).get_mean_and_std()
+            return VisionDatasetUtil(dataset).get_mean_and_std()
 
         return cls.__get_cache_data(pickle_file, computation_fun)
 
@@ -382,15 +382,14 @@ class DatasetCollection:
         #         test_dataset = CachedVisionDataset(test_dataset)
 
         if validation_dataset is None or test_dataset is None:
-            splited_dataset = None
             if validation_dataset is not None:
-                splited_dataset = validation_dataset
+                splitted_dataset = validation_dataset
                 get_logger().warning("split validation dataset for %s", name)
             else:
-                splited_dataset = test_dataset
+                splitted_dataset = test_dataset
                 get_logger().warning("split test dataset for %s", name)
             (validation_dataset, test_dataset,) = cls.__split_for_validation(
-                cls.__get_dataset_cache_dir(name), splited_dataset
+                cls.__get_dataset_cache_dir(name), splitted_dataset
             )
         dc = cls(training_dataset, validation_dataset, test_dataset, dataset_type, name)
 
@@ -482,20 +481,10 @@ class DatasetCollection:
                 dataset_kwargs.pop(k)
         return dataset_kwargs
 
-    # def __get_label_indices(self, phase):
-    #     with DatasetCollection.__lock:
-    #         cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name, phase)
-    #         pickle_file = os.path.join(cache_dir, "label_indices.pk")
-    #         dataset_util = self.get_dataset_util(phase)
-    #         return DatasetCollection.__get_cache_data(
-    #             pickle_file,
-    #             dataset_util.split_by_label,
-    #         )
-
     @staticmethod
-    def __split_for_validation(cache_dir, splited_dataset):
+    def __split_for_validation(cache_dir, splitted_dataset):
         pickle_file = os.path.join(cache_dir, "split_index_lists.pk")
-        dataset_util = DatasetUtil(splited_dataset)
+        dataset_util = DatasetSplitter(splitted_dataset)
         split_index_lists = DatasetCollection.__read_data(pickle_file)
         if split_index_lists is not None:
             return dataset_util.split_by_indices(split_index_lists)

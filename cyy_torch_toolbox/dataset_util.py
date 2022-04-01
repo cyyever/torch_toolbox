@@ -66,7 +66,7 @@ class DatasetUtil:
                     return set(int(s) for s in target)
         raise RuntimeError("can't extract labels from target: " + str(target))
 
-    def get_sample_labels(self, index, dataset=None):
+    def get_sample_labels(self, index, dataset=None) -> set:
         if dataset is None:
             dataset = self.dataset
         if isinstance(dataset, torch.utils.data.Subset):
@@ -108,17 +108,35 @@ class DatasetUtil:
 
 
 class DatasetSplitter(DatasetUtil):
-    def split_by_label(self) -> dict:
-        label_map: dict = {}
+    __sample_label_dict = None
+    __label_sample_dict = None
+
+    @property
+    def label_sample_dict(self) -> dict:
+        if self.__label_sample_dict is not None:
+            return self.__label_sample_dict
+        self.__label_sample_dict = {}
         for index in range(self.len):
-            label = self.get_sample_label(index)
-            if label not in label_map:
-                label_map[label] = []
-            label_map[label].append(index)
-        for label, indices in label_map.items():
-            label_map[label] = {}
-            label_map[label]["indices"] = indices
-        return label_map
+            labels = list(self.get_sample_labels(index))
+            for label in labels:
+                if label not in self.__label_sample_dict:
+                    self.__label_sample_dict[label] = [index]
+                else:
+                    self.__label_sample_dict[label].append(index)
+        return self.__label_sample_dict
+
+    @property
+    def sample_label_dict(self) -> dict:
+        if self.__sample_label_dict is not None:
+            return self.__sample_label_dict
+        self.__sample_label_dict = {}
+        for index in range(self.len):
+            labels = list(self.get_sample_labels(index))
+            if len(labels) == 1:
+                self.__sample_label_dict[index] = labels[0]
+            else:
+                self.__sample_label_dict[index] = labels
+        return self.__sample_label_dict
 
     def get_label_number(self) -> int:
         return len(self.get_labels())
@@ -151,8 +169,8 @@ class DatasetSplitter(DatasetUtil):
             sub_dataset_indices_list.append([])
 
         if by_label:
-            for v in self.split_by_label().values():
-                label_indices_list = sorted(v["indices"])
+            for v in self.label_sample_dict.values():
+                label_indices_list = sorted(v)
                 for i, part in enumerate(parts):
                     delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
                     sub_dataset_indices_list[i] += label_indices_list[:delimiter]
@@ -177,14 +195,13 @@ class DatasetSplitter(DatasetUtil):
         return random.sample(range(self.len), k=sample_size)
 
     def iid_sample(self, percentage: float) -> dict:
-        label_map = self.split_by_label()
         sample_indices = {}
-        for label, v in label_map.items():
-            sample_size = int(len(v["indices"]) * percentage)
+        for label, v in self.label_sample_dict.items():
+            sample_size = int(len(v) * percentage)
             if sample_size == 0:
                 get_logger().warning("percentage is too small, use sample size 1")
                 sample_size = 1
-            sample_indices[label] = random.sample(v["indices"], k=sample_size)
+            sample_indices[label] = random.sample(v, k=sample_size)
         return sample_indices
 
     def randomize_subset_label(self, percentage: float) -> dict:
