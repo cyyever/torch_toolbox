@@ -89,10 +89,12 @@ class CudaDeviceGreedyAllocator:
         if not devices:
             return None
         cuda_device = torch.cuda.current_device()
-        get_logger().error("current_device %s devices %s", cuda_device, devices)
         if cuda_device >= 0:
             if cuda_device in {d.index for d in devices}:
                 return torch.device(f"cuda:{cuda_device}")
+        get_logger().debug(
+            "current_device %s choose device %s", cuda_device, devices[0]
+        )
         return devices[0]
 
     def __sort_devices(self) -> list:
