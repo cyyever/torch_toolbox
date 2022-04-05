@@ -81,15 +81,18 @@ class CudaDeviceGreedyAllocator:
         return [
             device
             for device, memory in self.__sort_devices()
-            if memory >= max_needed_bytes
+            if max_needed_bytes is None or memory >= max_needed_bytes
         ]
 
     def get_device(self, max_needed_bytes=None):
-        for device, memory in self.__sort_devices():
-            if max_needed_bytes is not None and memory < max_needed_bytes:
-                continue
-            return device
-        return None
+        devices = self.get_devices(max_needed_bytes=max_needed_bytes)
+        if not devices:
+            return None
+        cuda_device = torch.cuda.current_device()
+        if cuda_device >= 0:
+            if cuda_device in devices:
+                return cuda_device
+        return devices[0]
 
     def __sort_devices(self) -> list:
         self.__refresh_memory_info()
