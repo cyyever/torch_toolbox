@@ -99,6 +99,7 @@ class ModelWithLoss:
         phase: MachineLearningPhase = None,
         device=None,
         non_blocking=False,
+        batch_size=None,
     ) -> dict:
         if phase is not None:
             self.set_model_mode(phase)
@@ -143,8 +144,8 @@ class ModelWithLoss:
         # if self.__trace_input and self.__example_input is None:
         #     self.__example_input = [inputs.detach()] + copy.deepcopy(extra_inputs)
         normalized_loss = loss
-        if self.__is_averaged_loss():
-            normalized_loss = loss * targets.shape[0]
+        if batch_size is not None and self.__is_averaged_loss():
+            normalized_loss = loss * batch_size
         return {
             "loss": loss,
             "normalized_loss": normalized_loss,
