@@ -87,7 +87,9 @@ class DatasetUtil:
         return next(iter(labels))
 
     def get_labels(self) -> set:
-        return {self.get_sample_labels(index=i) for i in range(self.len)}
+        return set().union(
+            *tuple(self.get_sample_labels(index=i) for i in range(self.len))
+        )
 
     def get_label_names(self) -> dict:
         if hasattr(self.dataset, "classes"):
