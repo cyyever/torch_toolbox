@@ -206,7 +206,7 @@ class ModelExecutor(ModelExecutorBase):
     def get_batch_size(self, batch):
         match batch:
             case tuple():
-                return self.get_batch_size(batch[0])
+                return self.get_batch_size(batch[1])
             case torch.Tensor():
                 return batch.shape[0]
         raise RuntimeError("invalid batch:" + str(batch))

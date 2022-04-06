@@ -189,6 +189,8 @@ class DatasetCollection:
         else:
             inputs = default_collate(inputs)
         targets = default_collate(targets)
+        if isinstance(targets, list):
+            targets = torch.stack(targets)
         if other_info:
             other_info = default_collate(other_info)
             return inputs, targets, other_info
