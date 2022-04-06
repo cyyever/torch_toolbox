@@ -192,6 +192,7 @@ class Trainer(ModelExecutor):
                             phase=self.phase,
                             device=self.device,
                             non_blocking=True,
+                            batch_size=batch_size,
                         )
                         loss = result["loss"]
                         loss.backward()
