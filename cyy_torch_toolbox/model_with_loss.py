@@ -1,5 +1,5 @@
-import copy
-from typing import Optional
+# import copy
+from typing import Callable
 
 import torch
 import torch.nn as nn
@@ -7,6 +7,7 @@ import torch.utils.checkpoint
 import torchvision
 from cyy_naive_lib.log import get_logger
 
+from device import put_data_to_device
 from ml_type import MachineLearningPhase, ModelType
 from model_transformers.checkpointed_model import get_checkpointed_model
 from model_util import ModelUtil
@@ -29,12 +30,12 @@ class ModelWithLoss:
         self.set_loss_fun(loss_fun)
         self.__model_type = model_type
         self.__has_batch_norm = None
-        self.__data_transforms = None
-        self.__trace_input = False
+        self.__data_transforms: None | Callable = None
+        # self.__trace_input = False
         self.__example_input = None
         self.use_checkpointing = False
         self.__checkpointed_model = None
-        self.__model_in_trainig_mode = None
+        self.__model_in_trainig_mode: None | bool = None
         self.__current_model_device = None
 
     @property
@@ -70,7 +71,7 @@ class ModelWithLoss:
             self.__loss_fun = self.__choose_loss_function()
         return self.__loss_fun
 
-    def set_loss_fun(self, loss_fun: torch.nn.modules.loss._Loss | str):
+    def set_loss_fun(self, loss_fun: torch.nn.modules.loss._Loss | str | None) -> None:
         if isinstance(loss_fun, str):
             if loss_fun == "CrossEntropyLoss":
                 self.__loss_fun = nn.CrossEntropyLoss()
@@ -107,36 +108,40 @@ class ModelWithLoss:
             else:
                 self.__model_in_trainig_mode = False
 
-        extra_inputs = []
-        if isinstance(inputs, tuple):
-            inputs, *extra_inputs = inputs
-
+        multiple_input = isinstance(inputs, tuple)
         if device is not None:
-            inputs = inputs.to(device, non_blocking=non_blocking)
-            targets = targets.to(device, non_blocking=non_blocking)
+            inputs = put_data_to_device(
+                inputs, device=device, non_blocking=non_blocking
+            )
+            targets = put_data_to_device(
+                targets, device=device, non_blocking=non_blocking
+            )
             if self.__current_model_device != device:
                 self.__model.to(device, non_blocking=non_blocking)
                 self.__current_model_device = device
 
         assert self.loss_fun is not None
         if self.__data_transforms is None:
-            self.__data_transforms = []
+            data_transforms = []
             input_size = getattr(self.__get_real_model().__class__, "input_size", None)
             if input_size is not None:
                 get_logger().debug("resize input to %s", input_size)
-                self.__data_transforms.append(torchvision.transforms.Resize(input_size))
-            self.__data_transforms = torchvision.transforms.Compose(
-                self.__data_transforms
-            )
+                data_transforms.append(torchvision.transforms.Resize(input_size))
+            self.__data_transforms = torchvision.transforms.Compose(data_transforms)
         inputs = self.__data_transforms(inputs)
         if self.__model_in_trainig_mode and self.use_checkpointing:
-            inputs.requires_grad_()
-            output = self.checkpointed_model(inputs, *extra_inputs)
+            if not multiple_input:
+                inputs.requires_grad_()
+            model = self.checkpointed_model
         else:
-            output = self.__model(inputs, *extra_inputs)
+            model = self.__model
+        if not multiple_input:
+            output = model(inputs)
+        else:
+            output = model(*inputs)
         loss = self.loss_fun(output, targets)
-        if self.__trace_input and self.__example_input is None:
-            self.__example_input = [inputs.detach()] + copy.deepcopy(extra_inputs)
+        # if self.__trace_input and self.__example_input is None:
+        #     self.__example_input = [inputs.detach()] + copy.deepcopy(extra_inputs)
         normalized_loss = loss
         if self.__is_averaged_loss():
             normalized_loss = loss * targets.shape[0]
@@ -148,7 +153,7 @@ class ModelWithLoss:
             "targets": targets,
         }
 
-    def __choose_loss_function(self) -> Optional[torch.nn.modules.loss._Loss]:
+    def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
         # if isinstance(self.__model, GeneralizedRCNN):
         #     return None
         layers = [
