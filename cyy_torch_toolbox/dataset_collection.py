@@ -67,7 +67,8 @@ class DatasetCollection:
         self, phase: MachineLearningPhase, transformer: Callable
     ) -> None:
         dataset = self.get_dataset(phase)
-        self.__datasets[phase] = transformer(dataset)
+        dataset_util = self.get_dataset_util(phase)
+        self.__datasets[phase] = transformer(dataset, dataset_util)
 
     def foreach_dataset(self):
         for phase in (
@@ -429,12 +430,11 @@ class DatasetCollection:
                     phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
                 )
         if dataset_type == DatasetType.Text:
+            dc.append_transform(dc.tokenizer)
+            dc.append_transform(torch.tensor)
             label_names = None
             if isinstance(next(iter(dc.get_training_dataset()))[1], str):
                 label_names = dc.get_label_names()
-
-            dc.append_transform(dc.tokenizer)
-            dc.append_transform(torch.tensor)
             if label_names is not None:
                 dc.append_target_transform(
                     functools.partial(cls.get_label, label_names=label_names)
@@ -572,13 +572,11 @@ class DatasetCollectionConfig:
         return dc
 
     def __transform_training_dataset(
-        self, training_dataset, save_dir=None
+        self, training_dataset, dataset_util, save_dir=None
     ) -> torch.utils.data.Dataset:
         subset_indices = None
         if self.training_dataset_percentage is not None:
-            subset_dict = DatasetUtil(training_dataset).iid_sample(
-                self.training_dataset_percentage
-            )
+            subset_dict = dataset_util.iid_sample(self.training_dataset_percentage)
             subset_indices = sum(subset_dict.values(), [])
             with open(
                 os.path.join(save_dir, "training_dataset_indices.json"),
