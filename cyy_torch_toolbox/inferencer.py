@@ -42,7 +42,9 @@ class Inferencer(ModelExecutor):
                 self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH)
                 for batch_index, batch in enumerate(self.dataloader):
                     self.exec_hooks(ModelExecutorHookPoint.AFTER_FETCH_BATCH)
-                    _, inputs, targets, other_info = self.decode_batch(batch)
+                    batch_size, inputs, targets, other_info = self.decode_batch(batch)
+                    if batch_size is None:
+                        batch_size = self.get_batch_size(targets)
                     batch = (inputs, targets, other_info)
                     result = self._model_with_loss(
                         inputs,
@@ -50,6 +52,7 @@ class Inferencer(ModelExecutor):
                         phase=self.phase,
                         device=self.device,
                         non_blocking=True,
+                        batch_size=batch_size,
                     )
                     batch_loss = result["loss"]
                     if use_grad:
