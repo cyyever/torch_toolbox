@@ -42,7 +42,7 @@ class Inferencer(ModelExecutor):
                 self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH)
                 for batch_index, batch in enumerate(self.dataloader):
                     self.exec_hooks(ModelExecutorHookPoint.AFTER_FETCH_BATCH)
-                    inputs, targets, other_info = self.decode_batch(batch)
+                    _, inputs, targets, other_info = self.decode_batch(batch)
                     batch = (inputs, targets, other_info)
                     result = self._model_with_loss(
                         inputs,

@@ -162,9 +162,12 @@ class Trainer(ModelExecutor):
                         optimizer = self.get_optimizer()
                         lr_scheduler = self.get_lr_scheduler()
 
-                        sample_inputs, sample_targets, other_info = self.decode_batch(
-                            batch
-                        )
+                        (
+                            batch_size,
+                            sample_inputs,
+                            sample_targets,
+                            other_info,
+                        ) = self.decode_batch(batch)
                         batch = (sample_inputs, sample_targets, other_info)
                         batch_size = self.get_batch_size(sample_targets)
                         if (

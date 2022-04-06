@@ -223,8 +223,12 @@ class ModelExecutor(ModelExecutorBase):
 
     @classmethod
     def decode_batch(cls, batch):
+        batch_size = None
+        if isinstance(batch, dict):
+            batch_size = batch["size"]
+            batch = batch["content"]
         sample_inputs = batch[0]
         sample_targets = batch[1]
-        if len(batch) == 3:
-            return (sample_inputs, sample_targets, batch[2])
-        return (sample_inputs, sample_targets, {})
+        if len(batch) >= 3:
+            return (batch_size, sample_inputs, sample_targets, batch[2])
+        return (batch_size, sample_inputs, sample_targets, {})
