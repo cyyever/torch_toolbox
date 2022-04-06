@@ -1,5 +1,5 @@
 import copy
-from typing import Callable, Optional, Type
+from typing import Any, Callable, Optional, Type
 
 import torch
 import torch.nn as nn
@@ -13,7 +13,7 @@ from tensor import cat_tensors_to_vector, load_tensor_dict
 class ModelUtil:
     def __init__(self, model: torch.nn.Module):
         self.__model = model
-        self.__is_pruned = None
+        self.__is_pruned: bool | None = None
         self.__parameter_dict: Optional[dict] = None
         self.__parameter_shapes: Optional[dict] = None
 
@@ -21,12 +21,15 @@ class ModelUtil:
     def model(self):
         return self.__model
 
-    def get_parameter_list(self, detach=True):
+    def get_parameter_list(self, detach: bool = True) -> torch.Tensor:
         return cat_tensors_to_vector(self.get_parameter_seq(detach=detach))
 
     def load_parameter_list(
-        self, parameter_list: torch.Tensor, check_parameter=True, as_parameter=True
-    ):
+        self,
+        parameter_list: torch.Tensor,
+        check_parameter: bool = True,
+        as_parameter: bool = True,
+    ) -> None:
         if isinstance(parameter_list, torch.Tensor):
             parameter_shapes = self.get_parameter_shapes()
             assert parameter_shapes
@@ -65,7 +68,7 @@ class ModelUtil:
             elif k.startswith(".running_"):
                 raise RuntimeError(f"unchecked key {k}")
 
-    def set_attr(self, name: str, value, as_parameter=True):
+    def set_attr(self, name: str, value: Any, as_parameter: bool = True) -> None:
         model = self.model
         components = name.split(".")
         for i, component in enumerate(components):
@@ -79,14 +82,14 @@ class ModelUtil:
                 else:
                     setattr(model, component, value)
 
-    def get_attr(self, name: str):
+    def get_attr(self, name: str) -> Any:
         val = self.model
         components = name.split(".")
         for component in components:
             val = getattr(val, component)
         return val
 
-    def del_attr(self, name: str):
+    def del_attr(self, name: str) -> None:
         model = self.model
         components = name.split(".")
         for i, component in enumerate(components):
@@ -130,12 +133,12 @@ class ModelUtil:
         for layer, name in removed_items:
             prune.remove(layer, name)
 
-    def change_sub_modules(self, sub_module_type: Type, f: Callable):
+    def change_sub_modules(self, sub_module_type: Type, f: Callable) -> None:
         for k, v in self.model.named_modules():
             if isinstance(v, sub_module_type):
                 f(k, v)
 
-    def has_sub_module(self, sub_module_type: Type):
+    def has_sub_module(self, sub_module_type: Type) -> bool:
         for _, v in self.model.named_modules():
             if isinstance(v, sub_module_type):
                 return True
@@ -215,7 +218,7 @@ class ModelUtil:
             block_classes = {"Bottleneck", "DenseBlock"}
         blocks: list = []
         i = 0
-        memo = set()
+        memo: set = set()
 
         # use while loop to avoid add submodule when a module is added
         while True:
@@ -286,7 +289,7 @@ class ModelUtil:
         return (sparsity, none_zero_parameter_num, parameter_count)
 
     @property
-    def is_pruned(self):
+    def is_pruned(self) -> bool:
         if self.__is_pruned is None:
             self.__is_pruned = prune.is_pruned(self.model)
         return self.__is_pruned
@@ -296,7 +299,7 @@ class ModelUtil:
         parameter_dict: dict,
         check_parameter: bool = True,
         as_parameter: bool = True,
-    ):
+    ) -> None:
         # assert not self.is_pruned
         assert parameter_dict
         for name, parameter in parameter_dict.items():
@@ -305,7 +308,7 @@ class ModelUtil:
             self.set_attr(name, parameter, as_parameter=as_parameter)
         self.__parameter_dict = None
 
-    def get_parameter_dict(self, detach=True) -> dict:
+    def get_parameter_dict(self, detach: bool = True) -> dict:
         # assert not self.is_pruned
         if self.__parameter_dict is not None:
             return self.__parameter_dict
