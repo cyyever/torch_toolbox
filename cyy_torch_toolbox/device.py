@@ -28,20 +28,23 @@ def get_devices():
     return [torch.device("cpu")]
 
 
-def put_data_to_device(data, device):
+def put_data_to_device(data, device, non_blocking=False):
     match data:
         case torch.Tensor():
-            if data.is_cuda:
-                return data.to(device)
+            return data.to(device, non_blocking=non_blocking)
         case list():
             for idx, element in enumerate(data):
-                data[idx] = put_data_to_device(element, device)
+                data[idx] = put_data_to_device(
+                    element, device, non_blocking=non_blocking
+                )
             return data
         case tuple():
-            return tuple(put_data_to_device(list(data), device))
+            return tuple(
+                put_data_to_device(list(data), device, non_blocking=non_blocking)
+            )
         case dict():
             for k, v in data.items():
-                data[k] = put_data_to_device(v, device)
+                data[k] = put_data_to_device(v, device, non_blocking=non_blocking)
             return data
     return data
 
