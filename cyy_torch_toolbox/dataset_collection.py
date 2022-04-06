@@ -189,12 +189,13 @@ class DatasetCollection:
         else:
             inputs = default_collate(inputs)
         targets = default_collate(targets)
-        if isinstance(targets, list):
-            targets = torch.stack(targets)
+        # for classification
+        targets = targets.reshape(-1)
+        batch_size = len(batch)
         if other_info:
             other_info = default_collate(other_info)
-            return inputs, targets, other_info
-        return inputs, targets
+            return {"size": batch_size, "content": (inputs, targets, other_info)}
+        return {"size": batch_size, "content": (inputs, targets)}
 
     def get_raw_data(self, phase: MachineLearningPhase, index: int) -> tuple:
         if self.dataset_type == DatasetType.Vision:
