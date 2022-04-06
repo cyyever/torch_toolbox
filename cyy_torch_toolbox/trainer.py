@@ -168,8 +168,9 @@ class Trainer(ModelExecutor):
                             sample_targets,
                             other_info,
                         ) = self.decode_batch(batch)
+                        if batch_size is None:
+                            batch_size = self.get_batch_size(sample_targets)
                         batch = (sample_inputs, sample_targets, other_info)
-                        batch_size = self.get_batch_size(sample_targets)
                         if (
                             self._model_with_loss.has_batch_norm
                             and self.hyper_parameter.batch_size != 1
