@@ -108,7 +108,7 @@ class ModelWithLoss:
             else:
                 self.__model_in_trainig_mode = False
 
-        multiple_input = isinstance(inputs, tuple)
+        multiple_input = isinstance(inputs, tuple | list)
         if device is not None:
             inputs = put_data_to_device(
                 inputs, device=device, non_blocking=non_blocking
