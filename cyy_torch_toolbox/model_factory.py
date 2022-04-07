@@ -1,13 +1,14 @@
 import copy
-import sys
 
 import torch
 from cyy_naive_lib.log import get_logger
 
-from cyy_torch_toolbox.reproducible_env import global_reproducible_env
 from dataset_collection import DatasetCollection
 from ml_type import DatasetType, ModelType
 from model_with_loss import ModelWithLoss
+
+# import sys
+
 
 __model_info: dict = {}
 
@@ -22,16 +23,11 @@ def get_model_info() -> dict:
 
     if not __model_info:
         for repo in github_repos:
-            for model_name in torch.hub.list(repo):
+            for model_name in torch.hub.list(repo, force_reload=True, trust_repo=True):
                 if model_name not in __model_info:
-                    repo_dir = torch.hub._get_cache_or_reload(
-                        repo, force_reload=False, verbose=False, skip_validation=True
-                    )
                     __model_info[model_name.lower()] = (
                         repo,
                         model_name,
-                        "github",
-                        repo_dir,
                     )
     return __model_info
 
@@ -74,9 +70,14 @@ def get_model(
                     f"unsupported model {name}, supported models are "
                     + str(model_info.keys())
                 )
-            repo, model_name, source, repo_dir = model_repo_and_name
+            repo, model_name = model_repo_and_name
             model = torch.hub.load(
-                repo, model_name, source=source, **(added_kwargs | model_kwargs)
+                repo,
+                model_name,
+                force_reload=False,
+                trust_repo=True,
+                skip_validation=True,
+                **(added_kwargs | model_kwargs),
             )
             model_with_loss = ModelWithLoss(
                 model=model,
@@ -85,7 +86,7 @@ def get_model(
             )
             get_logger().warning("use model arguments %s", model_kwargs | added_kwargs)
             # we need the path to pickle models
-            sys.path.append(repo_dir)
+            # sys.path.append(repo_dir)
             return model_with_loss
         except TypeError as e:
             retry = False
