@@ -322,8 +322,8 @@ class DatasetCollection:
         dataset_kwargs: dict = None,
     ):
         constructor_kwargs = get_kwarg_names(dataset_constructor)
-        dataset_kwargs = cls.__prepare_dataset_kwargs(
-            name, dataset_type, constructor_kwargs, dataset_kwargs
+        dataset_kwargs_fun = cls.__prepare_dataset_kwargs(
+            name, constructor_kwargs, dataset_kwargs
         )
         training_dataset = None
         validation_dataset = None
@@ -332,28 +332,11 @@ class DatasetCollection:
         for phase in MachineLearningPhase:
             while True:
                 try:
-                    if "train" in constructor_kwargs:
-                        # Some dataset only have train and test parts
-                        if phase == MachineLearningPhase.Validation:
-                            break
-                        dataset_kwargs["train"] = phase == MachineLearningPhase.Training
-                    if "split" in constructor_kwargs:
-                        if phase == MachineLearningPhase.Training:
-                            dataset_kwargs["split"] = "train"
-                        elif phase == MachineLearningPhase.Validation:
-                            if dataset_type == DatasetType.Text:
-                                dataset_kwargs["split"] = "valid"
-                            else:
-                                dataset_kwargs["split"] = "val"
-                        else:
-                            dataset_kwargs["split"] = "test"
-                    if "subset" in constructor_kwargs:
-                        if phase == MachineLearningPhase.Training:
-                            dataset_kwargs["subset"] = "training"
-                        elif phase == MachineLearningPhase.Validation:
-                            dataset_kwargs["subset"] = "validation"
-                        else:
-                            dataset_kwargs["subset"] = "testing"
+                    dataset_kwargs = dataset_kwargs_fun(
+                        phase=phase, dataset_type=dataset_type
+                    )
+                    if dataset_kwargs is None:
+                        break
                     dataset = dataset_constructor(**dataset_kwargs)
                     if name == "IMDB":
                         dataset = convert_iterable_dataset_to_map(
@@ -456,21 +439,15 @@ class DatasetCollection:
     def __prepare_dataset_kwargs(
         cls,
         name: str,
-        dataset_type: DatasetType,
         constructor_kwargs: set,
         dataset_kwargs: dict = None,
-    ) -> dict:
+    ) -> Callable:
         if dataset_kwargs is None:
             dataset_kwargs = {}
         if "root" not in dataset_kwargs:
             dataset_kwargs["root"] = cls.__get_dataset_dir(name)
         if "download" not in dataset_kwargs:
             dataset_kwargs["download"] = True
-        if dataset_type == DatasetType.Vision:
-            if "transform" not in dataset_kwargs:
-                dataset_kwargs["transform"] = transforms.Compose(
-                    [transforms.ToTensor()]
-                )
 
         discarded_dataset_kwargs = set()
         for k in dataset_kwargs:
@@ -482,7 +459,40 @@ class DatasetCollection:
             )
             for k in discarded_dataset_kwargs:
                 dataset_kwargs.pop(k)
-        return dataset_kwargs
+
+        def get_dataset_kwargs_per_phase(
+            dataset_type: DatasetType, phase: MachineLearningPhase
+        ) -> dict | None:
+            if dataset_type == DatasetType.Vision:
+                if "transform" not in dataset_kwargs:
+                    dataset_kwargs["transform"] = transforms.Compose(
+                        [transforms.ToTensor()]
+                    )
+            if "train" in constructor_kwargs:
+                # Some dataset only have train and test parts
+                if phase == MachineLearningPhase.Validation:
+                    return None
+                dataset_kwargs["train"] = phase == MachineLearningPhase.Training
+            elif "split" in constructor_kwargs:
+                if phase == MachineLearningPhase.Training:
+                    dataset_kwargs["split"] = "train"
+                elif phase == MachineLearningPhase.Validation:
+                    if dataset_type == DatasetType.Text:
+                        dataset_kwargs["split"] = "valid"
+                    else:
+                        dataset_kwargs["split"] = "val"
+                else:
+                    dataset_kwargs["split"] = "test"
+            elif "subset" in constructor_kwargs:
+                if phase == MachineLearningPhase.Training:
+                    dataset_kwargs["subset"] = "training"
+                elif phase == MachineLearningPhase.Validation:
+                    dataset_kwargs["subset"] = "validation"
+                else:
+                    dataset_kwargs["subset"] = "testing"
+            return dataset_kwargs
+
+        return get_dataset_kwargs_per_phase
 
     @staticmethod
     def __split_for_validation(cache_dir, splitted_dataset):
