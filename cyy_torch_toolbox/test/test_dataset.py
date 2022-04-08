@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 from cyy_torch_toolbox.dataset import sub_dataset
-from cyy_torch_toolbox.dataset_collection import DatasetCollection
+from cyy_torch_toolbox.dataset_collection import (
+    ClassificationDatasetCollection, create_dataset_collection)
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
 def test_dataset():
-    mnist = DatasetCollection.get_by_name("MNIST")
+    mnist = create_dataset_collection(ClassificationDatasetCollection, "MNIST")
     mnist_training = mnist.get_dataset(MachineLearningPhase.Training)
     assert (
         abs(
@@ -19,7 +20,7 @@ def test_dataset():
     assert next(mnist.generate_raw_data(MachineLearningPhase.Training))
     assert mnist.get_dataset_util().channel == 1
     assert len(sub_dataset(mnist_training, [1])) == 1
-    cifar10 = DatasetCollection.get_by_name("CIFAR10")
+    cifar10 = create_dataset_collection(ClassificationDatasetCollection, "CIFAR10")
     assert cifar10.get_dataset_util().channel == 3
     assert cifar10.get_dataset_util().get_label_number() == 10
     assert abs(
@@ -32,8 +33,8 @@ def test_dataset():
 
 def test_dataset_labels():
     for name in ("MNIST", "CIFAR10"):
-        dc = DatasetCollection.get_by_name(name)
+        dc = create_dataset_collection(ClassificationDatasetCollection, name)
         assert len(dc.get_labels()) == 10
     for name in ("IMDB",):
-        dc = DatasetCollection.get_by_name(name)
+        dc = create_dataset_collection(ClassificationDatasetCollection, name)
         assert dc.get_labels()
