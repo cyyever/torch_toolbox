@@ -1,4 +1,6 @@
 import copy
+import os
+import sys
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -6,9 +8,6 @@ from cyy_naive_lib.log import get_logger
 from dataset_collection import DatasetCollection
 from ml_type import DatasetType, ModelType
 from model_with_loss import ModelWithLoss
-
-# import sys
-
 
 __model_info: dict = {}
 
@@ -92,7 +91,21 @@ def get_model(
             )
             get_logger().warning("use model arguments %s", model_kwargs | added_kwargs)
             # we need the path to pickle models
-            # sys.path.append(repo_dir)
+            hub_dir = torch.hub.get_dir()
+            # Parse github repo information
+            repo_owner, repo_name, ref = torch.hub._parse_repo_info(repo)
+            # Github allows branch name with slash '/',
+            # this causes confusion with path on both Linux and Windows.
+            # Backslash is not allowed in Github branch name so no need to
+            # to worry about it.
+            normalized_br = ref.replace("/", "_")
+            # Github renames folder repo-v1.x.x to repo-1.x.x
+            # We don't know the repo name before downloading the zip file
+            # and inspect name from it.
+            # To check if cached repo exists, we need to normalize folder names.
+            owner_name_branch = "_".join([repo_owner, repo_name, normalized_br])
+            repo_dir = os.path.join(hub_dir, owner_name_branch)
+            sys.path.append(repo_dir)
             return model_with_loss
         except TypeError as e:
             retry = False

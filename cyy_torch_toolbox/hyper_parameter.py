@@ -1,14 +1,28 @@
-import copy
+import functools
 import json
 from enum import IntEnum, auto
 from typing import Callable, Optional, Union
 
 import torch
-from cyy_naive_lib.data_structure.thread_pool import ThreadPool
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.algorithm.lr_finder import LRFinder
+from cyy_torch_toolbox.data_structure.torch_process_task_queue import \
+    TorchProcessTaskQueue
 from cyy_torch_toolbox.reflection import call_fun, get_class_attrs
+
+
+def determin_learning_rate(trainer, *args):
+    tmp_trainer = trainer
+    tmp_trainer.disable_stripable_hooks()
+    lr_finder = LRFinder()
+    get_logger().warning("register lr_finder")
+    tmp_trainer.prepend_hook(lr_finder)
+    tmp_trainer.train()
+    get_logger().warning(
+        "suggested_learning_rate is %s", lr_finder.suggested_learning_rate
+    )
+    return lr_finder.suggested_learning_rate
 
 
 class HyperParameterAction(IntEnum):
@@ -54,26 +68,10 @@ class HyperParameter:
     def get_learning_rate(self, trainer):
         if isinstance(self.__learning_rate, HyperParameterAction):
 
-            def get_learning_rate_from_thread():
-                tmp_trainer = copy.deepcopy(trainer)
-                tmp_trainer.disable_stripable_hooks()
-                lr_finder = LRFinder()
-                get_logger().warning("register lr_finder")
-                tmp_trainer.prepend_hook(lr_finder)
-                tmp_trainer.train()
-                get_logger().warning(
-                    "suggested_learning_rate is %s", lr_finder.suggested_learning_rate
-                )
-                self.__learning_rate = lr_finder.suggested_learning_rate
-                if (
-                    hasattr(tmp_trainer.dataloader, "_iterator")
-                    and tmp_trainer.dataloader._iterator is not None
-                ):
-                    tmp_trainer.dataloader._iterator._shutdown_workers()
-
-            pool = ThreadPool()
-            pool.exec(get_learning_rate_from_thread)
-            pool.stop()
+            task_queue = TorchProcessTaskQueue(worker_fun=determin_learning_rate)
+            task_queue.add_task(trainer)
+            self.__learning_rate = task_queue.get_result()
+            task_queue.stop()
         return self.__learning_rate
 
     def set_learning_rate(self, learning_rate: Union[float, HyperParameterAction]):
@@ -109,56 +107,62 @@ class HyperParameter:
     def lr_scheduler_step_after_batch(lr_scheduler):
         return isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR)
 
-    @staticmethod
-    def get_lr_scheduler_factory(name, dataset_name=None, **kwargs):
-        def hook(hyper_parameter: HyperParameter, trainer):
-            nonlocal dataset_name
-            nonlocal name
-            optimizer = trainer.get_optimizer()
-            training_dataset_size = len(trainer.dataset)
-            full_kwargs: dict = {}
-            full_kwargs["optimizer"] = optimizer
-            if name == "ReduceLROnPlateau":
-                patience = min(10, hyper_parameter.epoch + 9 // 10)
-                if dataset_name == "CIFAR10":
-                    patience = 2
-                full_kwargs["patience"] = patience
-                full_kwargs["factor"] = 0.1
-                full_kwargs["verbose"] = True
-                full_kwargs.update(kwargs)
-                get_logger().info(
-                    "ReduceLROnPlateau patience is %s", full_kwargs["patience"]
-                )
-                return torch.optim.lr_scheduler.ReduceLROnPlateau(**full_kwargs)
-            if name == "OneCycleLR":
-                full_kwargs["pct_start"] = 0.4
-                full_kwargs["max_lr"] = 10 * hyper_parameter.get_learning_rate(trainer)
-                full_kwargs[
-                    "total_steps"
-                ] = hyper_parameter.epoch * hyper_parameter.__get_iterations_per_epoch(
-                    training_dataset_size
-                )
-                full_kwargs["anneal_strategy"] = "linear"
-                full_kwargs["three_phase"] = True
-                full_kwargs.update(kwargs)
-                return torch.optim.lr_scheduler.OneCycleLR(**full_kwargs)
-            if name == "CosineAnnealingLR":
-                full_kwargs["T_max"] = hyper_parameter.epoch
-                full_kwargs.update(kwargs)
-                return torch.optim.lr_scheduler.CosineAnnealingLR(**full_kwargs)
-            if name == "MultiStepLR":
-                full_kwargs["T_max"] = hyper_parameter.epoch
-                full_kwargs["milestones"] = [30, 80]
-                full_kwargs.update(kwargs)
-                return torch.optim.lr_scheduler.MultiStepLR(**full_kwargs)
-            fun = getattr(torch.optim.lr_scheduler, name)
-            if fun is not None:
-                full_kwargs.update(kwargs)
-                return fun(**full_kwargs)
+    @classmethod
+    def get_lr_scheduler_factory(cls, name, dataset_name=None, **kwargs):
+        return functools.partial(
+            cls.default_lr_scheduler_factory,
+            name=name,
+            dataset_name=dataset_name,
+            kwargs=kwargs,
+        )
 
-            raise RuntimeError("unknown learning rate scheduler:" + name)
+    @classmethod
+    def default_lr_scheduler_factory(
+        cls, hyper_parameter, trainer, name, dataset_name, kwargs
+    ):
+        optimizer = trainer.get_optimizer()
+        training_dataset_size = len(trainer.dataset)
+        full_kwargs: dict = {}
+        full_kwargs["optimizer"] = optimizer
+        if name == "ReduceLROnPlateau":
+            patience = min(10, hyper_parameter.epoch + 9 // 10)
+            if dataset_name == "CIFAR10":
+                patience = 2
+            full_kwargs["patience"] = patience
+            full_kwargs["factor"] = 0.1
+            full_kwargs["verbose"] = True
+            full_kwargs.update(kwargs)
+            get_logger().info(
+                "ReduceLROnPlateau patience is %s", full_kwargs["patience"]
+            )
+            return torch.optim.lr_scheduler.ReduceLROnPlateau(**full_kwargs)
+        if name == "OneCycleLR":
+            full_kwargs["pct_start"] = 0.4
+            full_kwargs["max_lr"] = 10 * hyper_parameter.get_learning_rate(trainer)
+            full_kwargs[
+                "total_steps"
+            ] = hyper_parameter.epoch * hyper_parameter.__get_iterations_per_epoch(
+                training_dataset_size
+            )
+            full_kwargs["anneal_strategy"] = "linear"
+            full_kwargs["three_phase"] = True
+            full_kwargs.update(kwargs)
+            return torch.optim.lr_scheduler.OneCycleLR(**full_kwargs)
+        if name == "CosineAnnealingLR":
+            full_kwargs["T_max"] = hyper_parameter.epoch
+            full_kwargs.update(kwargs)
+            return torch.optim.lr_scheduler.CosineAnnealingLR(**full_kwargs)
+        if name == "MultiStepLR":
+            full_kwargs["T_max"] = hyper_parameter.epoch
+            full_kwargs["milestones"] = [30, 80]
+            full_kwargs.update(kwargs)
+            return torch.optim.lr_scheduler.MultiStepLR(**full_kwargs)
+        fun = getattr(torch.optim.lr_scheduler, name)
+        if fun is not None:
+            full_kwargs.update(kwargs)
+            return fun(**full_kwargs)
 
-        return hook
+        raise RuntimeError("unknown learning rate scheduler:" + name)
 
     def set_optimizer_factory(self, optimizer_factory: Callable):
         self.__optimizer_factory = optimizer_factory
