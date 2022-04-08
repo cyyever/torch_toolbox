@@ -16,6 +16,6 @@ class AddIndexToDataset(Hook):
         model_executor = kwargs["model_executor"]
         model_executor.transform_dataset(lambda _: self.__raw_dataset)
 
-    def __change_dataset(self, dataset):
+    def __change_dataset(self, dataset, _):
         self.__raw_dataset = dataset
         return dataset_with_indices(dataset)
