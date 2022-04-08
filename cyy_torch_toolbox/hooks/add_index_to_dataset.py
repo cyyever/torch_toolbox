@@ -14,7 +14,7 @@ class AddIndexToDataset(Hook):
     def _after_execute(self, **kwargs):
         assert self.__raw_dataset is not None
         model_executor = kwargs["model_executor"]
-        model_executor.transform_dataset(lambda _: self.__raw_dataset)
+        model_executor.transform_dataset(lambda _, __: self.__raw_dataset)
 
     def __change_dataset(self, dataset, _):
         self.__raw_dataset = dataset
