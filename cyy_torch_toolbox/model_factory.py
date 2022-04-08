@@ -53,6 +53,8 @@ def get_model(
     if dataset_collection.dataset_type == DatasetType.Text:
         if "num_embeddings" not in model_kwargs:
             added_kwargs["num_embeddings"] = len(dataset_collection.tokenizer.vocab)
+        if "token_num" not in model_kwargs:
+            added_kwargs["token_num"] = added_kwargs["num_embeddings"]
 
     model_type = ModelType.Classification
     if "rcnn" in name.lower():
