@@ -55,7 +55,6 @@ class HyperParameter:
         if isinstance(self.__learning_rate, HyperParameterAction):
 
             def get_learning_rate_from_thread():
-                get_logger().warning("guess lr")
                 tmp_trainer = copy.deepcopy(trainer)
                 tmp_trainer.disable_stripable_hooks()
                 lr_finder = LRFinder()
