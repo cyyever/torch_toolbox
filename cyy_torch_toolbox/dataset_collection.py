@@ -308,8 +308,11 @@ class DatasetCollection:
 
     def is_classification_dataset(self) -> bool:
         first_target = next(iter(self.get_training_dataset()))[1]
-        if isinstance(first_target, int):
-            return True
+        match first_target:
+            case int():
+                return True
+            case "pos" | "neg":
+                return True
         return False
 
     @classmethod
@@ -414,7 +417,9 @@ class DatasetCollection:
 class ClassificationDatasetCollection(DatasetCollection):
     @classmethod
     def create(cls, *args, **kwargs):
-        dc = cls(*DatasetCollection.create(*args, **kwargs))
+        dc: ClassificationDatasetCollection = cls(
+            *DatasetCollection.create(*args, **kwargs)
+        )
         if dc.dataset_type == DatasetType.Vision:
             mean, std = dc.__get_mean_and_std(
                 torch.utils.data.ConcatDataset(list(dc._datasets.values()))
