@@ -3,7 +3,7 @@ from torchtext.vocab import build_vocab_from_iterator
 
 
 class Tokenizer:
-    def __init__(self, dc, special_tokens=None, min_freq=1):
+    def __init__(self, dc, special_tokens: None | list[str] = None, min_freq=1):
         tokenizer = get_tokenizer(tokenizer="spacy", language="en_core_web_sm")
 
         def yield_tokens():
@@ -12,8 +12,12 @@ class Tokenizer:
                     yield tokenizer(text)
                     yield tokenizer(target)
 
+        if special_tokens is None:
+            special_tokens = []
+        if "<pad>" not in special_tokens:
+            special_tokens.append("<pad>")
         vocab = build_vocab_from_iterator(
-            yield_tokens(), specials=list(special_tokens), min_freq=min_freq
+            yield_tokens(), specials=special_tokens, min_freq=min_freq
         )
         if special_tokens is not None and "<unk>" in special_tokens:
             vocab.set_default_index(vocab["<unk>"])
