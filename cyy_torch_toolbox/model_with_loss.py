@@ -4,7 +4,6 @@ from typing import Callable
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint
-import torchvision
 from cyy_naive_lib.log import get_logger
 
 from device import put_data_to_device
@@ -30,7 +29,6 @@ class ModelWithLoss:
         self.set_loss_fun(loss_fun)
         self.__model_type = model_type
         self.__has_batch_norm = None
-        self.__data_transforms: None | Callable = None
         # self.__trace_input = False
         self.__example_input = None
         self.use_checkpointing = False
@@ -55,10 +53,9 @@ class ModelWithLoss:
     @property
     def has_batch_norm(self):
         if self.__has_batch_norm is None:
-            pass
-        self.__has_batch_norm = ModelUtil(self.__get_real_model()).has_sub_module(
-            torch.nn.BatchNorm2d
-        )
+            self.__has_batch_norm = ModelUtil(self.get_real_model()).has_sub_module(
+                torch.nn.BatchNorm2d
+            )
         return self.__has_batch_norm
 
     @property
@@ -122,14 +119,6 @@ class ModelWithLoss:
                 self.__current_model_device = device
 
         assert self.loss_fun is not None
-        if self.__data_transforms is None:
-            data_transforms = []
-            input_size = getattr(self.__get_real_model().__class__, "input_size", None)
-            if input_size is not None:
-                get_logger().debug("resize input to %s", input_size)
-                data_transforms.append(torchvision.transforms.Resize(input_size))
-            self.__data_transforms = torchvision.transforms.Compose(data_transforms)
-        inputs = self.__data_transforms(inputs)
         if self.__model_in_trainig_mode and self.use_checkpointing:
             if not multiple_input:
                 inputs.requires_grad_()
@@ -186,10 +175,10 @@ class ModelWithLoss:
         get_logger().error("can't choose a loss function, model is %s", self.__model)
         raise NotImplementedError(type(last_layer))
 
-    def __get_real_model(self):
-        if isinstance(self.__model, torch.quantization.stubs.QuantWrapper):
-            return self.__model.module
-        return self.__model
+    def get_real_model(self):
+        if isinstance(self.model, torch.quantization.stubs.QuantWrapper):
+            return self.model.module
+        return self.model
 
     def __is_averaged_loss(self) -> bool:
         if hasattr(self.loss_fun, "reduction"):
@@ -200,7 +189,7 @@ class ModelWithLoss:
     def __repr__(self):
         return f"model: {self.__model.__class__.__name__}, loss_fun: {self.loss_fun}"
 
-    def set_model_mode(self, phase: MachineLearningPhase):
+    def set_model_mode(self, phase: MachineLearningPhase) -> None:
         if phase == MachineLearningPhase.Training:
             if self.__model_in_trainig_mode:
                 return

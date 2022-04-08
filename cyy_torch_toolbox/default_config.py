@@ -99,6 +99,7 @@ class DefaultConfig:
             model_kwargs["pretrained"] = self.pretrained
 
         model_with_loss = get_model(self.model_name, dc, **model_kwargs)
+        dc.adapt_to_model(model_with_loss.get_real_model())
         model_with_loss.use_checkpointing = self.use_checkpointing
         trainer = Trainer(model_with_loss, dc, hyper_parameter)
         trainer.set_save_dir(self.get_save_dir())
