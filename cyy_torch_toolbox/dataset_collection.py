@@ -6,11 +6,12 @@ import threading
 from typing import Callable, Dict, List
 
 import torch
+import torchtext
+import torchvision
 from cyy_naive_lib.log import get_logger
 from ssd_checker import is_ssd
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data._utils.collate import default_collate
-from torchvision import transforms
 
 from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
                                        replace_dataset_labels, sub_dataset)
@@ -173,7 +174,7 @@ class DatasetCollection:
         else:
             inputs = default_collate(inputs)
         targets = default_collate(targets)
-        # for classification
+        # TODO for classification
         targets = targets.reshape(-1)
         batch_size = len(batch)
         if other_info:
@@ -345,8 +346,8 @@ class DatasetCollection:
         ) -> dict | None:
             if dataset_type == DatasetType.Vision:
                 if "transform" not in dataset_kwargs:
-                    dataset_kwargs["transform"] = transforms.Compose(
-                        [transforms.ToTensor()]
+                    dataset_kwargs["transform"] = torchvision.transforms.Compose(
+                        [torchvision.transforms.ToTensor()]
                     )
             if "train" in constructor_kwargs:
                 # Some dataset only have train and test parts
@@ -424,10 +425,10 @@ class ClassificationDatasetCollection(DatasetCollection):
             mean, std = dc.__get_mean_and_std(
                 torch.utils.data.ConcatDataset(list(dc._datasets.values()))
             )
-            dc.append_transform(transforms.Normalize(mean=mean, std=std))
+            dc.append_transform(torchvision.transforms.Normalize(mean=mean, std=std))
             if dc.name not in ("SVHN", "MNIST"):
                 dc.append_transform(
-                    transforms.RandomHorizontalFlip(),
+                    torchvision.transforms.RandomHorizontalFlip(),
                     phases={MachineLearningPhase.Training},
                 )
             # if name in ("CIFAR10", "CIFAR100"):
@@ -437,12 +438,12 @@ class ClassificationDatasetCollection(DatasetCollection):
             #     )
             if dc.name.lower() == "imagenet":
                 dc.append_transform(
-                    transforms.RandomResizedCrop(224),
+                    torchvision.transforms.RandomResizedCrop(224),
                     phases={MachineLearningPhase.Training},
                 )
                 dc.append_transforms(
                     [
-                        transforms.RandomResizedCrop(224),
+                        torchvision.transforms.RandomResizedCrop(224),
                         # transforms.Resize(256),
                         # transforms.CenterCrop(224),
                     ],
@@ -451,15 +452,17 @@ class ClassificationDatasetCollection(DatasetCollection):
         if dc.dataset_type == DatasetType.Text:
             dc.append_transform(dc.tokenizer)
             dc.append_transform(torch.tensor)
-            label_names = None
             if isinstance(next(iter(dc.get_training_dataset()))[1], str):
                 label_names = dc.get_label_names()
-            if label_names is not None:
                 dc.append_target_transform(
                     functools.partial(cls.get_label, label_names=label_names)
                 )
                 get_logger().warning("covert string label to int")
             if dc.name == "IMDB":
+                # dc.append_transform(
+                #     torchtext.transform.Truncate(512),
+                #     phases={MachineLearningPhase.Training},
+                # )
                 dc.append_input_batch_transform(
                     functools.partial(
                         pad_sequence, padding_value=dc.tokenizer.vocab["<pad>"]
@@ -529,6 +532,13 @@ class ClassificationDatasetCollection(DatasetCollection):
     def get_label(cls, label_name, label_names):
         reversed_label_names = {v: k for k, v in label_names.items()}
         return reversed_label_names[label_name]
+
+    def adapt_to_model(self, model):
+        """add more transformers for model"""
+        input_size = getattr(model.__class__, "input_size", None)
+        if input_size is not None:
+            get_logger().debug("resize input to %s", input_size)
+            self.append_transform(torchvision.transforms.Resize(input_size))
 
 
 def create_dataset_collection(cls, name: str, dataset_kwargs: dict = None):
