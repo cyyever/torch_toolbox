@@ -3,14 +3,19 @@ from torchtext.vocab import build_vocab_from_iterator
 
 
 class Tokenizer:
-    def __init__(self, dc, special_tokens: None | list[str] = None, min_freq=1):
+    def __init__(self, dc, special_tokens: None | list[str] = None, min_freq: int = 1):
         tokenizer = get_tokenizer(tokenizer="spacy", language="en_core_web_sm")
 
         def yield_tokens():
-            for dataset in dc.foreach_dataset():
-                for text, target in dataset:
-                    yield tokenizer(text)
-                    yield tokenizer(target)
+            if dc.is_classification_dataset():
+                for dataset in dc.foreach_dataset():
+                    for text, _ in dataset:
+                        yield tokenizer(text)
+            else:
+                for dataset in dc.foreach_dataset():
+                    for text, target in dataset:
+                        yield tokenizer(text)
+                        yield tokenizer(target)
 
         if special_tokens is None:
             special_tokens = []
