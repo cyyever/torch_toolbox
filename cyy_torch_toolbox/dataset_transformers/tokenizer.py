@@ -25,6 +25,10 @@ class Tokenizer:
         self.__vocab = vocab
 
     @property
+    def tokenizer(self):
+        return self.__tokenizer
+
+    @property
     def vocab(self):
         return self.__vocab
 
