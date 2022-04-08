@@ -198,6 +198,9 @@ class DatasetCollection:
         return {"size": batch_size, "content": (inputs, targets)}
 
     def get_raw_data(self, phase: MachineLearningPhase, index: int) -> tuple:
+        if not self.__is_classification_dataset():
+            raise RuntimeError("Unimplemented Code")
+
         if self.dataset_type == DatasetType.Vision:
             dataset_util = self.get_dataset_util(phase)
             return (
@@ -434,6 +437,12 @@ class DatasetCollection:
                 )
 
         return dc
+
+    def __is_classification_dataset(self) -> bool:
+        first_target = next(iter(self.get_training_dataset()))[1]
+        if isinstance(first_target, int):
+            return True
+        return False
 
     @classmethod
     def __prepare_dataset_kwargs(
