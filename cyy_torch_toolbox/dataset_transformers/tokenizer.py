@@ -21,12 +21,13 @@ class Tokenizer:
             special_tokens = []
         if "<pad>" not in special_tokens:
             special_tokens.append("<pad>")
+        if "<unk>" not in special_tokens:
+            special_tokens.append("<unk>")
+        self.__tokenizer = tokenizer
         vocab = build_vocab_from_iterator(
             yield_tokens(), specials=special_tokens, min_freq=min_freq
         )
-        if special_tokens is not None and "<unk>" in special_tokens:
-            vocab.set_default_index(vocab["<unk>"])
-        self.__tokenizer = tokenizer
+        vocab.set_default_index(vocab["<unk>"])
         self.__vocab = vocab
 
     @property

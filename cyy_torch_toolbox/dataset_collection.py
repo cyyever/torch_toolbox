@@ -124,6 +124,12 @@ class DatasetCollection:
                 continue
             self.__transforms[k] += transforms
 
+    def insert_transform(self, idx, transform, phases=None):
+        for k in MachineLearningPhase:
+            if phases is not None and k not in phases:
+                continue
+            self.__transforms[k].insert(idx, transform)
+
     def append_input_batch_transform(self, transform, phases=None):
         for k in MachineLearningPhase:
             if phases is not None and k not in phases:
@@ -149,11 +155,16 @@ class DatasetCollection:
     def name(self) -> str:
         return self.__name
 
+    def transform_input(self, input_data, phase):
+        transforms = self.__transforms[phase]
+        for f in transforms:
+            input_data = f(input_data)
+        return input_data
+
     def collate_batch(self, batch, phase):
         inputs = []
         targets = []
         other_info = []
-        transforms = self.__transforms[phase]
         input_batch_transforms = self.__input_batch_transforms[phase]
         target_transforms = self.__target_transforms[phase]
         for item in batch:
@@ -162,9 +173,7 @@ class DatasetCollection:
                 other_info.append(tmp)
             else:
                 input, target = item
-            for f in transforms:
-                input = f(input)
-            inputs.append(input)
+            inputs.append(self.transform_input(input, phase))
             for f in target_transforms:
                 target = f(target)
             targets.append(target)
@@ -450,6 +459,9 @@ class ClassificationDatasetCollection(DatasetCollection):
                     phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
                 )
         if dc.dataset_type == DatasetType.Text:
+            if dc.name == "IMDB":
+                dc.append_transform(lambda text: text.replace("<br />", ""))
+
             dc.append_transform(dc.tokenizer)
             dc.append_transform(torch.tensor)
             if isinstance(next(iter(dc.get_training_dataset()))[1], str):
@@ -458,16 +470,11 @@ class ClassificationDatasetCollection(DatasetCollection):
                     functools.partial(cls.get_label, label_names=label_names)
                 )
                 get_logger().warning("covert string label to int")
-            if dc.name == "IMDB":
-                # dc.append_transform(
-                #     torchtext.transform.Truncate(512),
-                #     phases={MachineLearningPhase.Training},
-                # )
-                dc.append_input_batch_transform(
-                    functools.partial(
-                        pad_sequence, padding_value=dc.tokenizer.vocab["<pad>"]
-                    )
+            dc.append_input_batch_transform(
+                functools.partial(
+                    pad_sequence, padding_value=dc.tokenizer.vocab["<pad>"]
                 )
+            )
 
         return dc
 
@@ -535,10 +542,19 @@ class ClassificationDatasetCollection(DatasetCollection):
 
     def adapt_to_model(self, model):
         """add more transformers for model"""
-        input_size = getattr(model.__class__, "input_size", None)
-        if input_size is not None:
-            get_logger().debug("resize input to %s", input_size)
-            self.append_transform(torchvision.transforms.Resize(input_size))
+        if self.dataset_type == DatasetType.Vision:
+            input_size = getattr(model.__class__, "input_size", None)
+            if input_size is not None:
+                get_logger().debug("resize input to %s", input_size)
+                self.append_transform(torchvision.transforms.Resize(input_size))
+            return
+        if self.dataset_type == DatasetType.Text:
+            max_len = getattr(model, "max_len", None)
+            if max_len is not None:
+                get_logger().debug("resize input to %s", max_len)
+                self.insert_transform(
+                    1, torchtext.transforms.Truncate(max_seq_len=max_len)
+                )
 
 
 def create_dataset_collection(cls, name: str, dataset_kwargs: dict = None):
