@@ -34,10 +34,10 @@ class DatasetCollection:
         assert training_dataset is not None
         assert validation_dataset is not None
         assert test_dataset is not None
-        self.__datasets: Dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
-        self.__datasets[MachineLearningPhase.Training] = training_dataset
-        self.__datasets[MachineLearningPhase.Validation] = validation_dataset
-        self.__datasets[MachineLearningPhase.Test] = test_dataset
+        self._datasets: Dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
+        self._datasets[MachineLearningPhase.Training] = training_dataset
+        self._datasets[MachineLearningPhase.Validation] = validation_dataset
+        self._datasets[MachineLearningPhase.Test] = test_dataset
         self.__dataset_type = dataset_type
         self.__transforms: dict = {}
         self.__target_transforms: dict = {}
@@ -68,7 +68,7 @@ class DatasetCollection:
     ) -> None:
         dataset = self.get_dataset(phase)
         dataset_util = self.get_dataset_util(phase)
-        self.__datasets[phase] = transformer(dataset, dataset_util)
+        self._datasets[phase] = transformer(dataset, dataset_util)
 
     def foreach_dataset(self):
         for phase in (
@@ -87,7 +87,7 @@ class DatasetCollection:
             self.transform_dataset(phase, transformer)
 
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
-        return self.__datasets[phase]
+        return self._datasets[phase]
 
     def get_training_dataset(self) -> torch.utils.data.Dataset:
         return self.get_dataset(MachineLearningPhase.Training)
@@ -148,22 +148,6 @@ class DatasetCollection:
     def name(self) -> str:
         return self.__name
 
-    def get_labels(self, use_cache: bool = True) -> set:
-        cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
-        pickle_file = os.path.join(cache_dir, "labels.pk")
-
-        def computation_fun():
-            if self.name.lower() == "imagenet":
-                return range(1000)
-            return self.get_dataset_util(
-                phase=MachineLearningPhase.Training
-            ).get_labels()
-
-        if not use_cache:
-            return computation_fun()
-
-        return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
-
     def collate_batch(self, batch, phase):
         inputs = []
         targets = []
@@ -197,61 +181,17 @@ class DatasetCollection:
             return {"size": batch_size, "content": (inputs, targets, other_info)}
         return {"size": batch_size, "content": (inputs, targets)}
 
-    def get_raw_data(self, phase: MachineLearningPhase, index: int) -> tuple:
-        if not self.__is_classification_dataset():
-            raise RuntimeError("Unimplemented Code")
-
-        if self.dataset_type == DatasetType.Vision:
-            dataset_util = self.get_dataset_util(phase)
-            return (
-                dataset_util.get_sample_image(index),
-                dataset_util.get_sample_label(index),
-            )
-        if self.dataset_type == DatasetType.Text:
-            dataset_util = self.get_dataset_util(phase)
-            return (
-                dataset_util.get_sample_text(index),
-                dataset_util.get_sample_label(index),
-            )
-        raise RuntimeError("Unimplemented Code")
-
-    def generate_raw_data(self, phase: MachineLearningPhase):
-        if self.dataset_type == DatasetType.Vision:
-            dataset_util = self.get_dataset_util(phase)
-            return (
-                (
-                    dataset_util.get_sample_image(i),
-                    dataset_util.get_sample_label(i),
-                )
-                for i in range(len(dataset_util.dataset))
-            )
-        raise RuntimeError("Unimplemented Code")
-
-    def get_label_names(self) -> List[str]:
-        cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
-        pickle_file = os.path.join(cache_dir, "label_names.pk")
-
-        def computation_fun():
-            label_names = self.get_dataset_util(
-                phase=MachineLearningPhase.Training
-            ).get_label_names()
-            if not label_names:
-                raise NotImplementedError(f"failed to get label names for {self.name}")
-            return label_names
-
-        return DatasetCollection.__get_cache_data(pickle_file, computation_fun)
-
     __dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
-    __lock = threading.RLock()
+    lock = threading.RLock()
 
     @classmethod
     def get_dataset_root_dir(cls):
-        with cls.__lock:
+        with cls.lock:
             return os.getenv("pytorch_dataset_root_dir", cls.__dataset_root_dir)
 
     @classmethod
     def set_dataset_root_dir(cls, root_dir: str):
-        with cls.__lock:
+        with cls.lock:
             cls.__dataset_root_dir = root_dir
 
     @classmethod
@@ -277,30 +217,6 @@ class DatasetCollection:
             os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
 
-    @classmethod
-    def get_by_name(cls, name: str, dataset_kwargs: dict = None):
-        with cls.__lock:
-            all_dataset_constructors = set()
-            for dataset_type in DatasetType:
-                dataset_constructor = get_dataset_constructors(dataset_type)
-                if name in dataset_constructor:
-                    return cls.__create_dataset_collection(
-                        name, dataset_type, dataset_constructor[name], dataset_kwargs
-                    )
-                all_dataset_constructors |= dataset_constructor.keys()
-            get_logger().error("supported datasets are %s", all_dataset_constructors)
-            raise NotImplementedError(name)
-
-    @classmethod
-    def __get_mean_and_std(cls, name: str, dataset):
-        cache_dir = cls.__get_dataset_cache_dir(name)
-        pickle_file = os.path.join(cache_dir, "mean_and_std.pk")
-
-        def computation_fun():
-            return VisionDatasetUtil(dataset).get_mean_and_std()
-
-        return cls.__get_cache_data(pickle_file, computation_fun)
-
     # @classmethod
     # def __get_dataset_size(cls, name: str):
     #     dataset_dir = cls.__get_dataset_dir(name)
@@ -317,13 +233,13 @@ class DatasetCollection:
     #     return cls.__get_cache_data(pickle_file, computation_fun)
 
     @classmethod
-    def __create_dataset_collection(
+    def create(
         cls,
         name: str,
         dataset_type: DatasetType,
         dataset_constructor,
         dataset_kwargs: dict = None,
-    ):
+    ) -> tuple:
         constructor_kwargs = get_kwarg_names(dataset_constructor)
         dataset_kwargs_fun = cls.__prepare_dataset_kwargs(
             name, constructor_kwargs, dataset_kwargs
@@ -381,7 +297,6 @@ class DatasetCollection:
             (validation_dataset, test_dataset,) = cls.__split_for_validation(
                 cls.__get_dataset_cache_dir(name), splitted_dataset
             )
-        dc = cls(training_dataset, validation_dataset, test_dataset, dataset_type, name)
 
         try:
             get_logger().info("training_dataset len %s", len(training_dataset))
@@ -389,56 +304,9 @@ class DatasetCollection:
             get_logger().info("test_dataset len %s", len(test_dataset))
         except BaseException:
             pass
+        return (training_dataset, validation_dataset, test_dataset, dataset_type, name)
 
-        if dataset_type == DatasetType.Vision:
-            mean, std = cls.__get_mean_and_std(
-                name, torch.utils.data.ConcatDataset(list(dc.__datasets.values()))
-            )
-            dc.append_transform(transforms.Normalize(mean=mean, std=std))
-            if name not in ("SVHN", "MNIST"):
-                dc.append_transform(
-                    transforms.RandomHorizontalFlip(),
-                    phases={MachineLearningPhase.Training},
-                )
-            # if name in ("CIFAR10", "CIFAR100"):
-            #     dc.append_transform(
-            #         # transforms.RandomCrop(32, padding=4),
-            #         phases={MachineLearningPhase.Training},
-            #     )
-            if name.lower() == "imagenet":
-                dc.append_transform(
-                    transforms.RandomResizedCrop(224),
-                    phases={MachineLearningPhase.Training},
-                )
-                dc.append_transforms(
-                    [
-                        transforms.RandomResizedCrop(224),
-                        # transforms.Resize(256),
-                        # transforms.CenterCrop(224),
-                    ],
-                    phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
-                )
-        if dataset_type == DatasetType.Text:
-            dc.append_transform(dc.tokenizer)
-            dc.append_transform(torch.tensor)
-            label_names = None
-            if isinstance(next(iter(dc.get_training_dataset()))[1], str):
-                label_names = dc.get_label_names()
-            if label_names is not None:
-                dc.append_target_transform(
-                    functools.partial(cls.get_label, label_names=label_names)
-                )
-                get_logger().warning("covert string label to int")
-            if name == "IMDB":
-                dc.append_input_batch_transform(
-                    functools.partial(
-                        pad_sequence, padding_value=dc.tokenizer.vocab["<pad>"]
-                    )
-                )
-
-        return dc
-
-    def __is_classification_dataset(self) -> bool:
+    def is_classification_dataset(self) -> bool:
         first_target = next(iter(self.get_training_dataset()))[1]
         if isinstance(first_target, int):
             return True
@@ -514,9 +382,10 @@ class DatasetCollection:
         DatasetCollection.__write_data(pickle_file, [d.indices for d in datasets])
         return datasets
 
-    @staticmethod
-    def __get_cache_data(path: str, computation_fun: Callable) -> dict:
-        with DatasetCollection.__lock:
+    def _get_cache_data(self, path: str, computation_fun: Callable) -> dict:
+        with DatasetCollection.lock:
+            cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
+            path = os.path.join(cache_dir, path)
             data = DatasetCollection.__read_data(path)
             if data is not None:
                 return data
@@ -541,10 +410,134 @@ class DatasetCollection:
         with os.fdopen(fd, "wb") as f:
             pickle.dump(data, f)
 
+
+class ClassificationDatasetCollection(DatasetCollection):
+    @classmethod
+    def create(cls, *args, **kwargs):
+        dc = cls(*DatasetCollection.create(*args, **kwargs))
+        if dc.dataset_type == DatasetType.Vision:
+            mean, std = dc.__get_mean_and_std(
+                torch.utils.data.ConcatDataset(list(dc._datasets.values()))
+            )
+            dc.append_transform(transforms.Normalize(mean=mean, std=std))
+            if dc.name not in ("SVHN", "MNIST"):
+                dc.append_transform(
+                    transforms.RandomHorizontalFlip(),
+                    phases={MachineLearningPhase.Training},
+                )
+            # if name in ("CIFAR10", "CIFAR100"):
+            #     dc.append_transform(
+            #         # transforms.RandomCrop(32, padding=4),
+            #         phases={MachineLearningPhase.Training},
+            #     )
+            if dc.name.lower() == "imagenet":
+                dc.append_transform(
+                    transforms.RandomResizedCrop(224),
+                    phases={MachineLearningPhase.Training},
+                )
+                dc.append_transforms(
+                    [
+                        transforms.RandomResizedCrop(224),
+                        # transforms.Resize(256),
+                        # transforms.CenterCrop(224),
+                    ],
+                    phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
+                )
+        if dc.dataset_type == DatasetType.Text:
+            dc.append_transform(dc.tokenizer)
+            dc.append_transform(torch.tensor)
+            label_names = None
+            if isinstance(next(iter(dc.get_training_dataset()))[1], str):
+                label_names = dc.get_label_names()
+            if label_names is not None:
+                dc.append_target_transform(
+                    functools.partial(cls.get_label, label_names=label_names)
+                )
+                get_logger().warning("covert string label to int")
+            if dc.name == "IMDB":
+                dc.append_input_batch_transform(
+                    functools.partial(
+                        pad_sequence, padding_value=dc.tokenizer.vocab["<pad>"]
+                    )
+                )
+
+        return dc
+
+    def __get_mean_and_std(self, dataset):
+        def computation_fun():
+            return VisionDatasetUtil(dataset).get_mean_and_std()
+
+        return self._get_cache_data("mean_and_std.pk", computation_fun)
+
+    def get_labels(self, use_cache: bool = True) -> set:
+        def computation_fun():
+            if self.name.lower() == "imagenet":
+                return range(1000)
+            return self.get_dataset_util(
+                phase=MachineLearningPhase.Training
+            ).get_labels()
+
+        if not use_cache:
+            return computation_fun()
+
+        return self._get_cache_data("labels.pk", computation_fun)
+
+    def get_label_names(self) -> List[str]:
+        def computation_fun():
+            label_names = self.get_dataset_util(
+                phase=MachineLearningPhase.Training
+            ).get_label_names()
+            if not label_names:
+                raise NotImplementedError(f"failed to get label names for {self.name}")
+            return label_names
+
+        return self._get_cache_data("label_names.pk", computation_fun)
+
+    def get_raw_data(self, phase: MachineLearningPhase, index: int) -> tuple:
+        if self.dataset_type == DatasetType.Vision:
+            dataset_util = self.get_dataset_util(phase)
+            return (
+                dataset_util.get_sample_image(index),
+                dataset_util.get_sample_label(index),
+            )
+        if self.dataset_type == DatasetType.Text:
+            dataset_util = self.get_dataset_util(phase)
+            return (
+                dataset_util.get_sample_text(index),
+                dataset_util.get_sample_label(index),
+            )
+        raise RuntimeError("Unimplemented Code")
+
+    def generate_raw_data(self, phase: MachineLearningPhase):
+        if self.dataset_type == DatasetType.Vision:
+            dataset_util = self.get_dataset_util(phase)
+            return (
+                (
+                    dataset_util.get_sample_image(i),
+                    dataset_util.get_sample_label(i),
+                )
+                for i in range(len(dataset_util.dataset))
+            )
+        raise RuntimeError("Unimplemented Code")
+
     @classmethod
     def get_label(cls, label_name, label_names):
         reversed_label_names = {v: k for k, v in label_names.items()}
         return reversed_label_names[label_name]
+
+
+def create_dataset_collection(cls, name: str, dataset_kwargs: dict = None):
+    with cls.lock:
+        all_dataset_constructors = set()
+        for dataset_type in DatasetType:
+            dataset_constructor = get_dataset_constructors(dataset_type)
+            if name in dataset_constructor:
+                return cls.create(
+                    name, dataset_type, dataset_constructor[name], dataset_kwargs
+                )
+            all_dataset_constructors |= dataset_constructor.keys()
+        get_logger().error("supported datasets are %s", all_dataset_constructors)
+        raise NotImplementedError(name)
 
 
 class DatasetCollectionConfig:
@@ -585,7 +578,13 @@ class DatasetCollectionConfig:
         if self.dataset_name is None:
             raise RuntimeError("dataset_name is None")
 
-        dc = DatasetCollection.get_by_name(self.dataset_name, self.dataset_kwargs)
+        dc = create_dataset_collection(
+            ClassificationDatasetCollection, self.dataset_name, self.dataset_kwargs
+        )
+        if not dc.is_classification_dataset():
+            dc = create_dataset_collection(
+                DatasetCollection, self.dataset_name, self.dataset_kwargs
+            )
 
         dc.transform_dataset(
             MachineLearningPhase.Training,
