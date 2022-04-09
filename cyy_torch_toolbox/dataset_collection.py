@@ -79,6 +79,9 @@ class DatasetCollection:
     def get_training_dataset(self) -> torch.utils.data.Dataset:
         return self.get_dataset(MachineLearningPhase.Training)
 
+    def get_transforms(self, phase) -> Transforms:
+        return self.__transforms[phase]
+
     def get_original_dataset(
         self, phase: MachineLearningPhase
     ) -> torch.utils.data.Dataset:
@@ -120,6 +123,9 @@ class DatasetCollection:
     @property
     def name(self) -> str:
         return self.__name
+
+    def transform_text(self, phase, text):
+        return self.get_transforms(phase).transform_text(text)
 
     def collate_batch(self, batch, phase):
         inputs = []
@@ -499,7 +505,9 @@ class ClassificationDatasetCollection(DatasetCollection):
             if max_len is not None:
                 get_logger().debug("resize input to %s", max_len)
                 self.insert_transform(
-                    1, torchtext.transforms.Truncate(max_seq_len=max_len)
+                    0,
+                    torchtext.transforms.Truncate(max_seq_len=max_len),
+                    key=TransformType.InputText,
                 )
 
 

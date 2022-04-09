@@ -1,3 +1,4 @@
+from cyy_torch_toolbox.ml_type import MachineLearningPhase
 from torchtext.data.utils import get_tokenizer
 from torchtext.vocab import build_vocab_from_iterator
 
@@ -7,15 +8,11 @@ class Tokenizer:
         tokenizer = get_tokenizer(tokenizer="spacy", language="en_core_web_sm")
 
         def yield_tokens():
-            if dc.is_classification_dataset():
-                for dataset in dc.foreach_dataset():
-                    for text, _ in dataset:
-                        yield tokenizer(text)
-            else:
-                for dataset in dc.foreach_dataset():
-                    for text, target in dataset:
-                        yield tokenizer(text)
-                        yield tokenizer(target)
+            for phase in MachineLearningPhase:
+                dataset = dc.get_dataset(phase=phase)
+                for text, _ in dataset:
+                    text = dc.get_transforms(phase=phase).transform_text(text)
+                    yield tokenizer(text)
 
         if special_tokens is None:
             special_tokens = []
