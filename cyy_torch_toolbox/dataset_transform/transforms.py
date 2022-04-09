@@ -21,12 +21,17 @@ class Transforms:
     def get(self, key: TransformType) -> list:
         return self.__transforms.get(key, [])
 
+    def transform_text(self, text):
+        for f in self.get(TransformType.InputText):
+            text = f(text)
+        return text
+
     def transform_inputs(self, inputs: list) -> list:
-        for f in self.__transforms.get(TransformType.InputText, []):
+        for f in self.get(TransformType.InputText):
             inputs = [f(i) for i in inputs]
-        for f in self.__transforms.get(TransformType.Input, []):
+        for f in self.get(TransformType.Input):
             inputs = [f(i) for i in inputs]
-        batch_transforms = self.__transforms.get(TransformType.InputBatch, [])
+        batch_transforms = self.get(TransformType.InputBatch)
         if not batch_transforms:
             batch_transforms.append(default_collate)
         for f in batch_transforms:
@@ -34,6 +39,6 @@ class Transforms:
         return inputs
 
     def transform_targets(self, targets: list) -> list:
-        for f in self.__transforms.get(TransformType.Target, []):
+        for f in self.get(TransformType.Target):
             targets = [f(i) for i in targets]
         return default_collate(targets)
