@@ -18,6 +18,13 @@ class DatasetType(IntEnum):
     Audio = auto()
 
 
+class TransformType(IntEnum):
+    InputText = auto()
+    Input = auto()
+    InputBatch = auto()
+    Target = auto()
+
+
 class ModelExecutorHookPoint(IntEnum):
     BEFORE_EXECUTE = auto()
     AFTER_EXECUTE = auto()

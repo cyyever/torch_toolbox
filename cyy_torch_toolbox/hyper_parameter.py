@@ -1,3 +1,4 @@
+import copy
 import functools
 import json
 from enum import IntEnum, auto
@@ -7,13 +8,15 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.algorithm.lr_finder import LRFinder
-from cyy_torch_toolbox.data_structure.torch_process_task_queue import \
-    TorchProcessTaskQueue
+from cyy_torch_toolbox.data_structure.torch_thread_task_queue import \
+    TorchThreadTaskQueue
 from cyy_torch_toolbox.reflection import call_fun, get_class_attrs
 
 
-def determin_learning_rate(trainer, *args):
-    tmp_trainer = trainer
+def determin_learning_rate(task, *args):
+    print("task is", task)
+    tmp_trainer, device = task
+    tmp_trainer.set_device(device)
     tmp_trainer.disable_stripable_hooks()
     lr_finder = LRFinder()
     get_logger().warning("register lr_finder")
@@ -68,13 +71,18 @@ class HyperParameter:
     def get_learning_rate(self, trainer):
         if isinstance(self.__learning_rate, HyperParameterAction):
 
-            task_queue = TorchProcessTaskQueue(worker_fun=determin_learning_rate)
-            task_queue.add_task(trainer)
+            task_queue = TorchThreadTaskQueue(worker_fun=determin_learning_rate)
+            device = trainer.device
+            trainer.offload_from_gpu()
+            task_queue.add_task((copy.deepcopy(trainer), device))
             self.__learning_rate = task_queue.get_result()
+            trainer.set_device(device)
             task_queue.stop()
         return self.__learning_rate
 
-    def set_learning_rate(self, learning_rate: Union[float, HyperParameterAction]):
+    def set_learning_rate(
+        self, learning_rate: Union[float, HyperParameterAction]
+    ) -> None:
         self.__learning_rate = learning_rate
 
     @property
@@ -91,7 +99,7 @@ class HyperParameter:
     def set_momentum(self, momentum):
         self.__momentum = momentum
 
-    def set_lr_scheduler_factory(self, lr_scheduler_factory: Callable):
+    def set_lr_scheduler_factory(self, lr_scheduler_factory: Callable) -> None:
         self.__lr_scheduler_factory = lr_scheduler_factory
 
     def __get_iterations_per_epoch(self, training_dataset_size):
@@ -164,7 +172,7 @@ class HyperParameter:
 
         raise RuntimeError("unknown learning rate scheduler:" + name)
 
-    def set_optimizer_factory(self, optimizer_factory: Callable):
+    def set_optimizer_factory(self, optimizer_factory: Callable) -> None:
         self.__optimizer_factory = optimizer_factory
 
     @staticmethod

@@ -16,10 +16,12 @@ from torch.utils.data._utils.collate import default_collate
 from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
                                        replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
-from cyy_torch_toolbox.dataset_transformers.tokenizer import Tokenizer
+from cyy_torch_toolbox.dataset_transform.tokenizer import Tokenizer
+from cyy_torch_toolbox.dataset_transform.transforms import Transforms
 from cyy_torch_toolbox.dataset_util import (  # CachedVisionDataset,
     DatasetSplitter, DatasetUtil, TextDatasetUtil, VisionDatasetUtil)
-from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
+from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
+                                       TransformType)
 from cyy_torch_toolbox.reflection import get_kwarg_names
 
 
@@ -40,17 +42,9 @@ class DatasetCollection:
         self._datasets[MachineLearningPhase.Validation] = validation_dataset
         self._datasets[MachineLearningPhase.Test] = test_dataset
         self.__dataset_type = dataset_type
-        self.__transforms: dict = {}
-        self.__target_transforms: dict = {}
-        self.__input_batch_transforms: dict = {}
-        for phase in (
-            MachineLearningPhase.Training,
-            MachineLearningPhase.Test,
-            MachineLearningPhase.Validation,
-        ):
-            self.__transforms[phase] = []
-            self.__target_transforms[phase] = []
-            self.__input_batch_transforms[phase] = []
+        self.__transforms: dict[MachineLearningPhase, Transforms] = {}
+        for phase in MachineLearningPhase:
+            self.__transforms[phase] = Transforms()
         self.__name = name
         self.__tokenizer: Tokenizer = None
 
@@ -72,19 +66,11 @@ class DatasetCollection:
         self._datasets[phase] = transformer(dataset, dataset_util)
 
     def foreach_dataset(self):
-        for phase in (
-            MachineLearningPhase.Training,
-            MachineLearningPhase.Test,
-            MachineLearningPhase.Validation,
-        ):
+        for phase in MachineLearningPhase:
             yield self.get_dataset(phase=phase)
 
     def transform_all_datasets(self, transformer: Callable) -> None:
-        for phase in (
-            MachineLearningPhase.Training,
-            MachineLearningPhase.Test,
-            MachineLearningPhase.Validation,
-        ):
+        for phase in MachineLearningPhase:
             self.transform_dataset(phase, transformer)
 
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
@@ -113,76 +99,43 @@ class DatasetCollection:
                 class_name = DatasetUtil
         return class_name(
             self.get_dataset(phase),
-            transforms=self.__transforms[phase],
-            target_transforms=self.__target_transforms[phase],
+            transforms=self.__transforms[phase].get(TransformType.InputText)
+            + self.__transforms[phase].get(TransformType.Input),
+            target_transforms=self.__transforms[phase].get(TransformType.Target),
             name=self.name,
         )
 
-    def append_transforms(self, transforms, phases=None):
-        for k in MachineLearningPhase:
-            if phases is not None and k not in phases:
+    def append_transform(self, transform, key=TransformType.Input, phases=None):
+        for phase in MachineLearningPhase:
+            if phases is not None and phase not in phases:
                 continue
-            self.__transforms[k] += transforms
+            self.__transforms[phase].append(key, transform)
 
-    def insert_transform(self, idx, transform, phases=None):
-        for k in MachineLearningPhase:
-            if phases is not None and k not in phases:
+    def insert_transform(self, idx, transform, key=TransformType.Input, phases=None):
+        for phase in MachineLearningPhase:
+            if phases is not None and phase not in phases:
                 continue
-            self.__transforms[k].insert(idx, transform)
-
-    def append_input_batch_transform(self, transform, phases=None):
-        for k in MachineLearningPhase:
-            if phases is not None and k not in phases:
-                continue
-            self.__input_batch_transforms[k].append(transform)
-
-    def append_target_transform(self, transform, phases=None):
-        for k in MachineLearningPhase:
-            if phases is not None and k not in phases:
-                continue
-            self.__target_transforms[k].append(transform)
-
-    def append_transform(self, transform, phases=None):
-        return self.append_transforms([transform], phases)
-
-    def prepend_transform(self, transform, phase=None):
-        for k in MachineLearningPhase:
-            if phase is not None and k != phase:
-                continue
-            self.__transforms[k].insert(0, transform)
+            self.__transforms[phase].insert(key, idx, transform)
 
     @property
     def name(self) -> str:
         return self.__name
 
-    def transform_input(self, input_data, phase):
-        transforms = self.__transforms[phase]
-        for f in transforms:
-            input_data = f(input_data)
-        return input_data
-
     def collate_batch(self, batch, phase):
         inputs = []
         targets = []
         other_info = []
-        input_batch_transforms = self.__input_batch_transforms[phase]
-        target_transforms = self.__target_transforms[phase]
         for item in batch:
             if len(item) == 3:
                 input, target, tmp = item
                 other_info.append(tmp)
             else:
                 input, target = item
-            inputs.append(self.transform_input(input, phase))
-            for f in target_transforms:
-                target = f(target)
+            inputs.append(input)
             targets.append(target)
-        if input_batch_transforms:
-            for f in input_batch_transforms:
-                inputs = f(inputs)
-        else:
-            inputs = default_collate(inputs)
-        targets = default_collate(targets)
+        inputs = self.__transforms[phase].transform_inputs(inputs)
+        targets = self.__transforms[phase].transform_targets(targets)
+
         # TODO for classification
         targets = targets.reshape(-1)
         batch_size = len(batch)
@@ -446,35 +399,28 @@ class ClassificationDatasetCollection(DatasetCollection):
             #         phases={MachineLearningPhase.Training},
             #     )
             if dc.name.lower() == "imagenet":
-                dc.append_transform(
-                    torchvision.transforms.RandomResizedCrop(224),
-                    phases={MachineLearningPhase.Training},
-                )
-                dc.append_transforms(
-                    [
-                        torchvision.transforms.RandomResizedCrop(224),
-                        # transforms.Resize(256),
-                        # transforms.CenterCrop(224),
-                    ],
-                    phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
-                )
+                dc.append_transform(torchvision.transforms.RandomResizedCrop(224))
         if dc.dataset_type == DatasetType.Text:
             if dc.name == "IMDB":
-                dc.append_transform(lambda text: text.replace("<br />", ""))
+                dc.append_transform(
+                    lambda text: text.replace("<br />", ""), key=TransformType.InputText
+                )
 
             dc.append_transform(dc.tokenizer)
             dc.append_transform(torch.tensor)
-            if isinstance(next(iter(dc.get_training_dataset()))[1], str):
-                label_names = dc.get_label_names()
-                dc.append_target_transform(
-                    functools.partial(cls.get_label, label_names=label_names)
-                )
-                get_logger().warning("covert string label to int")
-            dc.append_input_batch_transform(
+            dc.append_transform(
                 functools.partial(
                     pad_sequence, padding_value=dc.tokenizer.vocab["<pad>"]
-                )
+                ),
+                key=TransformType.InputBatch,
             )
+            if isinstance(next(iter(dc.get_training_dataset()))[1], str):
+                label_names = dc.get_label_names()
+                dc.append_transform(
+                    functools.partial(cls.get_label, label_names=label_names),
+                    key=TransformType.Target,
+                )
+                get_logger().warning("covert string label to int")
 
         return dc
 
