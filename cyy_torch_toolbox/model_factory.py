@@ -24,7 +24,7 @@ def get_model_info() -> dict:
         for repo in github_repos:
             try:
                 for model_name in torch.hub.list(
-                    repo, force_reload=True, trust_repo=True, skip_validation=True
+                    repo, force_reload=False, trust_repo=True, skip_validation=True
                 ):
                     if model_name not in __model_info:
                         __model_info[model_name.lower()] = (
