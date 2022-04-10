@@ -1,5 +1,4 @@
 # import copy
-from typing import Callable
 
 import torch
 import torch.nn as nn
@@ -32,9 +31,10 @@ class ModelWithLoss:
         # self.__trace_input = False
         self.__example_input = None
         self.use_checkpointing = False
-        self.__checkpointed_model = None
+        self.__checkpointed_model: None | torch.nn.Module = None
         self.__model_in_trainig_mode: None | bool = None
         self.__current_model_device = None
+        self.__need_float_targets: bool = False
 
     @property
     def example_input(self):
@@ -129,6 +129,8 @@ class ModelWithLoss:
             output = model(inputs)
         else:
             output = model(*inputs)
+        if self.__need_float_targets:
+            targets = targets.to(output.dtype, non_blocking=non_blocking)
         loss = self.loss_fun(output, targets)
         # if self.__trace_input and self.__example_input is None:
         #     self.__example_input = [inputs.detach()] + copy.deepcopy(extra_inputs)
@@ -170,6 +172,10 @@ class ModelWithLoss:
             get_logger().warning("choose loss function NLLLoss")
             return nn.NLLLoss()
         if isinstance(last_layer, nn.Linear):
+            if last_layer.out_features == 1:
+                get_logger().warning("choose loss function BCEWithLogitsLoss")
+                self.__need_float_targets = True
+                return nn.BCEWithLogitsLoss()
             get_logger().warning("choose loss function CrossEntropyLoss")
             return nn.CrossEntropyLoss()
         get_logger().error("can't choose a loss function, model is %s", self.__model)

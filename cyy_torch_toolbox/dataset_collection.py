@@ -505,9 +505,9 @@ class ClassificationDatasetCollection(DatasetCollection):
             if max_len is not None:
                 get_logger().debug("resize input to %s", max_len)
                 self.insert_transform(
-                    0,
+                    1,
                     torchtext.transforms.Truncate(max_seq_len=max_len),
-                    key=TransformType.InputText,
+                    key=TransformType.Input,
                 )
 
 
