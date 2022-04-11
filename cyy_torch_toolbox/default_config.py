@@ -12,6 +12,7 @@ from cyy_torch_toolbox.ml_type import MachineLearningPhase
 from cyy_torch_toolbox.model_factory import ModelConfig
 from cyy_torch_toolbox.reproducible_env import global_reproducible_env
 from cyy_torch_toolbox.trainer import Trainer
+from word_vector import PretrainedWordVector
 
 
 class DefaultConfig:
@@ -79,6 +80,12 @@ class DefaultConfig:
 
         model_with_loss = self.model_config.get_model(dc)
         dc.adapt_to_model(model_with_loss.get_real_model())
+        word_vector_name = self.model_config.model_kwargs.get("word_vector_name", None)
+        if word_vector_name is not None:
+            PretrainedWordVector(word_vector_name).load_to_model(
+                model_util=model_with_loss.model_util, vocab=dc.vocab
+            )
+
         trainer = Trainer(model_with_loss, dc, hyper_parameter)
         trainer.set_save_dir(self.get_save_dir())
         if self.debug:
