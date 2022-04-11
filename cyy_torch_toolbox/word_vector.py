@@ -7,7 +7,7 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.source_code.tarball_source import TarballSource
 from torchtext.vocab import Vocab
 
-from cyy_torch_toolbox.model_util import ModelUtil
+from cyy_torch_toolbox.model_with_loss import ModelWithLoss
 
 
 class PretrainedWordVector:
@@ -16,13 +16,14 @@ class PretrainedWordVector:
     )
 
     def __init__(self, name: str):
+        self.__name = name
         self.__word_vector_dict: dict = self.__download(name)
 
     @property
     def word_vector_dict(self):
         return self.__word_vector_dict
 
-    def load_to_model(self, model_util: ModelUtil, vocab: Vocab) -> None:
+    def load_to_model(self, model_with_loss: ModelWithLoss, vocab: Vocab) -> None:
         itos = vocab.get_itos()
 
         def __load_embedding(_, layer):
@@ -48,7 +49,8 @@ class PretrainedWordVector:
                     len(itos),
                 )
 
-        model_util.change_sub_modules(nn.Embedding, __load_embedding)
+        get_logger().debug("load word vector %s", self.__name)
+        model_with_loss.model_util.change_sub_modules(nn.Embedding, __load_embedding)
 
     @classmethod
     def get_root_dir(cls) -> str:

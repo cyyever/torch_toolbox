@@ -131,7 +131,6 @@ class ModelConfig:
         self.model_name = model_name
         self.model_path = None
         self.pretrained = False
-        self.use_checkpointing = False
         self.model_kwargs = {}
         self.model_kwarg_json_path = None
 
@@ -141,7 +140,6 @@ class ModelConfig:
         parser.add_argument("--model_path", type=str, default=None)
         parser.add_argument("--pretrained", action="store_true", default=False)
         parser.add_argument("--model_kwarg_json_path", type=str, default=None)
-        parser.add_argument("--use_checkpointing", action="store_true", default=False)
 
     def load_args(self, args) -> None:
         for attr in dir(args):
@@ -162,8 +160,8 @@ class ModelConfig:
     def get_model(self, dc: DatasetCollection) -> ModelWithLoss:
         get_logger().info("use model %s", self.model_name)
         model_with_loss = get_model(self.model_name, dc, **self.model_kwargs)
-        model_with_loss.use_checkpointing = self.use_checkpointing
+        if self.model_kwargs.get("use_checkpointing", False):
+            model_with_loss.use_checkpointing = True
         if self.model_path is not None:
             model_with_loss.model.load_state_dict(torch.load(self.model_path))
-
         return model_with_loss
