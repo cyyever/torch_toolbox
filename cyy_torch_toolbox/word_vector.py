@@ -3,6 +3,7 @@ import os
 
 import torch
 import torch.nn as nn
+from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.source_code.tarball_source import TarballSource
 from torchtext.vocab import Vocab
 
@@ -25,6 +26,7 @@ class PretrainedWordVector:
         itos = vocab.get_itos()
 
         def __load_embedding(_, layer):
+            unknown_token_cnt = 0
             embeddings = layer.weight.tolist()
             for idx, token in enumerate(itos):
                 word_vector = self.__word_vector_dict.get(token, None)
@@ -32,11 +34,19 @@ class PretrainedWordVector:
                     word_vector = self.__word_vector_dict.get(token.lower(), None)
                 if word_vector is not None:
                     embeddings[idx] = word_vector
+                else:
+                    unknown_token_cnt += 1
             assert list(layer.weight.shape) == [
                 len(itos),
                 len(next(iter(self.__word_vector_dict.values()))),
             ], "Shape of weight does not match num_embeddings and embedding_dim"
             layer.weight = nn.Parameter(embeddings)
+            if unknown_token_cnt != 0:
+                get_logger().info(
+                    "there are %s tokens in word vectors for a total of %s",
+                    unknown_token_cnt,
+                    len(itos),
+                )
 
         model_util.change_sub_modules(nn.Embedding, __load_embedding)
 
@@ -48,7 +58,7 @@ class PretrainedWordVector:
     def __download(cls, name: str) -> dict:
         word_vector_dict: dict = {}
         tarball = None
-        if name == "glove.6B":
+        if name == "glove.6B.300d":
             tarball = TarballSource(
                 spec=name,
                 url="http://downloads.cs.stanford.edu/nlp/data/glove.6B.zip",
@@ -57,7 +67,7 @@ class PretrainedWordVector:
         if tarball is None:
             raise RuntimeError(f"unknown word vector {name}")
         with tarball:
-            if name == "glove.6B":
+            if name == "glove.6B.300d":
                 with codecs.open("glove.6B.300d.txt", "r", encoding="utf-8") as f:
                     for line in f:
                         s = line.strip().split()
