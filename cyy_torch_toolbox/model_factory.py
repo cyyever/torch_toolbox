@@ -1,4 +1,5 @@
 import copy
+import json
 import os
 import sys
 
@@ -123,3 +124,38 @@ def get_model(
                     retry = True
             if not retry:
                 raise e
+
+
+class ModelConfig:
+    def __init__(self, model_name=None):
+        self.model_name = model_name
+        self.model_path = None
+        self.pretrained = False
+        self.use_checkpointing = False
+        self.model_kwargs = {}
+        self.model_kwarg_json_path = None
+
+    def add_args(self, parser) -> None:
+        if self.model_name is None:
+            parser.add_argument("--model_name", type=str, required=True)
+        parser.add_argument("--model_path", type=str, default=None)
+        parser.add_argument("--pretrained", action="store_true", default=False)
+        parser.add_argument("--model_kwarg_json_path", type=str, default=None)
+        parser.add_argument("--use_checkpointing", action="store_true", default=False)
+
+    def load_args(self, args) -> None:
+        for attr in dir(args):
+            if attr.startswith("_"):
+                continue
+            if not hasattr(self, attr):
+                continue
+            get_logger().debug("set dataset collection config attr %s", attr)
+            value = getattr(args, attr)
+            if value is not None:
+                setattr(self, attr, value)
+        if args.model_kwarg_json_path is not None:
+            with open(args.model_kwarg_json_path, "rt", encoding="utf-8") as f:
+                self.model_kwargs |= json.load(f)
+
+    def get_model(self, dc: DatasetCollection) -> ModelWithLoss:
+        return get_model(self.model_name, dc, **self.model_kwargs)
