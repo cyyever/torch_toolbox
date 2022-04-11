@@ -1,6 +1,6 @@
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 from torchtext.data.utils import get_tokenizer
-from torchtext.vocab import build_vocab_from_iterator
+from torchtext.vocab import Vocab, build_vocab_from_iterator
 
 
 class Tokenizer:
@@ -25,14 +25,14 @@ class Tokenizer:
             yield_tokens(), specials=special_tokens, min_freq=min_freq
         )
         vocab.set_default_index(vocab["<unk>"])
-        self.__vocab = vocab
+        self.__vocab: Vocab = vocab
 
     @property
     def tokenizer(self):
         return self.__tokenizer
 
     @property
-    def vocab(self):
+    def vocab(self) -> Vocab:
         return self.__vocab
 
     def __call__(self, s):
