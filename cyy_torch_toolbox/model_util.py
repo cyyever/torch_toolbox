@@ -57,7 +57,11 @@ class ModelUtil:
         #             assert mask is not None
         #             parameter.grad = parameter.grad * mask
         return cat_tensors_to_vector(
-            (parameter.grad for parameter in self.get_parameter_seq(detach=False))
+            (
+                parameter.grad
+                for parameter in self.get_parameter_seq(detach=False)
+                if parameter.grad is not None
+            )
         )
 
     def remove_statistical_variables(self):
