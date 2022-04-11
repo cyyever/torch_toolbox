@@ -17,7 +17,14 @@ class AccuracyMetric(Metric):
     def _after_batch(self, **kwargs):
         output = kwargs["result"]["output"]
         targets = kwargs["result"]["targets"]
-        correct_count = torch.eq(torch.max(output, dim=1)[1], targets).view(-1).sum()
+        if len(output.shape) == 1:
+            correct_count = (
+                torch.eq(torch.round(output.sigmoid()), targets).view(-1).sum()
+            )
+        else:
+            correct_count = (
+                torch.eq(torch.max(output, dim=1)[1], targets).view(-1).sum()
+            )
         if self.__correct_count is None:
             self.__correct_count = correct_count
         else:
