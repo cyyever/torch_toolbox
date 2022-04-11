@@ -78,12 +78,12 @@ class DefaultConfig:
 
         dc = self.create_dataset_collection()
 
+        word_vector_name = self.model_config.model_kwargs.pop("word_vector_name", None)
         model_with_loss = self.model_config.get_model(dc)
         dc.adapt_to_model(model_with_loss.get_real_model())
-        word_vector_name = self.model_config.model_kwargs.get("word_vector_name", None)
         if word_vector_name is not None:
             PretrainedWordVector(word_vector_name).load_to_model(
-                model_util=model_with_loss.model_util, vocab=dc.vocab
+                model_with_loss=model_with_loss, vocab=dc.tokenizer.vocab
             )
 
         trainer = Trainer(model_with_loss, dc, hyper_parameter)

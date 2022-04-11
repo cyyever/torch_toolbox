@@ -41,7 +41,7 @@ class PretrainedWordVector:
                 len(itos),
                 len(next(iter(self.__word_vector_dict.values()))),
             ], "Shape of weight does not match num_embeddings and embedding_dim"
-            layer.weight = nn.Parameter(embeddings)
+            layer.weight = nn.Parameter(torch.Tensor(embeddings))
             if unknown_token_cnt != 0:
                 get_logger().info(
                     "there are %s tokens in word vectors for a total of %s",
@@ -65,6 +65,7 @@ class PretrainedWordVector:
                 spec=name,
                 url="http://downloads.cs.stanford.edu/nlp/data/glove.6B.zip",
                 root_dir=cls.get_root_dir(),
+                checksum="sha256:617afb2fe6cbd085c235baf7a465b96f4112bd7f7ccb2b2cbd649fed9cbcf2fb",
             )
         if tarball is None:
             raise RuntimeError(f"unknown word vector {name}")
