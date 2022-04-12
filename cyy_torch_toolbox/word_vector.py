@@ -59,7 +59,7 @@ class PretrainedWordVector:
     @classmethod
     def __download(cls, name: str) -> dict:
         word_vector_dict: dict = {}
-        urls = {
+        urls: dict = {
             "glove.6B.300d": (
                 "http://downloads.cs.stanford.edu/nlp/data/glove.6B.zip",
                 "sha256:617afb2fe6cbd085c235baf7a465b96f4112bd7f7ccb2b2cbd649fed9cbcf2fb",
@@ -78,7 +78,7 @@ class PretrainedWordVector:
         )
         with tarball:
             if name.startswith("glove"):
-                dim = int(name.split()[-1].replace("d", ""))
+                dim = int(name.split(".")[-1].replace("d", ""))
                 with codecs.open(f"{name}.txt", "r", encoding="utf-8") as f:
                     for line in f:
                         s = line.strip().split()
