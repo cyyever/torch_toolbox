@@ -70,6 +70,7 @@ class PretrainedWordVector:
             ),
         }
         urls["glove.6B.100d"] = urls["glove.6B.300d"]
+        urls["glove.6B.200d"] = urls["glove.6B.300d"]
         url, checksum = urls.get(name, (None, None))
         if url is None:
             raise RuntimeError(f"unknown word vector {name}")
