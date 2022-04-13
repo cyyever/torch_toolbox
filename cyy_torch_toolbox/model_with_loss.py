@@ -84,11 +84,9 @@ class ModelWithLoss:
         model_fun=None,
         parameters=None,
     ) -> dict:
-        if model_fun is not None:
-            if phase is not None:
-                self.set_model_mode(phase == MachineLearningPhase.Training)
+        if model_fun is None and phase is not None:
+            self.set_model_mode(phase == MachineLearningPhase.Training)
 
-        multiple_input = isinstance(inputs, tuple | list)
         if device is not None:
             inputs = put_data_to_device(
                 inputs, device=device, non_blocking=non_blocking
@@ -99,21 +97,22 @@ class ModelWithLoss:
             if model_fun is None:
                 if next(self.model.parameters()).device != device:
                     self.model.to(device, non_blocking=non_blocking)
-            else:
-                parameters = tuple(
-                    p.to(device, non_blocking=non_blocking) for p in parameters
-                )
+            # else:
+            #     parameters = tuple(
+            #         p.to(device, non_blocking=non_blocking) for p in parameters
+            #     )
 
         assert self.loss_fun is not None
         if model_fun is not None:
-            assert parameters is not None
-            model = functools.partial(model_fun, parameters)
+            # assert parameters is not None
+            # model = functools.partial(model_fun, parameters)
+            model = model_fun
         else:
             model = self.model
-        if not multiple_input:
-            output = model(inputs)
-        else:
+        if isinstance(inputs, tuple | list):
             output = model(*inputs)
+        else:
+            output = model(inputs)
         if self.__need_float_targets:
             targets = targets.to(output.dtype, non_blocking=non_blocking)
         loss = self.loss_fun(output, targets)
