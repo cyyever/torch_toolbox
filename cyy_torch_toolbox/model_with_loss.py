@@ -1,4 +1,4 @@
-# import copy
+import functools
 
 import torch
 import torch.nn as nn
@@ -9,12 +9,6 @@ from device import put_data_to_device
 from ml_type import MachineLearningPhase, ModelType
 from model_transformers.checkpointed_model import get_checkpointed_model
 from model_util import ModelUtil
-
-try:
-    import functorch
-
-except BaseException:
-    pass
 
 
 class ModelWithLoss:
@@ -104,14 +98,17 @@ class ModelWithLoss:
         device=None,
         non_blocking=False,
         batch_size=None,
+        model_fun=None,
+        parameters=None,
     ) -> dict:
-        if phase is not None:
-            self.set_model_mode(phase)
-        else:
-            if self.__model.training:
-                self.__model_in_trainig_mode = True
+        if model_fun is not None:
+            if phase is not None:
+                self.set_model_mode(phase == MachineLearningPhase.Training)
             else:
-                self.__model_in_trainig_mode = False
+                if self.__model.training:
+                    self.__model_in_trainig_mode = True
+                else:
+                    self.__model_in_trainig_mode = False
 
         multiple_input = isinstance(inputs, tuple | list)
         if device is not None:
@@ -121,15 +118,24 @@ class ModelWithLoss:
             targets = put_data_to_device(
                 targets, device=device, non_blocking=non_blocking
             )
-            if self.__current_model_device != device:
-                self.__model.to(device, non_blocking=non_blocking)
-                self.__current_model_device = device
+            if model_fun is None:
+                if self.__current_model_device != device:
+                    self.__model.to(device, non_blocking=non_blocking)
+                    self.__current_model_device = device
+            else:
+                parameters = tuple(
+                    p.to(device, non_blocking=non_blocking) for p in parameters
+                )
 
         assert self.loss_fun is not None
         if self.use_checkpointing:
             if self.__model_in_trainig_mode:
                 inputs.requires_grad_()
-        model = self.model
+        if model_fun is not None:
+            assert parameters is not None
+            model = functools.partial(model_fun, parameters)
+        else:
+            model = self.model
         if not multiple_input:
             output = model(inputs)
         else:
@@ -198,8 +204,8 @@ class ModelWithLoss:
     def __repr__(self):
         return f"model: {self.__model.__class__.__name__}, loss_fun: {self.loss_fun}"
 
-    def set_model_mode(self, phase: MachineLearningPhase) -> None:
-        if phase == MachineLearningPhase.Training:
+    def set_model_mode(self, is_training: bool) -> None:
+        if is_training:
             if self.__model_in_trainig_mode:
                 return
             self.__model.train()
