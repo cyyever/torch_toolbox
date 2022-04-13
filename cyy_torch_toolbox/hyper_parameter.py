@@ -14,7 +14,6 @@ from cyy_torch_toolbox.reflection import call_fun, get_class_attrs
 
 
 def determin_learning_rate(task, *args):
-    print("task is", task)
     tmp_trainer, device = task
     tmp_trainer.set_device(device)
     tmp_trainer.disable_stripable_hooks()

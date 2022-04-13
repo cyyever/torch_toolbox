@@ -32,7 +32,6 @@ class ModelWithLoss:
         self.__example_input = None
         self.use_checkpointing = False
         self.__checkpointed_model: None | torch.nn.Module = None
-        self.__model_in_trainig_mode: None | bool = None
         self.__current_model_device = None
         self.__need_float_targets: bool = False
 
@@ -43,21 +42,18 @@ class ModelWithLoss:
 
     @property
     def model(self) -> torch.nn.Module:
-        self.__current_model_device = None
         if self.use_checkpointing:
             return self.checkpointed_model
         return self.__model
 
     @property
     def model_util(self) -> ModelUtil:
-        return ModelUtil(self.__model)
+        return ModelUtil(self.model)
 
     @property
     def has_batch_norm(self):
         if self.__has_batch_norm is None:
-            self.__has_batch_norm = ModelUtil(self.get_real_model()).has_sub_module(
-                torch.nn.BatchNorm2d
-            )
+            self.__has_batch_norm = self.model_util.has_sub_module(torch.nn.BatchNorm2d)
         return self.__has_batch_norm
 
     @property
@@ -104,11 +100,6 @@ class ModelWithLoss:
         if model_fun is not None:
             if phase is not None:
                 self.set_model_mode(phase == MachineLearningPhase.Training)
-            else:
-                if self.__model.training:
-                    self.__model_in_trainig_mode = True
-                else:
-                    self.__model_in_trainig_mode = False
 
         multiple_input = isinstance(inputs, tuple | list)
         if device is not None:
@@ -119,9 +110,8 @@ class ModelWithLoss:
                 targets, device=device, non_blocking=non_blocking
             )
             if model_fun is None:
-                if self.__current_model_device != device:
-                    self.__model.to(device, non_blocking=non_blocking)
-                    self.__current_model_device = device
+                if next(self.model.parameters()).device != device:
+                    self.model.to(device, non_blocking=non_blocking)
             else:
                 parameters = tuple(
                     p.to(device, non_blocking=non_blocking) for p in parameters
@@ -129,7 +119,7 @@ class ModelWithLoss:
 
         assert self.loss_fun is not None
         if self.use_checkpointing:
-            if self.__model_in_trainig_mode:
+            if self.model.training:
                 inputs.requires_grad_()
         if model_fun is not None:
             assert parameters is not None
@@ -159,7 +149,7 @@ class ModelWithLoss:
         #     return None
         layers = [
             m
-            for _, m in ModelUtil(self.__model).get_sub_modules()
+            for _, m in self.model_util.get_sub_modules()
             if not isinstance(
                 m,
                 (
@@ -206,11 +196,9 @@ class ModelWithLoss:
 
     def set_model_mode(self, is_training: bool) -> None:
         if is_training:
-            if self.__model_in_trainig_mode:
+            if self.__model.training:
                 return
             self.__model.train()
-            self.__model_in_trainig_mode = True
             return
-        if self.__model_in_trainig_mode is None:
+        if self.__model.training:
             self.__model.eval()
-            self.__model_in_trainig_mode = False
