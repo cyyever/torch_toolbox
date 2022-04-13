@@ -172,9 +172,9 @@ class Trainer(ModelExecutor):
                             batch_size = self.get_batch_size(sample_targets)
                         batch = (sample_inputs, sample_targets, other_info)
                         if (
-                            self._model_with_loss.has_batch_norm
-                            and self.hyper_parameter.batch_size != 1
+                            self.hyper_parameter.batch_size != 1
                             and batch_size == 1
+                            and self._model_with_loss.has_batch_norm
                         ):
                             get_logger().debug("drop last one-batch for batchnorm")
                             continue
