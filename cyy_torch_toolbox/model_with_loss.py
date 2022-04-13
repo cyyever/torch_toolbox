@@ -2,7 +2,6 @@ import functools
 
 import torch
 import torch.nn as nn
-import torch.utils.checkpoint
 from cyy_naive_lib.log import get_logger
 
 from device import put_data_to_device
@@ -30,9 +29,6 @@ class ModelWithLoss:
         self.__has_batch_norm = None
         # self.__trace_input = False
         self.__example_input = None
-        self.use_checkpointing = False
-        self.__checkpointed_model: None | torch.nn.Module = None
-        self.__current_model_device = None
         self.__need_float_targets: bool = False
 
     @property
@@ -42,8 +38,6 @@ class ModelWithLoss:
 
     @property
     def model(self) -> torch.nn.Module:
-        if self.use_checkpointing:
-            return self.checkpointed_model
         return self.__model
 
     @property
@@ -74,13 +68,6 @@ class ModelWithLoss:
                 raise RuntimeError(f"unknown loss function {loss_fun}")
         else:
             self.__loss_fun = loss_fun
-
-    @property
-    def checkpointed_model(self) -> torch.nn.Module:
-        if self.__checkpointed_model is not None:
-            return self.__checkpointed_model
-        self.__checkpointed_model = get_checkpointed_model(self.__model)
-        return self.__checkpointed_model
 
     def offload_from_gpu(self):
         self.model.zero_grad(set_to_none=True)
@@ -118,9 +105,6 @@ class ModelWithLoss:
                 )
 
         assert self.loss_fun is not None
-        if self.use_checkpointing:
-            if self.model.training:
-                inputs.requires_grad_()
         if model_fun is not None:
             assert parameters is not None
             model = functools.partial(model_fun, parameters)
@@ -202,3 +186,17 @@ class ModelWithLoss:
             return
         if self.__model.training:
             self.__model.eval()
+
+
+class CheckPointedModelWithLoss(ModelWithLoss):
+    """
+    Combine a model with a loss function.
+    """
+
+    def __init__(self, model: torch.nn.Module, *args, **kwargs):
+        super().__init__(get_checkpointed_model(model), *args, **kwargs)
+
+    def __call__(self, inputs: torch.Tensor, *args, **kwargs) -> dict:
+        if self.model.training:
+            inputs.requires_grad_()
+        return super().__call__(inputs, *args, **kwargs)
