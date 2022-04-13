@@ -10,6 +10,12 @@ from ml_type import MachineLearningPhase, ModelType
 from model_transformers.checkpointed_model import get_checkpointed_model
 from model_util import ModelUtil
 
+try:
+    import functorch
+
+except BaseException:
+    pass
+
 
 class ModelWithLoss:
     """
@@ -44,6 +50,8 @@ class ModelWithLoss:
     @property
     def model(self) -> torch.nn.Module:
         self.__current_model_device = None
+        if self.use_checkpointing:
+            return self.checkpointed_model
         return self.__model
 
     @property
@@ -87,7 +95,6 @@ class ModelWithLoss:
     def offload_from_gpu(self):
         self.model.zero_grad(set_to_none=True)
         self.model.cpu()
-        self.__checkpointed_model = None
 
     def __call__(
         self,
@@ -119,12 +126,10 @@ class ModelWithLoss:
                 self.__current_model_device = device
 
         assert self.loss_fun is not None
-        if self.__model_in_trainig_mode and self.use_checkpointing:
-            if not multiple_input:
+        if self.use_checkpointing:
+            if self.__model_in_trainig_mode:
                 inputs.requires_grad_()
-            model = self.checkpointed_model
-        else:
-            model = self.__model
+        model = self.model
         if not multiple_input:
             output = model(inputs)
         else:
@@ -132,8 +137,6 @@ class ModelWithLoss:
         if self.__need_float_targets:
             targets = targets.to(output.dtype, non_blocking=non_blocking)
         loss = self.loss_fun(output, targets)
-        # if self.__trace_input and self.__example_input is None:
-        #     self.__example_input = [inputs.detach()] + copy.deepcopy(extra_inputs)
         normalized_loss = loss
         if batch_size is not None and self.__is_averaged_loss():
             normalized_loss = loss * batch_size
@@ -182,9 +185,9 @@ class ModelWithLoss:
         raise NotImplementedError(type(last_layer))
 
     def get_real_model(self):
-        if isinstance(self.model, torch.quantization.stubs.QuantWrapper):
-            return self.model.module
-        return self.model
+        if isinstance(self.__model, torch.quantization.stubs.QuantWrapper):
+            return self.__model.module
+        return self.__model
 
     def __is_averaged_loss(self) -> bool:
         if hasattr(self.loss_fun, "reduction"):
