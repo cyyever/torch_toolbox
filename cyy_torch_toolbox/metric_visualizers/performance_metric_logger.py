@@ -1,3 +1,4 @@
+import torch
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 
@@ -21,15 +22,17 @@ class PerformanceMetricLogger(MetricLogger):
             metrics = metrics + ("perplexity",)
         for k in metrics:
             value = model_executor.performance_metric.get_epoch_metric(epoch, k)
+            if isinstance(value, torch.Tensor):
+                value = value.item()
             if value is not None:
-                metric_str = metric_str + "{}:{}, ".format(k, value)
+                metric_str = metric_str + "{}:{:.5f}, ".format(k, value)
         metric_str = metric_str[:-2]
         get_logger().info(
             "%s epoch: %s, %s %s", self.prefix, epoch, phase_str, metric_str
         )
 
         get_logger().info(
-            "%s epoch: %s, %s use time %s",
+            "%s epoch: %s, %s use %.3f seconds",
             self.prefix,
             epoch,
             phase_str,
