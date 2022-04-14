@@ -17,7 +17,7 @@ def get_model_info() -> dict:
     github_repos = [
         "pytorch/vision:main",
         "cyyever/torch_models:main",
-        # "huggingface/transformers:master",
+        "huggingface/transformers:main",
         "lukemelas/EfficientNet-PyTorch:master",
     ]
 
