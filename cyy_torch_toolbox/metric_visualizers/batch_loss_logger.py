@@ -11,7 +11,7 @@ class BatchLossLogger(MetricLogger):
         five_batches = len(model_executor.dataset) // (5 * batch_size)
         if five_batches == 0 or batch_index % five_batches == 0:
             get_logger().info(
-                "%s epoch: %s, batch: %s, learning rate: %s, batch loss: %s",
+                "%s epoch: %s, batch: %s, learning rate: %s, batch loss: %.5f",
                 self.prefix,
                 kwargs["epoch"],
                 batch_index,
