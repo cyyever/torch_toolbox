@@ -6,10 +6,10 @@ import sys
 import torch
 from cyy_naive_lib.log import get_logger
 
-from .dataset_collection import DatasetCollection
-from .ml_type import DatasetType, ModelType
-from .model_with_loss import ModelWithLoss
-from .word_vector import PretrainedWordVector
+from cyy_torch_toolbox.dataset_collection import DatasetCollection
+from cyy_torch_toolbox.ml_type import DatasetType, ModelType
+from cyy_torch_toolbox.model_with_loss import ModelWithLoss
+from cyy_torch_toolbox.word_vector import PretrainedWordVector
 
 __model_info: dict = {}
 
