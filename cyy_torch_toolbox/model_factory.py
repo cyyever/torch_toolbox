@@ -6,9 +6,10 @@ import sys
 import torch
 from cyy_naive_lib.log import get_logger
 
-from dataset_collection import DatasetCollection
-from ml_type import DatasetType, ModelType
-from model_with_loss import ModelWithLoss
+from .dataset_collection import DatasetCollection
+from .ml_type import DatasetType, ModelType
+from .model_with_loss import ModelWithLoss
+from .word_vector import PretrainedWordVector
 
 __model_info: dict = {}
 
@@ -17,7 +18,6 @@ def get_model_info() -> dict:
     github_repos = [
         "pytorch/vision:main",
         "cyyever/torch_models:main",
-        "huggingface/transformers:main",
         "lukemelas/EfficientNet-PyTorch:master",
     ]
 
@@ -159,9 +159,14 @@ class ModelConfig:
 
     def get_model(self, dc: DatasetCollection) -> ModelWithLoss:
         get_logger().info("use model %s", self.model_name)
+        word_vector_name = self.model_kwargs.pop("word_vector_name", None)
         model_with_loss = get_model(self.model_name, dc, **self.model_kwargs)
         if self.model_kwargs.get("use_checkpointing", False):
             model_with_loss.use_checkpointing = True
         if self.model_path is not None:
             model_with_loss.model.load_state_dict(torch.load(self.model_path))
+        if word_vector_name is not None:
+            PretrainedWordVector(word_vector_name).load_to_model(
+                model_with_loss=model_with_loss, vocab=dc.tokenizer.vocab
+            )
         return model_with_loss

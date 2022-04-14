@@ -5,14 +5,15 @@ import uuid
 
 from cyy_naive_lib.log import get_logger
 
-from cyy_torch_toolbox.dataset_collection import DatasetCollectionConfig
+from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
+                                                  DatasetCollectionConfig)
 from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 from cyy_torch_toolbox.model_factory import ModelConfig
+from cyy_torch_toolbox.model_with_loss import ModelWithLoss
 from cyy_torch_toolbox.reproducible_env import global_reproducible_env
 from cyy_torch_toolbox.trainer import Trainer
-from word_vector import PretrainedWordVector
 
 
 class DefaultConfig:
@@ -72,20 +73,19 @@ class DefaultConfig:
         return self.dc_config.create_dataset_collection(self.get_save_dir())
 
     def create_trainer(self) -> Trainer:
+        dc = self.create_dataset_collection()
+        model_with_loss = self.model_config.get_model(dc)
+        return self.create_trainer_by_model(model_with_loss, dc)
+
+    def create_trainer_by_model(
+        self, model_with_loss: ModelWithLoss, dc: DatasetCollection = None
+    ) -> Trainer:
+        if dc is None:
+            dc = self.create_dataset_collection()
+        dc.adapt_to_model(model_with_loss.get_real_model())
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
             self.dc_config.dataset_name, self.model_config.model_name
         )
-
-        dc = self.create_dataset_collection()
-
-        word_vector_name = self.model_config.model_kwargs.pop("word_vector_name", None)
-        model_with_loss = self.model_config.get_model(dc)
-        dc.adapt_to_model(model_with_loss.get_real_model())
-        if word_vector_name is not None:
-            PretrainedWordVector(word_vector_name).load_to_model(
-                model_with_loss=model_with_loss, vocab=dc.tokenizer.vocab
-            )
-
         trainer = Trainer(model_with_loss, dc, hyper_parameter)
         trainer.set_save_dir(self.get_save_dir())
         if self.debug:
