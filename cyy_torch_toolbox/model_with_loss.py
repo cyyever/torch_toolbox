@@ -82,7 +82,6 @@ class ModelWithLoss:
         non_blocking=False,
         batch_size=None,
         model_fun=None,
-        parameters=None,
     ) -> dict:
         if model_fun is None and phase is not None:
             self.set_model_mode(phase == MachineLearningPhase.Training)
@@ -94,18 +93,14 @@ class ModelWithLoss:
             targets = put_data_to_device(
                 targets, device=device, non_blocking=non_blocking
             )
-            if model_fun is None:
-                if next(self.model.parameters()).device != device:
-                    self.model.to(device, non_blocking=non_blocking)
-            # else:
-            #     parameters = tuple(
-            #         p.to(device, non_blocking=non_blocking) for p in parameters
-            #     )
+            if next(self.model.parameters()).device != device:
+                get_logger().error("move model to device %s", device)
+                self.model.to(device, non_blocking=non_blocking)
+            else:
+                get_logger().error("model is in device %s", device)
 
         assert self.loss_fun is not None
         if model_fun is not None:
-            # assert parameters is not None
-            # model = functools.partial(model_fun, parameters)
             model = model_fun
         else:
             model = self.model
