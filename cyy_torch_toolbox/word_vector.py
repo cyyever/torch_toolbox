@@ -26,7 +26,7 @@ class PretrainedWordVector:
     def load_to_model(self, model_with_loss: ModelWithLoss, vocab: Vocab) -> None:
         itos = vocab.get_itos()
 
-        def __load_embedding(_, layer):
+        def __load_embedding(_, layer, *__):
             unknown_token_cnt = 0
             embeddings = layer.weight.tolist()
             for idx, token in enumerate(itos):

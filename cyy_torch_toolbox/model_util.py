@@ -140,6 +140,18 @@ class ModelUtil:
             if isinstance(v, sub_module_type):
                 f(k, v, self)
 
+    def freeze_sub_modules(self, sub_module_type: Type) -> None:
+        def freeze(name, sub_module, model_util):
+            get_logger().info("freeze %s", name)
+            parameter_dict = {}
+            for param_name, parameter in sub_module.named_parameters():
+                parameter.requires_grad_ = False
+                parameter_dict[name + "." + param_name] = parameter
+            for k, v in parameter_dict.items():
+                model_util.set_attr(k, v, as_parameter=False)
+
+        self.change_sub_modules(sub_module_type, freeze)
+
     def has_sub_module(self, module_type: Type) -> bool:
         return any(
             isinstance(sub_module, module_type)
