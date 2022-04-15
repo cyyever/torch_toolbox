@@ -16,10 +16,9 @@ class Tokenizer:
 
         if special_tokens is None:
             special_tokens = []
-        if "<pad>" not in special_tokens:
-            special_tokens.append("<pad>")
-        if "<unk>" not in special_tokens:
-            special_tokens.append("<unk>")
+        for token in ("<pad>", "<unk>", "<mask>"):
+            if token not in special_tokens:
+                special_tokens.append(token)
         self.__tokenizer = tokenizer
         vocab = build_vocab_from_iterator(
             yield_tokens(), specials=special_tokens, min_freq=min_freq
