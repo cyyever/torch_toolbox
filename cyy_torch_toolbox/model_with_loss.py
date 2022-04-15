@@ -93,11 +93,12 @@ class ModelWithLoss:
             targets = put_data_to_device(
                 targets, device=device, non_blocking=non_blocking
             )
-            if next(self.model.parameters()).device != device:
-                get_logger().error("move model to device %s", device)
+            try:
+                param = next(self.model.parameters())
+            except StopIteration:
+                param = next(self.model.buffers())
+            if param.device != device:
                 self.model.to(device, non_blocking=non_blocking)
-            else:
-                get_logger().error("model is in device %s", device)
 
         assert self.loss_fun is not None
         if model_fun is not None:
