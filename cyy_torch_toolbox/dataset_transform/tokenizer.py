@@ -1,10 +1,13 @@
+from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 from torchtext.data.utils import get_tokenizer
 from torchtext.vocab import Vocab, build_vocab_from_iterator
 
 
 class Tokenizer:
-    def __init__(self, dc, special_tokens: None | list[str] = None, min_freq: int = 1):
+    def __init__(
+        self, dc, special_tokens: None | list[str] = None, min_freq: int = 1, **kwargs
+    ):
         tokenizer = get_tokenizer(tokenizer="spacy", language="en_core_web_sm")
 
         def yield_tokens():
@@ -21,9 +24,10 @@ class Tokenizer:
                 special_tokens.append(token)
         self.__tokenizer = tokenizer
         vocab = build_vocab_from_iterator(
-            yield_tokens(), specials=special_tokens, min_freq=min_freq
+            yield_tokens(), specials=special_tokens, min_freq=min_freq, **kwargs
         )
         vocab.set_default_index(vocab["<unk>"])
+        get_logger().info("vocab size is %s", len(vocab))
         self.__vocab: Vocab = vocab
 
     @property
