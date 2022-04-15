@@ -69,6 +69,7 @@ class PretrainedWordVector:
                 "sha256:c06db255e65095393609f19a4cfca20bf3a71e20cc53e892aafa490347e3849f",
             ),
         }
+        urls["glove.6B.50d"] = urls["glove.6B.300d"]
         urls["glove.6B.100d"] = urls["glove.6B.300d"]
         urls["glove.6B.200d"] = urls["glove.6B.300d"]
         url, checksum = urls.get(name, (None, None))
