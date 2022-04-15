@@ -259,10 +259,10 @@ class DatasetCollection:
         if validation_dataset is None or test_dataset is None:
             if validation_dataset is not None:
                 splitted_dataset = validation_dataset
-                get_logger().warning("split validation dataset for %s", name)
+                get_logger().debug("split validation dataset for %s", name)
             else:
                 splitted_dataset = test_dataset
-                get_logger().warning("split test dataset for %s", name)
+                get_logger().debug("split test dataset for %s", name)
             (validation_dataset, test_dataset,) = cls.__split_for_validation(
                 cls.__get_dataset_cache_dir(name), splitted_dataset
             )
@@ -426,7 +426,7 @@ class ClassificationDatasetCollection(DatasetCollection):
                     functools.partial(cls.get_label, label_names=label_names),
                     key=TransformType.Target,
                 )
-                get_logger().warning("covert string label to int")
+                get_logger().debug("covert string label to int")
 
         return dc
 
