@@ -138,7 +138,7 @@ class ModelUtil:
     def change_sub_modules(self, sub_module_type: Type, f: Callable) -> None:
         for k, v in self.get_sub_modules():
             if isinstance(v, sub_module_type):
-                f(k, v)
+                f(k, v, self)
 
     def has_sub_module(self, module_type: Type) -> bool:
         return any(
