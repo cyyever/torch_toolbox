@@ -108,7 +108,9 @@ class ModelUtil:
                 if as_parameter:
                     model.register_parameter(component, nn.Parameter(value))
                 else:
-                    setattr(model, component, value)
+                    model.register_buffer(component, value)
+        if self.__parameter_dict is not None:
+            self.__parameter_dict = None
 
     def get_attr(self, name: str) -> Any:
         val = self.model
@@ -145,8 +147,7 @@ class ModelUtil:
             get_logger().info("freeze %s", name)
             parameter_dict = {}
             for param_name, parameter in sub_module.named_parameters():
-                parameter.requires_grad_ = False
-                parameter_dict[name + "." + param_name] = parameter
+                parameter_dict[name + "." + param_name] = parameter.data
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=False)
 
