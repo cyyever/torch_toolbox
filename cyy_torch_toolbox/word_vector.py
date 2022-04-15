@@ -1,4 +1,3 @@
-import codecs
 import os
 
 import torch
@@ -81,7 +80,7 @@ class PretrainedWordVector:
         with tarball:
             if name.startswith("glove"):
                 dim = int(name.split(".")[-1].replace("d", ""))
-                with codecs.open(f"{name}.txt", "r", encoding="utf-8") as f:
+                with open(f"{name}.txt", "r", encoding="utf-8") as f:
                     for line in f:
                         s = line.strip().split()
                         word_vector_dict[" ".join(s[:-dim])] = torch.Tensor(
