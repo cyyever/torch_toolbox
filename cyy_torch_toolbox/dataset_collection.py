@@ -1,3 +1,4 @@
+import copy
 import functools
 import json
 import os
@@ -47,11 +48,12 @@ class DatasetCollection:
             self.__transforms[phase] = Transforms()
         self.__name = name
         self.__tokenizer: Tokenizer = None
+        self.tokenizer_kwargs: dict = {}
 
     @property
     def tokenizer(self) -> Tokenizer:
         if self.__tokenizer is None:
-            self.__tokenizer = Tokenizer(self)
+            self.__tokenizer = Tokenizer(self, **self.tokenizer_kwargs)
         return self.__tokenizer
 
     @property
@@ -291,8 +293,10 @@ class DatasetCollection:
         constructor_kwargs: set,
         dataset_kwargs: dict = None,
     ) -> Callable:
+        dataset_kwargs = copy.deepcopy(dataset_kwargs)
         if dataset_kwargs is None:
             dataset_kwargs = {}
+        dataset_kwargs = copy.deepcopy(dataset_kwargs)
         if "root" not in dataset_kwargs:
             dataset_kwargs["root"] = cls.__get_dataset_dir(name)
         if "download" not in dataset_kwargs:
@@ -385,10 +389,10 @@ class DatasetCollection:
 
 class ClassificationDatasetCollection(DatasetCollection):
     @classmethod
-    def create(cls, *args, **kwargs):
-        dc: ClassificationDatasetCollection = cls(
-            *DatasetCollection.create(*args, **kwargs)
-        )
+    def create(cls, **kwargs):
+        tokenizer_kwargs = kwargs["dataset_kwargs"].get("tokenizer", {})
+        dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
+        dc.tokenizer_kwargs = tokenizer_kwargs
         if dc.dataset_type == DatasetType.Vision:
             mean, std = dc.__get_mean_and_std(
                 torch.utils.data.ConcatDataset(list(dc._datasets.values()))
@@ -518,7 +522,10 @@ def create_dataset_collection(cls, name: str, dataset_kwargs: dict = None):
             dataset_constructor = get_dataset_constructors(dataset_type)
             if name in dataset_constructor:
                 return cls.create(
-                    name, dataset_type, dataset_constructor[name], dataset_kwargs
+                    name=name,
+                    dataset_type=dataset_type,
+                    dataset_constructor=dataset_constructor[name],
+                    dataset_kwargs=dataset_kwargs,
                 )
             all_dataset_constructors |= dataset_constructor.keys()
         get_logger().error("supported datasets are %s", all_dataset_constructors)
@@ -543,7 +550,7 @@ class DatasetCollectionConfig:
         parser.add_argument(
             "--training_dataset_label_noise_percentage", type=float, default=None
         )
-        parser.add_argument("--dataset_arg_json_path", type=str, default=None)
+        parser.add_argument("--dataset_kwarg_json_path", type=str, default=None)
 
     def load_args(self, args):
         for attr in dir(args):
@@ -555,9 +562,9 @@ class DatasetCollectionConfig:
             value = getattr(args, attr)
             if value is not None:
                 setattr(self, attr, value)
-        if args.dataset_arg_json_path is not None:
-            with open(args.dataset_arg_json_path, "rt", encoding="utf-8") as f:
-                self.dataset_kwargs = json.load(f)
+        if args.dataset_kwarg_json_path is not None:
+            with open(args.dataset_kwarg_json_path, "rt", encoding="utf-8") as f:
+                self.dataset_kwargs |= json.load(f)
 
     def create_dataset_collection(self, save_dir=None):
         if self.dataset_name is None:
