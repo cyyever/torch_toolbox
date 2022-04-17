@@ -390,7 +390,9 @@ class DatasetCollection:
 class ClassificationDatasetCollection(DatasetCollection):
     @classmethod
     def create(cls, **kwargs):
-        tokenizer_kwargs = kwargs["dataset_kwargs"].get("tokenizer", {})
+        tokenizer_kwargs = {}
+        if kwargs["dataset_kwargs"] is not None:
+            tokenizer_kwargs = kwargs["dataset_kwargs"].get("tokenizer", {})
         dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
         dc.tokenizer_kwargs = tokenizer_kwargs
         if dc.dataset_type == DatasetType.Vision:
