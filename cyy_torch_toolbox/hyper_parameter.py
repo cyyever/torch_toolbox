@@ -313,10 +313,8 @@ class HyperParameterConfig:
             hyper_parameter.set_epoch(self.epoch)
         if self.batch_size is not None:
             hyper_parameter.set_batch_size(self.batch_size)
-        if self.learning_rate is not None and self.find_learning_rate:
-            raise RuntimeError(
-                "can't not specify a learning_rate and find a learning_rate at the same time"
-            )
+        if self.learning_rate is not None:
+            self.find_learning_rate = False
         if self.learning_rate is not None:
             hyper_parameter.set_learning_rate(self.learning_rate)
         if self.find_learning_rate:

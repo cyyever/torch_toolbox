@@ -12,6 +12,7 @@ def stop_training(*args, **kwargs):
 def test_vision_training():
     config = DefaultConfig(dataset_name="MNIST", model_name="LeNet5")
     config.hyper_parameter_config.epoch = 1
+    config.hyper_parameter_config.learning_rate = 0.01
     trainer = config.create_trainer()
     trainer.insert_callback(
         -1, ModelExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
@@ -27,6 +28,7 @@ def test_text_training():
         return
     config = DefaultConfig(dataset_name="IMDB", model_name="simplelstm")
     config.hyper_parameter_config.epoch = 1
+    config.hyper_parameter_config.learning_rate = 0.01
     trainer = config.create_trainer()
     trainer.insert_callback(
         -1, ModelExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
