@@ -17,9 +17,10 @@ class Tokenizer:
         max_tokens=None,
         **kwargs
     ):
-        self.keep_punct = keep_punct
-        self.keep_stop = keep_stop
+        self.__keep_punct = keep_punct
+        self.__keep_stop = keep_stop
         self.__spacy = spacy.load("en_core_web_sm")
+        self.unusual_words: set = set()
 
         counter: Counter = Counter()
 
@@ -71,9 +72,9 @@ class Tokenizer:
 
     def __tokenize(self, s):
         tokens = self.__spacy.tokenizer(s)
-        if not self.keep_punct:
+        if not self.__keep_punct:
             tokens = [t for t in tokens if not t.is_punct]
-        if not self.keep_stop:
+        if not self.__keep_stop:
             tokens = [t for t in tokens if not t.is_stop]
         return [t.text for t in tokens]
 

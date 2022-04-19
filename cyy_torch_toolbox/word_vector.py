@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.source_code.tarball_source import TarballSource
-from torchtext.vocab import Vocab
 
+from cyy_torch_toolbox.dataset_transform.tokenizer import Tokenizer
 from cyy_torch_toolbox.model_with_loss import ModelWithLoss
 
 
@@ -22,8 +22,10 @@ class PretrainedWordVector:
     def word_vector_dict(self):
         return self.__word_vector_dict
 
-    def load_to_model(self, model_with_loss: ModelWithLoss, vocab: Vocab) -> None:
-        itos = vocab.get_itos()
+    def load_to_model(
+        self, model_with_loss: ModelWithLoss, tokenizer: Tokenizer
+    ) -> None:
+        itos = tokenizer.vocab.get_itos()
 
         def __load_embedding(_, layer, *__):
             unknown_token_cnt = 0
@@ -35,6 +37,7 @@ class PretrainedWordVector:
                 if word_vector is not None:
                     embeddings[idx] = word_vector
                 else:
+                    tokenizer.unusual_words.add(token)
                     unknown_token_cnt += 1
             assert list(layer.weight.shape) == [
                 len(itos),
