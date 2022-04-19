@@ -8,7 +8,8 @@ from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.ml_type import DatasetType, ModelType
-from cyy_torch_toolbox.model_with_loss import ModelWithLoss
+from cyy_torch_toolbox.model_with_loss import (CheckPointedModelWithLoss,
+                                               ModelWithLoss)
 from cyy_torch_toolbox.word_vector import PretrainedWordVector
 
 __model_info: dict = {}
@@ -87,7 +88,11 @@ def get_model(
                 skip_validation=True,
                 **(added_kwargs | model_kwargs),
             )
-            model_with_loss = ModelWithLoss(
+            if model_kwargs.get("use_checkpointing", False):
+                model_with_loss_fun = CheckPointedModelWithLoss
+            else:
+                model_with_loss_fun = ModelWithLoss
+            model_with_loss = model_with_loss_fun(
                 model=model,
                 loss_fun=loss_fun_name,
                 model_type=model_type,
@@ -162,12 +167,10 @@ class ModelConfig:
         get_logger().info("use model %s", self.model_name)
         word_vector_name = model_kwargs.pop("word_vector_name", None)
         model_with_loss = get_model(self.model_name, dc, **model_kwargs)
-        if self.model_kwargs.get("use_checkpointing", False):
-            model_with_loss.use_checkpointing = True
         if self.model_path is not None:
             model_with_loss.model.load_state_dict(torch.load(self.model_path))
         if word_vector_name is not None:
             PretrainedWordVector(word_vector_name).load_to_model(
-                model_with_loss=model_with_loss, vocab=dc.tokenizer.vocab
+                model_with_loss=model_with_loss, tokenizer=dc.tokenizer
             )
         return model_with_loss

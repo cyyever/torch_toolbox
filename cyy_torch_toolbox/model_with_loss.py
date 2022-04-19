@@ -1,5 +1,3 @@
-import functools
-
 import torch
 import torch.nn as nn
 from cyy_naive_lib.log import get_logger
