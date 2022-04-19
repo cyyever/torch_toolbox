@@ -1,12 +1,8 @@
 import functools
-import os
-import random
 from typing import Callable, Generator, Iterable
 
-import PIL
 import torch
 import torchvision
-from cyy_naive_lib.log import get_logger
 
 
 class DatasetFilter:
@@ -71,7 +67,7 @@ class DictDataset(torch.utils.data.Dataset):
 
 def convert_iterable_dataset_to_map(
     dataset: torch.utils.data.IterableDataset, swap_item: bool = False
-) -> dict:
+) -> DictDataset:
     items = {}
     for idx, item in enumerate(dataset):
         if swap_item:
@@ -81,7 +77,9 @@ def convert_iterable_dataset_to_map(
     return DictDataset(items)
 
 
-def sub_dataset(dataset: torch.utils.data.Dataset, indices: Iterable):
+def sub_dataset(
+    dataset: torch.utils.data.Dataset, indices: Iterable
+) -> torch.utils.data.Dataset:
     r"""
     Subset of a dataset at specified indices in order.
     """
@@ -89,7 +87,9 @@ def sub_dataset(dataset: torch.utils.data.Dataset, indices: Iterable):
     return torch.utils.data.Subset(dataset, indices)
 
 
-def sample_dataset(dataset: torch.utils.data.Dataset, index: int):
+def sample_dataset(
+    dataset: torch.utils.data.Dataset, index: int
+) -> torch.utils.data.Dataset:
     return sub_dataset(dataset, [index])
 
 
