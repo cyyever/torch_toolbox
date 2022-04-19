@@ -12,7 +12,7 @@ class Tokenizer:
     ):
         tokenizer = get_tokenizer(tokenizer="spacy", language="en_core_web_sm")
 
-        counter = Counter()
+        counter: Counter = Counter()
 
         def yield_tokens():
             nonlocal counter
