@@ -98,17 +98,22 @@ class ModelWithLoss:
             if param.device != device:
                 self.model.to(device, non_blocking=non_blocking)
 
-        assert self.loss_fun is not None
         if model_fun is not None:
             model = model_fun
         else:
             model = self.model
-        if isinstance(inputs, tuple | list):
+        input_embeddings = None
+        if isinstance(inputs, tuple):
             output = model(*inputs)
         else:
-            output = model(inputs)
+            if hasattr(model, "forward_embedding"):
+                input_embeddings = model.get_embedding(inputs)
+                output = model.forward_embedding(input_embeddings)
+            else:
+                output = model(inputs)
         if self.__need_float_targets:
             targets = targets.to(output.dtype, non_blocking=non_blocking)
+        assert self.loss_fun is not None
         loss = self.loss_fun(output, targets)
         normalized_loss = loss
         if batch_size is not None and self.__is_averaged_loss():
@@ -118,6 +123,7 @@ class ModelWithLoss:
             "normalized_loss": normalized_loss,
             "output": output,
             "inputs": inputs,
+            "input_embeddings": input_embeddings,
             "targets": targets,
         }
 

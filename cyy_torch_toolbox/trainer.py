@@ -200,7 +200,11 @@ class Trainer(ModelExecutor):
                         self.exec_hooks(
                             ModelExecutorHookPoint.AFTER_BATCH,
                             batch_index=batch_index,
+                            inputs=result["inputs"],
+                            input_embeddings=result["input_embeddings"],
+                            targets=result["targets"],
                             batch=batch,
+                            batch_info=other_info,
                             epoch=epoch,
                             result=result,
                             batch_loss=loss,

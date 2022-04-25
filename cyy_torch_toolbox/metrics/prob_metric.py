@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-
 from hooks.add_index_to_dataset import AddIndexToDataset
 
 from .metric import Metric
@@ -14,17 +13,13 @@ class ProbabilityMetric(Metric, AddIndexToDataset):
         Metric._before_execute(self, **kwargs)
         AddIndexToDataset._before_execute(self, **kwargs)
 
-    def _after_batch(self, **kwargs):
-        batch = kwargs["batch"]
-        epoch = kwargs["epoch"]
-        model_executor = kwargs["model_executor"]
-        result = kwargs["result"]
+    def _after_batch(self, model_executor, epoch, result, batch_info, **kwargs):
         output = result["output"]
         last_layer = list(model_executor.model.modules())[-1]
         epoch_prob = self.get_prob(epoch)
         if epoch_prob is None:
             epoch_prob = dict()
-        for i, sample_index in enumerate(batch[2]["index"]):
+        for i, sample_index in enumerate(batch_info["index"]):
             sample_index = sample_index.data.item()
             probs = None
             if isinstance(last_layer, nn.LogSoftmax):
