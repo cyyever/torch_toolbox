@@ -1,3 +1,5 @@
+from typing import Callable
+
 import torch
 import torch.nn as nn
 from cyy_naive_lib.log import get_logger
@@ -16,13 +18,14 @@ class ModelWithLoss:
     def __init__(
         self,
         model: torch.nn.Module,
-        loss_fun: str = None,
+        loss_fun: str | Callable | None = None,
         model_type: ModelType = None,
     ):
         self.__model: torch.nn.Module = model
 
-        self.__loss_fun: torch.nn.modules.loss._Loss | None = None
-        self.set_loss_fun(loss_fun)
+        self.__loss_fun: Callable | None = None
+        if loss_fun is not None:
+            self.set_loss_fun(loss_fun)
         self.__model_type = model_type
         self.__has_batch_norm = None
         self.__example_input = None
@@ -52,12 +55,12 @@ class ModelWithLoss:
         return self.__model_type
 
     @property
-    def loss_fun(self) -> torch.nn.modules.loss._Loss:
+    def loss_fun(self) -> Callable:
         if self.__loss_fun is None:
             self.__loss_fun = self.__choose_loss_function()
         return self.__loss_fun
 
-    def set_loss_fun(self, loss_fun: torch.nn.modules.loss._Loss | str | None) -> None:
+    def set_loss_fun(self, loss_fun: Callable | str) -> None:
         if isinstance(loss_fun, str):
             if loss_fun == "CrossEntropyLoss":
                 self.__loss_fun = nn.CrossEntropyLoss()
@@ -79,14 +82,20 @@ class ModelWithLoss:
         non_blocking=False,
         batch_size=None,
         model_fun=None,
+        input_embeddings=None,
     ) -> dict:
         if model_fun is None and phase is not None:
             self.set_model_mode(phase == MachineLearningPhase.Training)
 
         if device is not None:
-            inputs = put_data_to_device(
-                inputs, device=device, non_blocking=non_blocking
-            )
+            if input_embeddings is not None:
+                input_embeddings = put_data_to_device(
+                    input_embeddings, device=device, non_blocking=non_blocking
+                )
+            else:
+                inputs = put_data_to_device(
+                    inputs, device=device, non_blocking=non_blocking
+                )
             targets = put_data_to_device(
                 targets, device=device, non_blocking=non_blocking
             )
@@ -101,25 +110,28 @@ class ModelWithLoss:
             model = model_fun
         else:
             model = self.model
-        input_embeddings = None
-        if isinstance(inputs, tuple):
-            output = model(*inputs)
-        else:
-            if hasattr(model, "forward_embedding"):
+        if hasattr(model, "forward_embedding"):
+            if input_embeddings is None:
                 input_embeddings = model.get_embedding(inputs)
-                output = model.forward_embedding(input_embeddings)
-            else:
-                output = model(inputs)
+            model = model.forward_embedding
+        if input_embeddings is not None:
+            real_inputs = input_embeddings
+        else:
+            real_inputs = inputs
+        if isinstance(real_inputs, tuple):
+            output = model(*real_inputs)
+        else:
+            output = model(real_inputs)
         if self.__need_float_targets:
             targets = targets.to(output.dtype, non_blocking=non_blocking)
         assert self.loss_fun is not None
         loss = self.loss_fun(output, targets)
-        normalized_loss = loss
+        batch_loss_sum = None
         if batch_size is not None and self.__is_averaged_loss():
-            normalized_loss = loss * batch_size
+            batch_loss_sum = loss * batch_size
         return {
             "loss": loss,
-            "normalized_loss": normalized_loss,
+            "batch_loss_sum": batch_loss_sum,
             "output": output,
             "inputs": inputs,
             "input_embeddings": input_embeddings,
