@@ -54,19 +54,18 @@ class Inferencer(ModelExecutor):
                         non_blocking=True,
                         batch_size=batch_size,
                     )
-                    batch_loss = result["loss"]
                     if use_grad:
-                        real_batch_loss = result["normalized_loss"] / len(self.dataset)
+                        real_batch_loss = result["batch_loss_sum"] / len(self.dataset)
                         real_batch_loss.backward()
 
                     self.exec_hooks(
                         ModelExecutorHookPoint.AFTER_BATCH,
                         batch=batch,
-                        batch_loss=batch_loss,
+                        batch_loss=result["loss"],
                         inputs=result["inputs"],
                         input_embeddings=result["input_embeddings"],
                         targets=result["targets"],
-                        normalized_batch_loss=result["normalized_loss"],
+                        batch_loss_sum=result["batch_loss_sum"],
                         batch_index=batch_index,
                         batch_size=self.get_batch_size(targets),
                         result=result,
