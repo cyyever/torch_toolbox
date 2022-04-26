@@ -25,7 +25,6 @@ class ModelWithLoss:
         self.set_loss_fun(loss_fun)
         self.__model_type = model_type
         self.__has_batch_norm = None
-        # self.__trace_input = False
         self.__example_input = None
         self.__need_float_targets: bool = False
 
