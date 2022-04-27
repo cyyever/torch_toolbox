@@ -63,7 +63,7 @@ class Inferencer(ModelExecutor):
                         batch=batch,
                         batch_loss=result["loss"],
                         inputs=result["inputs"],
-                        input_embeddings=result["input_embeddings"],
+                        input_features=result["input_features"],
                         targets=result["targets"],
                         batch_loss_sum=result["batch_loss_sum"],
                         batch_index=batch_index,
