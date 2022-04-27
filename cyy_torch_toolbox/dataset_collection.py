@@ -498,7 +498,7 @@ class ClassificationDatasetCollection(DatasetCollection):
         reversed_label_names = {v: k for k, v in label_names.items()}
         return reversed_label_names[label_name]
 
-    def adapt_to_model(self, model):
+    def adapt_to_model(self, model, model_kwargs=None):
         """add more transformers for model"""
         if self.dataset_type == DatasetType.Vision:
             input_size = getattr(model.__class__, "input_size", None)
@@ -507,7 +507,10 @@ class ClassificationDatasetCollection(DatasetCollection):
                 self.append_transform(torchvision.transforms.Resize(input_size))
             return
         if self.dataset_type == DatasetType.Text:
-            max_len = getattr(model, "max_len", None)
+            if model_kwargs:
+                max_len = model_kwargs.get("max_len", None)
+            if max_len is None:
+                max_len = getattr(model, "max_len", None)
             if max_len is not None:
                 get_logger().debug("resize input to %s", max_len)
                 self.insert_transform(
