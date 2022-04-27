@@ -201,7 +201,7 @@ class Trainer(ModelExecutor):
                             ModelExecutorHookPoint.AFTER_BATCH,
                             batch_index=batch_index,
                             inputs=result["inputs"],
-                            input_embeddings=result["input_embeddings"],
+                            input_features=result["input_features"],
                             targets=result["targets"],
                             batch=batch,
                             batch_info=other_info,

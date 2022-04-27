@@ -82,15 +82,15 @@ class ModelWithLoss:
         non_blocking=False,
         batch_size=None,
         model_fun=None,
-        input_embeddings=None,
+        input_features=None,
     ) -> dict:
         if model_fun is None and phase is not None:
             self.set_model_mode(phase == MachineLearningPhase.Training)
 
         if device is not None:
-            if input_embeddings is not None:
-                input_embeddings = put_data_to_device(
-                    input_embeddings, device=device, non_blocking=non_blocking
+            if input_features is not None:
+                input_features = put_data_to_device(
+                    input_features, device=device, non_blocking=non_blocking
                 )
             else:
                 inputs = put_data_to_device(
@@ -111,11 +111,11 @@ class ModelWithLoss:
         else:
             model = self.model
         if hasattr(model, "forward_embedding"):
-            if input_embeddings is None:
-                input_embeddings = model.get_embedding(inputs)
+            if input_features is None:
+                input_features = model.get_embedding(inputs)
             model = model.forward_embedding
-        if input_embeddings is not None:
-            real_inputs = input_embeddings
+        if input_features is not None:
+            real_inputs = input_features
         else:
             real_inputs = inputs
         if isinstance(real_inputs, tuple):
@@ -134,7 +134,7 @@ class ModelWithLoss:
             "batch_loss_sum": batch_loss_sum,
             "output": output,
             "inputs": inputs,
-            "input_embeddings": input_embeddings,
+            "input_features": input_features,
             "targets": targets,
         }
 
