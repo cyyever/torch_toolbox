@@ -390,9 +390,8 @@ class DatasetCollection:
 class ClassificationDatasetCollection(DatasetCollection):
     @classmethod
     def create(cls, **kwargs):
-        tokenizer_kwargs = {}
-        if kwargs["dataset_kwargs"] is not None:
-            tokenizer_kwargs = kwargs["dataset_kwargs"].get("tokenizer", {})
+        dataset_kwargs = kwargs.get("dataset_kwargs", {})
+        tokenizer_kwargs = dataset_kwargs.get("tokenizer", {})
         dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
         dc.tokenizer_kwargs = tokenizer_kwargs
         if dc.dataset_type == DatasetType.Vision:
@@ -417,9 +416,10 @@ class ClassificationDatasetCollection(DatasetCollection):
                 dc.append_transform(
                     lambda text: text.replace("<br />", ""), key=TransformType.InputText
                 )
-
+            for f in dataset_kwargs.get("text_transforms", []):
+                dc.append_transform(f, key=TransformType.InputText)
             dc.append_transform(dc.tokenizer)
-            dc.append_transform(torch.tensor)
+            dc.append_transform(torch.LongTensor)
             dc.append_transform(
                 functools.partial(
                     pad_sequence, padding_value=dc.tokenizer.vocab["<pad>"]
