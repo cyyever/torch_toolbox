@@ -74,6 +74,9 @@ class Tokenizer:
     def vocab(self) -> Vocab:
         return self.__vocab
 
+    def spacy_model(self):
+        return self.__spacy
+
     def __tokenize(self, s):
         tokens = self.__spacy.tokenizer(s)
         if not self.__keep_punct:

@@ -416,8 +416,11 @@ class ClassificationDatasetCollection(DatasetCollection):
                 dc.append_transform(
                     lambda text: text.replace("<br />", ""), key=TransformType.InputText
                 )
-            for f in dataset_kwargs.get("text_transforms", []):
-                dc.append_transform(f, key=TransformType.InputText)
+            text_transforms = dataset_kwargs.get("text_transforms", {})
+            for phase, transforms in text_transforms.items():
+                for f in transforms:
+                    get_logger().info("add text_transform %s for phase %s", f, phase)
+                    dc.append_transform(f, key=TransformType.InputText, phases=[phase])
             dc.append_transform(dc.tokenizer)
             dc.append_transform(torch.LongTensor)
             dc.append_transform(
@@ -507,10 +510,7 @@ class ClassificationDatasetCollection(DatasetCollection):
                 self.append_transform(torchvision.transforms.Resize(input_size))
             return
         if self.dataset_type == DatasetType.Text:
-            if model_kwargs:
-                max_len = model_kwargs.get("max_len", None)
-            if max_len is None:
-                max_len = getattr(model, "max_len", None)
+            max_len = model_kwargs.get("max_len", None)
             if max_len is not None:
                 get_logger().debug("resize input to %s", max_len)
                 self.insert_transform(
