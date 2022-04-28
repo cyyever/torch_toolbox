@@ -72,8 +72,9 @@ class DefaultConfig:
         get_logger().info("use dataset %s", self.dc_config.dataset_name)
         return self.dc_config.create_dataset_collection(self.get_save_dir())
 
-    def create_trainer(self) -> Trainer:
-        dc = self.create_dataset_collection()
+    def create_trainer(self, dc: DatasetCollection = None) -> Trainer:
+        if dc is None:
+            dc = self.create_dataset_collection()
         model_with_loss = self.model_config.get_model(dc)
         return self.create_trainer_by_model(model_with_loss, dc)
 

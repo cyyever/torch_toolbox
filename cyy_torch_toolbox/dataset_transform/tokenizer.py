@@ -39,6 +39,10 @@ class Tokenizer:
         for token in ("<pad>", "<unk>", "<mask>"):
             if token not in special_tokens:
                 special_tokens.append(token)
+        for token in special_tokens:
+            self.__spacy.tokenizer.add_special_case(
+                token, [{spacy.symbols.ORTH: token}]
+            )
         vocab = build_vocab_from_iterator(
             yield_tokens(),
             specials=special_tokens,
