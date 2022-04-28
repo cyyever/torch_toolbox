@@ -55,6 +55,8 @@ def get_model(
     if dataset_collection.dataset_type == DatasetType.Text:
         if "num_embeddings" not in model_kwargs:
             added_kwargs["num_embeddings"] = len(dataset_collection.tokenizer.vocab)
+        else:
+            added_kwargs["num_embeddings"] = model_kwargs["num_embeddings"]
         if "token_num" not in model_kwargs:
             added_kwargs["token_num"] = added_kwargs["num_embeddings"]
 
