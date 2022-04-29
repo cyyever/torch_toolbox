@@ -110,10 +110,10 @@ class ModelWithLoss:
             model = model_fun
         else:
             model = self.model
-        if hasattr(model, "forward_embedding"):
+        if hasattr(model, "forward_input_feature"):
             if input_features is None:
-                input_features = model.get_embedding(inputs)
-            model = model.forward_embedding
+                input_features = model.get_input_feature(inputs)
+            model = model.forward_input_feature
         if input_features is not None:
             real_inputs = input_features
         else:

@@ -203,7 +203,6 @@ class Trainer(ModelExecutor):
                             inputs=result["inputs"],
                             input_features=result["input_features"],
                             targets=result["targets"],
-                            batch=batch,
                             batch_info=other_info,
                             epoch=epoch,
                             result=result,

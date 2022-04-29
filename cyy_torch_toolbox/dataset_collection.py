@@ -391,6 +391,8 @@ class ClassificationDatasetCollection(DatasetCollection):
     @classmethod
     def create(cls, **kwargs):
         dataset_kwargs = kwargs.get("dataset_kwargs", {})
+        if not dataset_kwargs:
+            dataset_kwargs = {}
         tokenizer_kwargs = dataset_kwargs.get("tokenizer", {})
         dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
         dc.tokenizer_kwargs = tokenizer_kwargs
