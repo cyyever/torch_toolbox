@@ -192,7 +192,6 @@ class Trainer(ModelExecutor):
                             phase=self.phase,
                             device=self.device,
                             non_blocking=True,
-                            batch_size=batch_size,
                         )
                         loss = result["loss"]
                         loss.backward()
@@ -206,8 +205,6 @@ class Trainer(ModelExecutor):
                             batch_info=other_info,
                             epoch=epoch,
                             result=result,
-                            batch_loss=loss,
-                            batch_loss_sum=result["batch_loss_sum"],
                             batch_size=batch_size,
                         )
                         if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):

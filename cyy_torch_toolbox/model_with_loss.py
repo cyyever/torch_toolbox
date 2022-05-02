@@ -80,7 +80,6 @@ class ModelWithLoss:
         phase: MachineLearningPhase = None,
         device=None,
         non_blocking=False,
-        batch_size=None,
         model_fun=None,
         input_features=None,
     ) -> dict:
@@ -126,16 +125,13 @@ class ModelWithLoss:
             targets = targets.to(output.dtype, non_blocking=non_blocking)
         assert self.loss_fun is not None
         loss = self.loss_fun(output, targets)
-        batch_loss_sum = None
-        if batch_size is not None and self.__is_averaged_loss():
-            batch_loss_sum = loss * batch_size
         return {
             "loss": loss,
-            "batch_loss_sum": batch_loss_sum,
             "output": output,
             "inputs": inputs,
             "input_features": input_features,
             "targets": targets,
+            "is_averaged_loss": self.__is_averaged_loss(),
         }
 
     def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
