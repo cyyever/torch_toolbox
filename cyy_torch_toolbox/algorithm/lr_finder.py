@@ -48,7 +48,7 @@ class LRFinder(Hook):
 
     def _after_batch(self, **kwargs):
         trainer = kwargs["model_executor"]
-        batch_loss = kwargs["batch_loss"]
+        batch_loss = kwargs["result"]["loss"]
         if self.losses:
             batch_loss = batch_loss + 0.98 * (self.losses[-1] - batch_loss)
         visualizer = trainer.visualizer

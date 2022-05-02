@@ -103,8 +103,8 @@ class DatasetCollection:
             case _:
                 class_name = DatasetUtil
         return class_name(
-            self.get_dataset(phase),
-            transforms=self.__transforms[phase].get(TransformType.InputText)
+            dataset=self.get_dataset(phase),
+            input_transforms=self.__transforms[phase].get(TransformType.InputText)
             + self.__transforms[phase].get(TransformType.Input),
             target_transforms=self.__transforms[phase].get(TransformType.Target),
             name=self.name,
@@ -222,12 +222,12 @@ class DatasetCollection:
         for phase in MachineLearningPhase:
             while True:
                 try:
-                    dataset_kwargs = dataset_kwargs_fun(
+                    processed_dataset_kwargs = dataset_kwargs_fun(
                         phase=phase, dataset_type=dataset_type
                     )
-                    if dataset_kwargs is None:
+                    if processed_dataset_kwargs is None:
                         break
-                    dataset = dataset_constructor(**dataset_kwargs)
+                    dataset = dataset_constructor(**processed_dataset_kwargs)
                     if name == "IMDB":
                         dataset = convert_iterable_dataset_to_map(
                             dataset, swap_item=True
@@ -244,6 +244,8 @@ class DatasetCollection:
                         break
                     if "for argument split. Valid values are" in str(e):
                         break
+                    if "Unknown split" in str(e):
+                        break
                     # split = dataset_kwargs.get("split", None)
                     # # if split == "test":
                     # #     break
@@ -257,6 +259,7 @@ class DatasetCollection:
         #         validation_dataset = CachedVisionDataset(validation_dataset)
         #     if test_dataset is not None:
         #         test_dataset = CachedVisionDataset(test_dataset)
+        assert not (validation_dataset is None and test_dataset is None)
 
         if validation_dataset is None or test_dataset is None:
             if validation_dataset is not None:
@@ -293,57 +296,59 @@ class DatasetCollection:
         constructor_kwargs: set,
         dataset_kwargs: dict = None,
     ) -> Callable:
-        dataset_kwargs = copy.deepcopy(dataset_kwargs)
         if dataset_kwargs is None:
             dataset_kwargs = {}
-        dataset_kwargs = copy.deepcopy(dataset_kwargs)
-        if "root" not in dataset_kwargs:
-            dataset_kwargs["root"] = cls.__get_dataset_dir(name)
-        if "download" not in dataset_kwargs:
-            dataset_kwargs["download"] = True
-
-        discarded_dataset_kwargs = set()
-        for k in dataset_kwargs:
-            if k not in constructor_kwargs:
-                discarded_dataset_kwargs.add(k)
-        if discarded_dataset_kwargs:
-            get_logger().warning(
-                "discarded_dataset_kwargs %s", discarded_dataset_kwargs
-            )
-            for k in discarded_dataset_kwargs:
-                dataset_kwargs.pop(k)
+            new_dataset_kwargs = {}
+        else:
+            new_dataset_kwargs = copy.deepcopy(dataset_kwargs)
+        if "root" not in new_dataset_kwargs:
+            new_dataset_kwargs["root"] = cls.__get_dataset_dir(name)
+        if "download" not in new_dataset_kwargs:
+            new_dataset_kwargs["download"] = True
 
         def get_dataset_kwargs_per_phase(
             dataset_type: DatasetType, phase: MachineLearningPhase
         ) -> dict | None:
-            if dataset_type == DatasetType.Vision:
-                if "transform" not in dataset_kwargs:
-                    dataset_kwargs["transform"] = torchvision.transforms.Compose(
-                        [torchvision.transforms.ToTensor()]
-                    )
             if "train" in constructor_kwargs:
                 # Some dataset only have train and test parts
                 if phase == MachineLearningPhase.Validation:
                     return None
-                dataset_kwargs["train"] = phase == MachineLearningPhase.Training
+                new_dataset_kwargs["train"] = phase == MachineLearningPhase.Training
             elif "split" in constructor_kwargs:
                 if phase == MachineLearningPhase.Training:
-                    dataset_kwargs["split"] = "train"
+                    new_dataset_kwargs["split"] = dataset_kwargs.get(
+                        "train_split", "train"
+                    )
                 elif phase == MachineLearningPhase.Validation:
-                    if dataset_type == DatasetType.Text:
-                        dataset_kwargs["split"] = "valid"
+                    if "val_split" in dataset_kwargs:
+                        new_dataset_kwargs["split"] = dataset_kwargs["val_split"]
                     else:
-                        dataset_kwargs["split"] = "val"
+                        if dataset_type == DatasetType.Text:
+                            new_dataset_kwargs["split"] = "valid"
+                        else:
+                            new_dataset_kwargs["split"] = "val"
                 else:
-                    dataset_kwargs["split"] = "test"
+                    new_dataset_kwargs["split"] = dataset_kwargs.get(
+                        "test_split", "test"
+                    )
             elif "subset" in constructor_kwargs:
                 if phase == MachineLearningPhase.Training:
-                    dataset_kwargs["subset"] = "training"
+                    new_dataset_kwargs["subset"] = "training"
                 elif phase == MachineLearningPhase.Validation:
-                    dataset_kwargs["subset"] = "validation"
+                    new_dataset_kwargs["subset"] = "validation"
                 else:
-                    dataset_kwargs["subset"] = "testing"
-            return dataset_kwargs
+                    new_dataset_kwargs["subset"] = "testing"
+            discarded_dataset_kwargs = set()
+            for k in new_dataset_kwargs:
+                if k not in constructor_kwargs:
+                    discarded_dataset_kwargs.add(k)
+            if discarded_dataset_kwargs:
+                get_logger().warning(
+                    "discarded_dataset_kwargs %s", discarded_dataset_kwargs
+                )
+                for k in discarded_dataset_kwargs:
+                    new_dataset_kwargs.pop(k)
+            return new_dataset_kwargs
 
         return get_dataset_kwargs_per_phase
 
@@ -397,6 +402,7 @@ class ClassificationDatasetCollection(DatasetCollection):
         dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
         dc.tokenizer_kwargs = tokenizer_kwargs
         if dc.dataset_type == DatasetType.Vision:
+            dc.append_transform(torchvision.transforms.ToTensor())
             mean, std = dc.__get_mean_and_std(
                 torch.utils.data.ConcatDataset(list(dc._datasets.values()))
             )
@@ -443,7 +449,11 @@ class ClassificationDatasetCollection(DatasetCollection):
 
     def __get_mean_and_std(self, dataset):
         def computation_fun():
-            return VisionDatasetUtil(dataset).get_mean_and_std()
+            return VisionDatasetUtil(
+                dataset=dataset,
+                input_transforms=[torchvision.transforms.ToTensor()],
+                name=self.name,
+            ).get_mean_and_std()
 
         return self._get_cache_data("mean_and_std.pk", computation_fun)
 
