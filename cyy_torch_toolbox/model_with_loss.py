@@ -202,7 +202,28 @@ class CheckPointedModelWithLoss(ModelWithLoss):
     def __init__(self, model: torch.nn.Module, *args, **kwargs):
         super().__init__(get_checkpointed_model(model), *args, **kwargs)
 
-    def __call__(self, inputs: torch.Tensor, *args, **kwargs) -> dict:
+    def __call__(self, **kwargs) -> dict:
         if self.model.training:
-            inputs.requires_grad_()
-        return super().__call__(inputs, *args, **kwargs)
+            inputs = kwargs.get("inputs", None)
+            if inputs is not None:
+                inputs.requires_grad_()
+            input_features = kwargs.get("input_features", None)
+            if input_features is not None:
+                input_features.requires_grad_()
+        return super().__call__(**kwargs)
+
+
+class AMP:
+    def __init__(self):
+        self.__ctx = torch.autocast(device_type="cuda")
+
+    def __call__(self, model_with_loss: ModelWithLoss, **kwargs) -> dict:
+        device = kwargs.get("device", None)
+        if device is not None and "cuda" in str(device).lower():
+            device_type = "cuda"
+        else:
+            device_type = "cpu"
+        if device_type != self.__ctx.device:
+            self.__ctx = torch.autocast(device_type=device_type)
+        with self.__ctx:
+            return model_with_loss(**kwargs)

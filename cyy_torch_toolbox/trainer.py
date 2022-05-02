@@ -15,7 +15,7 @@ from cyy_torch_toolbox.ml_type import (MachineLearningPhase,
                                        ModelExecutorHookPoint, ModelType,
                                        StopExecutingException)
 from cyy_torch_toolbox.model_executor import ModelExecutor
-from cyy_torch_toolbox.model_with_loss import ModelWithLoss
+from cyy_torch_toolbox.model_with_loss import AMP, ModelWithLoss
 
 
 class Trainer(ModelExecutor):
@@ -38,11 +38,15 @@ class Trainer(ModelExecutor):
         self.__keep_model_hook = KeepModelHook()
         self.append_hook(self.__keep_model_hook)
         self.__debugger = None
+        self.__amp_ctx = None
 
     def set_device(self, device):
         super().set_device(device)
         for a in self.__inferencers.values():
             a.set_device(device)
+
+    def set_amp(self, enabled=True):
+        self.__amp_ctx = AMP() if enabled else None
 
     @property
     def batch_loss_logger(self):
@@ -186,13 +190,18 @@ class Trainer(ModelExecutor):
                             batch_size=batch_size,
                         )
                         optimizer.zero_grad(set_to_none=True)
-                        result = self._model_with_loss(
-                            sample_inputs,
-                            sample_targets,
-                            phase=self.phase,
-                            device=self.device,
-                            non_blocking=True,
-                        )
+                        kwargs = {
+                            "inputs": sample_inputs,
+                            "targets": sample_targets,
+                            "phase": self.phase,
+                            "device": self.device,
+                            "non_blocking": True,
+                        }
+                        if self.__amp_ctx is not None:
+                            result = self.__amp_ctx(self._model_with_loss, **kwargs)
+                        else:
+                            result = self._model_with_loss(**kwargs)
+
                         loss = result["loss"]
                         loss.backward()
 
@@ -251,17 +260,17 @@ class Trainer(ModelExecutor):
                         epoch=epoch,
                     )
                     # adjust learning rate
-                    if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                        if isinstance(
-                            lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau
-                        ):
+                    if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+                        continue
+                    match lr_scheduler:
+                        case torch.optim.lr_scheduler.ReduceLROnPlateau():
                             training_loss = self.performance_metric.get_loss(epoch)
                             get_logger().debug(
                                 "call ReduceLROnPlateau for training loss %s",
                                 training_loss,
                             )
                             lr_scheduler.step(training_loss)
-                        else:
+                        case _:
                             lr_scheduler.step()
             except StopExecutingException:
                 get_logger().warning("stop training")
