@@ -4,8 +4,11 @@ from .metric import Metric
 
 
 class LossMetric(Metric):
-    def _after_batch(self, epoch, model_executor, batch_loss_sum, **kwargs):
-        real_batch_loss = batch_loss_sum.detach() / len(model_executor.dataset)
+    def _after_batch(self, epoch, model_executor, result, batch_size, **kwargs):
+        real_batch_loss = result["loss"]
+        if result["is_averaged_loss"]:
+            real_batch_loss *= batch_size
+        real_batch_loss /= len(model_executor.dataset)
         epoch_loss = self.get_epoch_metric(epoch, "loss")
         if epoch_loss is None:
             epoch_loss = real_batch_loss
