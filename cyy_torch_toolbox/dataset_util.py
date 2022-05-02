@@ -15,40 +15,35 @@ class DatasetUtil:
     def __init__(
         self,
         dataset: torch.utils.data.Dataset,
-        transforms=None,
+        input_transforms=None,
         target_transforms=None,
         name=None,
     ):
         self.dataset: torch.utils.data.Dataset = dataset
         self.__len = None
         self.name = name
-        if transforms is None:
-            transforms = []
-        self.__transforms = transforms
+        if input_transforms is None:
+            input_transforms = []
+        self.__input_transforms = input_transforms
 
         if target_transforms is None:
             target_transforms = []
         self.__target_transforms = target_transforms
-
-    # def get_transforms(self):
-    #     transforms = []
-    #     if hasattr(self.dataset, "transform"):
-    #         transforms = [self.dataset.transform]
-    #     i = 0
-    #     while i < len(transforms):
-    #         if isinstance(transforms[i], torchvision.transforms.Compose):
-    #             transforms = (
-    #                 transforms[:i] + transforms[i].transforms + transforms[i + 1:]
-    #             )
-    #         else:
-    #             i += 1
-    #     return transforms
 
     @property
     def len(self):
         if self.__len is None:
             self.__len = len(self.dataset)
         return self.__len
+
+    def get_sample(self, index: int, dataset=None):
+        if dataset is None:
+            dataset = self.dataset
+        if isinstance(dataset, torch.utils.data.Subset):
+            return self.get_sample(
+                index=dataset.indices[index], dataset=dataset.dataset
+            )
+        return dataset[index]
 
     @classmethod
     def __decode_target(cls, target) -> set:
@@ -66,17 +61,17 @@ class DatasetUtil:
                     return set(int(s) for s in target)
         raise RuntimeError("can't extract labels from target: " + str(target))
 
-    def get_sample_labels(self, index, dataset=None) -> set:
-        if dataset is None:
-            dataset = self.dataset
-        if isinstance(dataset, torch.utils.data.Subset):
-            return self.get_sample_labels(
-                index=dataset.indices[index], dataset=dataset.dataset
-            )
-        if hasattr(dataset, "targets"):
-            target = dataset.targets[index]
-        else:
-            target = dataset[index][1]
+    def get_sample_input(self, index: int, apply_transform: bool = True):
+        sample = self.get_sample(index)
+        sample_input = sample[0]
+        if apply_transform:
+            for f in self.__input_transforms:
+                sample_input = f(sample_input)
+        return sample_input
+
+    def get_sample_labels(self, index: int) -> set:
+        sample = self.get_sample(index)
+        target = sample[1]
         for f in self.__target_transforms:
             target = f(target)
         return DatasetUtil.__decode_target(target)
@@ -106,7 +101,7 @@ class DatasetUtil:
         label_names = functools.reduce(get_label_name, self.dataset, set())
         if label_names:
             return dict(enumerate(sorted(label_names)))
-        return None
+        raise RuntimeError("not label names detected")
 
 
 class DatasetSplitter(DatasetUtil):
@@ -225,11 +220,9 @@ class VisionDatasetUtil(DatasetSplitter):
 
     @property
     def channel(self):
-        if isinstance(self.dataset, torch.utils.data.IterableDataset):
-            raise RuntimeError("IterableDataset is not supported")
         if self.__channel is not None:
             return self.__channel
-        x = next(iter(self.dataset))[0]
+        x = self.get_sample_input(0)
         self.__channel = x.shape[0]
         assert self.__channel <= 3
         return self.__channel
@@ -241,7 +234,7 @@ class VisionDatasetUtil(DatasetSplitter):
             return (mean, std)
         mean = torch.zeros(self.channel)
         for idx in range(self.len):
-            x = self.dataset[idx][0]
+            x = self.get_sample_input(idx)
             for i in range(self.channel):
                 mean[i] += x[i, :, :].mean()
         mean.div_(self.len)
@@ -249,7 +242,7 @@ class VisionDatasetUtil(DatasetSplitter):
         wh = None
         std = torch.zeros(self.channel)
         for idx in range(self.len):
-            x = self.dataset[idx][0]
+            x = self.get_sample_input(idx)
             if wh is None:
                 wh = x.shape[1] * x.shape[2]
             for i in range(self.channel):
@@ -257,16 +250,18 @@ class VisionDatasetUtil(DatasetSplitter):
         std = std.div(self.len).sqrt()
         return mean, std
 
-    def save_sample_image(self, idx: int, path: str):
+    def save_sample_image(self, idx: int, path: str) -> None:
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        if isinstance(self.dataset[idx][0], PIL.Image.Image):
-            self.dataset[idx][0].save(path)
-            return
-        torchvision.utils.save_image(self.dataset[idx][0], path)
+        sample_input = self.get_sample_input(idx, apply_transform=False)
+        match sample_input:
+            case PIL.Image.Image():
+                sample_input.save(path)
+            case _:
+                torchvision.utils.save_image(sample_input, path)
 
     @torch.no_grad()
     def get_sample_image(self, idx: int) -> PIL.Image:
-        tensor = self.dataset[idx][0]
+        tensor = self.get_sample_input(idx, apply_transform=False)
         if isinstance(tensor, PIL.Image.Image):
             return tensor
         grid = torchvision.utils.make_grid(tensor)
@@ -284,4 +279,4 @@ class VisionDatasetUtil(DatasetSplitter):
 
 class TextDatasetUtil(DatasetSplitter):
     def get_sample_text(self, idx: int) -> str:
-        return self.dataset[idx][0]
+        return self.get_sample_input(idx, apply_transform=False)
