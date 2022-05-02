@@ -20,6 +20,15 @@ try:
     has_medmnist = True
 except ModuleNotFoundError:
     has_medmnist = False
+
+try:
+    import datasets
+
+    has_hugging_face = True
+except ModuleNotFoundError:
+    has_medmnist = False
+
+
 import cyy_torch_toolbox.datasets.vision as local_vision_datasets
 from cyy_torch_toolbox.ml_type import DatasetType
 from cyy_torch_toolbox.reflection import get_class_attrs
@@ -53,5 +62,12 @@ def get_dataset_constructors(dataset_type: DatasetType = None) -> dict:
             dataset_constructors[name] = functools.partial(
                 medmnist_cls, target_transform=lambda x: x[0]
             )
-
+    if has_hugging_face and (dataset_type is None or dataset_type == DatasetType.Text):
+        for name in datasets.list_datasets(
+            with_community_datasets=False, with_details=False
+        ):
+            if name not in dataset_constructors:
+                dataset_constructors[name] = functools.partial(
+                    datasets.load_dataset, name
+                )
     return dataset_constructors
