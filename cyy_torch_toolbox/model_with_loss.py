@@ -80,10 +80,9 @@ class ModelWithLoss:
         phase: MachineLearningPhase = None,
         device=None,
         non_blocking=False,
-        model_fun=None,
         input_features=None,
     ) -> dict:
-        if model_fun is None and phase is not None:
+        if phase is not None:
             self.set_model_mode(phase == MachineLearningPhase.Training)
 
         if device is not None:
@@ -105,10 +104,7 @@ class ModelWithLoss:
             if param.device != device:
                 self.model.to(device, non_blocking=non_blocking)
 
-        if model_fun is not None:
-            model = model_fun
-        else:
-            model = self.model
+        model = self.model
         if hasattr(model, "forward_input_feature"):
             if input_features is None:
                 input_features = model.get_input_feature(inputs)
