@@ -38,3 +38,12 @@ def test_dataset_labels():
     for name in ("IMDB",):
         dc = create_dataset_collection(ClassificationDatasetCollection, name)
         assert dc.get_labels()
+
+
+def test_hugging_face_dataset():
+    return 
+    dc = create_dataset_collection(
+        ClassificationDatasetCollection,
+        "multi_nli",
+        dataset_kwargs={"val_split": "validation_matched"},
+    )
