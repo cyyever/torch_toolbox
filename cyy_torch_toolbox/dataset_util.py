@@ -9,26 +9,20 @@ import torchvision
 from cyy_naive_lib.log import get_logger
 
 from .dataset import sub_dataset
+from .dataset_transform.transforms import Transforms
 
 
 class DatasetUtil:
     def __init__(
         self,
         dataset: torch.utils.data.Dataset,
-        input_transforms=None,
-        target_transforms=None,
+        transforms: Transforms = None,
         name=None,
     ):
         self.dataset: torch.utils.data.Dataset = dataset
         self.__len = None
         self.name = name
-        if input_transforms is None:
-            input_transforms = []
-        self.__input_transforms = input_transforms
-
-        if target_transforms is None:
-            target_transforms = []
-        self.__target_transforms = target_transforms
+        self.__transforms = transforms
 
     @property
     def len(self):
@@ -36,14 +30,11 @@ class DatasetUtil:
             self.__len = len(self.dataset)
         return self.__len
 
-    def get_sample(self, index: int, dataset=None):
-        if dataset is None:
-            dataset = self.dataset
-        if isinstance(dataset, torch.utils.data.Subset):
-            return self.get_sample(
-                index=dataset.indices[index], dataset=dataset.dataset
-            )
-        return dataset[index]
+    def get_sample(self, index: int):
+        sample = self.dataset[index]
+        if self.__transforms is not None:
+            sample = self.__transforms.extract_data(sample)
+        return sample
 
     @classmethod
     def __decode_target(cls, target) -> set:
@@ -63,17 +54,17 @@ class DatasetUtil:
 
     def get_sample_input(self, index: int, apply_transform: bool = True):
         sample = self.get_sample(index)
-        sample_input = sample[0]
+        sample_input = sample["input"]
         if apply_transform:
-            for f in self.__input_transforms:
-                sample_input = f(sample_input)
+            assert self.__transforms is not None
+            sample_input = self.__transforms.transform_input(sample_input)
         return sample_input
 
     def get_sample_labels(self, index: int) -> set:
         sample = self.get_sample(index)
-        target = sample[1]
-        for f in self.__target_transforms:
-            target = f(target)
+        target = sample["target"]
+        if self.__transforms is not None:
+            target = self.__transforms.transform_target(target)
         return DatasetUtil.__decode_target(target)
 
     def get_sample_label(self, index):

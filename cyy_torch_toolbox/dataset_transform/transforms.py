@@ -45,11 +45,14 @@ class Transforms:
             data = f(data)
         return data
 
-    def transform_inputs(self, inputs: list) -> list:
-        for f in self.get(TransformType.InputText):
-            inputs = [f(i) for i in inputs]
+    def transform_input(self, sample_input):
+        sample_input = self.transform_text(sample_input)
         for f in self.get(TransformType.Input):
-            inputs = [f(i) for i in inputs]
+            sample_input = f(sample_input)
+        return sample_input
+
+    def transform_inputs(self, inputs: list) -> list:
+        inputs = [self.transform_input(i) for i in inputs]
         batch_transforms = self.get(TransformType.InputBatch)
         if not batch_transforms:
             batch_transforms.append(default_collate)
@@ -57,7 +60,11 @@ class Transforms:
             inputs = f(inputs)
         return inputs
 
-    def transform_targets(self, targets: list) -> list:
+    def transform_target(self, target):
         for f in self.get(TransformType.Target):
-            targets = [f(i) for i in targets]
+            target = f(target)
+        return target
+
+    def transform_targets(self, targets: list) -> list:
+        targets = [self.transform_target(i) for i in targets]
         return default_collate(targets)
