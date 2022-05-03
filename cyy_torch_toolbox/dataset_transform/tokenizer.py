@@ -28,7 +28,9 @@ class Tokenizer:
             nonlocal counter
             for phase in MachineLearningPhase:
                 dataset = dc.get_dataset(phase=phase)
-                for text, _ in dataset:
+                for data in dataset:
+                    data = dc.get_transforms(phase=phase).extract_data(data)
+                    text = data["input"]
                     text = dc.get_transforms(phase=phase).transform_text(text)
                     tokens = self.__tokenize(text)
                     counter.update(tokens)
