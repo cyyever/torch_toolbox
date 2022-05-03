@@ -17,7 +17,8 @@ from torch.utils.data._utils.collate import default_collate
 from cyy_torch_toolbox.dataset import replace_dataset_labels, sub_dataset
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transform.tokenizer import Tokenizer
-from cyy_torch_toolbox.dataset_transform.transforms import Transforms
+from cyy_torch_toolbox.dataset_transform.transforms import (
+    Transforms, swap_input_and_target)
 from cyy_torch_toolbox.dataset_util import (  # CachedVisionDataset,
     DatasetSplitter, DatasetUtil, TextDatasetUtil, VisionDatasetUtil)
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
@@ -414,6 +415,10 @@ class ClassificationDatasetCollection(DatasetCollection):
                 dc.append_transform(torchvision.transforms.RandomResizedCrop(224))
         if dc.dataset_type == DatasetType.Text:
             if dc.name == "IMDB":
+                dc.append_transform(
+                    swap_input_and_target, key=TransformType.ExtractData
+                )
+
                 dc.append_transform(
                     lambda text: text.replace("<br />", ""), key=TransformType.InputText
                 )
