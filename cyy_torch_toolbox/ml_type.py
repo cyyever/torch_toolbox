@@ -19,6 +19,7 @@ class DatasetType(IntEnum):
 
 
 class TransformType(IntEnum):
+    ExtractData = auto()
     InputText = auto()
     Input = auto()
     InputBatch = auto()
