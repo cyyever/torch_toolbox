@@ -14,7 +14,8 @@ from ssd_checker import is_ssd
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data._utils.collate import default_collate
 
-from cyy_torch_toolbox.dataset import replace_dataset_labels, sub_dataset
+from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
+                                       replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transform.tokenizer import Tokenizer
 from cyy_torch_toolbox.dataset_transform.transforms import (
@@ -104,9 +105,7 @@ class DatasetCollection:
                 class_name = DatasetUtil
         return class_name(
             dataset=self.get_dataset(phase),
-            input_transforms=self.__transforms[phase].get(TransformType.InputText)
-            + self.__transforms[phase].get(TransformType.Input),
-            target_transforms=self.__transforms[phase].get(TransformType.Target),
+            transforms=self.__transforms[phase],
             name=self.name,
         )
 
@@ -226,6 +225,7 @@ class DatasetCollection:
                     if processed_dataset_kwargs is None:
                         break
                     dataset = dataset_constructor(**processed_dataset_kwargs)
+                    dataset = convert_iterable_dataset_to_map(dataset)
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
                     elif phase == MachineLearningPhase.Validation:
@@ -275,7 +275,9 @@ class DatasetCollection:
         return (training_dataset, validation_dataset, test_dataset, dataset_type, name)
 
     def is_classification_dataset(self) -> bool:
-        first_target = next(iter(self.get_training_dataset()))[1]
+        first_target = self.get_dataset_util(
+            phase=MachineLearningPhase.Training
+        ).get_sample_label(0)
         match first_target:
             case int():
                 return True
@@ -446,10 +448,15 @@ class ClassificationDatasetCollection(DatasetCollection):
         return dc
 
     def __get_mean_and_std(self, dataset):
+        transforms = Transforms()
+        transforms.append(
+            key=TransformType.Input, transform=torchvision.transforms.ToTensor()
+        )
+
         def computation_fun():
             return VisionDatasetUtil(
                 dataset=dataset,
-                input_transforms=[torchvision.transforms.ToTensor()],
+                transforms=transforms,
                 name=self.name,
             ).get_mean_and_std()
 
