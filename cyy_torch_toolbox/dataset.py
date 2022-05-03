@@ -66,15 +66,9 @@ class DictDataset(torch.utils.data.Dataset):
 
 
 def convert_iterable_dataset_to_map(
-    dataset: torch.utils.data.IterableDataset, swap_item: bool = False
+    dataset: torch.utils.data.IterableDataset,
 ) -> DictDataset:
-    items = {}
-    for idx, item in enumerate(dataset):
-        if swap_item:
-            items[idx] = (item[1], item[0])
-        else:
-            items[idx] = item
-    return DictDataset(items)
+    return DictDataset({idx: item for idx, item in enumerate(dataset)})
 
 
 def sub_dataset(
@@ -84,6 +78,8 @@ def sub_dataset(
     Subset of a dataset at specified indices in order.
     """
     indices = sorted(set(indices))
+    if isinstance(dataset, torch.utils.data.IterableDataset):
+        dataset = convert_iterable_dataset_to_map(dataset)
     return torch.utils.data.Subset(dataset, indices)
 
 

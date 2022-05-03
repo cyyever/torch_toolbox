@@ -12,6 +12,11 @@ def default_data_extraction(data):
     return {"input": input, "target": target}
 
 
+def swap_input_and_target(data):
+    data["input"], data["target"] = data["target"], data["input"]
+    return data
+
+
 class Transforms:
     def __init__(self):
         self.__transforms: dict = {}
