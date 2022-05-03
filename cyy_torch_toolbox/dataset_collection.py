@@ -14,8 +14,7 @@ from ssd_checker import is_ssd
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data._utils.collate import default_collate
 
-from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
-                                       replace_dataset_labels, sub_dataset)
+from cyy_torch_toolbox.dataset import replace_dataset_labels, sub_dataset
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transform.tokenizer import Tokenizer
 from cyy_torch_toolbox.dataset_transform.transforms import Transforms
@@ -134,13 +133,11 @@ class DatasetCollection:
         targets = []
         other_info = []
         for item in batch:
-            if len(item) == 3:
-                input, target, tmp = item
-                other_info.append(tmp)
-            else:
-                input, target = item
-            inputs.append(input)
-            targets.append(target)
+            res = self.__transforms[phase].extract_data(item)
+            inputs.append(res["input"])
+            targets.append(res["target"])
+            if "other_info" in res:
+                other_info.append(res["other_info"])
         inputs = self.__transforms[phase].transform_inputs(inputs)
         targets = self.__transforms[phase].transform_targets(targets)
 
@@ -228,10 +225,6 @@ class DatasetCollection:
                     if processed_dataset_kwargs is None:
                         break
                     dataset = dataset_constructor(**processed_dataset_kwargs)
-                    if name == "IMDB":
-                        dataset = convert_iterable_dataset_to_map(
-                            dataset, swap_item=True
-                        )
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
                     elif phase == MachineLearningPhase.Validation:
