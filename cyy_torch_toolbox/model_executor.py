@@ -6,6 +6,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataloader import get_dataloader
+from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.device import get_device
 from cyy_torch_toolbox.hooks.model_executor_logger import ModelExecutorLogger
@@ -85,6 +86,10 @@ class ModelExecutor(ModelExecutorBase):
     @property
     def dataset(self):
         return self.dataset_collection.get_dataset(phase=self.__phase)
+
+    @property
+    def dataset_size(self):
+        return get_dataset_size(self.dataset)
 
     def transform_dataset(self, transformer: Callable):
         self.dataset_collection.transform_dataset(self.phase, transformer)

@@ -17,9 +17,10 @@ try:
 except ModuleNotFoundError:
     has_dali = False
 
-from dataset_collection import DatasetCollection
-from hyper_parameter import HyperParameter
-from ml_type import DatasetType, MachineLearningPhase, ModelType
+from .dataset import get_dataset_size
+from .dataset_collection import DatasetCollection
+from .hyper_parameter import HyperParameter
+from .ml_type import DatasetType, MachineLearningPhase, ModelType
 
 
 class ExternalInputIterator:
@@ -32,9 +33,9 @@ class ExternalInputIterator:
         if hasattr(dataset, "indices"):
             self.__indices = dataset.indices
         else:
-            self.__indices = list(range(len(dataset)))
+            self.__indices = list(range(get_dataset_size(dataset)))
             assert dataset is original_dataset
-        assert len(self.__indices) == len(dataset)
+        assert len(self.__indices) == get_dataset_size(dataset)
         self.full_iterations = len(self.__indices) // batch_size
         self.__transform = torchvision.transforms.ToTensor()
         self.__shuffle = shuffle
@@ -231,7 +232,7 @@ def get_dataloader(
         pipeline.build()
         return DALIClassificationIterator(
             pipeline,
-            size=len(dataset),
+            size=get_dataset_size(dataset),
             auto_reset=True,
             dynamic_shape=True,
             last_batch_policy=LastBatchPolicy.PARTIAL,

@@ -128,7 +128,7 @@ class HyperParameter:
         cls, hyper_parameter, trainer, name, dataset_name, kwargs
     ):
         optimizer = trainer.get_optimizer()
-        training_dataset_size = len(trainer.dataset)
+        training_dataset_size = trainer.dataset_size
         full_kwargs: dict = {}
         full_kwargs["optimizer"] = optimizer
         if name == "ReduceLROnPlateau":
@@ -197,7 +197,7 @@ class HyperParameter:
             "params": trainer.model.parameters(),
             "lr": self.get_learning_rate(trainer),
             "momentum": self.momentum,
-            "weight_decay": self.weight_decay / len(trainer.dataset),
+            "weight_decay": self.weight_decay / trainer.dataset_size,
             "foreach": True,
         }
         return call_fun(self.__optimizer_factory, kwargs)
