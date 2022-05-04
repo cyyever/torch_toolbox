@@ -5,8 +5,21 @@ import torch
 import torchvision
 
 
+def get_dataset_size(dataset) -> int:
+    try:
+        return len(dataset)
+    except BaseException:
+        cnt: int = 0
+        for _ in dataset:
+            cnt += 1
+        return cnt
+    raise RuntimeError("not reachable")
+
+
 class DatasetFilter:
-    def __init__(self, dataset: torch.utils.data.Dataset, filters: Iterable[Callable]):
+    def __init__(
+        self, dataset: torch.utils.data.MapDataPipe, filters: Iterable[Callable]
+    ):
         self.__dataset = dataset
         self.__filters = filters
         self.__indices = None
@@ -30,7 +43,9 @@ class DatasetFilter:
 
 
 class DatasetMapper:
-    def __init__(self, dataset: torch.utils.data.Dataset, mappers: Iterable[Callable]):
+    def __init__(
+        self, dataset: torch.utils.data.MapDataPipe, mappers: Iterable[Callable]
+    ):
         self.__dataset = dataset
         self.__mappers = list(mappers)
 
@@ -51,7 +66,7 @@ class DatasetMapper:
         return len(self.__dataset)
 
 
-class DictDataset(torch.utils.data.Dataset):
+class DictDataset(torch.utils.data.MapDataPipe):
     def __init__(self, items: dict):
         super().__init__()
         self.__items = items
@@ -69,7 +84,7 @@ def convert_iterable_dataset_to_map(
     dataset: torch.utils.data.IterableDataset,
 ) -> DictDataset:
     if isinstance(dataset, torch.utils.data.IterableDataset):
-        return DictDataset({idx: item for idx, item in enumerate(dataset)})
+        return DictDataset(dict(enumerate(dataset)))
     return dataset
 
 
@@ -107,7 +122,11 @@ def dataset_with_indices(dataset: torch.utils.data.Dataset):
 
 
 def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
-    return (torch.utils.data.Subset(dataset, [index]) for index in range(len(dataset)))
+    dataset = convert_iterable_dataset_to_map(dataset)
+    return (
+        torch.utils.data.Subset(dataset, [index])
+        for index in range(get_dataset_size(dataset))
+    )
 
 
 # import copy
@@ -139,7 +158,7 @@ def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
 #         return len(self.__dataset)
 
 
-def replace_dataset_labels(dataset, label_map: dict):
+def replace_dataset_labels(dataset: torch.utils.data.MapDataPipe, label_map: dict):
     assert label_map
 
     def __replace_item_label(label_map, index, item):

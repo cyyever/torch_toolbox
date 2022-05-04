@@ -15,6 +15,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data._utils.collate import default_collate
 
 from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
+                                       get_dataset_size,
                                        replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transform.tokenizer import Tokenizer
@@ -267,9 +268,13 @@ class DatasetCollection:
             )
 
         try:
-            get_logger().info("training_dataset len %s", len(training_dataset))
-            get_logger().info("validation_dataset len %s", len(validation_dataset))
-            get_logger().info("test_dataset len %s", len(test_dataset))
+            get_logger().info(
+                "training_dataset len %s", get_dataset_size(training_dataset)
+            )
+            get_logger().info(
+                "validation_dataset len %s", get_dataset_size(validation_dataset)
+            )
+            get_logger().info("test_dataset len %s", get_dataset_size(test_dataset))
         except BaseException:
             pass
         return (training_dataset, validation_dataset, test_dataset, dataset_type, name)
@@ -509,7 +514,7 @@ class ClassificationDatasetCollection(DatasetCollection):
                     dataset_util.get_sample_image(i),
                     dataset_util.get_sample_label(i),
                 )
-                for i in range(len(dataset_util.dataset))
+                for i in range(len(dataset_util))
             )
         raise RuntimeError("Unimplemented Code")
 

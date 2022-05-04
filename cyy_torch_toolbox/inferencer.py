@@ -57,7 +57,7 @@ class Inferencer(ModelExecutor):
                         real_batch_loss = result["loss"]
                         if result["is_averaged_loss"]:
                             real_batch_loss *= batch_size
-                        real_batch_loss /= len(self.dataset)
+                        real_batch_loss /= self.dataset_size
                         real_batch_loss.backward()
 
                     self.exec_hooks(

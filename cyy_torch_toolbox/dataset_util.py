@@ -8,7 +8,7 @@ import torch
 import torchvision
 from cyy_naive_lib.log import get_logger
 
-from .dataset import sub_dataset
+from .dataset import get_dataset_size, sub_dataset
 from .dataset_transform.transforms import Transforms
 
 
@@ -27,11 +27,21 @@ class DatasetUtil:
     @property
     def len(self):
         if self.__len is None:
-            self.__len = len(self.dataset)
+            self.__len = get_dataset_size(self.dataset)
         return self.__len
 
     def get_sample(self, index: int):
-        sample = self.dataset[index]
+        if isinstance(self.dataset, torch.utils.data.IterableDataset):
+            if hasattr(self.dataset, "reset"):
+                self.dataset.reset()
+            iterator = iter(self.dataset)
+            for _ in range(index):
+                next(iterator)
+            sample = next(iterator)
+            if hasattr(self.dataset, "reset"):
+                self.dataset.reset()
+        else:
+            sample = self.dataset[index]
         if self.__transforms is not None:
             sample = self.__transforms.extract_data(sample)
         return sample
