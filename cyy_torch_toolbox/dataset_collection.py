@@ -11,7 +11,6 @@ import torchtext
 import torchvision
 from cyy_naive_lib.log import get_logger
 from ssd_checker import is_ssd
-from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data._utils.collate import default_collate
 
 from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
@@ -19,8 +18,9 @@ from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
                                        replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transform.tokenizer import Tokenizer
-from cyy_torch_toolbox.dataset_transform.transforms import (
-    Transforms, swap_input_and_target)
+from cyy_torch_toolbox.dataset_transform.transforms import Transforms
+from cyy_torch_toolbox.dataset_transform.transforms_factory import \
+    add_transforms
 from cyy_torch_toolbox.dataset_util import (  # CachedVisionDataset,
     DatasetSplitter, DatasetUtil, TextDatasetUtil, VisionDatasetUtil)
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
@@ -50,12 +50,12 @@ class DatasetCollection:
             self.__transforms[phase] = Transforms()
         self.__name = name
         self.__tokenizer: Tokenizer = None
-        self.tokenizer_kwargs: dict = {}
+        self.__tokenizer_kwargs: dict = {}
 
     @property
     def tokenizer(self) -> Tokenizer:
         if self.__tokenizer is None:
-            self.__tokenizer = Tokenizer(self, **self.tokenizer_kwargs)
+            self.__tokenizer = Tokenizer(self, **self.__tokenizer_kwargs)
         return self.__tokenizer
 
     @property
@@ -401,58 +401,59 @@ class ClassificationDatasetCollection(DatasetCollection):
             dataset_kwargs = {}
         tokenizer_kwargs = dataset_kwargs.get("tokenizer", {})
         dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
-        dc.tokenizer_kwargs = tokenizer_kwargs
-        if dc.dataset_type == DatasetType.Vision:
-            dc.append_transform(torchvision.transforms.ToTensor())
-            mean, std = dc.__get_mean_and_std(
-                torch.utils.data.ConcatDataset(list(dc._datasets.values()))
-            )
-            dc.append_transform(torchvision.transforms.Normalize(mean=mean, std=std))
-            if dc.name not in ("SVHN", "MNIST"):
-                dc.append_transform(
-                    torchvision.transforms.RandomHorizontalFlip(),
-                    phases={MachineLearningPhase.Training},
-                )
-            # if name in ("CIFAR10", "CIFAR100"):
-            #     dc.append_transform(
-            #         # transforms.RandomCrop(32, padding=4),
-            #         phases={MachineLearningPhase.Training},
-            #     )
-            if dc.name.lower() == "imagenet":
-                dc.append_transform(torchvision.transforms.RandomResizedCrop(224))
-        if dc.dataset_type == DatasetType.Text:
-            if dc.name == "IMDB":
-                dc.append_transform(
-                    swap_input_and_target, key=TransformType.ExtractData
-                )
+        dc.__tokenizer_kwargs = tokenizer_kwargs
+        add_transforms(dc, dataset_kwargs)
+        # if dc.dataset_type == DatasetType.Vision:
+        #     dc.append_transform(torchvision.transforms.ToTensor())
+        #     mean, std = dc.get_mean_and_std(
+        #         torch.utils.data.ConcatDataset(list(dc._datasets.values()))
+        #     )
+        #     dc.append_transform(torchvision.transforms.Normalize(mean=mean, std=std))
+        #     if dc.name not in ("SVHN", "MNIST"):
+        #         dc.append_transform(
+        #             torchvision.transforms.RandomHorizontalFlip(),
+        #             phases={MachineLearningPhase.Training},
+        #         )
+        #     # if name in ("CIFAR10", "CIFAR100"):
+        #     #     dc.append_transform(
+        #     #         # transforms.RandomCrop(32, padding=4),
+        #     #         phases={MachineLearningPhase.Training},
+        #     #     )
+        #     if dc.name.lower() == "imagenet":
+        #         dc.append_transform(torchvision.transforms.RandomResizedCrop(224))
+        # if dc.dataset_type == DatasetType.Text:
+        #     if dc.name == "IMDB":
+        #         dc.append_transform(
+        #             swap_input_and_target, key=TransformType.ExtractData
+        #         )
 
-                dc.append_transform(
-                    lambda text: text.replace("<br />", ""), key=TransformType.InputText
-                )
-            text_transforms = dataset_kwargs.get("text_transforms", {})
-            for phase, transforms in text_transforms.items():
-                for f in transforms:
-                    get_logger().info("add text_transform %s for phase %s", f, phase)
-                    dc.append_transform(f, key=TransformType.InputText, phases=[phase])
-            dc.append_transform(dc.tokenizer)
-            dc.append_transform(torch.LongTensor)
-            dc.append_transform(
-                functools.partial(
-                    pad_sequence, padding_value=dc.tokenizer.vocab["<pad>"]
-                ),
-                key=TransformType.InputBatch,
-            )
-            if isinstance(next(iter(dc.get_training_dataset()))[1], str):
-                label_names = dc.get_label_names()
-                dc.append_transform(
-                    functools.partial(cls.get_label, label_names=label_names),
-                    key=TransformType.Target,
-                )
-                get_logger().debug("covert string label to int")
+        #         dc.append_transform(
+        #             lambda text: text.replace("<br />", ""), key=TransformType.InputText
+        #         )
+        #     text_transforms = dataset_kwargs.get("text_transforms", {})
+        #     for phase, transforms in text_transforms.items():
+        #         for f in transforms:
+        #             get_logger().info("add text_transform %s for phase %s", f, phase)
+        #             dc.append_transform(f, key=TransformType.InputText, phases=[phase])
+        #     dc.append_transform(dc.tokenizer)
+        #     dc.append_transform(torch.LongTensor)
+        #     dc.append_transform(
+        #         functools.partial(
+        #             pad_sequence, padding_value=dc.tokenizer.vocab["<pad>"]
+        #         ),
+        #         key=TransformType.InputBatch,
+        #     )
+        #     if isinstance(dc.get_dataset_util().get_sample_label(0), str):
+        #         label_names = dc.get_label_names()
+        #         dc.append_transform(
+        #             functools.partial(cls.get_label, label_names=label_names),
+        #             key=TransformType.Target,
+        #         )
+        #         get_logger().debug("covert string label to int")
 
         return dc
 
-    def __get_mean_and_std(self, dataset):
+    def get_mean_and_std(self, dataset):
         transforms = Transforms()
         transforms.append(
             key=TransformType.Input, transform=torchvision.transforms.ToTensor()

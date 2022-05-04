@@ -6,10 +6,15 @@ from torch.utils.data._utils.collate import default_collate
 
 def default_data_extraction(data):
     if len(data) == 3:
-        input, target, tmp = data
-        return {"input": input, "target": target, "other_info": tmp}
-    input, target = data
-    return {"input": input, "target": target}
+        sample_input, target, tmp = data
+        return {"input": sample_input, "target": target, "other_info": tmp}
+    sample_input, target = data
+    return {"input": sample_input, "target": target}
+
+
+def str_target_to_int(label_name, label_names):
+    reversed_label_names = {v: k for k, v in label_names.items()}
+    return reversed_label_names[label_name]
 
 
 def swap_input_and_target(data):

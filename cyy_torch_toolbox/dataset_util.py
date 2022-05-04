@@ -24,8 +24,7 @@ class DatasetUtil:
         self.name = name
         self.__transforms = transforms
 
-    @property
-    def len(self):
+    def __len__(self):
         if self.__len is None:
             self.__len = get_dataset_size(self.dataset)
         return self.__len
@@ -84,7 +83,7 @@ class DatasetUtil:
 
     def get_labels(self) -> set:
         return set().union(
-            *tuple(self.get_sample_labels(index=i) for i in range(self.len))
+            *tuple(self.get_sample_labels(index=i) for i in range(len(self)))
         )
 
     def get_label_names(self) -> dict:
