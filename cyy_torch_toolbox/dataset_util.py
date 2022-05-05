@@ -21,7 +21,7 @@ class DatasetUtil:
     ):
         self.dataset: torch.utils.data.Dataset = dataset
         self.__len = None
-        self.name = name
+        self._name = name
         self.__transforms = transforms
 
     def __len__(self):
@@ -113,7 +113,7 @@ class DatasetSplitter(DatasetUtil):
         if self.__label_sample_dict is not None:
             return self.__label_sample_dict
         self.__label_sample_dict = {}
-        for index in range(self.len):
+        for index in range(len(self)):
             labels = list(self.get_sample_labels(index))
             for label in labels:
                 if label not in self.__label_sample_dict:
@@ -127,7 +127,7 @@ class DatasetSplitter(DatasetUtil):
         if self.__sample_label_dict is not None:
             return self.__sample_label_dict
         self.__sample_label_dict = {}
-        for index in range(self.len):
+        for index in range(len(self)):
             labels = list(self.get_sample_labels(index))
             if len(labels) == 1:
                 self.__sample_label_dict[index] = labels[0]
@@ -160,7 +160,7 @@ class DatasetSplitter(DatasetUtil):
         assert parts
         sub_dataset_indices_list: list = []
         if len(parts) == 1:
-            sub_dataset_indices_list.append(list(range(self.len)))
+            sub_dataset_indices_list.append(list(range(len(self))))
             return sub_dataset_indices_list
         for _ in parts:
             sub_dataset_indices_list.append([])
@@ -173,7 +173,7 @@ class DatasetSplitter(DatasetUtil):
                     sub_dataset_indices_list[i] += label_indices_list[:delimiter]
                     label_indices_list = label_indices_list[delimiter:]
         else:
-            label_indices_list = list(range(self.len))
+            label_indices_list = list(range(len(self)))
             for i, part in enumerate(parts):
                 delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
                 sub_dataset_indices_list[i] += label_indices_list[:delimiter]
@@ -188,8 +188,8 @@ class DatasetSplitter(DatasetUtil):
         return self.split_by_indices(sub_dataset_indices_list)
 
     def sample(self, percentage: float) -> Iterable:
-        sample_size = int(self.len * percentage)
-        return random.sample(range(self.len), k=sample_size)
+        sample_size = int(len(self) * percentage)
+        return random.sample(range(len(self)), k=sample_size)
 
     def iid_sample(self, percentage: float) -> dict:
         sample_indices = {}
@@ -228,26 +228,26 @@ class VisionDatasetUtil(DatasetSplitter):
         return self.__channel
 
     def get_mean_and_std(self):
-        if self.name is not None and self.name.lower() == "imagenet":
+        if self._name is not None and self._name.lower() == "imagenet":
             mean = torch.Tensor([0.485, 0.456, 0.406])
             std = torch.Tensor([0.229, 0.224, 0.225])
             return (mean, std)
         mean = torch.zeros(self.channel)
-        for idx in range(self.len):
+        for idx in range(len(self)):
             x = self.get_sample_input(idx)
             for i in range(self.channel):
                 mean[i] += x[i, :, :].mean()
-        mean.div_(self.len)
+        mean.div_(len(self))
 
         wh = None
         std = torch.zeros(self.channel)
-        for idx in range(self.len):
+        for idx in range(len(self)):
             x = self.get_sample_input(idx)
             if wh is None:
                 wh = x.shape[1] * x.shape[2]
             for i in range(self.channel):
                 std[i] += torch.sum((x[i, :, :] - mean[i].data.item()) ** 2) / wh
-        std = std.div(self.len).sqrt()
+        std = std.div(len(self)).sqrt()
         return mean, std
 
     def save_sample_image(self, idx: int, path: str) -> None:
