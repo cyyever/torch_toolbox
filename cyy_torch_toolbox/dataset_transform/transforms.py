@@ -1,5 +1,6 @@
 from typing import Callable
 
+from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.ml_type import TransformType
 from torch.utils.data._utils.collate import default_collate
 
@@ -12,9 +13,14 @@ def default_data_extraction(data):
     return {"input": sample_input, "target": target}
 
 
-def str_target_to_int(label_name, label_names):
+def str_target_to_int(label_names) -> Callable:
     reversed_label_names = {v: k for k, v in label_names.items()}
-    return reversed_label_names[label_name]
+    get_logger().info("map string targets by %s", reversed_label_names)
+
+    def get_int_target(label_name) -> int:
+        return reversed_label_names[label_name]
+
+    return get_int_target
 
 
 def swap_input_and_target(data):

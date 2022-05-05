@@ -435,7 +435,7 @@ class ClassificationDatasetCollection(DatasetCollection):
 
         return self._get_cache_data("labels.pk", computation_fun)
 
-    def get_label_names(self) -> List[str]:
+    def get_label_names(self) -> dict:
         def computation_fun():
             label_names = self.get_dataset_util(
                 phase=MachineLearningPhase.Training

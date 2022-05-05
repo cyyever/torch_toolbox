@@ -92,13 +92,13 @@ class DatasetUtil:
             if classes and isinstance(classes[0], str):
                 return dict(enumerate(classes))
 
-        def get_label_name(container: set, instance) -> set:
-            label = instance[1]
+        def get_label_name(container: set, idx) -> set:
+            label = self.get_sample_label(idx)
             if isinstance(label, str):
                 container.add(label)
             return container
 
-        label_names = functools.reduce(get_label_name, self.dataset, set())
+        label_names = functools.reduce(get_label_name, range(len(self)), set())
         if label_names:
             return dict(enumerate(sorted(label_names)))
         raise RuntimeError("not label names detected")
