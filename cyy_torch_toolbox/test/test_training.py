@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import torch
 from cyy_torch_toolbox.device import CudaDeviceGreedyAllocator
 from cyy_torch_toolbox.ml_type import (ModelExecutorHookPoint,
                                        StopExecutingException)
@@ -21,11 +22,12 @@ def test_vision_training():
 
 
 def test_text_training():
-    device = CudaDeviceGreedyAllocator().get_device(
-        max_needed_bytes=9 * 1024 * 1024 * 1024
-    )
-    if device is None:
-        return
+    if torch.cuda.is_available():
+        device = CudaDeviceGreedyAllocator().get_device(
+            max_needed_bytes=9 * 1024 * 1024 * 1024
+        )
+        if device is None:
+            return
     config = DefaultConfig(dataset_name="IMDB", model_name="simplelstm")
     config.hyper_parameter_config.epoch = 1
     config.hyper_parameter_config.learning_rate = 0.01
