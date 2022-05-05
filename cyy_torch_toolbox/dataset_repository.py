@@ -26,7 +26,7 @@ try:
 
     has_hugging_face = True
 except ModuleNotFoundError:
-    has_medmnist = False
+    has_hugging_face = False
 
 
 import cyy_torch_toolbox.datasets.vision as local_vision_datasets

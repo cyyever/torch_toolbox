@@ -53,7 +53,5 @@ def add_transforms(dc, dataset_kwargs):
         if isinstance(dc.get_dataset_util().get_sample_label(0), str):
             label_names = dc.get_label_names()
             dc.append_transform(
-                functools.partial(str_target_to_int, label_names=label_names),
-                key=TransformType.Target,
+                str_target_to_int(label_names), key=TransformType.Target
             )
-            get_logger().debug("covert string target to int")
