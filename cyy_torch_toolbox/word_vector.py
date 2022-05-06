@@ -1,4 +1,5 @@
 import os
+import pickle
 
 import torch
 import torch.nn as nn
@@ -71,6 +72,11 @@ class PretrainedWordVector:
                 "sha256:c06db255e65095393609f19a4cfca20bf3a71e20cc53e892aafa490347e3849f",
             ),
         }
+        pickle_file = os.path.join(cls.get_root_dir(), name + ".pkl")
+        if os.path.exists(pickle_file):
+            with open(pickle_file, "rb") as f:
+                get_logger().info("load cached word vectors")
+                return pickle.load(f)
         urls["glove.6B.50d"] = urls["glove.6B.300d"]
         urls["glove.6B.100d"] = urls["glove.6B.300d"]
         urls["glove.6B.200d"] = urls["glove.6B.300d"]
@@ -89,4 +95,6 @@ class PretrainedWordVector:
                         word_vector_dict[" ".join(s[:-dim])] = torch.Tensor(
                             [float(i) for i in s[-dim:]]
                         )
+        with open(pickle_file, "wb") as f:
+            pickle.dump(word_vector_dict, f)
         return word_vector_dict

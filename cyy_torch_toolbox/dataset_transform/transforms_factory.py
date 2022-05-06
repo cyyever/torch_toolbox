@@ -6,6 +6,7 @@ from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
 
+from .tokenizer_factory import get_tokenizer
 from .transforms import str_target_to_int, swap_input_and_target
 
 
@@ -32,7 +33,6 @@ def add_transforms(dc, dataset_kwargs):
     if dc.dataset_type == DatasetType.Text:
         if dc.name.upper() == "IMDB":
             dc.append_transform(swap_input_and_target, key=TransformType.ExtractData)
-
             dc.append_transform(
                 lambda text: text.replace("<br />", ""), key=TransformType.InputText
             )
@@ -41,6 +41,8 @@ def add_transforms(dc, dataset_kwargs):
             for f in transforms:
                 get_logger().info("add text_transform %s for phase %s", f, phase)
                 dc.append_transform(f, key=TransformType.InputText, phases=[phase])
+        tokenizer_kwargs = dataset_kwargs.get("tokenizer", {})
+        dc.tokenizer = get_tokenizer(dc, tokenizer_kwargs)
         dc.append_transform(dc.tokenizer)
         dc.append_transform(torch.LongTensor)
         dc.append_transform(
