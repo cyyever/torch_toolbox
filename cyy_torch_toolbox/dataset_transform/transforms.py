@@ -33,6 +33,10 @@ class Transforms:
         self.__transforms: dict = {}
         self.append(key=TransformType.ExtractData, transform=default_data_extraction)
 
+    def clear(self, key: TransformType) -> None:
+        if key in self.__transforms:
+            self.__transforms[key] = []
+
     def insert(self, key: TransformType, idx: int, transform: Callable) -> None:
         if key not in self.__transforms:
             self.__transforms[key] = []

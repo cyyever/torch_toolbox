@@ -102,17 +102,17 @@ class DatasetCollection:
             name=self.name,
         )
 
+    def clear_transform(self, key, phases=None):
+        for phase in MachineLearningPhase:
+            if phases is not None and phase not in phases:
+                continue
+            self.__transforms[phase].clear(key)
+
     def append_transform(self, transform, key=TransformType.Input, phases=None):
         for phase in MachineLearningPhase:
             if phases is not None and phase not in phases:
                 continue
             self.__transforms[phase].append(key, transform)
-
-    def insert_transform(self, idx, transform, key=TransformType.Input, phases=None):
-        for phase in MachineLearningPhase:
-            if phases is not None and phase not in phases:
-                continue
-            self.__transforms[phase].insert(key, idx, transform)
 
     @property
     def name(self) -> str:
@@ -480,8 +480,7 @@ class ClassificationDatasetCollection(DatasetCollection):
             max_len = model_kwargs.get("max_len", None)
             if max_len is not None:
                 get_logger().debug("resize input to %s", max_len)
-                self.insert_transform(
-                    1,
+                self.append_transform(
                     torchtext.transforms.Truncate(max_seq_len=max_len),
                     key=TransformType.Input,
                 )
