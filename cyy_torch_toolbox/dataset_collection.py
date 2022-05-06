@@ -17,7 +17,6 @@ from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
                                        get_dataset_size,
                                        replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
-from cyy_torch_toolbox.dataset_transform.tokenizer import Tokenizer
 from cyy_torch_toolbox.dataset_transform.transforms import Transforms
 from cyy_torch_toolbox.dataset_transform.transforms_factory import \
     add_transforms
@@ -49,14 +48,7 @@ class DatasetCollection:
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
         self.__name = name
-        self.__tokenizer: Tokenizer = None
-        self.__tokenizer_kwargs: dict = {}
-
-    @property
-    def tokenizer(self) -> Tokenizer:
-        if self.__tokenizer is None:
-            self.__tokenizer = Tokenizer(self, **self.__tokenizer_kwargs)
-        return self.__tokenizer
+        self.tokenizer = None
 
     @property
     def dataset_type(self):
@@ -401,9 +393,7 @@ class ClassificationDatasetCollection(DatasetCollection):
         dataset_kwargs = kwargs.get("dataset_kwargs", {})
         if not dataset_kwargs:
             dataset_kwargs = {}
-        tokenizer_kwargs = dataset_kwargs.get("tokenizer", {})
         dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
-        dc.__tokenizer_kwargs = tokenizer_kwargs
         add_transforms(dc, dataset_kwargs)
         return dc
 
