@@ -17,7 +17,7 @@ def str_target_to_int(label_names) -> Callable:
     reversed_label_names = {v: k for k, v in label_names.items()}
     get_logger().info("map string targets by %s", reversed_label_names)
 
-    def get_int_target(label_name) -> int:
+    def get_int_target(label_name: str) -> int:
         return reversed_label_names[label_name]
 
     return get_int_target

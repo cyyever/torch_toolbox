@@ -2,20 +2,36 @@ import functools
 
 import torch
 import torchvision
+from cyy_torch_toolbox.dataset_util import VisionDatasetUtil
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
 
 from .tokenizer import SpacyTokenizer
 from .tokenizer_factory import get_tokenizer
-from .transforms import str_target_to_int, swap_input_and_target
+from .transforms import Transforms, str_target_to_int, swap_input_and_target
+
+
+def get_mean_and_std(dc):
+    dataset = torch.utils.data.ConcatDataset(list(dc._datasets.values()))
+    transforms = Transforms()
+    transforms.append(
+        key=TransformType.Input, transform=torchvision.transforms.ToTensor()
+    )
+
+    def computation_fun():
+        return VisionDatasetUtil(
+            dataset=dataset,
+            transforms=transforms,
+            name=dc.name,
+        ).get_mean_and_std()
+
+    return dc._get_cache_data("mean_and_std.pk", computation_fun)
 
 
 def add_transforms(dc, dataset_kwargs):
     if dc.dataset_type == DatasetType.Vision:
         dc.append_transform(torchvision.transforms.ToTensor())
-        mean, std = dc.get_mean_and_std(
-            torch.utils.data.ConcatDataset(list(dc._datasets.values()))
-        )
+        mean, std = get_mean_and_std(dc)
         dc.append_transform(torchvision.transforms.Normalize(mean=mean, std=std))
         if dc.name.upper() not in ("SVHN", "MNIST"):
             dc.append_transform(

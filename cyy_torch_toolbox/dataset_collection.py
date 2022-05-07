@@ -2,7 +2,6 @@ import copy
 import functools
 import json
 import os
-import pickle
 import threading
 from typing import Callable, Dict
 
@@ -10,6 +9,7 @@ import torch
 import torchtext
 import torchvision
 from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.storage import get_cached_data
 from ssd_checker import is_ssd
 from torch.utils.data._utils.collate import default_collate
 
@@ -20,8 +20,8 @@ from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transform.transforms import Transforms
 from cyy_torch_toolbox.dataset_transform.transforms_factory import \
     add_transforms
-from cyy_torch_toolbox.dataset_util import (  # CachedVisionDataset,
-    DatasetSplitter, DatasetUtil, TextDatasetUtil, VisionDatasetUtil)
+from cyy_torch_toolbox.dataset_util import (DatasetSplitter, DatasetUtil,
+                                            TextDatasetUtil, VisionDatasetUtil)
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
 from cyy_torch_toolbox.reflection import get_kwarg_names
@@ -36,9 +36,6 @@ class DatasetCollection:
         dataset_type: DatasetType,
         name: str,
     ):
-        assert training_dataset is not None
-        assert validation_dataset is not None
-        assert test_dataset is not None
         self._datasets: Dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
         self._datasets[MachineLearningPhase.Training] = training_dataset
         self._datasets[MachineLearningPhase.Validation] = validation_dataset
@@ -233,42 +230,24 @@ class DatasetCollection:
                         break
                     if "Unknown split" in str(e):
                         break
-                    # split = dataset_kwargs.get("split", None)
-                    # # if split == "test":
-                    # #     break
                     raise e
 
-        # cache the datasets in memory to avoid IO and decoding
-        # if cls.__get_dataset_size(name) / (1024 * 1024 * 1024) <= 1:
-        #     get_logger().warning("cache dataset")
-        #     training_dataset = CachedVisionDataset(training_dataset)
-        #     if validation_dataset is not None:
-        #         validation_dataset = CachedVisionDataset(validation_dataset)
-        #     if test_dataset is not None:
-        #         test_dataset = CachedVisionDataset(test_dataset)
         assert not (validation_dataset is None and test_dataset is None)
+        if validation_dataset is None:
+            validation_dataset = test_dataset
+            test_dataset = None
 
-        if validation_dataset is None or test_dataset is None:
-            if validation_dataset is not None:
-                splitted_dataset = validation_dataset
-                get_logger().debug("split validation dataset for %s", name)
-            else:
-                splitted_dataset = test_dataset
-                get_logger().debug("split test dataset for %s", name)
-            (validation_dataset, test_dataset,) = cls.__split_for_validation(
-                cls.__get_dataset_cache_dir(name), splitted_dataset
-            )
+        # if validation_dataset is None or test_dataset is None:
+        #     if validation_dataset is not None:
+        #         splitted_dataset = validation_dataset
+        #         get_logger().debug("split validation dataset for %s", name)
+        #     else:
+        #         splitted_dataset = test_dataset
+        #         get_logger().debug("split test dataset for %s", name)
+        #     (validation_dataset, test_dataset,) = cls.__split_for_validation(
+        #         cls.__get_dataset_cache_dir(name), splitted_dataset
+        #     )
 
-        try:
-            get_logger().info(
-                "training_dataset len %s", get_dataset_size(training_dataset)
-            )
-            get_logger().info(
-                "validation_dataset len %s", get_dataset_size(validation_dataset)
-            )
-            get_logger().info("test_dataset len %s", get_dataset_size(test_dataset))
-        except BaseException:
-            pass
         return (training_dataset, validation_dataset, test_dataset, dataset_type, name)
 
     def is_classification_dataset(self) -> bool:
@@ -277,8 +256,6 @@ class DatasetCollection:
         ).get_sample_label(0)
         match first_target:
             case int():
-                return True
-            case "pos" | "neg":
                 return True
         return False
 
@@ -345,46 +322,32 @@ class DatasetCollection:
 
         return get_dataset_kwargs_per_phase
 
-    @staticmethod
-    def __split_for_validation(cache_dir, splitted_dataset):
-        pickle_file = os.path.join(cache_dir, "split_index_lists.pk")
+    def __split_validation(self) -> None:
+        assert self.get_dataset(phase=MachineLearningPhase.Test) is None
+        get_logger().debug("split validation dataset for %s", self.name)
+        datasets = None
         dataset_util = DatasetSplitter(
-            dataset=splitted_dataset, transforms=Transforms()
+            dataset=self.get_dataset(phase=MachineLearningPhase.Validation),
+            transforms=self.get_transforms(phase=MachineLearningPhase.Validation),
         )
-        split_index_lists = DatasetCollection.__read_data(pickle_file)
-        if split_index_lists is not None:
-            return dataset_util.split_by_indices(split_index_lists)
-        datasets = dataset_util.iid_split([1, 1])
-        DatasetCollection.__write_data(pickle_file, [d.indices for d in datasets])
-        return datasets
 
-    def _get_cache_data(self, path: str, computation_fun: Callable) -> dict:
+        def computation_fun():
+            nonlocal datasets
+            datasets = dataset_util.iid_split([1, 1])
+            return [d.indices for d in datasets]
+
+        split_index_lists = self._get_cache_data(
+            file="split_index_lists.pk", computation_fun=computation_fun
+        )
+        if datasets is not None:
+            datasets = dataset_util.split_by_indices(split_index_lists)
+        self._datasets[MachineLearningPhase.Validation] = datasets[0]
+        self._datasets[MachineLearningPhase.Test] = datasets[1]
+
+    def _get_cache_data(self, file: str, computation_fun: Callable) -> dict:
         with DatasetCollection.lock:
             cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
-            path = os.path.join(cache_dir, path)
-            data = DatasetCollection.__read_data(path)
-            if data is not None:
-                return data
-            data = computation_fun()
-            if data is None:
-                raise RuntimeError("data is None")
-            DatasetCollection.__write_data(path, data)
-            return data
-
-    @staticmethod
-    def __read_data(path):
-        if not os.path.isfile(path):
-            return None
-        fd = os.open(path, flags=os.O_RDONLY)
-        with os.fdopen(fd, "rb") as f:
-            res = pickle.load(f)
-        return res
-
-    @staticmethod
-    def __write_data(path, data):
-        fd = os.open(path, flags=os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        with os.fdopen(fd, "wb") as f:
-            pickle.dump(data, f)
+            return get_cached_data(os.path.join(cache_dir, file), computation_fun)
 
 
 class ClassificationDatasetCollection(DatasetCollection):
@@ -395,22 +358,15 @@ class ClassificationDatasetCollection(DatasetCollection):
             dataset_kwargs = {}
         dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
         add_transforms(dc, dataset_kwargs)
+        if dc.get_dataset(MachineLearningPhase.Test) is None:
+            dc.__split_validation()
+        for phase in MachineLearningPhase:
+            get_logger().info(
+                "%s dataset len %s",
+                phase,
+                get_dataset_size(dc.get_dataset(phase=phase)),
+            )
         return dc
-
-    def get_mean_and_std(self, dataset):
-        transforms = Transforms()
-        transforms.append(
-            key=TransformType.Input, transform=torchvision.transforms.ToTensor()
-        )
-
-        def computation_fun():
-            return VisionDatasetUtil(
-                dataset=dataset,
-                transforms=transforms,
-                name=self.name,
-            ).get_mean_and_std()
-
-        return self._get_cache_data("mean_and_std.pk", computation_fun)
 
     def get_labels(self, use_cache: bool = True) -> set:
         def computation_fun():
