@@ -2,10 +2,10 @@ import functools
 
 import torch
 import torchvision
-from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
 
+from .tokenizer import SpacyTokenizer
 from .tokenizer_factory import get_tokenizer
 from .transforms import str_target_to_int, swap_input_and_target
 
@@ -31,12 +31,10 @@ def add_transforms(dc, dataset_kwargs):
             dc.append_transform(torchvision.transforms.RandomResizedCrop(224))
         return
     if dc.dataset_type == DatasetType.Text:
+        # ExtractData
         dc.append_transform(swap_input_and_target, key=TransformType.ExtractData)
-        if dc.name.upper() == "IMDB":
-            dc.append_transform(
-                lambda text: text.replace("<br />", ""), key=TransformType.InputText
-            )
         if dc.name.lower() == "multi_nli":
+            dc.clear_transform(key=TransformType.ExtractData)
             dc.append_transform(
                 key=TransformType.ExtractData,
                 transform=lambda data: (
@@ -44,15 +42,24 @@ def add_transforms(dc, dataset_kwargs):
                     data["label"],
                 ),
             )
+        # InputText
+        if dc.name.upper() == "IMDB":
+            dc.appen_transform(
+                lambda text: text.replace("<br />", ""), key=TransformType.InputText
+            )
+
         text_transforms = dataset_kwargs.get("text_transforms", {})
         for phase, transforms in text_transforms.items():
             for f in transforms:
-                get_logger().info("add text_transform %s for phase %s", f, phase)
                 dc.append_transform(f, key=TransformType.InputText, phases=[phase])
+
+        # input
         dc.tokenizer = get_tokenizer(dataset_kwargs.get("tokenizer", {}), dc)
-        dc.append_transform(dc.tokenizer)
-        dc.append_transform(torch.LongTensor)
-        if dc.name.upper() == "IMDB":
+        if isinstance(dc.tokenizer, SpacyTokenizer):
+            dc.append_transform(dc.tokenizer)
+            dc.append_transform(torch.LongTensor)
+        # InputBatch
+        if isinstance(dc.tokenizer, SpacyTokenizer):
             dc.append_transform(
                 functools.partial(
                     torch.nn.utils.rnn.pad_sequence,
@@ -60,6 +67,7 @@ def add_transforms(dc, dataset_kwargs):
                 ),
                 key=TransformType.InputBatch,
             )
+        # Target
         if isinstance(dc.get_dataset_util().get_sample_label(0), str):
             label_names = dc.get_label_names()
             dc.append_transform(

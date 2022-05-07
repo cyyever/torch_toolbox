@@ -6,7 +6,7 @@ from cyy_torch_toolbox.ml_type import MachineLearningPhase
 from torchtext.vocab import Vocab, build_vocab_from_iterator
 
 
-class Tokenizer:
+class SpacyTokenizer:
     def __init__(
         self,
         dc,

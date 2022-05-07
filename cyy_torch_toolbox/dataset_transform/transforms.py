@@ -83,3 +83,18 @@ class Transforms:
     def transform_targets(self, targets: list) -> list:
         targets = [self.transform_target(i) for i in targets]
         return default_collate(targets)
+
+    def __str__(self):
+        desc = []
+        for k in (
+            TransformType.ExtractData,
+            TransformType.InputText,
+            TransformType.Input,
+            TransformType.InputBatch,
+            TransformType.Target,
+        ):
+            if k in self.__transforms:
+                desc.append(str(k) + "=>")
+                for t in self.__transforms[k]:
+                    desc.append(str(t))
+        return "\n".join(desc)
