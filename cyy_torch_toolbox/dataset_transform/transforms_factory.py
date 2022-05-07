@@ -60,7 +60,7 @@ def add_transforms(dc, dataset_kwargs):
             )
         # InputText
         if dc.name.upper() == "IMDB":
-            dc.appen_transform(
+            dc.append_transform(
                 lambda text: text.replace("<br />", ""), key=TransformType.InputText
             )
 
@@ -86,7 +86,12 @@ def add_transforms(dc, dataset_kwargs):
                 key=TransformType.InputBatch,
             )
         # Target
-        if isinstance(dc.get_dataset_util().get_sample_label(0), str):
+        if isinstance(
+            dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(
+                0
+            ),
+            str,
+        ):
             label_names = dc.get_label_names()
             dc.append_transform(
                 str_target_to_int(label_names), key=TransformType.Target
