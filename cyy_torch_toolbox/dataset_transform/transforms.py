@@ -1,16 +1,17 @@
-from typing import Callable
+from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.ml_type import TransformType
 from torch.utils.data._utils.collate import default_collate
 
 
-def default_data_extraction(data):
-    if len(data) == 3:
-        sample_input, target, tmp = data
-        return {"input": sample_input, "target": target, "other_info": tmp}
-    sample_input, target = data
-    return {"input": sample_input, "target": target}
+def default_data_extraction(data: Any) -> dict:
+    match data:
+        case {"data": real_data, "index": index}:
+            return default_data_extraction(real_data) | {"index": index}
+        case [sample_input, target]:
+            return {"input": sample_input, "target": target}
+    raise NotImplementedError()
 
 
 def str_target_to_int(label_names) -> Callable:
