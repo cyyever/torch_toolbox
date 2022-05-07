@@ -128,10 +128,15 @@ class DatasetCollection:
         other_info = []
         for item in batch:
             res = self.__transforms[phase].extract_data(item)
-            inputs.append(res["input"])
-            targets.append(res["target"])
-            if "other_info" in res:
-                other_info.append(res["other_info"])
+            for k in res:
+                if k == "input":
+                    inputs.append(res["input"])
+                elif k == "target":
+                    targets.append(res["target"])
+                else:
+                    if k not in other_info:
+                        other_info[k] = []
+                    other_info[k].append(res[k]),
         inputs = self.__transforms[phase].transform_inputs(inputs)
         targets = self.__transforms[phase].transform_targets(targets)
 
