@@ -1,4 +1,5 @@
 import functools
+from typing import Any
 
 import torch
 import torchvision
@@ -9,6 +10,15 @@ from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
 from .tokenizer import SpacyTokenizer
 from .tokenizer_factory import get_tokenizer
 from .transforms import Transforms, str_target_to_int, swap_input_and_target
+
+
+def multi_nli_data_extraction(data: Any) -> dict:
+    match data:
+        case {"data": real_data, "index": index}:
+            return multi_nli_data_extraction(real_data) | {"index": index}
+        case {"premise": premise, "hypothesis": hypothesis, "label": label, **kw}:
+            return {"input": [premise, hypothesis], "target": label}
+    raise NotImplementedError()
 
 
 def get_mean_and_std(dc):
@@ -52,11 +62,7 @@ def add_transforms(dc, dataset_kwargs):
         if dc.name.lower() == "multi_nli":
             dc.clear_transform(key=TransformType.ExtractData)
             dc.append_transform(
-                key=TransformType.ExtractData,
-                transform=lambda data: (
-                    (data["premise"], data["hypothesis"]),
-                    data["label"],
-                ),
+                key=TransformType.ExtractData, transform=multi_nli_data_extraction
             )
         # InputText
         if dc.name.upper() == "IMDB":
@@ -73,9 +79,9 @@ def add_transforms(dc, dataset_kwargs):
         dc.tokenizer = get_tokenizer(dataset_kwargs.get("tokenizer", {}), dc)
         if isinstance(dc.tokenizer, SpacyTokenizer):
             dc.append_transform(dc.tokenizer)
+            dc.append_transform(torch.LongTensor)
         else:
             dc.append_transform(dc.tokenizer)
-        dc.append_transform(torch.LongTensor)
         # InputBatch
         if isinstance(dc.tokenizer, SpacyTokenizer):
             dc.append_transform(

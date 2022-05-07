@@ -228,6 +228,7 @@ class DatasetCollection:
                         test_dataset = dataset
                     break
                 except Exception as e:
+                    get_logger().debug("has exception %s", e)
                     if "of splits is not supported for dataset" in str(e):
                         break
                     if "for argument split. Valid values are" in str(e):
@@ -451,7 +452,9 @@ def create_dataset_collection(cls, name: str, dataset_kwargs: dict = None):
                     dataset_kwargs=dataset_kwargs,
                 )
             all_dataset_constructors |= dataset_constructor.keys()
-        get_logger().error("supported datasets are %s", all_dataset_constructors)
+        get_logger().error(
+            "supported datasets are %s", sorted(all_dataset_constructors)
+        )
         raise NotImplementedError(name)
 
 

@@ -105,19 +105,10 @@ def sample_dataset(
     return sub_dataset(dataset, [index])
 
 
-def __add_index_to_item(index, item):
-    other_info = {}
-    feature = None
-    target = None
-    if len(item) == 3:
-        feature, target, other_info = item
-    else:
-        feature, target = item
-    other_info["index"] = index
-    return (feature, target, other_info)
-
-
 def dataset_with_indices(dataset: torch.utils.data.Dataset):
+    def add_index_to_item(index, item):
+        return {"data": item, "index": index}
+
     return DatasetMapper(dataset, [__add_index_to_item])
 
 
