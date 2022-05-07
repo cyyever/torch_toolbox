@@ -27,6 +27,8 @@ class SpacyTokenizer:
         def yield_tokens():
             nonlocal counter
             for phase in MachineLearningPhase:
+                if not dc.has_dataset(phase=phase):
+                    continue
                 dataset = dc.get_dataset(phase=phase)
                 for data in dataset:
                     data = dc.get_transforms(phase=phase).extract_data(data)

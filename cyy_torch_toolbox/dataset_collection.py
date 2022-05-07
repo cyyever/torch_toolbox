@@ -36,15 +36,16 @@ class DatasetCollection:
         dataset_type: DatasetType,
         name: str,
     ):
+        self.__name = name
         self._datasets: Dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
         self._datasets[MachineLearningPhase.Training] = training_dataset
         self._datasets[MachineLearningPhase.Validation] = validation_dataset
-        self._datasets[MachineLearningPhase.Test] = test_dataset
+        if test_dataset is not None:
+            self._datasets[MachineLearningPhase.Test] = test_dataset
         self.__dataset_type = dataset_type
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
-        self.__name = name
         self.tokenizer = None
 
     @property
@@ -65,6 +66,9 @@ class DatasetCollection:
     def transform_all_datasets(self, transformer: Callable) -> None:
         for phase in MachineLearningPhase:
             self.transform_dataset(phase, transformer)
+
+    def has_dataset(self, phase: MachineLearningPhase) -> bool:
+        return phase in self._datasets
 
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
         return self._datasets[phase]
@@ -236,18 +240,6 @@ class DatasetCollection:
         if validation_dataset is None:
             validation_dataset = test_dataset
             test_dataset = None
-
-        # if validation_dataset is None or test_dataset is None:
-        #     if validation_dataset is not None:
-        #         splitted_dataset = validation_dataset
-        #         get_logger().debug("split validation dataset for %s", name)
-        #     else:
-        #         splitted_dataset = test_dataset
-        #         get_logger().debug("split test dataset for %s", name)
-        #     (validation_dataset, test_dataset,) = cls.__split_for_validation(
-        #         cls.__get_dataset_cache_dir(name), splitted_dataset
-        #     )
-
         return (training_dataset, validation_dataset, test_dataset, dataset_type, name)
 
     def is_classification_dataset(self) -> bool:
@@ -322,8 +314,8 @@ class DatasetCollection:
 
         return get_dataset_kwargs_per_phase
 
-    def __split_validation(self) -> None:
-        assert self.get_dataset(phase=MachineLearningPhase.Test) is None
+    def _split_validation(self) -> None:
+        assert not self.has_dataset(phase=MachineLearningPhase.Test)
         get_logger().debug("split validation dataset for %s", self.name)
         datasets = None
         dataset_util = DatasetSplitter(
@@ -339,7 +331,7 @@ class DatasetCollection:
         split_index_lists = self._get_cache_data(
             file="split_index_lists.pk", computation_fun=computation_fun
         )
-        if datasets is not None:
+        if datasets is None:
             datasets = dataset_util.split_by_indices(split_index_lists)
         self._datasets[MachineLearningPhase.Validation] = datasets[0]
         self._datasets[MachineLearningPhase.Test] = datasets[1]
@@ -358,8 +350,8 @@ class ClassificationDatasetCollection(DatasetCollection):
             dataset_kwargs = {}
         dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
         add_transforms(dc, dataset_kwargs)
-        if dc.get_dataset(MachineLearningPhase.Test) is None:
-            dc.__split_validation()
+        if not dc.has_dataset(MachineLearningPhase.Test):
+            dc._split_validation()
         for phase in MachineLearningPhase:
             get_logger().info(
                 "%s dataset len %s",
