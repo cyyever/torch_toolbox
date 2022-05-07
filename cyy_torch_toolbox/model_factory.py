@@ -43,10 +43,11 @@ def get_model_info() -> dict:
                         repo,
                     )
         for model_name in huggingface_models:
-            if model_name.lower() not in __model_info:
-                __model_info[model_name.lower()] = (
+            full_model_name = "sequence_classification_" + model_name.lower()
+            if full_model_name not in __model_info:
+                __model_info[full_model_name] = (
                     functools.partial(
-                        transformers.AutoModel.from_pretrained,
+                        transformers.AutoModelForSequenceClassification.from_pretrained,
                         model_name,
                     ),
                     None,
@@ -79,12 +80,14 @@ def get_model(
     if "rcnn" in name.lower():
         model_type = ModelType.Detection
     try:
-        if "num_classes" not in model_kwargs:
-            added_kwargs |= {
-                "num_classes": len(dataset_collection.get_labels(use_cache=True)),
-            }
+        added_kwargs["num_classes"] = model_kwargs.get("num_classes", None)
+        if added_kwargs["num_classes"] is None:
+            added_kwargs["num_classes"] = len(
+                dataset_collection.get_labels(use_cache=True)
+            )
             if model_type == ModelType.Detection:
                 added_kwargs["num_classes"] += 1
+        added_kwargs["num_labels"] = added_kwargs["num_classes"]
     except Exception:
         pass
     loss_fun_name = model_kwargs.pop("loss_fun_name", None)
