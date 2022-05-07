@@ -4,7 +4,7 @@ import json
 import os
 import pickle
 import threading
-from typing import Callable, Dict, List
+from typing import Callable, Dict
 
 import torch
 import torchtext
@@ -484,6 +484,10 @@ class ClassificationDatasetCollection(DatasetCollection):
                     torchtext.transforms.Truncate(max_seq_len=max_len),
                     key=TransformType.Input,
                 )
+        get_logger().debug(
+            "use transformers for training => \n %s",
+            str(self.get_transforms(MachineLearningPhase.Training)),
+        )
 
 
 def create_dataset_collection(cls, name: str, dataset_kwargs: dict = None):
