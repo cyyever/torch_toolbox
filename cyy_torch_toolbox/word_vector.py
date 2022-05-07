@@ -6,7 +6,7 @@ import torch.nn as nn
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.source_code.tarball_source import TarballSource
 
-from cyy_torch_toolbox.dataset_transform.tokenizer import Tokenizer
+from cyy_torch_toolbox.dataset_transform.tokenizer import SpacyTokenizer
 from cyy_torch_toolbox.model_with_loss import ModelWithLoss
 
 
@@ -23,9 +23,8 @@ class PretrainedWordVector:
     def word_vector_dict(self):
         return self.__word_vector_dict
 
-    def load_to_model(
-        self, model_with_loss: ModelWithLoss, tokenizer: Tokenizer
-    ) -> None:
+    def load_to_model(self, model_with_loss: ModelWithLoss, tokenizer) -> None:
+        assert isinstance(tokenizer, SpacyTokenizer)
         itos = tokenizer.vocab.get_itos()
 
         def __load_embedding(_, layer, *__):

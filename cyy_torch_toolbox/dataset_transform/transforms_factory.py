@@ -57,7 +57,9 @@ def add_transforms(dc, dataset_kwargs):
         dc.tokenizer = get_tokenizer(dataset_kwargs.get("tokenizer", {}), dc)
         if isinstance(dc.tokenizer, SpacyTokenizer):
             dc.append_transform(dc.tokenizer)
-            dc.append_transform(torch.LongTensor)
+        else:
+            dc.append_transform(dc.tokenizer)
+        dc.append_transform(torch.LongTensor)
         # InputBatch
         if isinstance(dc.tokenizer, SpacyTokenizer):
             dc.append_transform(
