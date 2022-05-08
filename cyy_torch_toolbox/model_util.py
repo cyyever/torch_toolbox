@@ -137,12 +137,19 @@ class ModelUtil:
             model = getattr(model, component)
         return True
 
-    def change_sub_modules(self, sub_module_type: Type, f: Callable) -> None:
-        for k, v in self.get_sub_modules():
-            if isinstance(v, sub_module_type):
-                f(k, v, self)
+    def change_sub_modules(
+        self,
+        f: Callable,
+        sub_module_type: Type | None = None,
+        sub_module_name: str | None = None,
+    ) -> None:
+        for name, module in self.get_sub_modules():
+            if (
+                sub_module_type is not None and isinstance(module, sub_module_type)
+            ) or (sub_module_name is not None and name == sub_module_name):
+                f(name, module, self)
 
-    def freeze_sub_modules(self, sub_module_type: Type) -> None:
+    def freeze_sub_modules(self, **kwargs) -> None:
         def freeze(name, sub_module, model_util):
             get_logger().info("freeze %s", name)
             parameter_dict = {}
@@ -151,21 +158,25 @@ class ModelUtil:
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=False)
 
-        self.change_sub_modules(sub_module_type, freeze)
+        self.change_sub_modules(f=freeze, **kwargs)
 
-    def has_sub_module(self, module_type: Type) -> bool:
-        return any(
-            isinstance(sub_module, module_type)
-            for _, sub_module in self.get_sub_modules()
-        )
+    def have_sub_module(
+        self, sub_module_type: Type | None = None, sub_module_name: str | None = None
+    ) -> bool:
+        for name, module in self.get_sub_modules():
+            if (
+                sub_module_type is not None and isinstance(module, sub_module_type)
+            ) or (sub_module_name is not None and name == sub_module_name):
+                return True
+        return False
 
-    def get_sub_modules(self) -> list:
-        def get_sub_module_impl(model, prefix):
-            result = []
+    def get_sub_modules(self) -> list[tuple[str, Any]]:
+        def get_sub_module_impl(model, prefix: str):
+            result = [(prefix, model)]
             for name, module in model._modules.items():
                 if module is None:
                     continue
-                submodule_prefix = prefix + ("." if prefix else "") + name
+                submodule_prefix: str = prefix + ("." if prefix else "") + name
                 if isinstance(module, nn.Conv2d):
                     result.append((submodule_prefix, module))
                     continue

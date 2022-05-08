@@ -48,7 +48,9 @@ class ModelWithLoss:
     @property
     def has_batch_norm(self):
         if self.__has_batch_norm is None:
-            self.__has_batch_norm = self.model_util.has_sub_module(torch.nn.BatchNorm2d)
+            self.__has_batch_norm = self.model_util.have_sub_module(
+                sub_model_type=torch.nn.BatchNorm2d
+            )
         return self.__has_batch_norm
 
     @property
@@ -134,13 +136,16 @@ class ModelWithLoss:
                 assert self.loss_fun is not None
                 loss = self.loss_fun(output, targets)
                 classification_output = output
+        is_averaged_loss = self.__is_averaged_loss()
+        if is_averaged_loss is None:
+            is_averaged_loss = classification_output is not None
         return {
             "loss": loss,
             "classification_output": classification_output,
             "inputs": inputs,
             "input_features": input_features,
             "targets": targets,
-            "is_averaged_loss": self.__is_averaged_loss(),
+            "is_averaged_loss": is_averaged_loss,
         }
 
     def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
@@ -188,7 +193,8 @@ class ModelWithLoss:
         if hasattr(self.loss_fun, "reduction"):
             if self.loss_fun.reduction in ("mean", "elementwise_mean"):
                 return True
-        return False
+            return False
+        return None
 
     def __repr__(self):
         return f"model: {self.__model.__class__.__name__}, loss_fun: {self.loss_fun}"
