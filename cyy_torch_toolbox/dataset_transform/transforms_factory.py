@@ -85,12 +85,12 @@ def add_transforms(dc, dataset_kwargs, model_kwargs=None):
         match dc.tokenizer:
             case SpacyTokenizer():
                 dc.append_transform(dc.tokenizer)
-                dc.append_transform(torch.LongTensor)
                 if max_len is not None:
                     dc.append_transform(
                         torchtext.transforms.Truncate(max_seq_len=max_len),
                         key=TransformType.Input,
                     )
+                dc.append_transform(torch.LongTensor)
                 dc.append_transform(
                     functools.partial(
                         torch.nn.utils.rnn.pad_sequence,
