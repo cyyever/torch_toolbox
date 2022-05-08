@@ -79,38 +79,38 @@ def add_transforms(dc, dataset_kwargs, model_kwargs=None):
             for f in transforms:
                 dc.append_transform(f, key=TransformType.InputText, phases=[phase])
 
-        # input
+        # Input && InputBatch
         dc.tokenizer = get_tokenizer(dataset_kwargs.get("tokenizer", {}), dc)
+        max_len = model_kwargs.get("max_len", None)
         match dc.tokenizer:
             case SpacyTokenizer():
                 dc.append_transform(dc.tokenizer)
                 dc.append_transform(torch.LongTensor)
-                max_len = model_kwargs.get("max_len", None)
                 if max_len is not None:
                     dc.append_transform(
                         torchtext.transforms.Truncate(max_seq_len=max_len),
                         key=TransformType.Input,
                     )
+                dc.append_transform(
+                    functools.partial(
+                        torch.nn.utils.rnn.pad_sequence,
+                        padding_value=dc.tokenizer.vocab["<pad>"],
+                    ),
+                    key=TransformType.InputBatch,
+                )
             case transformers.PreTrainedTokenizerBase():
                 dc.append_transform(
                     functools.partial(
                         dc.tokenizer,
-                        max_length=model_kwargs.get("max_len", None),
+                        max_length=max_len,
                         padding="max_length",
+                        return_tensors="pt",
                         truncation=True,
-                    )
+                    ),
+                    key=TransformType.InputBatch,
                 )
             case _:
-                dc.append_transform(dc.tokenizer)
-        # InputBatch
-        if isinstance(dc.tokenizer, SpacyTokenizer):
-            dc.append_transform(
-                functools.partial(
-                    torch.nn.utils.rnn.pad_sequence,
-                    padding_value=dc.tokenizer.vocab["<pad>"],
-                ),
-                key=TransformType.InputBatch,
-            )
+                raise NotImplementedError()
         # Target
         if isinstance(
             dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(

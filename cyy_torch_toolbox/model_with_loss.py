@@ -2,6 +2,7 @@ from typing import Callable
 
 import torch
 import torch.nn as nn
+import transformers
 from cyy_naive_lib.log import get_logger
 
 from device import put_data_to_device
@@ -113,11 +114,15 @@ class ModelWithLoss:
             real_inputs = input_features
         else:
             real_inputs = inputs
-        if isinstance(real_inputs, tuple):
-            output = model(*real_inputs)
-        else:
-            print("real_inputs shape",type(real_inputs))
-            output = model(real_inputs)
+        match real_inputs:
+            case tuple():
+                output = model(*real_inputs)
+            case transformers.tokenization_utils_base.BatchEncoding():
+                output = model(**real_inputs)
+            case torch.Tensor():
+                output = model(real_inputs)
+            case _:
+                raise NotImplementedError()
         if self.__need_float_targets:
             targets = targets.to(output.dtype, non_blocking=non_blocking)
         assert self.loss_fun is not None
