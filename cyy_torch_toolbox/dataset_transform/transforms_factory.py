@@ -2,7 +2,9 @@ import functools
 from typing import Any
 
 import torch
+import torchtext
 import torchvision
+import transformers
 from cyy_torch_toolbox.dataset_util import VisionDatasetUtil
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
@@ -38,7 +40,9 @@ def get_mean_and_std(dc):
     return dc._get_cache_data("mean_and_std.pk", computation_fun)
 
 
-def add_transforms(dc, dataset_kwargs):
+def add_transforms(dc, dataset_kwargs, model_kwargs=None):
+    if model_kwargs is None:
+        model_kwargs = {}
     if dc.dataset_type == DatasetType.Vision:
         dc.append_transform(torchvision.transforms.ToTensor())
         mean, std = get_mean_and_std(dc)
@@ -77,11 +81,27 @@ def add_transforms(dc, dataset_kwargs):
 
         # input
         dc.tokenizer = get_tokenizer(dataset_kwargs.get("tokenizer", {}), dc)
-        if isinstance(dc.tokenizer, SpacyTokenizer):
-            dc.append_transform(dc.tokenizer)
-            dc.append_transform(torch.LongTensor)
-        else:
-            dc.append_transform(dc.tokenizer)
+        match dc.tokenizer:
+            case SpacyTokenizer():
+                dc.append_transform(dc.tokenizer)
+                dc.append_transform(torch.LongTensor)
+                max_len = model_kwargs.get("max_len", None)
+                if max_len is not None:
+                    dc.append_transform(
+                        torchtext.transforms.Truncate(max_seq_len=max_len),
+                        key=TransformType.Input,
+                    )
+            case transformers.PreTrainedTokenizerBase():
+                dc.append_transform(
+                    functools.partial(
+                        dc.tokenizer,
+                        max_length=model_kwargs.get("max_len", None),
+                        padding="max_length",
+                        truncation=True,
+                    )
+                )
+            case _:
+                dc.append_transform(dc.tokenizer)
         # InputBatch
         if isinstance(dc.tokenizer, SpacyTokenizer):
             dc.append_transform(
