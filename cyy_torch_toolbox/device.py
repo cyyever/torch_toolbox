@@ -6,6 +6,7 @@ import torch
 if torch.cuda.is_available():
     import pynvml
 
+import transformers
 from cyy_naive_lib.log import get_logger
 
 
@@ -32,6 +33,9 @@ def put_data_to_device(data, device, non_blocking=False):
     match data:
         case torch.Tensor():
             return data.to(device, non_blocking=non_blocking)
+        case transformers.tokenization_utils_base.BatchEncoding():
+            data.data = put_data_to_device(data.data, device, non_blocking)
+            return data
         case list():
             for idx, element in enumerate(data):
                 data[idx] = put_data_to_device(
