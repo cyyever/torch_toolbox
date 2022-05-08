@@ -118,18 +118,25 @@ class ModelWithLoss:
             case tuple():
                 output = model(*real_inputs)
             case transformers.tokenization_utils_base.BatchEncoding():
-                output = model(**real_inputs)
+                output = model(**real_inputs, labels=targets)
             case torch.Tensor():
                 output = model(real_inputs)
             case _:
                 raise NotImplementedError()
-        if self.__need_float_targets:
-            targets = targets.to(output.dtype, non_blocking=non_blocking)
-        assert self.loss_fun is not None
-        loss = self.loss_fun(output, targets)
+        loss = None
+        match real_inputs:
+            case transformers.tokenization_utils_base.BatchEncoding():
+                loss = output["loss"]
+                classification_output = output["logits"]
+            case _:
+                if self.__need_float_targets:
+                    targets = targets.to(dtype=output.dtype, non_blocking=non_blocking)
+                assert self.loss_fun is not None
+                loss = self.loss_fun(output, targets)
+                classification_output = output
         return {
             "loss": loss,
-            "output": output,
+            "classification_output": classification_output,
             "inputs": inputs,
             "input_features": input_features,
             "targets": targets,
