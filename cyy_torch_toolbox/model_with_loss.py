@@ -116,6 +116,7 @@ class ModelWithLoss:
         if isinstance(real_inputs, tuple):
             output = model(*real_inputs)
         else:
+            print("real_inputs shape",type(real_inputs))
             output = model(real_inputs)
         if self.__need_float_targets:
             targets = targets.to(output.dtype, non_blocking=non_blocking)

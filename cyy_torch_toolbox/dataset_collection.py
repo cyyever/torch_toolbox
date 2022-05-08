@@ -6,7 +6,6 @@ import threading
 from typing import Callable, Dict
 
 import torch
-import torchtext
 import torchvision
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.storage import get_cached_data
@@ -354,8 +353,9 @@ class ClassificationDatasetCollection(DatasetCollection):
         dataset_kwargs = kwargs.get("dataset_kwargs", {})
         if not dataset_kwargs:
             dataset_kwargs = {}
+        model_kwargs = kwargs.pop("model_kwargs", None)
         dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
-        add_transforms(dc, dataset_kwargs)
+        add_transforms(dc, dataset_kwargs, model_kwargs)
         if not dc.has_dataset(MachineLearningPhase.Test):
             dc._split_validation()
         for phase in MachineLearningPhase:
@@ -430,21 +430,15 @@ class ClassificationDatasetCollection(DatasetCollection):
                 get_logger().debug("resize input to %s", input_size)
                 self.append_transform(torchvision.transforms.Resize(input_size))
             return
-        if self.dataset_type == DatasetType.Text:
-            max_len = model_kwargs.get("max_len", None)
-            if max_len is not None:
-                get_logger().debug("resize input to %s", max_len)
-                self.append_transform(
-                    torchtext.transforms.Truncate(max_seq_len=max_len),
-                    key=TransformType.Input,
-                )
-        get_logger().debug(
+        get_logger().info(
             "use transformers for training => \n %s",
             str(self.get_transforms(MachineLearningPhase.Training)),
         )
 
 
-def create_dataset_collection(cls, name: str, dataset_kwargs: dict = None):
+def create_dataset_collection(
+    cls, name: str, dataset_kwargs: dict = None, model_kwargs: dict = None
+):
     with cls.lock:
         all_dataset_constructors = set()
         for dataset_type in DatasetType:
@@ -455,6 +449,7 @@ def create_dataset_collection(cls, name: str, dataset_kwargs: dict = None):
                     dataset_type=dataset_type,
                     dataset_constructor=dataset_constructor[name],
                     dataset_kwargs=dataset_kwargs,
+                    model_kwargs=model_kwargs,
                 )
             all_dataset_constructors |= dataset_constructor.keys()
         get_logger().error(
@@ -497,12 +492,15 @@ class DatasetCollectionConfig:
             with open(args.dataset_kwarg_json_path, "rt", encoding="utf-8") as f:
                 self.dataset_kwargs |= json.load(f)
 
-    def create_dataset_collection(self, save_dir=None):
+    def create_dataset_collection(self, save_dir=None, model_kwargs=None):
         if self.dataset_name is None:
             raise RuntimeError("dataset_name is None")
 
         dc = create_dataset_collection(
-            ClassificationDatasetCollection, self.dataset_name, self.dataset_kwargs
+            ClassificationDatasetCollection,
+            name=self.dataset_name,
+            dataset_kwargs=self.dataset_kwargs,
+            model_kwargs=model_kwargs,
         )
         if not dc.is_classification_dataset():
             dc = create_dataset_collection(

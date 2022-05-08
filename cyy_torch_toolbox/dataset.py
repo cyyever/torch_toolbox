@@ -109,7 +109,7 @@ def dataset_with_indices(dataset: torch.utils.data.Dataset):
     def add_index_to_item(index, item):
         return {"data": item, "index": index}
 
-    return DatasetMapper(dataset, [__add_index_to_item])
+    return DatasetMapper(dataset, [add_index_to_item])
 
 
 def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
