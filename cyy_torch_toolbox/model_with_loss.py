@@ -172,14 +172,14 @@ class ModelWithLoss:
 
         get_logger().debug("last module is %s", last_layer.__class__)
         if isinstance(last_layer, nn.LogSoftmax):
-            get_logger().warning("choose loss function NLLLoss")
+            get_logger().debug("choose loss function NLLLoss")
             return nn.NLLLoss()
         if isinstance(last_layer, nn.Linear):
             if last_layer.out_features == 1:
-                get_logger().warning("choose loss function BCEWithLogitsLoss")
+                get_logger().debug("choose loss function BCEWithLogitsLoss")
                 self.__need_float_targets = True
                 return nn.BCEWithLogitsLoss()
-            get_logger().warning("choose loss function CrossEntropyLoss")
+            get_logger().debug("choose loss function CrossEntropyLoss")
             return nn.CrossEntropyLoss()
         get_logger().error("can't choose a loss function, model is %s", self.__model)
         raise NotImplementedError(type(last_layer))

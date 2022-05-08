@@ -52,7 +52,9 @@ class PretrainedWordVector:
                 )
 
         get_logger().debug("load word vector %s", self.__name)
-        model_with_loss.model_util.change_sub_modules(nn.Embedding, __load_embedding)
+        model_with_loss.model_util.change_sub_modules(
+            f=__load_embedding, sub_module_type=nn.Embedding
+        )
 
     @classmethod
     def get_root_dir(cls) -> str:
