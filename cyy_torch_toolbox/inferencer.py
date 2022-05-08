@@ -29,7 +29,7 @@ class Inferencer(ModelExecutor):
             # cudnn rnn backward needs training model
             self._model_with_loss.set_model_mode(self.phase)
             self._model_with_loss.model_util.change_sub_modules(
-                nn.RNNBase, lambda _, v, *__: v.train()
+                sub_module_type=nn.RNNBase, f=lambda _, v, *__: v.train()
             )
         with torch.set_grad_enabled(use_grad):
             with torch.cuda.stream(self.cuda_stream):
