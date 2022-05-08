@@ -22,7 +22,7 @@ class ClassAccuracyMetric(Metric):
             self.__classification_count_per_label[label] = 0
 
     def _after_batch(self, **kwargs):
-        output = kwargs["result"]["output"]
+        output = kwargs["result"]["classification_output"]
         targets = kwargs["result"]["targets"]
         assert isinstance(targets, torch.Tensor)
         correct = torch.eq(torch.max(output, dim=1)[1].cpu(), targets.cpu()).view(-1)
