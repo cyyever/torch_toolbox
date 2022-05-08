@@ -124,18 +124,12 @@ class DatasetCollection:
     def collate_batch(self, batch, phase):
         inputs = []
         targets = []
-        other_info: dict[Any, list] = {}
+        other_info = []
         for item in batch:
             res = self.__transforms[phase].extract_data(item)
-            for k in res:
-                if k == "input":
-                    inputs.append(res["input"])
-                elif k == "target":
-                    targets.append(res["target"])
-                else:
-                    if k not in other_info:
-                        other_info[k] = []
-                    other_info[k].append(res[k])
+            inputs.append(res.pop("input"))
+            targets.append(res.pop("target"))
+            other_info.append(res)
         inputs = self.__transforms[phase].transform_inputs(inputs)
         targets = self.__transforms[phase].transform_targets(targets)
 
