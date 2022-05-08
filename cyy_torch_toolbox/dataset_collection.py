@@ -3,7 +3,7 @@ import functools
 import json
 import os
 import threading
-from typing import Callable, Dict
+from typing import Any, Callable
 
 import torch
 import torchvision
@@ -36,7 +36,7 @@ class DatasetCollection:
         name: str,
     ):
         self.__name = name
-        self._datasets: Dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
+        self._datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
         self._datasets[MachineLearningPhase.Training] = training_dataset
         self._datasets[MachineLearningPhase.Validation] = validation_dataset
         if test_dataset is not None:
@@ -124,7 +124,7 @@ class DatasetCollection:
     def collate_batch(self, batch, phase):
         inputs = []
         targets = []
-        other_info = []
+        other_info: dict[Any, list] = {}
         for item in batch:
             res = self.__transforms[phase].extract_data(item)
             for k in res:
@@ -135,7 +135,7 @@ class DatasetCollection:
                 else:
                     if k not in other_info:
                         other_info[k] = []
-                    other_info[k].append(res[k]),
+                    other_info[k].append(res[k])
         inputs = self.__transforms[phase].transform_inputs(inputs)
         targets = self.__transforms[phase].transform_targets(targets)
 
