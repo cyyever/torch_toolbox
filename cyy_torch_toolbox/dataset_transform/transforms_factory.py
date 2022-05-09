@@ -40,6 +40,10 @@ def get_mean_and_std(dc):
     return dc._get_cache_data("mean_and_std.pk", computation_fun)
 
 
+def replace_str(str, old, new):
+    return str.replace(old, new)
+
+
 def add_transforms(dc, dataset_kwargs, model_kwargs=None):
     if model_kwargs is None:
         model_kwargs = {}
@@ -71,7 +75,8 @@ def add_transforms(dc, dataset_kwargs, model_kwargs=None):
         # InputText
         if dc.name.upper() == "IMDB":
             dc.append_transform(
-                lambda text: text.replace("<br />", ""), key=TransformType.InputText
+                functools.partial(replace_str, old="<br />", new=""),
+                key=TransformType.InputText,
             )
 
         text_transforms = dataset_kwargs.get("text_transforms", {})
