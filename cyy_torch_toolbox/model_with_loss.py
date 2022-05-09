@@ -4,8 +4,9 @@ import torch
 import torch.nn as nn
 import transformers
 from cyy_naive_lib.log import get_logger
+from torch.nn.parallel import DistributedDataParallel as DDP
 
-from device import put_data_to_device
+from device import get_devices, put_data_to_device
 from ml_type import MachineLearningPhase, ModelType
 from model_transformers.checkpointed_model import get_checkpointed_model
 from model_util import ModelUtil
@@ -22,7 +23,7 @@ class ModelWithLoss:
         loss_fun: str | Callable | None = None,
         model_type: ModelType = None,
     ):
-        self.__model: torch.nn.Module = model
+        self._model: torch.nn.Module = model
 
         self.__loss_fun: Callable | None = None
         if loss_fun is not None:
@@ -39,7 +40,7 @@ class ModelWithLoss:
 
     @property
     def model(self) -> torch.nn.Module:
-        return self.__model
+        return self._model
 
     @property
     def model_util(self) -> ModelUtil:
@@ -49,7 +50,7 @@ class ModelWithLoss:
     def has_batch_norm(self):
         if self.__has_batch_norm is None:
             self.__has_batch_norm = self.model_util.have_sub_module(
-                sub_model_type=torch.nn.BatchNorm2d
+                sub_module_type=torch.nn.BatchNorm2d
             )
         return self.__has_batch_norm
 
@@ -149,8 +150,6 @@ class ModelWithLoss:
         }
 
     def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
-        # if isinstance(self.__model, GeneralizedRCNN):
-        #     return None
         layers = [
             m
             for _, m in self.model_util.get_sub_modules()
@@ -181,15 +180,15 @@ class ModelWithLoss:
                 return nn.BCEWithLogitsLoss()
             get_logger().debug("choose loss function CrossEntropyLoss")
             return nn.CrossEntropyLoss()
-        get_logger().error("can't choose a loss function, model is %s", self.__model)
+        get_logger().error("can't choose a loss function, model is %s", self._model)
         raise NotImplementedError(type(last_layer))
 
     def get_real_model(self):
-        if isinstance(self.__model, torch.quantization.stubs.QuantWrapper):
-            return self.__model.module
-        return self.__model
+        if isinstance(self._model, torch.quantization.stubs.QuantWrapper):
+            return self._model.module
+        return self._model
 
-    def __is_averaged_loss(self) -> bool:
+    def __is_averaged_loss(self) -> bool | None:
         if hasattr(self.loss_fun, "reduction"):
             if self.loss_fun.reduction in ("mean", "elementwise_mean"):
                 return True
@@ -197,16 +196,16 @@ class ModelWithLoss:
         return None
 
     def __repr__(self):
-        return f"model: {self.__model.__class__.__name__}, loss_fun: {self.loss_fun}"
+        return f"model: {self._model.__class__.__name__}, loss_fun: {self.loss_fun}"
 
     def set_model_mode(self, is_training: bool) -> None:
         if is_training:
-            if self.__model.training:
+            if self._model.training:
                 return
-            self.__model.train()
+            self._model.train()
             return
-        if self.__model.training:
-            self.__model.eval()
+        if self._model.training:
+            self._model.eval()
 
 
 class CheckPointedModelWithLoss(ModelWithLoss):
@@ -226,6 +225,29 @@ class CheckPointedModelWithLoss(ModelWithLoss):
             if input_features is not None:
                 input_features.requires_grad_()
         return super().__call__(**kwargs)
+
+
+class ParallelModelWithLoss(ModelWithLoss):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        assert torch.cuda.is_available()
+        if not torch.distributed.is_initialized():
+            torch.distributed.init_process_group(
+                backend="nccl",
+                init_method="tcp://127.0.0.1:23456",
+                rank=0,
+                world_size=len(get_devices()),
+            )
+        self._original_model = self._model
+        self._model = DDP(self._original_model)
+
+    @classmethod
+    def create(cls, model_with_loss: ModelWithLoss):
+        return cls(
+            model=model_with_loss.model,
+            loss_fun=model_with_loss.loss_fun,
+            model_type=model_with_loss.model_type,
+        )
 
 
 class AMP:

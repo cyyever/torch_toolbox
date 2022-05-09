@@ -15,7 +15,8 @@ from cyy_torch_toolbox.ml_type import (MachineLearningPhase,
                                        ModelExecutorHookPoint, ModelType,
                                        StopExecutingException)
 from cyy_torch_toolbox.model_executor import ModelExecutor
-from cyy_torch_toolbox.model_with_loss import AMP, ModelWithLoss
+from cyy_torch_toolbox.model_with_loss import (AMP, ModelWithLoss,
+                                               ParallelModelWithLoss)
 
 
 class Trainer(ModelExecutor):
@@ -123,10 +124,8 @@ class Trainer(ModelExecutor):
         old_data.add(epoch)
         self.set_data(key, old_data)
 
-    def _prepare_execution(self, **kwargs):
-        self.__keep_model_hook.save_flag = (
-            kwargs.get("save_model", False) and self.save_dir is not None
-        )
+    def _prepare_execution(self, use_DDP=False, save_model=False, **kwargs):
+        self.__keep_model_hook.save_flag = save_model and self.save_dir is not None
         self.__inferencers.clear()
         if self.debugging_mode:
             get_logger().warning("train in debugging mode")
@@ -138,6 +137,9 @@ class Trainer(ModelExecutor):
         else:
             if self.__debugger is not None:
                 self.disable_hook(self.__debugger)
+
+        if use_DDP:
+            self._model_with_loss = ParallelModelWithLoss.create(self._model_with_loss)
         super()._prepare_execution(**kwargs)
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
 
