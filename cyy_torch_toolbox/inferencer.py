@@ -25,12 +25,11 @@ class Inferencer(ModelExecutor):
         use_grad = kwargs.get("use_grad", False)
         epoch = kwargs.get("epoch", 1)
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
-        if use_grad and self.dataset_collection.dataset_type == DatasetType.Text:
-            # cudnn rnn backward needs training model
-            self._model_with_loss.set_model_mode(self.phase)
-            self._model_with_loss.model_util.change_sub_modules(
-                sub_module_type=nn.RNNBase, f=lambda _, v, *__: v.train()
-            )
+        phase = self.phase
+        if use_grad and self._model_with_loss.model_util.have_sub_module(
+            sub_module_type=nn.RNNBase
+        ):
+            phase = MachineLearningPhase.Training
         with torch.set_grad_enabled(use_grad):
             with torch.cuda.stream(self.cuda_stream):
                 if use_grad:
@@ -49,7 +48,7 @@ class Inferencer(ModelExecutor):
                     result = self._model_with_loss(
                         inputs,
                         targets,
-                        phase=self.phase,
+                        phase=phase,
                         device=self.device,
                         non_blocking=True,
                     )
