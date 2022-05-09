@@ -32,6 +32,7 @@ def get_model_info() -> dict:
             ):
                 if model_name.lower() not in __model_info:
                     __model_info[model_name.lower()] = (
+                        model_name,
                         functools.partial(
                             torch.hub.load,
                             repo_or_dir=repo,
@@ -42,10 +43,13 @@ def get_model_info() -> dict:
                         ),
                         repo,
                     )
+                else:
+                    get_logger().debug("ignore model_name %s", model_name)
         for model_name in huggingface_models:
-            full_model_name = "sequence_classification_" + model_name.lower()
-            if full_model_name not in __model_info:
-                __model_info[full_model_name] = (
+            full_model_name = "sequence_classification_" + model_name
+            if full_model_name.lower() not in __model_info:
+                __model_info[full_model_name.lower()] = (
+                    full_model_name,
                     functools.partial(
                         transformers.AutoModelForSequenceClassification.from_pretrained,
                         model_name,
@@ -93,7 +97,9 @@ def get_model(
     loss_fun_name = model_kwargs.pop("loss_fun_name", None)
     while True:
         try:
-            model_constructor, repo = model_info.get(name.lower(), (None, None))
+            _, model_constructor, repo = model_info.get(
+                name.lower(), (None, None, None)
+            )
             if model_constructor is None:
                 raise NotImplementedError(
                     f"unsupported model {name}, supported models are "
