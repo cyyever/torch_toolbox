@@ -1,3 +1,4 @@
+import functools
 from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
@@ -14,14 +15,14 @@ def default_data_extraction(data: Any) -> dict:
     raise NotImplementedError()
 
 
+def __get_int_target(reversed_label_names, label_name: str) -> int:
+    return reversed_label_names[label_name]
+
+
 def str_target_to_int(label_names) -> Callable:
     reversed_label_names = {v: k for k, v in label_names.items()}
     get_logger().info("map string targets by %s", reversed_label_names)
-
-    def get_int_target(label_name: str) -> int:
-        return reversed_label_names[label_name]
-
-    return get_int_target
+    return functools.partial(__get_int_target, reversed_label_names)
 
 
 def swap_input_and_target(data):
