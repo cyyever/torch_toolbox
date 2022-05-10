@@ -23,7 +23,9 @@ class PretrainedWordVector:
     def word_vector_dict(self):
         return self.__word_vector_dict
 
-    def load_to_model(self, model_with_loss: ModelWithLoss, tokenizer) -> None:
+    def load_to_model(
+        self, model_with_loss: ModelWithLoss, tokenizer, freeze: bool = False
+    ) -> None:
         assert isinstance(tokenizer, SpacyTokenizer)
         itos = tokenizer.vocab.get_itos()
 
@@ -55,6 +57,8 @@ class PretrainedWordVector:
         model_with_loss.model_util.change_sub_modules(
             f=__load_embedding, sub_module_type=nn.Embedding
         )
+        if freeze:
+            model_with_loss.model_util.freeze_sub_modules(sub_module_type=nn.Embedding)
 
     @classmethod
     def get_root_dir(cls) -> str:
