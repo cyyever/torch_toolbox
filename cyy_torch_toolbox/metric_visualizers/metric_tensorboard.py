@@ -16,7 +16,7 @@ class MetricTensorBoard(MetricVisualizer):
         super().__init__(**kwargs, stripable=True)
         self.__writer = None
         self.__log_dir = None
-        self.__enable = True
+        self.__enable: bool = True
 
     def set_log_dir(self, log_dir: str):
         self.__log_dir = log_dir
@@ -26,6 +26,10 @@ class MetricTensorBoard(MetricVisualizer):
 
     def disable(self):
         self.__enable = False
+
+    @property
+    def enabled(self) -> bool:
+        return self.__enable
 
     def close(self):
         if self.__writer is not None:
@@ -47,6 +51,8 @@ class MetricTensorBoard(MetricVisualizer):
 
     @property
     def writer(self):
+        if not self.__enable:
+            return None
         if self.__writer is None:
             assert self.session_name
             self.__writer = SummaryWriter(self.__log_dir + "/" + self.session_name)
