@@ -34,14 +34,15 @@ class LRFinder(Hook):
         learning_rate = self.lr_getter(self.batch_index / (self.total_batch_num - 1))
         self.learning_rates.append(learning_rate)
         visualizer = trainer.visualizer
-        if visualizer.session_name is None:
-            visualizer.set_session_name_by_model_executor(trainer)
-        visualizer.writer.add_scalar(
-            visualizer.get_tag_name("LRFinder learning rate"),
-            learning_rate,
-            self.batch_index,
-        )
-        visualizer.writer.flush()
+        if visualizer.enabled:
+            if visualizer.session_name is None:
+                visualizer.set_session_name_by_model_executor(trainer)
+            visualizer.writer.add_scalar(
+                visualizer.get_tag_name("LRFinder learning rate"),
+                learning_rate,
+                self.batch_index,
+            )
+            visualizer.writer.flush()
         optimizer = trainer.get_optimizer()
         for group in optimizer.param_groups:
             group["lr"] = learning_rate
@@ -52,12 +53,13 @@ class LRFinder(Hook):
         if self.losses:
             batch_loss = batch_loss + 0.98 * (self.losses[-1] - batch_loss)
         visualizer = trainer.visualizer
-        visualizer.writer.add_scalar(
-            visualizer.get_tag_name("LRFinder smooth batch loss"),
-            batch_loss,
-            self.batch_index,
-        )
-        visualizer.writer.flush()
+        if visualizer.enabled:
+            visualizer.writer.add_scalar(
+                visualizer.get_tag_name("LRFinder smooth batch loss"),
+                batch_loss,
+                self.batch_index,
+            )
+            visualizer.writer.flush()
 
         self.losses.append(batch_loss)
 
