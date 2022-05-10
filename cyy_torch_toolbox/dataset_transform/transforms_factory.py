@@ -87,6 +87,8 @@ def add_transforms(dc, dataset_kwargs, model_kwargs=None):
         # Input && InputBatch
         dc.tokenizer = get_tokenizer(dataset_kwargs.get("tokenizer", {}), dc)
         max_len = model_kwargs.get("max_len", None)
+        if max_len is None:
+            max_len = dataset_kwargs.get("max_len", None)
         match dc.tokenizer:
             case SpacyTokenizer():
                 dc.append_transform(dc.tokenizer)
