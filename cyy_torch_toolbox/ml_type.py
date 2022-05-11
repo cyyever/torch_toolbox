@@ -22,6 +22,7 @@ class TransformType(IntEnum):
     ExtractData = auto()
     InputText = auto()
     Input = auto()
+    RandomInput = auto()
     InputBatch = auto()
     Target = auto()
 
