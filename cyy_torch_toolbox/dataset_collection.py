@@ -121,26 +121,6 @@ class DatasetCollection:
     def transform_text(self, phase, text):
         return self.get_transforms(phase).transform_text(text)
 
-    def collate_batch(self, batch, phase):
-        inputs = []
-        targets = []
-        other_info = []
-        for item in batch:
-            res = self.__transforms[phase].extract_data(item)
-            inputs.append(res.pop("input"))
-            targets.append(res.pop("target"))
-            other_info.append(res)
-        inputs = self.__transforms[phase].transform_inputs(inputs)
-        targets = self.__transforms[phase].transform_targets(targets)
-
-        # TODO for classification
-        targets = targets.reshape(-1)
-        batch_size = len(batch)
-        if other_info:
-            other_info = default_collate(other_info)
-            return {"size": batch_size, "content": (inputs, targets, other_info)}
-        return {"size": batch_size, "content": (inputs, targets)}
-
     __dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
     lock = threading.RLock()
 
