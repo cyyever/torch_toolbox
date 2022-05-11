@@ -3,14 +3,13 @@ import functools
 import json
 import os
 import threading
-from typing import Any, Callable
+from typing import Callable
 
 import torch
 import torchvision
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.storage import get_cached_data
 from ssd_checker import is_ssd
-from torch.utils.data._utils.collate import default_collate
 
 from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
                                        get_dataset_size,
