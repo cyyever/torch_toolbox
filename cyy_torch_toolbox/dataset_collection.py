@@ -11,7 +11,8 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.storage import get_cached_data
 from ssd_checker import is_ssd
 
-from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
+from cyy_torch_toolbox.dataset import (DictDataset,
+                                       convert_iterable_dataset_to_map,
                                        get_dataset_size,
                                        replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
@@ -101,13 +102,13 @@ class DatasetCollection:
             name=self.name,
         )
 
-    # def clear_transform(self, key, phases=None):
-    #     for phase in MachineLearningPhase:
-    #         if phases is not None and phase not in phases:
-    #             continue
-    #         self.__transforms[phase].clear(key)
+    def clear_transform(self, key, phases=None):
+        for phase in MachineLearningPhase:
+            if phases is not None and phase not in phases:
+                continue
+            self.__transforms[phase].clear(key)
 
-    def append_transform(self, transform, key=TransformType.Input, phases=None):
+    def append_transform(self, transform, key, phases=None):
         for phase in MachineLearningPhase:
             if phases is not None and phase not in phases:
                 continue
@@ -120,7 +121,7 @@ class DatasetCollection:
             dataset = self.get_dataset(phase=phase)
             transforms = self.get_transforms(phase=phase)
             transformed_dataset, new_transforms = transforms.cache_transforms(dataset)
-            self._datasets[phase] = transformed_dataset
+            self._datasets[phase] = DictDataset(transformed_dataset)
             self.__transforms[phase] = new_transforms
 
     @property
@@ -411,8 +412,9 @@ class ClassificationDatasetCollection(DatasetCollection):
             input_size = getattr(model.__class__, "input_size", None)
             if input_size is not None:
                 get_logger().debug("resize input to %s", input_size)
-                self.append_transform(torchvision.transforms.Resize(input_size))
-            return
+                self.append_transform(
+                    torchvision.transforms.Resize(input_size), key=TransformType.Input
+                )
         get_logger().info(
             "use transformers for training => \n %s",
             str(self.get_transforms(MachineLearningPhase.Training)),

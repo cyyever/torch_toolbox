@@ -48,21 +48,30 @@ def add_transforms(dc, dataset_kwargs, model_kwargs=None):
     if model_kwargs is None:
         model_kwargs = {}
     if dc.dataset_type == DatasetType.Vision:
-        dc.append_transform(torchvision.transforms.ToTensor())
+        dc.append_transform(torchvision.transforms.ToTensor(), key=TransformType.Input)
         mean, std = get_mean_and_std(dc)
-        dc.append_transform(torchvision.transforms.Normalize(mean=mean, std=std))
+        dc.append_transform(
+            torchvision.transforms.Normalize(mean=mean, std=std),
+            key=TransformType.Input,
+        )
         if dc.name.upper() not in ("SVHN", "MNIST"):
             dc.append_transform(
                 torchvision.transforms.RandomHorizontalFlip(),
+                key=TransformType.RandomInput,
                 phases={MachineLearningPhase.Training},
             )
         if dc.name.upper() in ("CIFAR10", "CIFAR100"):
             dc.append_transform(
                 torchvision.transforms.RandomCrop(32, padding=4),
+                key=TransformType.RandomInput,
                 phases={MachineLearningPhase.Training},
             )
         if dc.name.lower() == "imagenet":
-            dc.append_transform(torchvision.transforms.RandomResizedCrop(224))
+            dc.append_transform(
+                torchvision.transforms.RandomResizedCrop(224),
+                key=TransformType.RandomInput,
+                phases={MachineLearningPhase.Training},
+            )
         return
     if dc.dataset_type == DatasetType.Text:
         # ExtractData
@@ -91,13 +100,13 @@ def add_transforms(dc, dataset_kwargs, model_kwargs=None):
             max_len = dataset_kwargs.get("max_len", None)
         match dc.tokenizer:
             case SpacyTokenizer():
-                dc.append_transform(dc.tokenizer)
+                dc.append_transform(dc.tokenizer, key=TransformType.Input)
                 if max_len is not None:
                     dc.append_transform(
                         torchtext.transforms.Truncate(max_seq_len=max_len),
                         key=TransformType.Input,
                     )
-                dc.append_transform(torch.LongTensor)
+                dc.append_transform(torch.LongTensor, key=TransformType.Input)
                 dc.append_transform(
                     functools.partial(
                         torch.nn.utils.rnn.pad_sequence,
