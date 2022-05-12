@@ -113,6 +113,14 @@ class DatasetCollection:
                 continue
             self.__transforms[phase].append(key, transform)
 
+    def cache_transforms(self, phases=None):
+        for phase in MachineLearningPhase:
+            if phases is not None and phase not in phases:
+                continue
+            dataset = self.get_dataset(phase=phase)
+            for i in range(get_dataset_size(dataset)):
+                pass
+
     @property
     def name(self) -> str:
         return self.__name

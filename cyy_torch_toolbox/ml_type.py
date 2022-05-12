@@ -25,6 +25,7 @@ class TransformType(IntEnum):
     RandomInput = auto()
     InputBatch = auto()
     Target = auto()
+    TargetBatch = auto()
 
 
 class ModelExecutorHookPoint(IntEnum):

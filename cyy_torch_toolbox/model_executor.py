@@ -229,7 +229,7 @@ class ModelExecutor(ModelExecutorBase):
         batch_size = None
         if isinstance(batch, dict):
             batch_size = batch["size"]
-            batch = batch["content"]
+            batch = batch["data"]
         sample_inputs = batch[0]
         sample_targets = batch[1]
         if len(batch) >= 3:
