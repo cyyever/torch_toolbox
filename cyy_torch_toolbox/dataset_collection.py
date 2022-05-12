@@ -101,11 +101,11 @@ class DatasetCollection:
             name=self.name,
         )
 
-    def clear_transform(self, key, phases=None):
-        for phase in MachineLearningPhase:
-            if phases is not None and phase not in phases:
-                continue
-            self.__transforms[phase].clear(key)
+    # def clear_transform(self, key, phases=None):
+    #     for phase in MachineLearningPhase:
+    #         if phases is not None and phase not in phases:
+    #             continue
+    #         self.__transforms[phase].clear(key)
 
     def append_transform(self, transform, key=TransformType.Input, phases=None):
         for phase in MachineLearningPhase:
@@ -118,8 +118,10 @@ class DatasetCollection:
             if phases is not None and phase not in phases:
                 continue
             dataset = self.get_dataset(phase=phase)
-            for i in range(get_dataset_size(dataset)):
-                pass
+            transforms = self.get_transforms(phase=phase)
+            transformed_dataset, new_transforms = transforms.cache_transforms(dataset)
+            self._datasets[phase] = transformed_dataset
+            self.__transforms[phase] = new_transforms
 
     @property
     def name(self) -> str:

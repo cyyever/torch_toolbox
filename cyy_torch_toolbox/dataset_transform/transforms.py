@@ -1,3 +1,4 @@
+import copy
 import functools
 from typing import Any, Callable
 
@@ -112,6 +113,21 @@ class Transforms:
             other_info = default_collate(other_info)
             return {"size": batch_size, "data": (inputs, targets, other_info)}
         return {"size": batch_size, "data": (inputs, targets)}
+
+    def cache_transforms(self, dataset) -> tuple[dict, Any]:
+        dataset = self.get_dataset(phase=phase)
+        transformed_dataset = {}
+        for k in dataset:
+            item = self.extract_data(dataset[k])
+            item["input"] = self.transform_input(item["input"])
+            item["target"] = self.transform_target(item["target"])
+            transformed_dataset[k] = item
+        new_transforms = copy.deepcopy(self)
+        new_transforms.clear(TransformType.ExtractData)
+        new_transforms.clear(TransformType.InputText)
+        new_transforms.clear(TransformType.Input)
+        new_transforms.clear(TransformType.Target)
+        return transformed_dataset, new_transforms
 
     def __str__(self):
         desc = []
