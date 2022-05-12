@@ -22,9 +22,13 @@ class PerformanceMetricLogger(MetricLogger):
             metrics = metrics + ("perplexity",)
         for k in metrics:
             value = model_executor.performance_metric.get_epoch_metric(epoch, k)
+            if value is None:
+                continue
             if isinstance(value, torch.Tensor):
                 value = value.item()
-            if value is not None:
+            if "accuracy" in k:
+                metric_str = metric_str + "{}:{:.4%}, ".format(k, value)
+            else:
                 metric_str = metric_str + "{}:{:e}, ".format(k, value)
         metric_str = metric_str[:-2]
         get_logger().info(
