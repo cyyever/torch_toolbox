@@ -121,35 +121,6 @@ def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
     )
 
 
-# import copy
-# class CachedVisionDataset(torch.utils.data.Dataset):
-#     def __init__(self, dataset: torch.utils.data.Dataset):
-#         self.__dataset = copy.deepcopy(dataset)
-#         transforms = DatasetUtil(self.__dataset).get_transforms()
-#         remain_transforms = []
-#         while transforms:
-#             t = transforms[0]
-#             transforms.pop(0)
-#             if isinstance(t, torchvision.transforms.ToTensor):
-#                 remain_transforms.append(t)
-#         self.__dataset.transform = torchvision.transforms.Compose(remain_transforms)
-#         self.transform = torchvision.transforms.Compose(transforms)
-
-#         self.__items: dict = {}
-
-#     def __getitem__(self, index):
-#         if index in self.__items:
-#             item = self.__items[index]
-#         else:
-#             item = self.__dataset[index]
-#             self.__items[index] = item
-#         img, target = item
-#         return self.transform(img), target
-
-#     def __len__(self):
-#         return len(self.__dataset)
-
-
 def replace_dataset_labels(dataset: torch.utils.data.MapDataPipe, label_map: dict):
     assert label_map
 

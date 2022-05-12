@@ -68,8 +68,12 @@ class Transforms:
             sample_input = f(sample_input)
         return sample_input
 
+    def random_transform_input(self, sample_input):
+        for f in self.get(TransformType.RandomInput):
+            sample_input = f(sample_input)
+        return sample_input
+
     def transform_inputs(self, inputs: list) -> list:
-        inputs = [self.transform_input(i) for i in inputs]
         batch_transforms = self.get(TransformType.InputBatch)
         if not batch_transforms:
             batch_transforms.append(default_collate)
@@ -82,29 +86,32 @@ class Transforms:
             target = f(target)
         return target
 
-    def transform_targets(self, targets: list) -> list:
-        targets = [self.transform_target(i) for i in targets]
-        return default_collate(targets)
+    def transform_targets(self, targets: list):
+        batch_transforms = self.get(TransformType.TargetBatch)
+        if not batch_transforms:
+            batch_transforms.append(default_collate)
+        for f in batch_transforms:
+            targets = f(targets)
+        return targets.reshape(-1)
 
     def collate_batch(self, batch):
         inputs = []
         targets = []
         other_info = []
-        for item in batch:
-            res = self.extract_data(item)
-            inputs.append(res.pop("input"))
-            targets.append(res.pop("target"))
-            other_info.append(res)
+        for data in batch:
+            data = self.extract_data(data)
+            sample_input = self.transform_input(data.pop("input"))
+            sample_input = self.random_transform_input(sample_input)
+            inputs.append(sample_input)
+            targets.append(self.transform_target(data.pop("target")))
+            other_info.append(data)
         inputs = self.transform_inputs(inputs)
         targets = self.transform_targets(targets)
-
-        # TODO for classification
-        targets = targets.reshape(-1)
         batch_size = len(batch)
         if other_info:
             other_info = default_collate(other_info)
-            return {"size": batch_size, "content": (inputs, targets, other_info)}
-        return {"size": batch_size, "content": (inputs, targets)}
+            return {"size": batch_size, "data": (inputs, targets, other_info)}
+        return {"size": batch_size, "data": (inputs, targets)}
 
     def __str__(self):
         desc = []
