@@ -3,6 +3,7 @@ import functools
 from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
+from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.ml_type import TransformType
 from torch.utils.data._utils.collate import default_collate
 
@@ -11,7 +12,7 @@ def default_data_extraction(data: Any) -> dict:
     match data:
         case {"data": real_data, "index": index}:
             return default_data_extraction(real_data) | {"index": index}
-        case [sample_input, target]:
+        case[sample_input, target]:
             return {"input": sample_input, "target": target}
     raise NotImplementedError()
 
@@ -100,7 +101,7 @@ class Transforms:
         targets = []
         other_info = []
         for data in batch:
-            data = self.extract_data(data)
+            data = copy.copy(self.extract_data(data))
             sample_input = self.transform_input(data.pop("input"))
             sample_input = self.random_transform_input(sample_input)
             inputs.append(sample_input)
@@ -115,9 +116,8 @@ class Transforms:
         return {"size": batch_size, "data": (inputs, targets)}
 
     def cache_transforms(self, dataset) -> tuple[dict, Any]:
-        dataset = self.get_dataset(phase=phase)
         transformed_dataset = {}
-        for k in dataset:
+        for k in range(get_dataset_size(dataset)):
             item = self.extract_data(dataset[k])
             item["input"] = self.transform_input(item["input"])
             item["target"] = self.transform_target(item["target"])
@@ -127,6 +127,7 @@ class Transforms:
         new_transforms.clear(TransformType.InputText)
         new_transforms.clear(TransformType.Input)
         new_transforms.clear(TransformType.Target)
+        get_logger().info("new transforms are %s", new_transforms)
         return transformed_dataset, new_transforms
 
     def __str__(self):
@@ -135,10 +136,11 @@ class Transforms:
             TransformType.ExtractData,
             TransformType.InputText,
             TransformType.Input,
+            TransformType.RandomInput,
             TransformType.InputBatch,
             TransformType.Target,
         ):
-            if k in self.__transforms:
+            if k in self.__transforms and self.__transforms[k]:
                 desc.append(str(k) + "=>")
                 for t in self.__transforms[k]:
                     desc.append(str(t))
