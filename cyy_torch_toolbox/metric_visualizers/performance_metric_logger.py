@@ -25,7 +25,7 @@ class PerformanceMetricLogger(MetricLogger):
             if isinstance(value, torch.Tensor):
                 value = value.item()
             if value is not None:
-                metric_str = metric_str + "{}:{:.5f}, ".format(k, value)
+                metric_str = metric_str + "{}:{:e}, ".format(k, value)
         metric_str = metric_str[:-2]
         get_logger().info(
             "%s epoch: %s, %s %s", self.prefix, epoch, phase_str, metric_str

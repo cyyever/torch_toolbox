@@ -69,17 +69,17 @@ class ExternalInputIterator:
         return sample, torch.as_tensor(label)
 
 
-def get_raw_transformers(obj) -> list:
-    raw_transforms = []
-    if isinstance(obj, torchvision.transforms.Compose):
-        for transform in obj.transforms:
-            raw_transforms += get_raw_transformers(transform)
-    elif isinstance(obj, torchvision.datasets.vision.StandardTransform):
-        raw_transforms += get_raw_transformers(obj.transform)
-    else:
-        raw_transforms.append(obj)
-    assert raw_transforms
-    return raw_transforms
+# def get_raw_transformers(obj) -> list:
+#     raw_transforms = []
+#     if isinstance(obj, torchvision.transforms.Compose):
+#         for transform in obj.transforms:
+#             raw_transforms += get_raw_transformers(transform)
+#     elif isinstance(obj, torchvision.datasets.vision.StandardTransform):
+#         raw_transforms += get_raw_transformers(obj.transform)
+#     else:
+#         raw_transforms.append(obj)
+#     assert raw_transforms
+#     return raw_transforms
 
 
 if has_dali:
