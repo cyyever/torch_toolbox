@@ -27,6 +27,17 @@ def str_target_to_int(label_names) -> Callable:
     return functools.partial(__get_int_target, reversed_label_names)
 
 
+def __replace_target(label_map, target, index):
+    if index in label_map:
+        assert label_map[index] != target
+        target = label_map[index]
+    return target
+
+
+def replace_target(label_map: dict):
+    return functools.partial(__replace_target, label_map)
+
+
 def swap_input_and_target(data):
     data["input"], data["target"] = data["target"], data["input"]
     return data
