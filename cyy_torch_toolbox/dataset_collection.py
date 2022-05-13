@@ -536,7 +536,7 @@ class DatasetCollectionConfig:
 
         if self.training_dataset_label_map is not None:
             dc.append_transform(
-                transform=replace_target,
+                transform=replace_target(self.training_dataset_label_map),
                 key=TransformType.Target,
                 phase=MachineLearningPhase.Training,
             )
