@@ -1,4 +1,5 @@
 import copy
+import os
 import random
 from multiprocessing import Manager
 
@@ -226,7 +227,7 @@ def get_dataloader(
         )
     transforms = dc.get_transforms(phase=phase)
     collate_fn = transforms.collate_batch
-    if transforms.has_transform():
+    if transforms.has_transform() and "USE_THREAD_DATALOADER" not in os.environ:
         num_workers = 2
     else:
         get_logger().info("no using workers")

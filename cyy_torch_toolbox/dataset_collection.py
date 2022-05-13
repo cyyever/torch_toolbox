@@ -124,7 +124,7 @@ class DatasetCollection:
             self._datasets[phase] = DictDataset(transformed_dataset)
             self.__transforms[phase] = new_transforms
             if phase == MachineLearningPhase.Training:
-                get_logger().info("new training transforms are %s", new_transforms)
+                get_logger().debug("new training transforms are %s", new_transforms)
 
     @property
     def name(self) -> str:
@@ -329,12 +329,6 @@ class ClassificationDatasetCollection(DatasetCollection):
         add_transforms(dc, dataset_kwargs, model_kwargs)
         if not dc.has_dataset(MachineLearningPhase.Test):
             dc._split_validation()
-        for phase in MachineLearningPhase:
-            get_logger().info(
-                "%s dataset len %s",
-                phase,
-                get_dataset_size(dc.get_dataset(phase=phase)),
-            )
         return dc
 
     def get_labels(self, use_cache: bool = True) -> set:
@@ -402,7 +396,7 @@ class ClassificationDatasetCollection(DatasetCollection):
                 self.append_transform(
                     torchvision.transforms.Resize(input_size), key=TransformType.Input
                 )
-        get_logger().info(
+        get_logger().debug(
             "use transformers for training => \n %s",
             str(self.get_transforms(MachineLearningPhase.Training)),
         )

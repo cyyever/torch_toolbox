@@ -3,6 +3,7 @@ from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.classification_inferencer import \
     ClassificationInferencer
+from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.hooks.keep_model import KeepModelHook
 from cyy_torch_toolbox.hooks.learning_rate_hook import LearningRateHook
@@ -141,6 +142,12 @@ class Trainer(ModelExecutor):
         if use_DDP:
             self._model_with_loss = ParallelModelWithLoss.create(self._model_with_loss)
         super()._prepare_execution(**kwargs)
+        for phase in MachineLearningPhase:
+            get_logger().info(
+                "%s dataset len %s",
+                phase,
+                get_dataset_size(self.dataset_collection.get_dataset(phase=phase)),
+            )
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
 
     def train(self, **kwargs):
