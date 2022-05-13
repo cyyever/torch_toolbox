@@ -17,7 +17,7 @@ def default_data_extraction(data: Any) -> dict:
     raise NotImplementedError()
 
 
-def __get_int_target(reversed_label_names, label_name: str) -> int:
+def __get_int_target(reversed_label_names, label_name: str, index: int = None) -> int:
     return reversed_label_names[label_name]
 
 
@@ -41,7 +41,7 @@ class Transforms:
         return any(self.__transforms.values())
 
     def clear(self, key: TransformType) -> None:
-        self.__transforms.pop(key,None)
+        self.__transforms.pop(key, None)
 
     def insert(self, key: TransformType, idx: int, transform: Callable) -> None:
         if key not in self.__transforms:
@@ -85,9 +85,9 @@ class Transforms:
             inputs = f(inputs)
         return inputs
 
-    def transform_target(self, target):
+    def transform_target(self, target, index=None):
         for f in self.get(TransformType.Target):
-            target = f(target)
+            target = f(target, index)
         return target
 
     def transform_targets(self, targets: list):
@@ -107,7 +107,10 @@ class Transforms:
             sample_input = self.transform_input(data.pop("input"))
             sample_input = self.random_transform_input(sample_input)
             inputs.append(sample_input)
-            targets.append(self.transform_target(data.pop("target")))
+            index = data.get("index", None)
+            targets.append(
+                self.transform_target(target=data.pop("target"), index=index)
+            )
             other_info.append(data)
         inputs = self.transform_inputs(inputs)
         targets = self.transform_targets(targets)
@@ -122,7 +125,7 @@ class Transforms:
         for k in range(get_dataset_size(dataset)):
             item = self.extract_data(dataset[k])
             item["input"] = self.transform_input(item["input"])
-            item["target"] = self.transform_target(item["target"])
+            item["target"] = self.transform_target(item["target"], index=k)
             transformed_dataset[k] = item
         new_transforms = copy.deepcopy(self)
         new_transforms.clear(TransformType.ExtractData)

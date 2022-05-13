@@ -13,7 +13,6 @@ from ssd_checker import is_ssd
 
 from cyy_torch_toolbox.dataset import (DictDataset,
                                        convert_iterable_dataset_to_map,
-                                       get_dataset_size,
                                        replace_dataset_labels, sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transform.transforms import Transforms
