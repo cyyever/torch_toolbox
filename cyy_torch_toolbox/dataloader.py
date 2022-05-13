@@ -227,7 +227,7 @@ def get_dataloader(
         )
     transforms = dc.get_transforms(phase=phase)
     collate_fn = transforms.collate_batch
-    if transforms.has_transform() and "USE_THREAD_DATALOADER" not in os.environ:
+    if transforms.has_transform() and "USE_PROCESS_DATALOADER" in os.environ:
         num_workers = 2
         prefetch_factor = 1
     else:
