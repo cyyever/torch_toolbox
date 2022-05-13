@@ -229,16 +229,19 @@ def get_dataloader(
     collate_fn = transforms.collate_batch
     if transforms.has_transform() and "USE_THREAD_DATALOADER" not in os.environ:
         num_workers = 2
+        prefetch_factor = 1
     else:
         get_logger().info("no using workers")
         num_workers = 0
         persistent_workers = False
+        prefetch_factor = 2
     return torch.utils.data.DataLoader(
         dataset,
         batch_size=hyper_parameter.batch_size,
         shuffle=(phase == MachineLearningPhase.Training),
         num_workers=num_workers,
         persistent_workers=persistent_workers,
+        prefetch_factor=prefetch_factor,
         pin_memory=True,
         collate_fn=collate_fn,
     )
