@@ -1,4 +1,3 @@
-import functools
 from typing import Callable, Generator, Iterable
 
 import torch
@@ -119,17 +118,3 @@ def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
         torch.utils.data.Subset(dataset, [index])
         for index in range(get_dataset_size(dataset))
     )
-
-
-def replace_dataset_labels(dataset: torch.utils.data.MapDataPipe, label_map: dict):
-    assert label_map
-
-    def __replace_item_label(label_map, index, item):
-        if index in label_map:
-            assert label_map[index] != item[1]
-            item = list(item)
-            item[1] = label_map[index]
-            return tuple(item)
-        return item
-
-    return DatasetMapper(dataset, [functools.partial(__replace_item_label, label_map)])

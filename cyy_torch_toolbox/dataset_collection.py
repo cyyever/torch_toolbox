@@ -1,5 +1,4 @@
 import copy
-import functools
 import json
 import os
 import threading
@@ -13,9 +12,10 @@ from ssd_checker import is_ssd
 
 from cyy_torch_toolbox.dataset import (DictDataset,
                                        convert_iterable_dataset_to_map,
-                                       replace_dataset_labels, sub_dataset)
+                                       sub_dataset)
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
-from cyy_torch_toolbox.dataset_transform.transforms import Transforms
+from cyy_torch_toolbox.dataset_transform.transforms import (Transforms,
+                                                            replace_target)
 from cyy_torch_toolbox.dataset_transform.transforms_factory import \
     add_transforms
 from cyy_torch_toolbox.dataset_util import (DatasetSplitter, DatasetUtil,
@@ -476,18 +476,15 @@ class DatasetCollectionConfig:
                 DatasetCollection, self.dataset_name, self.dataset_kwargs
             )
 
-        dc.transform_dataset(
-            MachineLearningPhase.Training,
-            functools.partial(self.__transform_training_dataset, save_dir=save_dir),
-        )
+        self.__transform_training_dataset(dc=dc, save_dir=save_dir)
         if self.cache_transforms:
             dc.cache_transforms()
         return dc
 
-    def __transform_training_dataset(
-        self, training_dataset, dataset_util, save_dir=None
-    ) -> torch.utils.data.Dataset:
+    def __transform_training_dataset(self, dc, save_dir=None):
         subset_indices = None
+        dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
+        training_dataset = dc.get_dataset(phase=MachineLearningPhase.Training)
         if self.training_dataset_percentage is not None:
             subset_dict = dataset_util.iid_sample(self.training_dataset_percentage)
             subset_indices = sum(subset_dict.values(), [])
@@ -508,10 +505,14 @@ class DatasetCollectionConfig:
                 subset_indices = json.load(f)
         if subset_indices is not None:
             training_dataset = sub_dataset(training_dataset, subset_indices)
-
+            dc.transform_dataset(
+                phase=MachineLearningPhase.Training,
+                transformer=lambda _, __: training_dataset,
+            )
+        dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
         label_map = None
         if self.training_dataset_label_noise_percentage:
-            label_map = DatasetUtil(training_dataset).randomize_subset_label(
+            label_map = dataset_util.randomize_subset_label(
                 self.training_dataset_label_noise_percentage
             )
             with open(
@@ -534,7 +535,8 @@ class DatasetCollectionConfig:
                 self.training_dataset_label_map = json.load(f)
 
         if self.training_dataset_label_map is not None:
-            training_dataset = replace_dataset_labels(
-                training_dataset, self.training_dataset_label_map
+            dc.append_transform(
+                transform=replace_target,
+                key=TransformType.Target,
+                phase=MachineLearningPhase.Training,
             )
-        return training_dataset
