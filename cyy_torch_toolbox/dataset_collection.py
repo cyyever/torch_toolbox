@@ -538,5 +538,5 @@ class DatasetCollectionConfig:
             dc.append_transform(
                 transform=replace_target(self.training_dataset_label_map),
                 key=TransformType.Target,
-                phase=MachineLearningPhase.Training,
+                phases=[MachineLearningPhase.Training],
             )

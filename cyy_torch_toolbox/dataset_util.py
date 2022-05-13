@@ -209,7 +209,6 @@ class DatasetSplitter(DatasetUtil):
             other_labels = list(set(labels) - set([label]))
             for index in indices:
                 randomized_label_map[index] = random.choice(other_labels)
-                assert randomized_label_map[index] != self.dataset[index][1]
         return randomized_label_map
 
 
