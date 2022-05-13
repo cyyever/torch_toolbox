@@ -1,7 +1,5 @@
 import copy
 import os
-import random
-from multiprocessing import Manager
 
 import torch
 import torchvision
@@ -22,54 +20,6 @@ from .dataset_collection import DatasetCollection
 from .hyper_parameter import HyperParameter
 from .ml_type import DatasetType, MachineLearningPhase, ModelType
 
-
-class ExternalInputIterator:
-    def __init__(self, dataset, original_dataset, batch_size: int, shuffle: bool):
-        self.__original_dataset = copy.deepcopy(original_dataset)
-        setattr(self.__original_dataset, "transform", None)
-        setattr(self.__original_dataset, "transforms", None)
-
-        assert hasattr(self.__original_dataset, "data")
-        if hasattr(dataset, "indices"):
-            self.__indices = dataset.indices
-        else:
-            self.__indices = list(range(get_dataset_size(dataset)))
-            assert dataset is original_dataset
-        assert len(self.__indices) == get_dataset_size(dataset)
-        self.full_iterations = len(self.__indices) // batch_size
-        self.__transform = torchvision.transforms.ToTensor()
-        self.__shuffle = shuffle
-        if self.__shuffle:
-            self.__manager = Manager()
-            self.__global_indices = self.__manager.list(self.__indices)
-            self.shuffle_indices()
-
-    def shuffle_indices(self):
-        if self.__shuffle:
-            random.shuffle(self.__global_indices)
-            self.__indices = None
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state["_ExternalInputIterator__manager"] = None
-        return state
-
-    def __call__(self, sample_info):
-        sample_idx = sample_info.idx_in_epoch
-        if sample_info.iteration >= self.full_iterations:
-            # Indicate end of the epoch
-            if self.__shuffle:
-                self.shuffle_indices()
-            raise StopIteration()
-
-        if self.__indices is None:
-            self.__indices = list(self.__global_indices)
-
-        sample, label = self.__original_dataset[self.__indices[sample_idx]]
-        sample = self.__transform(sample)
-        return sample, torch.as_tensor(label)
-
-
 if has_dali:
 
     @pipeline_def
@@ -80,10 +30,10 @@ if has_dali:
         device,
         stream,
     ):
-        dataset = dc.get_dataset(phase)
         original_dataset = dc.get_original_dataset(phase)
         is_external_source = False
         if isinstance(original_dataset, torchvision.datasets.folder.ImageFolder):
+            dataset = dc.get_dataset(phase)
             samples = original_dataset.samples
             if hasattr(dataset, "indices"):
                 samples = [samples[idx] for idx in dataset.indices]
@@ -93,22 +43,7 @@ if has_dali:
                 random_shuffle=(phase == MachineLearningPhase.Training),
             )
         else:
-            external_source = ExternalInputIterator(
-                dataset=dataset,
-                original_dataset=original_dataset,
-                batch_size=hyper_parameter.batch_size,
-                shuffle=(phase == MachineLearningPhase.Training),
-            )
-            is_external_source = True
-            images, labels = nvidia.dali.fn.external_source(
-                source=external_source,
-                num_outputs=2,
-                layout=("CHW", ""),
-                batch=False,
-                parallel=True,
-                cuda_stream=stream,
-            )
-            # images = nvidia.dali.fn.decoders.image(images, device="cpu" if device is None else "mixed")
+            raise RuntimeError(f"unsupported dataset type {type(original_dataset)}")
 
         raw_transforms = dc.get_transforms(phase=phase)
         raw_transforms = [
