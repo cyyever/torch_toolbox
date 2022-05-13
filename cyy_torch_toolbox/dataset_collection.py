@@ -123,6 +123,8 @@ class DatasetCollection:
             transformed_dataset, new_transforms = transforms.cache_transforms(dataset)
             self._datasets[phase] = DictDataset(transformed_dataset)
             self.__transforms[phase] = new_transforms
+            if phase == MachineLearningPhase.Training:
+                get_logger().info("new training transforms are %s", new_transforms)
 
     @property
     def name(self) -> str:
