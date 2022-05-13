@@ -18,7 +18,8 @@ except ModuleNotFoundError:
 from .dataset import get_dataset_size
 from .dataset_collection import DatasetCollection
 from .hyper_parameter import HyperParameter
-from .ml_type import DatasetType, MachineLearningPhase, ModelType
+from .ml_type import (DatasetType, MachineLearningPhase, ModelType,
+                      TransformType)
 
 if has_dali:
 
@@ -31,7 +32,6 @@ if has_dali:
         stream,
     ):
         original_dataset = dc.get_original_dataset(phase)
-        is_external_source = False
         if isinstance(original_dataset, torchvision.datasets.folder.ImageFolder):
             dataset = dc.get_dataset(phase)
             samples = original_dataset.samples
@@ -45,17 +45,18 @@ if has_dali:
         else:
             raise RuntimeError(f"unsupported dataset type {type(original_dataset)}")
 
-        raw_transforms = dc.get_transforms(phase=phase)
-        raw_transforms = [
+        transforms = dc.get_transforms(phase=phase)
+        raw_input_transforms = transforms.get_input_transforms_in_order()
+        raw_input_transforms = [
             t
-            for t in raw_transforms
+            for t in raw_input_transforms
             if not isinstance(t, torchvision.transforms.transforms.ToTensor)
         ]
-        get_logger().debug("raw_transforms are %s", raw_transforms)
+        get_logger().debug("raw_input_transforms are %s", raw_input_transforms)
         horizontal_mirror = False
         mean_and_std = None
         new_transforms = []
-        for idx, transform in enumerate(raw_transforms):
+        for transform in raw_input_transforms:
             if isinstance(
                 transform, torchvision.transforms.transforms.RandomResizedCrop
             ):
@@ -92,13 +93,12 @@ if has_dali:
                 mean_and_std = (copy.deepcopy(transform.mean), transform.std)
                 continue
             new_transforms.append(transform)
+        raw_input_transforms = new_transforms
         assert mean_and_std is not None
-        scale = 1.0
-        if not is_external_source:
-            for idx, m in enumerate(mean_and_std[0]):
-                assert 0 <= m <= 1
-                mean_and_std[0][idx] = m * 255
-            scale = 1.0 / 255
+        for idx, m in enumerate(mean_and_std[0]):
+            assert 0 <= m <= 1
+            mean_and_std[0][idx] = m * 255
+        scale = 1.0 / 255
         images = nvidia.dali.fn.crop_mirror_normalize(
             images,
             dtype=nvidia.dali.types.FLOAT,
@@ -109,9 +109,18 @@ if has_dali:
             mirror=horizontal_mirror,
         )
 
-        if new_transforms:
-            get_logger().error("remaining raw_transforms are %s", new_transforms)
-        assert not new_transforms
+        # or transforms.get(TransformType.InputBatch):
+        if raw_input_transforms:
+            get_logger().error(
+                "remaining raw_input_transforms are %s", raw_input_transforms
+            )
+            raise RuntimeError("can't cover all transforms")
+
+        if transforms.get_target_transforms_in_order():
+            raise RuntimeError("can't cover all transforms")
+            # or transforms.get(
+            # TransformType.TargetBatch
+            # ):
 
         if device is not None:
             labels = labels.gpu()
