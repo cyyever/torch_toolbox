@@ -169,21 +169,6 @@ class DatasetCollection:
             os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
 
-    # @classmethod
-    # def __get_dataset_size(cls, name: str):
-    #     dataset_dir = cls.__get_dataset_dir(name)
-    #     cache_dir = cls.__get_dataset_cache_dir(name)
-    #     pickle_file = os.path.join(cache_dir, "dataset_size")
-
-    #     def computation_fun():
-    #         size = 0
-    #         for path, _, files in os.walk(dataset_dir):
-    #             for f in files:
-    #                 size += os.path.getsize(os.path.join(path, f))
-    #         return size
-
-    #     return cls.__get_cache_data(pickle_file, computation_fun)
-
     @classmethod
     def create(
         cls,
