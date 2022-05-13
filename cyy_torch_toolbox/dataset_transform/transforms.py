@@ -127,7 +127,6 @@ class Transforms:
         new_transforms.clear(TransformType.InputText)
         new_transforms.clear(TransformType.Input)
         new_transforms.clear(TransformType.Target)
-        get_logger().info("new transforms are %s", new_transforms)
         return transformed_dataset, new_transforms
 
     def __str__(self):
