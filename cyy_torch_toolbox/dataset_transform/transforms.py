@@ -67,6 +67,16 @@ class Transforms:
     def get(self, key: TransformType) -> list:
         return self.__transforms.get(key, [])
 
+    def get_input_transforms_in_order(self) -> list:
+        return (
+            self.get(TransformType.InputText)
+            + self.get(TransformType.Input)
+            + self.get(TransformType.RandomInput)
+        )
+
+    def get_target_transforms_in_order(self) -> list:
+        return self.get(TransformType.Target)
+
     def transform_text(self, text):
         for f in self.get(TransformType.InputText):
             text = f(text)
