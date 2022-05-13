@@ -37,9 +37,11 @@ class Transforms:
         self.__transforms: dict = {}
         self.append(key=TransformType.ExtractData, transform=default_data_extraction)
 
+    def has_transform(self) -> bool:
+        return any(self.__transforms.values())
+
     def clear(self, key: TransformType) -> None:
-        if key in self.__transforms:
-            self.__transforms[key] = []
+        self.__transforms.pop(key,None)
 
     def insert(self, key: TransformType, idx: int, transform: Callable) -> None:
         if key not in self.__transforms:

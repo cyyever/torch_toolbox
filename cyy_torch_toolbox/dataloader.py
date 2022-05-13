@@ -224,13 +224,19 @@ def get_dataloader(
             last_batch_policy=LastBatchPolicy.PARTIAL,
             last_batch_padded=True,
         )
-    collate_fn = dc.get_transforms(phase=phase).collate_batch
+    transforms = dc.get_transforms(phase=phase)
+    collate_fn = transforms.collate_batch
+    if transforms.has_transform():
+        num_workers = 2
+    else:
+        get_logger().info("no using workers")
+        num_workers = 0
+        persistent_workers = False
     return torch.utils.data.DataLoader(
         dataset,
         batch_size=hyper_parameter.batch_size,
         shuffle=(phase == MachineLearningPhase.Training),
-        num_workers=2,
-        prefetch_factor=1,
+        num_workers=num_workers,
         persistent_workers=persistent_workers,
         pin_memory=True,
         collate_fn=collate_fn,
