@@ -1,4 +1,3 @@
-import copy
 from typing import Any, Callable, Optional, Type
 
 import torch
@@ -192,7 +191,6 @@ class ModelUtil:
     def get_sub_module_blocks(
         self,
         block_types: set = None,
-        block_classes: set = None,
         only_block_name: bool = True,
     ) -> list:
         if block_types is None:
@@ -203,58 +201,49 @@ class ModelUtil:
                 (nn.Conv2d, nn.ReLU),
                 (nn.Conv2d, nn.ReLU, nn.MaxPool2d),
                 (nn.Linear, nn.ReLU),
+                ("Bottleneck",),
+                ("DenseBlock",),
             }
-        if block_classes is None:
-            block_classes = {"Bottleneck", "DenseBlock"}
-        blocks: list = []
-        i = 0
-        memo: set = set()
 
-        # use while loop to avoid add submodule when a module is added
-        while True:
-            flag = False
-            for module in self.model.named_modules(memo=copy.copy(memo)):
-                module_class_name = module[1].__class__.__name__
-                if any(
-                    (
-                        module_class_name == block_class
-                        or module_class_name.endswith("." + block_class)
-                        for block_class in block_classes
+        def module_has_type(module, module_type) -> bool:
+            match module_type:
+                case str():
+                    module_class_name = module.__class__.__name__
+                    return (
+                        module_class_name == module_type
+                        or module_class_name.endswith("." + module_class_name)
                     )
-                ):
-                    blocks.append([module])
-                    memo.add(module[1])
-                    flag = True
-                    break
-            if not flag:
-                break
+                case _:
+                    return isinstance(module, module_type)
 
-        modules = list(self.model.named_modules(memo=copy.copy(memo)))
-        while i < len(modules):
-            candidates: set = block_types
-            j = i
+        blocks: list = []
+        modules = list(self.get_sub_modules())
+        while modules:
             end_index = None
-            while j < len(modules):
-                module = modules[j][1]
+            candidates: set = block_types
+            for i, pair in enumerate(modules):
+                module = pair[1]
                 new_candidates = set()
                 for candidate in candidates:
-                    if isinstance(module, candidate[0]):
+                    if module_has_type(module, candidate[0]):
                         if len(candidate) == 1:
-                            end_index = j
+                            end_index = i
                         else:
                             new_candidates.add(candidate[1:])
                 if not new_candidates:
                     break
                 candidates = new_candidates
-                j += 1
             if end_index is not None:
-                module_list = []
-                while i <= end_index:
-                    module_list.append(modules[i])
-                    i += 1
-                blocks.append(module_list)
+                block_modules = modules[: end_index + 1]
+                blocks.append(block_modules)
+                modules = modules[end_index + 1:]
+                modules = [
+                    p
+                    for p in modules
+                    if not any(p[0].startswith(q[0] + ".") for q in block_modules)
+                ]
             else:
-                i += 1
+                modules = modules[1:]
         if only_block_name:
             for idx, block in enumerate(blocks):
                 blocks[idx] = [m[0] for m in block]
