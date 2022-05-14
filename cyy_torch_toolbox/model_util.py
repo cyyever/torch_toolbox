@@ -244,7 +244,4 @@ class ModelUtil:
                 ]
             else:
                 modules = modules[1:]
-        if only_block_name:
-            for idx, block in enumerate(blocks):
-                blocks[idx] = [m[0] for m in block]
         return blocks
