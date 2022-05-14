@@ -139,7 +139,7 @@ class HyperParameter:
             full_kwargs["factor"] = 0.1
             full_kwargs["verbose"] = True
             full_kwargs.update(kwargs)
-            get_logger().info(
+            get_logger().debug(
                 "ReduceLROnPlateau patience is %s", full_kwargs["patience"]
             )
             return torch.optim.lr_scheduler.ReduceLROnPlateau(**full_kwargs)
