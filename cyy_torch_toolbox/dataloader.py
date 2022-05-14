@@ -175,7 +175,7 @@ def get_dataloader(
         num_workers = 2
         prefetch_factor = 1
     else:
-        get_logger().info("no using workers")
+        get_logger().debug("no using workers")
         num_workers = 0
         persistent_workers = False
         prefetch_factor = 2
