@@ -1,13 +1,12 @@
-from dataset_collection import (ClassificationDatasetCollection,
-                                create_dataset_collection)
-from model_factory import get_model, get_model_info
-from model_util import ModelUtil
+from cyy_torch_toolbox.dataset_collection import (
+    ClassificationDatasetCollection, create_dataset_collection)
+from cyy_torch_toolbox.model_factory import get_model, get_model_info
+from cyy_torch_toolbox.model_util import ModelUtil
 
 
 def test_model_info():
     models = get_model_info()
     assert models
-    print(models.keys())
 
 
 def test_get_submodules():
