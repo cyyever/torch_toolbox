@@ -191,7 +191,6 @@ class ModelUtil:
     def get_sub_module_blocks(
         self,
         block_types: set = None,
-        only_block_name: bool = True,
     ) -> list:
         if block_types is None:
             block_types = {
