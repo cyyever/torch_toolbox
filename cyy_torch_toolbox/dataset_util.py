@@ -72,8 +72,11 @@ class DatasetUtil:
         return sample_input
 
     def get_sample_labels(self, index: int) -> set:
-        sample = self.get_sample(index)
-        target = sample["target"]
+        if hasattr(self.dataset, "targets") and len(self.dataset.targets) == len(self):
+            target = self.dataset.targets[index]
+        else:
+            sample = self.get_sample(index)
+            target = sample["target"]
         if self.__transforms is not None:
             target = self.__transforms.transform_target(target)
         return DatasetUtil.__decode_target(target)
@@ -111,31 +114,26 @@ class DatasetSplitter(DatasetUtil):
     __label_sample_dict = None
 
     @property
+    def sample_label_dict(self) -> dict[int, list]:
+        if self.__sample_label_dict is not None:
+            return self.__sample_label_dict
+        self.__sample_label_dict = {}
+        for index in range(len(self)):
+            self.__sample_label_dict[index] = list(self.get_sample_labels(index))
+        return self.__sample_label_dict
+
+    @property
     def label_sample_dict(self) -> dict:
         if self.__label_sample_dict is not None:
             return self.__label_sample_dict
         self.__label_sample_dict = {}
-        for index in range(len(self)):
-            labels = list(self.get_sample_labels(index))
+        for index, labels in self.sample_label_dict.items():
             for label in labels:
                 if label not in self.__label_sample_dict:
                     self.__label_sample_dict[label] = [index]
                 else:
                     self.__label_sample_dict[label].append(index)
         return self.__label_sample_dict
-
-    @property
-    def sample_label_dict(self) -> dict:
-        if self.__sample_label_dict is not None:
-            return self.__sample_label_dict
-        self.__sample_label_dict = {}
-        for index in range(len(self)):
-            labels = list(self.get_sample_labels(index))
-            if len(labels) == 1:
-                self.__sample_label_dict[index] = labels[0]
-            else:
-                self.__sample_label_dict[index] = labels
-        return self.__sample_label_dict
 
     def get_label_number(self) -> int:
         return len(self.get_labels())
