@@ -4,7 +4,7 @@ import torch
 import torchvision
 
 
-def get_dataset_size(dataset) -> int:
+def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:
     try:
         return len(dataset)
     except BaseException:
@@ -13,32 +13,6 @@ def get_dataset_size(dataset) -> int:
             cnt += 1
         return cnt
     raise RuntimeError("not reachable")
-
-
-class DatasetFilter:
-    def __init__(
-        self, dataset: torch.utils.data.MapDataPipe, filters: Iterable[Callable]
-    ):
-        self.__dataset = dataset
-        self.__filters = filters
-        self.__indices = None
-
-    def __getitem__(self, index):
-        return self.__dataset.__getitem__(self.indices[index])
-
-    def __len__(self):
-        return len(self.indices)
-
-    @property
-    def indices(self):
-        if self.__indices is not None:
-            return self.__indices
-        indices = []
-        for index, item in enumerate(self.__dataset):
-            if all(f(index, item) for f in self.__filters):
-                indices.append(index)
-        self.__indices = indices
-        return self.__indices
 
 
 class DatasetMapper:
@@ -108,7 +82,7 @@ def __add_index_to_item(index, item):
     return {"data": item, "index": index}
 
 
-def dataset_with_indices(dataset: torch.utils.data.Dataset):
+def dataset_with_indices(dataset: torch.utils.data.Dataset) -> DatasetMapper:
     return DatasetMapper(dataset, [__add_index_to_item])
 
 

@@ -54,11 +54,6 @@ class Transforms:
     def clear(self, key: TransformType) -> None:
         self.__transforms.pop(key, None)
 
-    def insert(self, key: TransformType, idx: int, transform: Callable) -> None:
-        if key not in self.__transforms:
-            self.__transforms[key] = []
-        self.__transforms[key].insert(idx, transform)
-
     def append(self, key: TransformType, transform: Callable) -> None:
         if key not in self.__transforms:
             self.__transforms[key] = []
@@ -67,12 +62,11 @@ class Transforms:
     def get(self, key: TransformType) -> list:
         return self.__transforms.get(key, [])
 
-    def get_input_transforms_in_order(self) -> list:
-        return (
-            self.get(TransformType.InputText)
-            + self.get(TransformType.Input)
-            + self.get(TransformType.RandomInput)
-        )
+    def get_input_transforms_in_order(self, include_random: bool = True) -> list:
+        res = self.get(TransformType.InputText) + self.get(TransformType.Input)
+        if include_random:
+            res += self.get(TransformType.RandomInput)
+        return res
 
     def get_target_transforms_in_order(self) -> list:
         return self.get(TransformType.Target)
@@ -87,14 +81,8 @@ class Transforms:
             data = f(data)
         return data
 
-    def transform_input(self, sample_input):
-        sample_input = self.transform_text(sample_input)
-        for f in self.get(TransformType.Input):
-            sample_input = f(sample_input)
-        return sample_input
-
-    def random_transform_input(self, sample_input):
-        for f in self.get(TransformType.RandomInput):
+    def transform_input(self, sample_input, apply_random: bool = True):
+        for f in self.get_input_transforms_in_order(include_random=apply_random):
             sample_input = f(sample_input)
         return sample_input
 
@@ -126,7 +114,6 @@ class Transforms:
         for data in batch:
             data = copy.copy(self.extract_data(data))
             sample_input = self.transform_input(data.pop("input"))
-            sample_input = self.random_transform_input(sample_input)
             inputs.append(sample_input)
             index = data.get("index", None)
             targets.append(
@@ -145,7 +132,7 @@ class Transforms:
         transformed_dataset = {}
         for k in range(get_dataset_size(dataset)):
             item = self.extract_data(dataset[k])
-            item["input"] = self.transform_input(item["input"])
+            item["input"] = self.transform_input(item["input"], apply_random=False)
             item["target"] = self.transform_target(item["target"], index=k)
             transformed_dataset[k] = item
         new_transforms = copy.deepcopy(self)

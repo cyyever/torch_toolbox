@@ -18,8 +18,7 @@ except ModuleNotFoundError:
 from .dataset import get_dataset_size
 from .dataset_collection import DatasetCollection
 from .hyper_parameter import HyperParameter
-from .ml_type import (DatasetType, MachineLearningPhase, ModelType,
-                      TransformType)
+from .ml_type import DatasetType, MachineLearningPhase, ModelType
 
 if has_dali:
 
