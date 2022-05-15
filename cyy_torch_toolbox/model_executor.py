@@ -100,12 +100,11 @@ class ModelExecutor(ModelExecutorBase):
     def dataloader(self):
         if self.__dataloader is None:
             self.__dataloader = get_dataloader(
-                self.dataset_collection,
-                self._model_with_loss.model_type,
-                self.__phase,
-                self.__hyper_parameter,
+                dc=self.dataset_collection,
+                model_type=self._model_with_loss.model_type,
+                phase=self.__phase,
+                hyper_parameter=self.__hyper_parameter,
                 device=self.device,
-                stream=self.cuda_stream,
             )
         return self.__dataloader
 
@@ -227,11 +226,26 @@ class ModelExecutor(ModelExecutorBase):
     @classmethod
     def decode_batch(cls, batch):
         batch_size = None
-        if isinstance(batch, dict):
-            batch_size = batch["size"]
-            batch = batch["data"]
-        sample_inputs = batch[0]
-        sample_targets = batch[1]
+        print("batch is", type(batch))
+        sample_inputs = None
+        sample_targets = None
+        match batch:
+            case dict():
+                batch_size = batch["size"]
+                batch = batch["data"]
+                sample_inputs = batch[0]
+                sample_targets = batch[1]
+            case list():
+                if len(batch) == 1:
+                    batch = batch[0]
+                match batch:
+                    case {"data": sample_inputs, "label": sample_targets}:
+                        pass
+                    case _:
+                        raise NotImplementedError()
+            case _:
+                raise NotImplementedError()
+
         if len(batch) >= 3:
             return (batch_size, sample_inputs, sample_targets, batch[2])
         return (batch_size, sample_inputs, sample_targets, {})

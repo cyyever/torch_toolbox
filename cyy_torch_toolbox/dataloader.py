@@ -18,7 +18,7 @@ except ModuleNotFoundError:
 from .dataset import get_dataset_size
 from .dataset_collection import DatasetCollection
 from .hyper_parameter import HyperParameter
-from .ml_type import DatasetType, MachineLearningPhase, ModelType
+from .ml_type import MachineLearningPhase, ModelType
 
 if has_dali:
 
@@ -26,25 +26,25 @@ if has_dali:
     def create_dali_pipeline(
         dc: DatasetCollection,
         phase: MachineLearningPhase,
-        hyper_parameter: HyperParameter,
         device,
-        stream,
     ):
         original_dataset = dc.get_original_dataset(phase)
-        if isinstance(original_dataset, torchvision.datasets.folder.ImageFolder):
-            dataset = dc.get_dataset(phase)
-            samples = original_dataset.samples
-            if hasattr(dataset, "indices"):
-                samples = [samples[idx] for idx in dataset.indices]
-            image_files, labels = nvidia.dali.fn.readers.file(
-                files=[s[0] for s in samples],
-                labels=[s[1] for s in samples],
-                random_shuffle=(phase == MachineLearningPhase.Training),
-            )
-        else:
+        if not isinstance(original_dataset, torchvision.datasets.folder.ImageFolder):
             raise RuntimeError(f"unsupported dataset type {type(original_dataset)}")
-
+        dataset = dc.get_dataset(phase)
         transforms = dc.get_transforms(phase=phase)
+        samples = original_dataset.samples
+        if hasattr(dataset, "indices"):
+            samples = [samples[idx] for idx in dataset.indices]
+        files = [s[0] for s in samples]
+        labels = [s[1] for s in samples]
+        labels = [transforms.transform_target(label) for label in labels]
+        image_files, labels = nvidia.dali.fn.readers.file(
+            files=files,
+            labels=labels,
+            random_shuffle=(phase == MachineLearningPhase.Training),
+        )
+
         raw_input_transforms = transforms.get_input_transforms_in_order()
         raw_input_transforms = [
             t
@@ -108,18 +108,11 @@ if has_dali:
             mirror=horizontal_mirror,
         )
 
-        # or transforms.get(TransformType.InputBatch):
         if raw_input_transforms:
             get_logger().error(
                 "remaining raw_input_transforms are %s", raw_input_transforms
             )
-            raise RuntimeError("can't cover all transforms")
-
-        if transforms.get_target_transforms_in_order():
-            raise RuntimeError("can't cover all transforms")
-            # or transforms.get(
-            # TransformType.TargetBatch
-            # ):
+            raise RuntimeError("can't cover all input transforms")
 
         if device is not None:
             labels = labels.gpu()
@@ -132,16 +125,14 @@ def get_dataloader(
     phase: MachineLearningPhase,
     hyper_parameter: HyperParameter,
     device=None,
-    stream=None,
     persistent_workers=True,
 ):
     dataset = dc.get_dataset(phase)
     original_dataset = dc.get_original_dataset(phase)
+    # We use DALI for ImageFolder only
     if (
         has_dali
-        and dc.dataset_type == DatasetType.Vision
         and model_type == ModelType.Classification
-        # We use DALI for ImageFolder only
         and isinstance(original_dataset, torchvision.datasets.folder.ImageFolder)
     ):
         get_logger().info("use DALI")
@@ -155,9 +146,7 @@ def get_dataloader(
             device_id=device_id,
             dc=dc,
             phase=phase,
-            hyper_parameter=hyper_parameter,
             device=device,
-            stream=stream,
         )
         pipeline.build()
         return DALIClassificationIterator(
