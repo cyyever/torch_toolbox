@@ -226,7 +226,6 @@ class ModelExecutor(ModelExecutorBase):
     @classmethod
     def decode_batch(cls, batch):
         batch_size = None
-        print("batch is", type(batch))
         sample_inputs = None
         sample_targets = None
         match batch:
