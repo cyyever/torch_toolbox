@@ -72,11 +72,16 @@ class DatasetUtil:
         return sample_input
 
     def get_sample_labels(self, index: int) -> set:
-        if hasattr(self.dataset, "targets") and len(self.dataset.targets) == len(self):
-            target = self.dataset.targets[index]
+        if isinstance(self.dataset, torch.utils.data.Subset):
+            dataset = self.dataset.dataset
+            new_index = self.dataset.indices[index]
         else:
-            sample = self.get_sample(index)
-            target = sample["target"]
+            dataset = self.dataset
+            new_index = index
+        if hasattr(dataset, "targets") and len(dataset.targets) >= len(self):
+            target = dataset.targets[new_index]
+        else:
+            target = self.get_sample(index)["target"]
         if self.__transforms is not None:
             target = self.__transforms.transform_target(target)
         return DatasetUtil.__decode_target(target)
