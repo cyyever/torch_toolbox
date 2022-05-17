@@ -6,6 +6,14 @@ from cyy_torch_toolbox.classification_inferencer import \
 from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.hooks.amp import AMP
+
+try:
+    from cyy_torch_toolbox.hooks.amp import ApexAMP
+
+    has_apex_amp = True
+except BaseException:
+    has_apex_amp = False
+
 from cyy_torch_toolbox.hooks.keep_model import KeepModelHook
 from cyy_torch_toolbox.hooks.learning_rate_hook import LearningRateHook
 from cyy_torch_toolbox.hooks.trainer_debugger import TrainerDebugger
@@ -48,16 +56,17 @@ class Trainer(ModelExecutor):
         for a in self.__inferencers.values():
             a.set_device(device)
 
-    def set_amp(self, enabled=True):
+    def set_amp(self, enabled=True, use_apex=True):
+        if self.__amp_hook is not None:
+            self.remove_hook(self.__amp_hook)
+            self.__amp_hook = None
         if enabled:
-            if self.__amp_hook is None:
-                self.__amp_hook = AMP()
-                self.append_hook(self.__amp_hook)
+            if use_apex:
+                assert has_apex_amp
+                self.__amp_hook = ApexAMP()
             else:
-                self.enable_hook(self.__amp_hook)
-        else:
-            if self.__amp_hook is not None:
-                self.disable_hook(self.__amp_hook)
+                self.__amp_hook = AMP()
+            self.append_hook(self.__amp_hook)
 
     @property
     def batch_loss_logger(self):
@@ -224,7 +233,10 @@ class Trainer(ModelExecutor):
                         else:
                             result = self._model_with_loss(**kwargs)
                         if self.has_hook(ModelExecutorHookPoint.MODEL_BACKWARD):
-                            self.exec_hooks(ModelExecutorHookPoint.MODEL_BACKWARD)
+                            self.exec_hooks(
+                                ModelExecutorHookPoint.MODEL_BACKWARD,
+                                loss=result["loss"],
+                            )
                         else:
                             result["loss"].backward()
 

@@ -38,7 +38,7 @@ class ModelWithLoss:
         self.__model_type = model_type
         self.__has_batch_norm = None
         self.__example_input = None
-        self.__need_float_targets: bool = False
+        self.__need_float_targets: bool | None = None
 
     @property
     def example_input(self):
@@ -84,6 +84,14 @@ class ModelWithLoss:
         self.model.zero_grad(set_to_none=True)
         self.model.cpu()
 
+    @property
+    def need_float_targets(self):
+        if self.__need_float_targets is None:
+            self.__need_float_targets = False
+            if isinstance(self.__loss_fun, nn.BCEWithLogitsLoss):
+                self.__need_float_targets = True
+        return self.__need_float_targets
+
     def __call__(
         self,
         inputs,
@@ -108,12 +116,7 @@ class ModelWithLoss:
             targets = put_data_to_device(
                 targets, device=device, non_blocking=non_blocking
             )
-            try:
-                param = next(self.model.parameters())
-            except StopIteration:
-                param = next(self.model.buffers())
-            if param.device != device:
-                self.model.to(device, non_blocking=non_blocking)
+            self.model.to(device, non_blocking=non_blocking)
 
         model = self.model
         if hasattr(model, "forward_input_feature"):
@@ -139,7 +142,7 @@ class ModelWithLoss:
                 loss = output["loss"]
                 classification_output = output["logits"]
             case _:
-                if self.__need_float_targets:
+                if self.need_float_targets:
                     targets = targets.to(dtype=output.dtype, non_blocking=non_blocking)
                 assert self.loss_fun is not None
                 loss = self.loss_fun(output, targets)
@@ -155,6 +158,19 @@ class ModelWithLoss:
             "targets": targets,
             "is_averaged_loss": is_averaged_loss,
         }
+
+    def replace_model(self, model):
+        return ModelWithLoss(
+            model=model, loss_fun=self.loss_fun, model_type=self.model_type
+        )
+
+    def to(self, device, non_blocking=False):
+        try:
+            param = next(self.model.parameters())
+        except StopIteration:
+            param = next(self.model.buffers())
+        if param.device != device:
+            self.model.to(device, non_blocking=non_blocking)
 
     def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
         layers = [
@@ -183,7 +199,6 @@ class ModelWithLoss:
         if isinstance(last_layer, nn.Linear):
             if last_layer.out_features == 1:
                 get_logger().debug("choose loss function BCEWithLogitsLoss")
-                self.__need_float_targets = True
                 return nn.BCEWithLogitsLoss()
             get_logger().debug("choose loss function CrossEntropyLoss")
             return nn.CrossEntropyLoss()
