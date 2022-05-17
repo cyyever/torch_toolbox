@@ -27,9 +27,15 @@ def get_model_info() -> dict:
 
     if not __model_info:
         for repo in github_repos:
-            for model_name in torch.hub.list(
-                repo, force_reload=False, trust_repo=True, skip_validation=True
-            ):
+            try:
+                entrypoints = torch.hub.list(
+                    repo, force_reload=False, trust_repo=True, skip_validation=True
+                )
+            except BaseException:
+                entrypoints = torch.hub.list(
+                    repo, force_reload=False, skip_validation=True
+                )
+            for model_name in entrypoints:
                 if model_name.lower() not in __model_info:
                     __model_info[model_name.lower()] = (
                         model_name,

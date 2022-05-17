@@ -1,6 +1,5 @@
 import torch
 from cyy_torch_toolbox.hook import Hook
-from cyy_torch_toolbox.model_with_loss import ModelWithLoss
 
 try:
     import apex
@@ -12,6 +11,7 @@ except BaseException:
 
 class AMP(Hook):
     __ctx = torch.autocast(device_type="cuda")
+    __scaler = None
 
     def _model_forward(self, model_executor, model_kwargs, **kwargs):
         device = model_kwargs.get("device", None)
@@ -25,10 +25,22 @@ class AMP(Hook):
             result = model_executor._model_with_loss(**model_kwargs)
             model_executor.set_data("forward_result", result)
 
+    def _model_backward(self, model_executor, loss, **kwargs):
+        if self.__scaler is None:
+            self.__scaler = torch.cuda.amp.GradScaler()
+        self.__scaler.scale(loss).backward()
+
+    def _optimizer_step(self, model_executor, **kwargs):
+        self.__scaler.step(model_executor.get_optimizer())
+        # Updates the scale for next iteration.
+        self.__scaler.update()
+
 
 if has_apex:
 
     class ApexAMP(Hook):
+        __amp_model_with_loss = None
+
         def _before_execute(self, model_executor, **kwargs):
             # model_executor._model_with_loss.set_mod
             model_executor.model_with_loss.to(model_executor.device)
@@ -37,11 +49,15 @@ if has_apex:
                 model_executor.get_optimizer(),
                 opt_level="O1",
             )
-            model_executor.set_model_with_loss(
-                model_executor.model_with_loss.replace_model(model)
+            self.__amp_model_with_loss = model_executor.model_with_loss.replace_model(
+                model
             )
             model_executor.remove_optimizer()
             model_executor.set_data("optimizer", optimizer)
+
+        def _model_forward(self, model_executor, model_kwargs, **kwargs):
+            result = self.__amp_model_with_loss(**model_kwargs)
+            model_executor.set_data("forward_result", result)
 
         def _model_backward(self, model_executor, loss, **kwargs):
             with apex.amp.scale_loss(
