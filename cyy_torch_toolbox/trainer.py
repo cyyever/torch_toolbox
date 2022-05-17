@@ -52,6 +52,7 @@ class Trainer(ModelExecutor):
         if enabled:
             if self.__amp_hook is None:
                 self.__amp_hook = AMP()
+                self.append_hook(self.__amp_hook)
             else:
                 self.enable_hook(self.__amp_hook)
         else:
