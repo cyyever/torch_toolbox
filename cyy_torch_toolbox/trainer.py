@@ -5,6 +5,7 @@ from cyy_torch_toolbox.classification_inferencer import \
     ClassificationInferencer
 from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
+from cyy_torch_toolbox.hooks.amp import AMP
 from cyy_torch_toolbox.hooks.keep_model import KeepModelHook
 from cyy_torch_toolbox.hooks.learning_rate_hook import LearningRateHook
 from cyy_torch_toolbox.hooks.trainer_debugger import TrainerDebugger
@@ -16,7 +17,7 @@ from cyy_torch_toolbox.ml_type import (MachineLearningPhase,
                                        ModelExecutorHookPoint, ModelType,
                                        StopExecutingException)
 from cyy_torch_toolbox.model_executor import ModelExecutor
-from cyy_torch_toolbox.model_with_loss import (AMP, ModelWithLoss,
+from cyy_torch_toolbox.model_with_loss import (ModelWithLoss,
                                                ParallelModelWithLoss)
 
 
@@ -40,7 +41,7 @@ class Trainer(ModelExecutor):
         self.__keep_model_hook = KeepModelHook()
         self.append_hook(self.__keep_model_hook)
         self.__debugger = None
-        self.__amp_ctx = None
+        self.__amp_hook = None
 
     def set_device(self, device):
         super().set_device(device)
@@ -48,7 +49,14 @@ class Trainer(ModelExecutor):
             a.set_device(device)
 
     def set_amp(self, enabled=True):
-        self.__amp_ctx = AMP() if enabled else None
+        if enabled:
+            if self.__amp_hook is None:
+                self.__amp_hook = AMP()
+            else:
+                self.enable_hook(self.__amp_hook)
+        else:
+            if self.__amp_hook is not None:
+                self.disable_hook(self.__amp_hook)
 
     @property
     def batch_loss_logger(self):
@@ -206,13 +214,18 @@ class Trainer(ModelExecutor):
                             "device": self.device,
                             "non_blocking": True,
                         }
-                        if self.__amp_ctx is not None:
-                            result = self.__amp_ctx(self._model_with_loss, **kwargs)
+                        if self.has_hook(ModelExecutorHookPoint.MODEL_FORWARD):
+                            self.exec_hooks(
+                                ModelExecutorHookPoint.MODEL_FORWARD,
+                                model_kwargs=kwargs,
+                            )
+                            result = self.get_data("forward_result")
                         else:
                             result = self._model_with_loss(**kwargs)
-
-                        loss = result["loss"]
-                        loss.backward()
+                        if self.has_hook(ModelExecutorHookPoint.MODEL_BACKWARD):
+                            self.exec_hooks(ModelExecutorHookPoint.MODEL_BACKWARD)
+                        else:
+                            result["loss"].backward()
 
                         self.exec_hooks(
                             ModelExecutorHookPoint.AFTER_BATCH,

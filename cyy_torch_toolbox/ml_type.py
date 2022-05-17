@@ -33,6 +33,8 @@ class ModelExecutorHookPoint(IntEnum):
     AFTER_EXECUTE = auto()
     BEFORE_EPOCH = auto()
     AFTER_EPOCH = auto()
+    MODEL_FORWARD = auto()
+    MODEL_BACKWARD = auto()
     OPTIMIZER_STEP = auto()
     AFTER_OPTIMIZER_STEP = auto()
     BEFORE_FETCH_BATCH = auto()

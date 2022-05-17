@@ -11,6 +11,13 @@ from ml_type import MachineLearningPhase, ModelType
 from model_transformers.checkpointed_model import get_checkpointed_model
 from model_util import ModelUtil
 
+try:
+    import apex
+
+    has_apex = True
+except ModuleNotFoundError:
+    has_apex = False
+
 
 class ModelWithLoss:
     """
@@ -248,19 +255,3 @@ class ParallelModelWithLoss(ModelWithLoss):
             loss_fun=model_with_loss.loss_fun,
             model_type=model_with_loss.model_type,
         )
-
-
-class AMP:
-    def __init__(self):
-        self.__ctx = torch.autocast(device_type="cuda")
-
-    def __call__(self, model_with_loss: ModelWithLoss, **kwargs) -> dict:
-        device = kwargs.get("device", None)
-        if device is not None and "cuda" in str(device).lower():
-            device_type = "cuda"
-        else:
-            device_type = "cpu"
-        if device_type != self.__ctx.device:
-            self.__ctx = torch.autocast(device_type=device_type)
-        with self.__ctx:
-            return model_with_loss(**kwargs)
