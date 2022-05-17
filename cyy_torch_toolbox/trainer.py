@@ -56,7 +56,7 @@ class Trainer(ModelExecutor):
         for a in self.__inferencers.values():
             a.set_device(device)
 
-    def set_amp(self, enabled=True, use_apex=True):
+    def set_amp(self, enabled=True, use_apex=False):
         if self.__amp_hook is not None:
             self.remove_hook(self.__amp_hook)
             self.__amp_hook = None
