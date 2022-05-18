@@ -46,6 +46,7 @@ def get_model_info() -> dict:
                             force_reload=False,
                             trust_repo=True,
                             skip_validation=True,
+                            verbose=False,
                         ),
                         repo,
                     )
