@@ -6,9 +6,8 @@ from .metric_logger import MetricLogger
 
 
 class PerformanceMetricLogger(MetricLogger):
-    def _after_epoch(self, **kwargs):
+    def _after_epoch(self, model_executor, **kwargs):
         epoch = kwargs["epoch"]
-        model_executor = kwargs.get("model_executor")
 
         phase_str = "training"
         if model_executor.phase == MachineLearningPhase.Validation:
@@ -33,6 +32,21 @@ class PerformanceMetricLogger(MetricLogger):
         metric_str = metric_str[:-2]
         get_logger().info(
             "%s epoch: %s, %s %s", self.prefix, epoch, phase_str, metric_str
+        )
+
+        if model_executor.phase == MachineLearningPhase.Training:
+            grad_norm = model_executor.performance_metric.get_grad_norm(epoch)
+            if grad_norm is not None:
+                get_logger().info(
+                    "%s epoch: %s, grad norm is %s", self.prefix, epoch, grad_norm
+                )
+
+        get_logger().info(
+            "%s epoch: %s, %s use %.3f seconds",
+            self.prefix,
+            epoch,
+            phase_str,
+            model_executor.performance_metric.get_epoch_metric(epoch, "duration"),
         )
 
         get_logger().info(
