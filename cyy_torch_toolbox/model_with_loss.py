@@ -11,13 +11,6 @@ from ml_type import MachineLearningPhase, ModelType
 from model_transformers.checkpointed_model import get_checkpointed_model
 from model_util import ModelUtil
 
-try:
-    import apex
-
-    has_apex = True
-except ModuleNotFoundError:
-    has_apex = False
-
 
 class ModelWithLoss:
     """
@@ -38,7 +31,6 @@ class ModelWithLoss:
         self.__model_type = model_type
         self.__has_batch_norm = None
         self.__example_input = None
-        self.__need_float_targets: bool | None = None
 
     @property
     def example_input(self):
@@ -83,14 +75,6 @@ class ModelWithLoss:
     def offload_from_gpu(self):
         self.model.zero_grad(set_to_none=True)
         self.model.cpu()
-
-    @property
-    def need_float_targets(self):
-        if self.__need_float_targets is None:
-            self.__need_float_targets = False
-            if isinstance(self.__loss_fun, nn.BCEWithLogitsLoss):
-                self.__need_float_targets = True
-        return self.__need_float_targets
 
     def __call__(
         self,
@@ -142,7 +126,11 @@ class ModelWithLoss:
                 loss = output["loss"]
                 classification_output = output["logits"]
             case _:
-                if self.need_float_targets:
+                need_float_targets = False
+                if isinstance(self.__loss_fun, nn.BCEWithLogitsLoss):
+                    need_float_targets = True
+                assert need_float_targets
+                if need_float_targets:
                     targets = targets.to(dtype=output.dtype, non_blocking=non_blocking)
                 assert self.loss_fun is not None
                 loss = self.loss_fun(output, targets)
