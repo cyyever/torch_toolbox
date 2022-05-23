@@ -3,7 +3,7 @@ from collections import Counter, OrderedDict
 import spacy
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
-from torchtext.vocab import Vocab, build_vocab_from_iterator
+from torchtext.vocab import Vocab, vocab
 
 
 class SpacyTokenizer:
@@ -15,7 +15,6 @@ class SpacyTokenizer:
         keep_stop: bool = True,
         min_freq: int = 1,
         max_tokens=None,
-        **kwargs
     ):
         self.__keep_punct = keep_punct
         self.__keep_stop = keep_stop
@@ -24,19 +23,16 @@ class SpacyTokenizer:
 
         counter: Counter = Counter()
 
-        def yield_tokens():
-            nonlocal counter
-            for phase in MachineLearningPhase:
-                if not dc.has_dataset(phase=phase):
-                    continue
-                dataset = dc.get_dataset(phase=phase)
-                for data in dataset:
-                    data = dc.get_transforms(phase=phase).extract_data(data)
-                    text = data["input"]
-                    text = dc.get_transforms(phase=phase).transform_text(text)
-                    tokens = self.__tokenize(text)
-                    counter.update(tokens)
-                    yield tokens
+        for phase in MachineLearningPhase:
+            if not dc.has_dataset(phase=phase):
+                continue
+            dataset = dc.get_dataset(phase=phase)
+            for data in dataset:
+                data = dc.get_transforms(phase=phase).extract_data(data)
+                text = data["input"]
+                text = dc.get_transforms(phase=phase).transform_text(text)
+                tokens = self.__tokenize(text)
+                counter.update(tokens)
 
         if special_tokens is None:
             special_tokens = []
@@ -47,28 +43,30 @@ class SpacyTokenizer:
             self.__spacy.tokenizer.add_special_case(
                 token, [{spacy.symbols.ORTH: token}]
             )
-        vocab = build_vocab_from_iterator(
-            yield_tokens(),
-            specials=special_tokens,
-            min_freq=min_freq,
-            max_tokens=max_tokens,
-            **kwargs
-        )
 
         # First sort by descending frequency, then lexicographically
         sorted_by_freq_tuples = sorted(counter.items(), key=lambda x: (-x[1], x[0]))
 
         if max_tokens is None:
-            freq_dict = OrderedDict(sorted_by_freq_tuples)
+            ordered_dict = OrderedDict(sorted_by_freq_tuples)
         else:
-            freq_dict = OrderedDict(
+            assert (
+                len(special_tokens) < max_tokens
+            ), "len(special_tokens) >= max_tokens, so the vocab will be entirely special tokens."
+            ordered_dict = OrderedDict(
                 sorted_by_freq_tuples[: max_tokens - len(special_tokens)]
             )
 
-        vocab.set_default_index(vocab["<unk>"])
-        get_logger().info("vocab size is %s", len(vocab))
-        self.__vocab: Vocab = vocab
-        self.__freq_dict = freq_dict
+        word_vocab = vocab(
+            ordered_dict,
+            min_freq=min_freq,
+            specials=special_tokens,
+        )
+
+        word_vocab.set_default_index(word_vocab["<unk>"])
+        get_logger().info("vocab size is %s", len(word_vocab))
+        self.__vocab: Vocab = word_vocab
+        self.__freq_dict = ordered_dict
 
     @property
     def freq_dict(self) -> OrderedDict:

@@ -59,7 +59,8 @@ class DatasetCollection:
 
     def foreach_dataset(self):
         for phase in MachineLearningPhase:
-            yield self.get_dataset(phase=phase)
+            if self.has_dataset(phase=phase):
+                yield self.get_dataset(phase=phase)
 
     def transform_all_datasets(self, transformer: Callable) -> None:
         for phase in MachineLearningPhase:

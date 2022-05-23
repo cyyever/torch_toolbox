@@ -8,7 +8,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from device import get_devices, put_data_to_device
 from ml_type import MachineLearningPhase, ModelType
-from model_transformers.checkpointed_model import get_checkpointed_model
+from model_transform.checkpointed_model import get_checkpointed_model
 from model_util import ModelUtil
 
 
@@ -126,13 +126,12 @@ class ModelWithLoss:
                 loss = output["loss"]
                 classification_output = output["logits"]
             case _:
-                need_float_targets = False
-                if isinstance(self.__loss_fun, nn.BCEWithLogitsLoss):
-                    need_float_targets = True
-                assert need_float_targets
-                if need_float_targets:
-                    targets = targets.to(dtype=output.dtype, non_blocking=non_blocking)
                 assert self.loss_fun is not None
+                match self.loss_fun:
+                    case nn.BCEWithLogitsLoss():
+                        targets = targets.to(
+                            dtype=output.dtype, non_blocking=non_blocking
+                        )
                 loss = self.loss_fun(output, targets)
                 classification_output = output
         is_averaged_loss = self.__is_averaged_loss()

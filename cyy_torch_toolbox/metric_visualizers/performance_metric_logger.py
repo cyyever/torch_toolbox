@@ -26,7 +26,7 @@ class PerformanceMetricLogger(MetricLogger):
             if isinstance(value, torch.Tensor):
                 value = value.item()
             if "accuracy" in k:
-                metric_str = metric_str + "{}:{:.4%}, ".format(k, value)
+                metric_str = metric_str + "{}:{:.2%}, ".format(k, value)
             else:
                 metric_str = metric_str + "{}:{:e}, ".format(k, value)
         metric_str = metric_str[:-2]
