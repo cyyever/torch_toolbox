@@ -37,7 +37,7 @@ def get_mean_and_std(dc):
             name=dc.name,
         ).get_mean_and_std()
 
-    return dc._get_cache_data("mean_and_std.pk", computation_fun)
+    return dc.get_cached_data("mean_and_std.pk", computation_fun)
 
 
 def replace_str(str, old, new):
