@@ -21,18 +21,25 @@ class SpacyTokenizer:
         self.__spacy = spacy.load("en_core_web_sm")
         self.unusual_words: set = set()
 
-        counter: Counter = Counter()
+        def computation_fun():
+            nonlocal dc
+            counter: Counter = Counter()
 
-        for phase in MachineLearningPhase:
-            if not dc.has_dataset(phase=phase):
-                continue
-            dataset = dc.get_dataset(phase=phase)
-            for data in dataset:
-                data = dc.get_transforms(phase=phase).extract_data(data)
-                text = data["input"]
-                text = dc.get_transforms(phase=phase).transform_text(text)
-                tokens = self.__tokenize(text)
-                counter.update(tokens)
+            for phase in MachineLearningPhase:
+                if not dc.has_dataset(phase=phase):
+                    continue
+                dataset = dc.get_dataset(phase=phase)
+                for data in dataset:
+                    data = dc.get_transforms(phase=phase).extract_data(data)
+                    text = data["input"]
+                    text = dc.get_transforms(phase=phase).transform_text(text)
+                    tokens = self.__tokenize(text)
+                    counter.update(tokens)
+            return counter
+
+        counter: Counter = dc.get_cached_data(
+            file="tokenizer_word_counter.pk", computation_fun=computation_fun
+        )
 
         if special_tokens is None:
             special_tokens = []
