@@ -304,7 +304,7 @@ class DatasetCollection:
             datasets = dataset_util.iid_split([1, 1])
             return [d.indices for d in datasets]
 
-        split_index_lists = self._get_cache_data(
+        split_index_lists = self.get_cached_data(
             file="split_index_lists.pk", computation_fun=computation_fun
         )
         if datasets is None:
@@ -312,7 +312,7 @@ class DatasetCollection:
         self._datasets[MachineLearningPhase.Validation] = datasets[0]
         self._datasets[MachineLearningPhase.Test] = datasets[1]
 
-    def _get_cache_data(self, file: str, computation_fun: Callable) -> dict:
+    def get_cached_data(self, file: str, computation_fun: Callable) -> dict:
         with DatasetCollection.lock:
             cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
             return get_cached_data(os.path.join(cache_dir, file), computation_fun)
@@ -342,7 +342,7 @@ class ClassificationDatasetCollection(DatasetCollection):
         if not use_cache:
             return computation_fun()
 
-        return self._get_cache_data("labels.pk", computation_fun)
+        return self.get_cached_data("labels.pk", computation_fun)
 
     def get_label_names(self) -> dict:
         def computation_fun():
@@ -353,7 +353,7 @@ class ClassificationDatasetCollection(DatasetCollection):
                 raise NotImplementedError(f"failed to get label names for {self.name}")
             return label_names
 
-        return self._get_cache_data("label_names.pk", computation_fun)
+        return self.get_cached_data("label_names.pk", computation_fun)
 
     def get_raw_data(self, phase: MachineLearningPhase, index: int) -> tuple:
         if self.dataset_type == DatasetType.Vision:
