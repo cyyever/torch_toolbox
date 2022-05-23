@@ -277,18 +277,21 @@ class Trainer(ModelExecutor):
                         epoch=epoch,
                     )
 
-                    if not self.__inferencers:
-                        for phase in (
-                            MachineLearningPhase.Validation,
-                            MachineLearningPhase.Test,
+                    for phase in (
+                        MachineLearningPhase.Validation,
+                        MachineLearningPhase.Test,
+                    ):
+                        if (
+                            phase not in self.__inferencers
+                            and self.dataset_collection.has_dataset(phase=phase)
                         ):
                             inferencer = self.get_inferencer(phase)
                             inferencer.disable_logger()
                             self.__inferencers[phase] = inferencer
-
-                    for inferencer in self.__inferencers.values():
-                        inferencer.model.load_state_dict(self.model.state_dict())
-                        inferencer.inference(epoch=epoch, use_grad=False)
+                        inferencer = self.__inferencers.get(phase, None)
+                        if inferencer is not None:
+                            inferencer.model.load_state_dict(self.model.state_dict())
+                            inferencer.inference(epoch=epoch, use_grad=False)
 
                     self.exec_hooks(
                         ModelExecutorHookPoint.AFTER_VALIDATION,
