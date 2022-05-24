@@ -87,11 +87,14 @@ class ModelUtil:
             )
         )
 
-    def remove_statistical_variables(self):
-        for k in list(self.model.state_dict().keys()):
-            if ".running_var" in k or ".running_mean" in k:
-                get_logger().debug("remove %s from model", k)
-                self.set_attr(k, None, as_parameter=False)
+    def reset_statistical_values(self) -> None:
+        for k, v in self.model.state_dict().items():
+            if ".running_var" in k:
+                get_logger().debug("reset %s from model", k)
+                self.set_attr(k, torch.ones_like(v), as_parameter=False)
+            if ".running_mean" in k:
+                get_logger().debug("reset %s from model", k)
+                self.set_attr(k, torch.zeros_like(v), as_parameter=False)
             elif k.startswith(".running_"):
                 raise RuntimeError(f"unchecked key {k}")
 
