@@ -92,6 +92,18 @@ class ModelUtil:
             )
         )
 
+    def disable_running_stats(self) -> None:
+        def impl(_, module, __):
+            # Those lines are copied from the official code
+            module.track_running_stats = False
+            module.register_buffer("running_mean", None)
+            module.register_buffer("running_var", None)
+            module.register_buffer("num_batches_tracked", None)
+
+        self.change_sub_modules(
+            f=impl, sub_module_type=torch.nn.modules.batchnorm._NormBase
+        )
+
     def reset_statistical_values(self) -> None:
         for k, v in self.model.state_dict().items():
             if ".running_var" in k:
