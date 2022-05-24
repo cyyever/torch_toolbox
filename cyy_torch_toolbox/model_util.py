@@ -8,6 +8,11 @@ from cyy_naive_lib.log import get_logger
 from tensor import cat_tensors_to_vector, load_tensor_dict
 
 
+class IdentityModule(nn.Module):
+    def forward(self, x):
+        return x
+
+
 class ModelUtil:
     def __init__(self, model: torch.nn.Module):
         self.__model = model
@@ -97,6 +102,14 @@ class ModelUtil:
                 self.set_attr(k, torch.zeros_like(v), as_parameter=False)
             elif k.startswith(".running_"):
                 raise RuntimeError(f"unchecked key {k}")
+
+    def register_module(self, name: str, module) -> None:
+        if "." not in name:
+            self.model.register_module(name, module)
+        else:
+            components = name.split(".")
+            sub_module = self.get_attr(".".join(components[:-1]))
+            sub_module.register_module(components[-1], module)
 
     def set_attr(self, name: str, value: Any, as_parameter: bool = True) -> None:
         model = self.model
