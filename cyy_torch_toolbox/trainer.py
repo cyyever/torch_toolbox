@@ -74,6 +74,8 @@ class Trainer(ModelExecutor):
 
     @property
     def best_model(self):
+        if self.__keep_model_hook.best_model is None:
+            return None
         return self.__keep_model_hook.best_model[0]
 
     def get_inferencer_performance_metric(self, phase):
