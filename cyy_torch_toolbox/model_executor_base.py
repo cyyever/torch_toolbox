@@ -1,3 +1,4 @@
+import copy
 from typing import Callable, Dict, List
 
 from cyy_torch_toolbox.hook import Hook
@@ -14,21 +15,21 @@ class ModelExecutorBase:
     def get_data(self, key: str, default_value=None):
         return self.__data.get(key, default_value)
 
-    def set_data(self, key: str, value):
+    def set_data(self, key: str, value) -> None:
         self.__data[key] = value
 
-    def remove_data(self, key: str):
+    def remove_data(self, key: str) -> None:
         self.__data.pop(key, None)
 
-    def has_data(self, key: str):
+    def has_data(self, key: str) -> bool:
         return key in self.__data
 
     def clear_data(self):
         self.__data.clear()
 
     def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs):
-        for hook in self.__hooks.get(hook_point, []):
-            for name, fun in hook.items():
+        for hook in copy.copy(self.__hooks.get(hook_point, [])):
+            for name, fun in copy.copy(hook).items():
                 if name not in self.__disabled_hooks:
                     fun(model_executor=self, **kwargs)
 
