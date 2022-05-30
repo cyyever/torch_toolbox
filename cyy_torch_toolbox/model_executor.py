@@ -1,5 +1,6 @@
 import copy
 import os
+import pickle
 from typing import Callable, Optional
 
 import torch
@@ -222,6 +223,31 @@ class ModelExecutor(ModelExecutorBase):
             del self.__dataloader
             self.__dataloader = None
         torch.cuda.empty_cache()
+
+    def offload_from_memory(self):
+        assert self.save_dir is not None
+        self.offload_from_gpu()
+        with open(os.path.join(self.save_dir, "model_and_loss.pk"), "wb") as f:
+            pickle.dump(
+                self.model_with_loss,
+                f,
+            )
+            self._model_with_loss = None
+        with open(os.path.join(self.save_dir, "dc.pk"), "wb") as f:
+            pickle.dump(
+                self.__dataset_collection,
+                f,
+            )
+            self.__dataset_collection = None
+
+    def load_to_memory(self):
+        assert self.save_dir is not None
+        if self._model_with_loss is None:
+            with open(os.path.join(self.save_dir, "model_and_loss.pk"), "rb") as f:
+                self._model_with_loss = pickle.load(f)
+        if self.__dataset_collection is None:
+            with open(os.path.join(self.save_dir, "dc.pk"), "rb") as f:
+                self.__dataset_collection = pickle.load(f)
 
     @classmethod
     def decode_batch(cls, batch):
