@@ -136,8 +136,15 @@ class Trainer(ModelExecutor):
 
     def offload_from_gpu(self):
         super().offload_from_gpu()
-        for inferencer in self.__inferencers.values():
-            inferencer.offload_from_gpu()
+        self.__inferencers.clear()
+
+    def offload_from_memory(self):
+        super().offload_from_memory()
+        self.__keep_model_hook.offload_from_memory(self.save_dir)
+
+    def load_to_memory(self):
+        super().load_to_memory()
+        self.__keep_model_hook.load_to_memory(self.save_dir)
 
     def add_skipped_epoch(self, epoch):
         key = "skipped_epoch"

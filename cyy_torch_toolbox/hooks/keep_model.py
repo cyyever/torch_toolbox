@@ -1,4 +1,5 @@
 import os
+import pickle
 import shutil
 
 from cyy_torch_toolbox.device import get_cpu_device
@@ -7,12 +8,20 @@ from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
 class KeepModelHook(Hook):
-    __best_model: tuple = None
+    __best_model: tuple | None = None
     save_flag: bool = False
 
     @property
     def best_model(self):
         return self.__best_model
+
+    def offload_from_memory(self, save_dir):
+        with open(os.path.join(save_dir, "best_model.pk"), "wb") as f:
+            pickle.dump(self.best_model, f)
+
+    def load_to_memory(self, save_dir):
+        with open(os.path.join(save_dir, "best_model.pk"), "rb") as f:
+            self.__best_model = pickle.load(f)
 
     def _before_execute(self, **kwargs):
         self.__best_model = None
