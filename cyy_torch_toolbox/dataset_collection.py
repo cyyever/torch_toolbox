@@ -421,6 +421,11 @@ def create_dataset_collection(
                     dataset_kwargs=dataset_kwargs,
                     model_kwargs=model_kwargs,
                 )
+            elif name.lower() in {k.lower() for k in dataset_constructor.keys()}:
+                get_logger().warning(
+                    "there is a similar name in dataset type %s", str(dataset_type)
+                )
+
             all_dataset_constructors |= dataset_constructor.keys()
         get_logger().error(
             "supported datasets are %s", sorted(all_dataset_constructors)
