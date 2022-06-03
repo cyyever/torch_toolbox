@@ -1,7 +1,7 @@
 import os
 import time
 
-from ml_type import ModelType
+from cyy_torch_toolbox.ml_type import ModelType
 
 from .acc_metric import AccuracyMetric
 from .grad_metric import GradMetric

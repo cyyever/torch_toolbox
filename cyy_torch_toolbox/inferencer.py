@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.hyper_parameter import HyperParameter
-from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
+from cyy_torch_toolbox.ml_type import (MachineLearningPhase,
                                        ModelExecutorHookPoint)
 from cyy_torch_toolbox.model_executor import ModelExecutor
 from cyy_torch_toolbox.model_with_loss import ModelWithLoss

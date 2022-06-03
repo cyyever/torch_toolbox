@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from cyy_torch_toolbox.dataset_collection import (
     ClassificationDatasetCollection, create_dataset_collection)
-from model_factory import get_model
+from cyy_torch_toolbox.model_factory import get_model
 
 
 def test_model():

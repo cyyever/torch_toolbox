@@ -15,10 +15,10 @@ try:
 except ModuleNotFoundError:
     has_dali = False
 
-from .dataset import get_dataset_size
-from .dataset_collection import DatasetCollection
-from .hyper_parameter import HyperParameter
-from .ml_type import MachineLearningPhase, ModelType
+from cyy_torch_toolbox.dataset import get_dataset_size
+from cyy_torch_toolbox.dataset_collection import DatasetCollection
+from cyy_torch_toolbox.hyper_parameter import HyperParameter
+from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 
 if has_dali:
 

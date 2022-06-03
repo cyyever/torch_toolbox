@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
-
 from cyy_naive_lib.data_structure.thread_task_queue import ThreadTaskQueue
-from device import get_devices
+from cyy_torch_toolbox.device import get_devices
 
 
 class TorchThreadTaskQueue(ThreadTaskQueue):

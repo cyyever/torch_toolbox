@@ -5,7 +5,7 @@ import warnings
 warnings.simplefilter("ignore", DeprecationWarning)
 
 # from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
-from ml_type import MachineLearningPhase
+from cyy_torch_toolbox.ml_type import MachineLearningPhase
 from torch.utils.tensorboard import SummaryWriter
 
 from .metric_visualizer import MetricVisualizer
