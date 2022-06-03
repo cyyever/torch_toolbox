@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import hyper_parameter
+import cyy_torch_toolbox.hyper_parameter
 
 
 def test_hyper_parameter():

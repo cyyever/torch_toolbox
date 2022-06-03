@@ -6,11 +6,11 @@ import transformers
 from cyy_naive_lib.log import get_logger
 from torch.nn.parallel import DistributedDataParallel as DDP
 
+from cyy_torch_toolbox.device import get_devices, put_data_to_device
+from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 from cyy_torch_toolbox.model_transform.checkpointed_model import \
     get_checkpointed_model
-from device import get_devices, put_data_to_device
-from ml_type import MachineLearningPhase, ModelType
-from model_util import ModelUtil
+from cyy_torch_toolbox.model_util import ModelUtil
 
 
 class ModelWithLoss:

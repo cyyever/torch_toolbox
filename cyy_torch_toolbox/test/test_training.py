@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import torch
+from cyy_torch_toolbox.default_config import DefaultConfig
 from cyy_torch_toolbox.device import CudaDeviceGreedyAllocator
 from cyy_torch_toolbox.ml_type import (ModelExecutorHookPoint,
                                        StopExecutingException)
-from default_config import DefaultConfig
 
 
 def stop_training(*args, **kwargs):

@@ -81,7 +81,7 @@ class DefaultConfig:
         return self.create_trainer_by_model(model_with_loss, dc)
 
     def create_trainer_by_model(
-        self, model_with_loss: ModelWithLoss, dc: DatasetCollection = None
+        self, model_with_loss: ModelWithLoss, dc: DatasetCollection | None = None
     ) -> Trainer:
         if dc is None:
             dc = self.create_dataset_collection()

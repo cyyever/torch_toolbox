@@ -1,6 +1,7 @@
 from shutil import which
 
-from data_structure.torch_process_task_queue import TorchProcessTaskQueue
+from cyy_torch_toolbox.data_structure.torch_process_task_queue import \
+    TorchProcessTaskQueue
 
 
 def hello(task, args):

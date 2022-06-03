@@ -1,4 +1,4 @@
-from ml_type import ModelExecutorHookPoint
+from cyy_torch_toolbox.ml_type import ModelExecutorHookPoint
 
 
 class Hook:
