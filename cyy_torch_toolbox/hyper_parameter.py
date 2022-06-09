@@ -288,6 +288,12 @@ class HyperParameterConfig:
         parser.add_argument("--optimizer_name", type=str, default=None)
         parser.add_argument("--hyper_parameter_config_json", type=str, default=None)
 
+    def load_config(self, conf):
+        for attr in dir(conf):
+            value = getattr(conf, attr)
+            if value is not None:
+                setattr(self, attr, value)
+
     def load_args(self, args):
         if args.hyper_parameter_config_json is not None:
             with open(args.hyper_parameter_config_json, "rt", encoding="utf8") as f:
