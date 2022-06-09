@@ -170,11 +170,12 @@ class Trainer(ModelExecutor):
             self._model_with_loss = ParallelModelWithLoss.create(self._model_with_loss)
         super()._prepare_execution(**kwargs)
         for phase in MachineLearningPhase:
-            get_logger().info(
-                "%s dataset len %s",
-                phase,
-                get_dataset_size(self.dataset_collection.get_dataset(phase=phase)),
-            )
+            if self.dataset_collection.has_dataset(phase):
+                get_logger().info(
+                    "%s dataset len %s",
+                    phase,
+                    get_dataset_size(self.dataset_collection.get_dataset(phase=phase)),
+                )
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
 
     def train(self, **kwargs):
