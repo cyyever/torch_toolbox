@@ -5,7 +5,6 @@ import uuid
 from dataclasses import dataclass
 
 from cyy_naive_lib.log import get_logger
-from hydra.core.config_store import ConfigStore
 from omegaconf import DictConfig, OmegaConf
 
 from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
@@ -31,13 +30,13 @@ class DefaultConfig:
         self.profile = False
         self.save_dir = None
         self.log_level = None
-        cs = ConfigStore.instance()
-        cs.store(name="config", node=self)
 
     @classmethod
     def load_config(cls, obj, conf):
         for attr in dir(conf):
             if attr.startswith("_"):
+                continue
+            if not hasattr(obj, attr):
                 continue
             value = getattr(conf, attr)
             if value is not None:
