@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from cyy_naive_lib.log import get_logger
 from hydra.core.config_store import ConfigStore
+from omegaconf import DictConfig, OmegaConf
 
 from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
                                                   DatasetCollectionConfig)
@@ -33,14 +34,28 @@ class DefaultConfig:
         cs = ConfigStore.instance()
         cs.store(name="config", node=self)
 
-    def load_config(self, conf):
+    @classmethod
+    def load_config(cls, obj, conf):
         for attr in dir(conf):
+            if attr.startswith("_"):
+                continue
             value = getattr(conf, attr)
             if value is not None:
-                setattr(self, attr, value)
-        self.dc_config.load_config(conf)
-        self.hyper_parameter_config.load_config(conf)
-        self.model_config.load_config(conf)
+                match value:
+                    case DictConfig():
+                        setattr(
+                            obj,
+                            attr,
+                            OmegaConf.to_container(value) | getattr(obj, attr),
+                        )
+                    case _:
+                        setattr(obj, attr, value)
+            if hasattr(obj, "dc_config"):
+                cls.load_config(obj.dc_config, conf)
+            if hasattr(obj, "hyper_parameter_config"):
+                cls.load_config(obj.hyper_parameter_config, conf)
+            if hasattr(obj, "model_config"):
+                cls.load_config(obj.model_config, conf)
 
     def load_args(self, parser=None):
         if parser is None:

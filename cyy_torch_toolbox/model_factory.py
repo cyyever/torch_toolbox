@@ -166,12 +166,6 @@ class ModelConfig:
         self.model_kwargs = {}
         self.model_kwarg_json_path = None
 
-    def load_config(self, conf):
-        for attr in dir(conf):
-            value = getattr(conf, attr)
-            if value is not None:
-                setattr(self, attr, value)
-
     def add_args(self, parser) -> None:
         if self.model_name is None:
             parser.add_argument("--model_name", type=str, required=True)
