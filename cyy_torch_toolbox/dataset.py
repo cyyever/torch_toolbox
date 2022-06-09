@@ -69,7 +69,11 @@ def sub_dataset(
     """
     indices = sorted(set(indices))
     dataset = convert_iterable_dataset_to_map(dataset)
-    return torch.utils.data.Subset(dataset, indices)
+    match dataset:
+        case DictDataset():
+            return DictDataset(items={idx: dataset[idx] for idx in indices})
+        case _:
+            return torch.utils.data.Subset(dataset, indices)
 
 
 def sample_dataset(

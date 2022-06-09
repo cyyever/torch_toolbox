@@ -70,7 +70,7 @@ class DatasetCollection:
         return phase in self._datasets
 
     def remove_dataset(self, phase: MachineLearningPhase) -> None:
-        get_logger().warning("remove dataset %s", phase)
+        get_logger().debug("remove dataset %s", phase)
         self._datasets.pop(phase, None)
 
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
