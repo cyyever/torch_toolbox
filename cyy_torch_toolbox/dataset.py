@@ -42,6 +42,7 @@ class DatasetMapper:
 class DictDataset(torch.utils.data.MapDataPipe):
     def __init__(self, items: dict):
         super().__init__()
+        assert items
         self.__items = items
 
     def __getitem__(self, index):
@@ -69,9 +70,10 @@ def sub_dataset(
     """
     indices = sorted(set(indices))
     dataset = convert_iterable_dataset_to_map(dataset)
+    assert indices
     match dataset:
         case DictDataset():
-            return DictDataset(items={idx: dataset[idx] for idx in indices})
+            return DictDataset(items=dict(enumerate([dataset[idx] for idx in indices])))
         case _:
             return torch.utils.data.Subset(dataset, indices)
 
