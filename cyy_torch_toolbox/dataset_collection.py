@@ -444,12 +444,6 @@ class DatasetCollectionConfig:
         self.training_dataset_label_noise_percentage = None
         self.cache_transforms = True
 
-    def load_config(self, conf):
-        for attr in dir(conf):
-            value = getattr(conf, attr)
-            if value is not None:
-                setattr(self, attr, value)
-
     def add_args(self, parser):
         if self.dataset_name is None:
             parser.add_argument("--dataset_name", type=str, required=True)
