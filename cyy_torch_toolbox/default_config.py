@@ -2,8 +2,10 @@ import argparse
 import datetime
 import os
 import uuid
+from dataclasses import dataclass
 
 from cyy_naive_lib.log import get_logger
+from hydra.core.config_store import ConfigStore
 
 from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
                                                   DatasetCollectionConfig)
@@ -16,6 +18,7 @@ from cyy_torch_toolbox.reproducible_env import global_reproducible_env
 from cyy_torch_toolbox.trainer import Trainer
 
 
+@dataclass
 class DefaultConfig:
     def __init__(self, dataset_name=None, model_name=None):
         self.make_reproducible_env = False
@@ -27,6 +30,17 @@ class DefaultConfig:
         self.profile = False
         self.save_dir = None
         self.log_level = None
+        cs = ConfigStore.instance()
+        cs.store(name="config", node=self)
+
+    def load_config(self, conf):
+        for attr in dir(conf):
+            value = getattr(conf, attr)
+            if value is not None:
+                setattr(self, attr, value)
+        self.dc_config.load_config(conf)
+        self.hyper_parameter_config.load_config(conf)
+        self.model_config.load_config(conf)
 
     def load_args(self, parser=None):
         if parser is None:
