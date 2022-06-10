@@ -305,8 +305,9 @@ class DatasetCollection:
 
         def computation_fun():
             nonlocal datasets
-            datasets = dataset_util.iid_split([1, 1])
-            return [d.indices for d in datasets]
+            sub_dataset_indices_list = dataset_util.iid_split_indices([1, 1])
+            datasets = dataset_util.split_by_indices(sub_dataset_indices_list)
+            return sub_dataset_indices_list
 
         split_index_lists = self.get_cached_data(
             file="split_index_lists.pk", computation_fun=computation_fun
