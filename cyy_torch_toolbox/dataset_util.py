@@ -158,28 +158,37 @@ class DatasetSplitter(DatasetUtil):
     def split_by_indices(self, indices_list: list) -> list:
         return [sub_dataset(self.dataset, indices) for indices in indices_list]
 
-    def __get_split_indices(self, parts: list, iid: bool = True) -> list:
+    def __get_split_indices(self, parts: list, iid: bool = True) -> list[list]:
         assert parts
         if len(parts) == 1:
             return [list(range(len(self)))]
-        sub_dataset_indices_list: list = []
-        for _ in parts:
-            sub_dataset_indices_list.append([])
 
-        if iid:
-            for v in self.label_sample_dict.values():
-                label_indices_list = sorted(v)
-                for i, part in enumerate(parts):
-                    delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
-                    sub_dataset_indices_list[i] += label_indices_list[:delimiter]
-                    label_indices_list = label_indices_list[delimiter:]
-        else:
-            label_indices_list = list(range(len(self)))
-            for i, part in enumerate(parts):
-                delimiter = int(len(label_indices_list) * part / sum(parts[i:]))
-                sub_dataset_indices_list[i] += label_indices_list[:delimiter]
-                label_indices_list = label_indices_list[delimiter:]
-        return sub_dataset_indices_list
+        def split_idx_impl(indices_list: list) -> list[list]:
+            part_lens = []
+            for part in parts:
+                part_len = int(len(indices_list) * part / sum(parts))
+                assert part_len != 0
+                part_lens.append(part_len)
+            part_lens[-1] += len(indices_list) - sum(part_lens)
+            part_indices = []
+            for part_len in part_lens:
+                part_indices.append(indices_list[0:part_len])
+                indices_list = indices_list[part_len:]
+            return part_indices
+
+        if not iid:
+            index_list = list(range(len(self)))
+            random.shuffle(index_list)
+            return split_idx_impl(index_list)
+
+        sub_index_list: list[list] = []
+        for _ in parts:
+            sub_index_list.append([])
+        for v in self.label_sample_dict.values():
+            part_index_list = split_idx_impl(sorted(v))
+            for a, b in zip(sub_index_list, part_index_list):
+                a += b
+        return sub_index_list
 
     def __split(self, parts: list, iid: bool = True) -> list:
         assert parts
