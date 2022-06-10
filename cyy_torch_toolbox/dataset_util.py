@@ -147,30 +147,26 @@ class DatasetSplitter(DatasetUtil):
         return self.dataset[idx][0]
 
     def iid_split_indices(self, parts: list) -> list:
-        return self.__get_split_indices(parts, by_label=True)
+        return self.__get_split_indices(parts, iid=True)
 
     def random_split_indices(self, parts: list) -> list:
-        return self.__get_split_indices(parts, by_label=False)
+        return self.__get_split_indices(parts, iid=False)
 
     def iid_split(self, parts: list) -> list:
-        return self.__split(parts, by_label=True)
-
-    def random_split(self, parts: list) -> list:
-        return self.__split(parts, by_label=False)
+        return self.__split(parts, iid=True)
 
     def split_by_indices(self, indices_list: list) -> list:
         return [sub_dataset(self.dataset, indices) for indices in indices_list]
 
-    def __get_split_indices(self, parts: list, by_label: bool = True) -> list:
+    def __get_split_indices(self, parts: list, iid: bool = True) -> list:
         assert parts
-        sub_dataset_indices_list: list = []
         if len(parts) == 1:
-            sub_dataset_indices_list.append(list(range(len(self))))
-            return sub_dataset_indices_list
+            return [list(range(len(self)))]
+        sub_dataset_indices_list: list = []
         for _ in parts:
             sub_dataset_indices_list.append([])
 
-        if by_label:
+        if iid:
             for v in self.label_sample_dict.values():
                 label_indices_list = sorted(v)
                 for i, part in enumerate(parts):
@@ -185,11 +181,11 @@ class DatasetSplitter(DatasetUtil):
                 label_indices_list = label_indices_list[delimiter:]
         return sub_dataset_indices_list
 
-    def __split(self, parts: list, by_label: bool = True) -> list:
+    def __split(self, parts: list, iid: bool = True) -> list:
         assert parts
         if len(parts) == 1:
             return [self.dataset]
-        sub_dataset_indices_list = self.__get_split_indices(parts, by_label)
+        sub_dataset_indices_list = self.__get_split_indices(parts, iid)
         return self.split_by_indices(sub_dataset_indices_list)
 
     def sample(self, percentage: float) -> Iterable:
