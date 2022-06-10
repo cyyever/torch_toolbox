@@ -1,4 +1,5 @@
 torch
+omegaconf
 torchtext
 torchvision
 ssd-checker
