@@ -10,7 +10,7 @@ except BaseException:
 
 
 class AMP(Hook):
-    __ctx = torch.autocast(device_type="cuda")
+    __ctx = torch.autocast(device_type=("cuda" if torch.cuda.is_available() else "cpu"))
     __scaler = None
 
     def _model_forward(self, model_executor, model_kwargs, **kwargs):
