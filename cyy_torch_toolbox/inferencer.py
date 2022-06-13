@@ -1,25 +1,12 @@
 import torch
 import torch.nn as nn
 
-from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.hyper_parameter import HyperParameter
 from cyy_torch_toolbox.ml_type import (MachineLearningPhase,
                                        ModelExecutorHookPoint)
 from cyy_torch_toolbox.model_executor import ModelExecutor
-from cyy_torch_toolbox.model_with_loss import ModelWithLoss
 
 
 class Inferencer(ModelExecutor):
-    def __init__(
-        self,
-        model_with_loss: ModelWithLoss,
-        dataset_collection: DatasetCollection,
-        phase: MachineLearningPhase,
-        hyper_parameter: HyperParameter,
-    ):
-        super().__init__(model_with_loss, dataset_collection, phase, hyper_parameter)
-        assert self.phase != MachineLearningPhase.Training
-
     def inference(self, **kwargs):
         self._prepare_execution()
         use_grad = kwargs.get("use_grad", False)
