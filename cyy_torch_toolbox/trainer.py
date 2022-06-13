@@ -135,8 +135,8 @@ class Trainer(ModelExecutor):
         self.remove_optimizer()
 
     def offload_from_gpu(self):
-        super().offload_from_gpu()
         self.__inferencers.clear()
+        super().offload_from_gpu()
 
     def offload_from_memory(self):
         super().offload_from_memory()
