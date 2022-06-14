@@ -115,13 +115,6 @@ if has_dali:
                     mean_and_std = (transform.mean, transform.std)
                 case _:
                     remain_transforms.append(transform)
-        # if images is None:
-        #     images = nvidia.dali.fn.decoders.image(
-        #         image_files,
-        #         device="cpu" if device is None else "mixed",
-        #         device_memory_padding=device_memory_padding,
-        #         host_memory_padding=host_memory_padding,
-        #     )
         assert mean_and_std is not None
         new_mean = copy.deepcopy(mean_and_std[0])
         for idx, m in enumerate(mean_and_std[0]):
