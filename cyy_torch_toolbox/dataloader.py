@@ -55,23 +55,19 @@ if has_dali:
         horizontal_mirror = False
         mean_and_std = None
         new_transforms = []
+        images = None
+        device_memory_padding = 211025920 if device is not None else 0
+        host_memory_padding = 140544512 if device is not None else 0
         for transform in raw_input_transforms:
             if isinstance(
                 transform, torchvision.transforms.transforms.RandomResizedCrop
             ):
                 # ask nvJPEG to preallocate memory for the biggest sample in ImageNet for CPU and GPU to avoid reallocations in runtime
-                device_memory_padding = 211025920 if device is not None else 0
-                host_memory_padding = 140544512 if device is not None else 0
-                # disable nvJPEG to avoid leak
                 images = nvidia.dali.fn.decoders.image_random_crop(
                     image_files,
                     device="cpu" if device is None else "mixed",
                     device_memory_padding=device_memory_padding,
                     host_memory_padding=host_memory_padding,
-                    num_attempts=5,
-                    hw_decoder_load=0,
-                    preallocate_width_hint=0,
-                    preallocate_height_hint=0,
                 )
                 images = nvidia.dali.fn.resize(
                     images,
@@ -92,6 +88,13 @@ if has_dali:
                 mean_and_std = (copy.deepcopy(transform.mean), transform.std)
                 continue
             new_transforms.append(transform)
+        if images is None:
+            images = nvidia.dali.fn.decoders.image(
+                image_files,
+                device="cpu" if device is None else "mixed",
+                device_memory_padding=device_memory_padding,
+                host_memory_padding=host_memory_padding,
+            )
         raw_input_transforms = new_transforms
         assert mean_and_std is not None
         for idx, m in enumerate(mean_and_std[0]):
