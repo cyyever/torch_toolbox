@@ -89,6 +89,10 @@ class ModelWithLoss:
         if phase is not None:
             self.set_model_mode(phase == MachineLearningPhase.Training)
 
+        # DALI returns nested targets
+        if len(targets.shape) > 1:
+            targets = targets.view(-1).long()
+
         if device is not None:
             if input_features is not None:
                 input_features = put_data_to_device(

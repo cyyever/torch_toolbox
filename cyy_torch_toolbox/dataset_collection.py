@@ -157,7 +157,9 @@ class DatasetCollection:
             os.makedirs(dataset_dir, exist_ok=True)
         if name.lower() == "imagenet":
             if not is_ssd(dataset_dir):
-                get_logger().warning("dataset %s is not on a SSD disk", name)
+                get_logger().warning(
+                    "dataset %s is not on a SSD disk: %s", name, dataset_dir
+                )
         return dataset_dir
 
     @classmethod

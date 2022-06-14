@@ -126,12 +126,14 @@ def get_dataloader(
     hyper_parameter: HyperParameter,
     device=None,
     persistent_workers=True,
+    use_dali=True,
 ):
     dataset = dc.get_dataset(phase)
     original_dataset = dc.get_original_dataset(phase)
     # We use DALI for ImageFolder only
     if (
         has_dali
+        and use_dali
         and model_type == ModelType.Classification
         and isinstance(original_dataset, torchvision.datasets.folder.ImageFolder)
     ):
