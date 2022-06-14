@@ -15,6 +15,7 @@ try:
 except ModuleNotFoundError:
     has_dali = False
 
+
 from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.hyper_parameter import HyperParameter
@@ -49,45 +50,71 @@ if has_dali:
         raw_input_transforms = [
             t
             for t in raw_input_transforms
-            if not isinstance(t, torchvision.transforms.transforms.ToTensor)
+            if not isinstance(t, torchvision.transforms.ToTensor)
         ]
         get_logger().debug("raw_input_transforms are %s", raw_input_transforms)
         horizontal_mirror = False
         mean_and_std = None
-        new_transforms = []
+        remain_transforms = []
         images = None
+        # ask nvJPEG to preallocate memory for the biggest sample in ImageNet for CPU and GPU to avoid reallocations in runtime
         device_memory_padding = 211025920 if device is not None else 0
         host_memory_padding = 140544512 if device is not None else 0
         for transform in raw_input_transforms:
-            if isinstance(
-                transform, torchvision.transforms.transforms.RandomResizedCrop
-            ):
-                # ask nvJPEG to preallocate memory for the biggest sample in ImageNet for CPU and GPU to avoid reallocations in runtime
-                images = nvidia.dali.fn.decoders.image_random_crop(
-                    image_files,
-                    device="cpu" if device is None else "mixed",
-                    device_memory_padding=device_memory_padding,
-                    host_memory_padding=host_memory_padding,
-                )
-                images = nvidia.dali.fn.resize(
-                    images,
-                    dtype=nvidia.dali.types.FLOAT,
-                    device="cpu" if device is None else "gpu",
-                    resize_x=transform.size[0],
-                    resize_y=transform.size[1],
-                )
-                continue
-            if isinstance(
-                transform, torchvision.transforms.transforms.RandomHorizontalFlip
-            ):
-                horizontal_mirror = nvidia.dali.fn.random.coin_flip(
-                    probability=transform.p
-                )
-                continue
-            if isinstance(transform, torchvision.transforms.transforms.Normalize):
-                mean_and_std = (copy.deepcopy(transform.mean), transform.std)
-                continue
-            new_transforms.append(transform)
+            match transform:
+                case torchvision.transforms.Resize():
+                    if images is None:
+                        images = nvidia.dali.fn.decoders.image(
+                            image_files,
+                            device="cpu" if device is None else "mixed",
+                            device_memory_padding=device_memory_padding,
+                            host_memory_padding=host_memory_padding,
+                        )
+                    match transform.size:
+                        case int():
+                            images = nvidia.dali.fn.resize(
+                                images,
+                                dtype=nvidia.dali.types.FLOAT,
+                                device="cpu" if device is None else "gpu",
+                                resize_shorter=transform.size,
+                            )
+                        case _:
+                            images = nvidia.dali.fn.resize(
+                                images,
+                                dtype=nvidia.dali.types.FLOAT,
+                                device="cpu" if device is None else "gpu",
+                                resize_x=transform.size[0],
+                                resize_y=transform.size[1],
+                            )
+                case torchvision.transforms.CenterCrop():
+                    images = nvidia.dali.fn.crop(
+                        images,
+                        device="cpu" if device is None else "gpu",
+                        crop=transform.size,
+                    )
+                case torchvision.transforms.RandomResizedCrop():
+                    assert images is None
+                    images = nvidia.dali.fn.decoders.image_random_crop(
+                        image_files,
+                        device="cpu" if device is None else "mixed",
+                        device_memory_padding=device_memory_padding,
+                        host_memory_padding=host_memory_padding,
+                    )
+                    images = nvidia.dali.fn.resize(
+                        images,
+                        dtype=nvidia.dali.types.FLOAT,
+                        device="cpu" if device is None else "gpu",
+                        resize_x=transform.size[0],
+                        resize_y=transform.size[1],
+                    )
+                case torchvision.transforms.RandomHorizontalFlip():
+                    horizontal_mirror = nvidia.dali.fn.random.coin_flip(
+                        probability=transform.p
+                    )
+                case torchvision.transforms.Normalize():
+                    mean_and_std = (transform.mean, transform.std)
+                case _:
+                    remain_transforms.append(transform)
         if images is None:
             images = nvidia.dali.fn.decoders.image(
                 image_files,
@@ -95,26 +122,24 @@ if has_dali:
                 device_memory_padding=device_memory_padding,
                 host_memory_padding=host_memory_padding,
             )
-        raw_input_transforms = new_transforms
         assert mean_and_std is not None
+        new_mean = copy.deepcopy(mean_and_std[0])
         for idx, m in enumerate(mean_and_std[0]):
             assert 0 <= m <= 1
-            mean_and_std[0][idx] = m * 255
+            new_mean[idx] = m * 255
         scale = 1.0 / 255
         images = nvidia.dali.fn.crop_mirror_normalize(
             images,
             dtype=nvidia.dali.types.FLOAT,
             output_layout="CHW",
-            mean=mean_and_std[0].tolist(),
+            mean=new_mean.tolist(),
             std=mean_and_std[1].tolist(),
             scale=scale,
             mirror=horizontal_mirror,
         )
 
-        if raw_input_transforms:
-            get_logger().error(
-                "remaining raw_input_transforms are %s", raw_input_transforms
-            )
+        if remain_transforms:
+            get_logger().error("remaining input transforms are %s", remain_transforms)
             raise RuntimeError("can't cover all input transforms")
 
         if device is not None:

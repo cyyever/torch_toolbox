@@ -72,6 +72,16 @@ def add_transforms(dc, dataset_kwargs, model_kwargs=None):
                 key=TransformType.RandomInput,
                 phases={MachineLearningPhase.Training},
             )
+            dc.append_transform(
+                torchvision.transforms.Resize(256),
+                key=TransformType.Input,
+                phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
+            )
+            dc.append_transform(
+                torchvision.transforms.CenterCrop(224),
+                key=TransformType.Input,
+                phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
+            )
         return
     if dc.dataset_type == DatasetType.Text:
         # ExtractData
