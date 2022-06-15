@@ -31,16 +31,16 @@ def get_checkpointed_model(model) -> torch.nn.Module:
     checkpointed_model.load_state_dict(model.state_dict())
     checkpointed_model_util = ModelUtil(checkpointed_model)
     for checkpointed_block in checkpointed_blocks:
-        for idx, submodule in enumerate(checkpointed_block):
-            submodule_name = submodule[0]
+        for idx, module in enumerate(checkpointed_block):
+            module_name = module[0]
             if idx == 0:
                 checkpointed_model_util.set_attr(
-                    submodule_name,
+                    module_name,
                     _CheckPointBlock(checkpointed_block),
                     as_parameter=False,
                 )
             else:
                 checkpointed_model_util.set_attr(
-                    submodule_name, lambda x: x, as_parameter=False
+                    module_name, lambda x: x, as_parameter=False
                 )
     return checkpointed_model

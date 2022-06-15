@@ -214,15 +214,15 @@ class ModelUtil:
             for name, module in model._modules.items():
                 if module is None:
                     continue
-                submodule_prefix: str = prefix + ("." if prefix else "") + name
+                module_prefix: str = prefix + ("." if prefix else "") + name
                 if isinstance(module, nn.Conv2d):
-                    result.append((submodule_prefix, module))
+                    result.append((module_prefix, module))
                     continue
-                sub_result = get_module_impl(module, submodule_prefix)
+                sub_result = get_module_impl(module, module_prefix)
                 if sub_result:
                     result += sub_result
                 else:
-                    result.append((submodule_prefix, module))
+                    result.append((module_prefix, module))
             return result
 
         return get_module_impl(self.model, "")

@@ -9,7 +9,7 @@ def test_model_info():
     assert models
 
 
-def test_get_submodules():
+def test_get_modules():
     mnist = create_dataset_collection(ClassificationDatasetCollection, "MNIST")
     model_util = ModelUtil(get_model("LeNet5", mnist).model)
     result = model_util.get_modules()
