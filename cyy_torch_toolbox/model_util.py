@@ -100,8 +100,8 @@ class ModelUtil:
             module.register_buffer("running_var", None)
             module.register_buffer("num_batches_tracked", None)
 
-        self.change_sub_modules(
-            f=impl, sub_module_type=torch.nn.modules.batchnorm._NormBase
+        self.change_modules(
+            f=impl, module_type=torch.nn.modules.batchnorm._NormBase
         )
 
     def reset_statistical_values(self) -> None:
@@ -120,8 +120,8 @@ class ModelUtil:
             self.model.register_module(name, module)
         else:
             components = name.split(".")
-            sub_module = self.get_attr(".".join(components[:-1]))
-            sub_module.register_module(components[-1], module)
+            module = self.get_attr(".".join(components[:-1]))
+            module.register_module(components[-1], module)
 
     def set_attr(self, name: str, value: Any, as_parameter: bool = True) -> None:
         model = self.model
@@ -164,52 +164,52 @@ class ModelUtil:
             model = getattr(model, component)
         return True
 
-    def change_sub_modules(
+    def change_modules(
         self,
         f: Callable,
-        sub_module_type: Type | None = None,
-        sub_module_name: str | None = None,
+        module_type: Type | None = None,
+        module_name: str | None = None,
     ) -> None:
-        for name, module in self.get_sub_modules():
+        for name, module in self.get_modules():
             if (
-                sub_module_type is not None and isinstance(module, sub_module_type)
-            ) or (sub_module_name is not None and name == sub_module_name):
+                module_type is not None and isinstance(module, module_type)
+            ) or (module_name is not None and name == module_name):
                 f(name, module, self)
 
-    def freeze_sub_modules(self, **kwargs) -> None:
-        def freeze(name, sub_module, model_util):
+    def freeze_modules(self, **kwargs) -> None:
+        def freeze(name, module, model_util):
             get_logger().info("freeze %s", name)
             parameter_dict = {}
-            for param_name, parameter in sub_module.named_parameters():
+            for param_name, parameter in module.named_parameters():
                 parameter_dict[name + "." + param_name] = parameter.data
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=False)
 
-        self.change_sub_modules(f=freeze, **kwargs)
+        self.change_modules(f=freeze, **kwargs)
 
-    def unfreeze_sub_modules(self, **kwargs) -> None:
-        def freeze(name, sub_module, model_util):
+    def unfreeze_modules(self, **kwargs) -> None:
+        def freeze(name, module, model_util):
             get_logger().info("freeze %s", name)
             parameter_dict = {}
-            for param_name, parameter in sub_module.named_parameters():
+            for param_name, parameter in module.named_parameters():
                 parameter_dict[name + "." + param_name] = parameter.data
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=True)
 
-        self.change_sub_modules(f=freeze, **kwargs)
+        self.change_modules(f=freeze, **kwargs)
 
-    def have_sub_module(
-        self, sub_module_type: Type | None = None, sub_module_name: str | None = None
+    def have_module(
+        self, module_type: Type | None = None, module_name: str | None = None
     ) -> bool:
-        for name, module in self.get_sub_modules():
+        for name, module in self.get_modules():
             if (
-                sub_module_type is not None and isinstance(module, sub_module_type)
-            ) or (sub_module_name is not None and name == sub_module_name):
+                module_type is not None and isinstance(module, module_type)
+            ) or (module_name is not None and name == module_name):
                 return True
         return False
 
-    def get_sub_modules(self) -> list[tuple[str, Any]]:
-        def get_sub_module_impl(model, prefix: str):
+    def get_modules(self) -> list[tuple[str, Any]]:
+        def get_module_impl(model, prefix: str):
             result = [(prefix, model)]
             for name, module in model._modules.items():
                 if module is None:
@@ -218,16 +218,16 @@ class ModelUtil:
                 if isinstance(module, nn.Conv2d):
                     result.append((submodule_prefix, module))
                     continue
-                sub_result = get_sub_module_impl(module, submodule_prefix)
+                sub_result = get_module_impl(module, submodule_prefix)
                 if sub_result:
                     result += sub_result
                 else:
                     result.append((submodule_prefix, module))
             return result
 
-        return get_sub_module_impl(self.model, "")
+        return get_module_impl(self.model, "")
 
-    def get_sub_module_blocks(
+    def get_module_blocks(
         self,
         block_types: set = None,
     ) -> list:
@@ -255,7 +255,7 @@ class ModelUtil:
                     return isinstance(module, module_type)
 
         blocks: list = []
-        modules = list(self.get_sub_modules())
+        modules = list(self.get_modules())
         while modules:
             end_index = None
             candidates: set = block_types

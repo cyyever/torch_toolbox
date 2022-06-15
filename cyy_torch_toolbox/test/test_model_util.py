@@ -12,18 +12,12 @@ def test_model_info():
 def test_get_submodules():
     mnist = create_dataset_collection(ClassificationDatasetCollection, "MNIST")
     model_util = ModelUtil(get_model("LeNet5", mnist).model)
-    result = model_util.get_sub_modules()
+    result = model_util.get_modules()
     assert result
 
 
 def test_get_blocks():
-    # mnist = create_dataset_collection(ClassificationDatasetCollection, "MNIST")
-    # model_util = ModelUtil(get_model("LeNet5", mnist).model)
-    # result = model_util.get_sub_module_blocks()
-    # print(result)
-    # assert result
     cifar10 = create_dataset_collection(ClassificationDatasetCollection, "CIFAR10")
     model_util = ModelUtil(get_model("Densenet40", cifar10).model)
-    result = model_util.get_sub_module_blocks()
-    print(result)
+    result = model_util.get_module_blocks()
     assert result
