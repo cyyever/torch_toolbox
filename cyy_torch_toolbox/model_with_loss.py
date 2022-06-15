@@ -49,8 +49,8 @@ class ModelWithLoss:
     @property
     def has_batch_norm(self):
         if self.__has_batch_norm is None:
-            self.__has_batch_norm = self.model_util.have_sub_module(
-                sub_module_type=torch.nn.BatchNorm2d
+            self.__has_batch_norm = self.model_util.have_module(
+                module_type=torch.nn.BatchNorm2d
             )
         return self.__has_batch_norm
 
@@ -167,7 +167,7 @@ class ModelWithLoss:
     def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
         layers = [
             m
-            for _, m in self.model_util.get_sub_modules()
+            for _, m in self.model_util.get_modules()
             if not isinstance(
                 m,
                 (

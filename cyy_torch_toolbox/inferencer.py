@@ -13,8 +13,8 @@ class Inferencer(ModelExecutor):
         epoch = kwargs.get("epoch", 1)
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
         phase = self.phase
-        if use_grad and self._model_with_loss.model_util.have_sub_module(
-            sub_module_type=nn.RNNBase
+        if use_grad and self._model_with_loss.model_util.have_module(
+            module_type=nn.RNNBase
         ):
             phase = MachineLearningPhase.Training
         with torch.set_grad_enabled(use_grad):
