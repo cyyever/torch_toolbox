@@ -187,6 +187,17 @@ class ModelUtil:
 
         self.change_sub_modules(f=freeze, **kwargs)
 
+    def unfreeze_sub_modules(self, **kwargs) -> None:
+        def freeze(name, sub_module, model_util):
+            get_logger().info("freeze %s", name)
+            parameter_dict = {}
+            for param_name, parameter in sub_module.named_parameters():
+                parameter_dict[name + "." + param_name] = parameter.data
+            for k, v in parameter_dict.items():
+                model_util.set_attr(k, v, as_parameter=True)
+
+        self.change_sub_modules(f=freeze, **kwargs)
+
     def have_sub_module(
         self, sub_module_type: Type | None = None, sub_module_name: str | None = None
     ) -> bool:
