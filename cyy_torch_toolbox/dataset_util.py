@@ -186,6 +186,7 @@ class DatasetSplitter(DatasetUtil):
             sub_index_list.append([])
         for v in self.label_sample_dict.values():
             part_index_list = split_idx_impl(sorted(v))
+            random.shuffle(part_index_list)
             for a, b in zip(sub_index_list, part_index_list):
                 a += b
         return sub_index_list
