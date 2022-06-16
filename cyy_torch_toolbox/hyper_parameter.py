@@ -261,7 +261,7 @@ def get_recommended_hyper_parameter(
     hyper_parameter.set_lr_scheduler_factory(
         HyperParameter.get_lr_scheduler_factory("ReduceLROnPlateau", dataset_name)
     )
-    hyper_parameter.set_optimizer_factory(HyperParameter.get_optimizer_factory("SGD"))
+    hyper_parameter.set_optimizer_factory(HyperParameter.get_optimizer_factory("Adam"))
     return hyper_parameter
 
 
