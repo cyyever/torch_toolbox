@@ -14,7 +14,8 @@ def default_data_extraction(data: Any) -> dict:
             return default_data_extraction(real_data) | {"index": index}
         case[sample_input, target]:
             return {"input": sample_input, "target": target}
-    raise NotImplementedError()
+        case _:
+            return data
 
 
 def __get_int_target(reversed_label_names, label_name: str, index: int = None) -> int:
@@ -136,7 +137,6 @@ class Transforms:
             item["target"] = self.transform_target(item["target"], index=k)
             transformed_dataset[k] = item
         new_transforms = copy.deepcopy(self)
-        new_transforms.clear(TransformType.ExtractData)
         new_transforms.clear(TransformType.InputText)
         new_transforms.clear(TransformType.Input)
         new_transforms.clear(TransformType.Target)
