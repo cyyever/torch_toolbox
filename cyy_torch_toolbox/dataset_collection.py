@@ -445,7 +445,7 @@ class DatasetCollectionConfig:
         self.training_dataset_label_map_path = None
         self.training_dataset_label_map = None
         self.training_dataset_label_noise_percentage = None
-        self.cache_transforms = True
+        self.cache_transforms = False
 
     def add_args(self, parser):
         if self.dataset_name is None:
@@ -456,7 +456,6 @@ class DatasetCollectionConfig:
             "--training_dataset_label_noise_percentage", type=float, default=None
         )
         parser.add_argument("--dataset_kwarg_json_path", type=str, default=None)
-        parser.add_argument("--no_cache_transforms", action="store_true", default=False)
 
     def load_args(self, args):
         for attr in dir(args):
@@ -471,8 +470,6 @@ class DatasetCollectionConfig:
         if args.dataset_kwarg_json_path is not None:
             with open(args.dataset_kwarg_json_path, "rt", encoding="utf-8") as f:
                 self.dataset_kwargs |= json.load(f)
-        if args.no_cache_transforms:
-            self.cache_transforms = False
 
     def create_dataset_collection(self, save_dir=None, model_kwargs=None):
         if self.dataset_name is None:
@@ -491,6 +488,7 @@ class DatasetCollectionConfig:
 
         self.__transform_training_dataset(dc=dc, save_dir=save_dir)
         if self.cache_transforms:
+            get_logger().warning("cache dataset in memory")
             dc.cache_transforms()
         return dc
 
