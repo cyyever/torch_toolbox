@@ -16,7 +16,7 @@ class MetricTensorBoard(MetricVisualizer):
         super().__init__(**kwargs, stripable=True)
         self.__writer = None
         self.__log_dir = None
-        self.__enable: bool = True
+        self.__enable: bool = False
 
     def set_log_dir(self, log_dir: str):
         self.__log_dir = log_dir
