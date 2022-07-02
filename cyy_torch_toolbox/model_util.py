@@ -222,20 +222,8 @@ class ModelUtil:
 
     def get_module_blocks(
         self,
-        block_types: set = None,
+        block_types: set,
     ) -> list:
-        if block_types is None:
-            block_types = {
-                (nn.Conv2d, nn.BatchNorm2d, nn.ReLU),
-                (nn.BatchNorm2d, nn.ReLU, nn.Conv2d),
-                (nn.BatchNorm2d, nn.Conv2d),
-                (nn.Conv2d, nn.ReLU),
-                (nn.Conv2d, nn.ReLU, nn.MaxPool2d),
-                (nn.Linear, nn.ReLU),
-                ("Bottleneck",),
-                ("DenseBlock",),
-            }
-
         def module_has_type(module, module_type) -> bool:
             match module_type:
                 case str():
@@ -252,11 +240,14 @@ class ModelUtil:
         while modules:
             end_index = None
             candidates: set = block_types
-            for i, pair in enumerate(modules):
-                module = pair[1]
+            for i, (module_name, module) in enumerate(modules):
                 new_candidates = set()
                 for candidate in candidates:
-                    if module_has_type(module, candidate[0]):
+                    if module_has_type(module, candidate[0]) and (
+                        i == 0
+                        or len(module_name.split("."))
+                        == len(modules[i - 1][0].split("."))
+                    ):
                         if len(candidate) == 1:
                             end_index = i
                         else:
