@@ -8,11 +8,6 @@ from cyy_naive_lib.log import get_logger
 from tensor import cat_tensors_to_vector, load_tensor_dict
 
 
-class IdentityModule(nn.Module):
-    def forward(self, x):
-        return x
-
-
 class ModelUtil:
     def __init__(self, model: torch.nn.Module):
         self.__model = model
@@ -100,9 +95,7 @@ class ModelUtil:
             module.register_buffer("running_var", None)
             module.register_buffer("num_batches_tracked", None)
 
-        self.change_modules(
-            f=impl, module_type=torch.nn.modules.batchnorm._NormBase
-        )
+        self.change_modules(f=impl, module_type=torch.nn.modules.batchnorm._NormBase)
 
     def reset_statistical_values(self) -> None:
         for k, v in self.model.state_dict().items():
@@ -171,9 +164,9 @@ class ModelUtil:
         module_name: str | None = None,
     ) -> None:
         for name, module in self.get_modules():
-            if (
-                module_type is not None and isinstance(module, module_type)
-            ) or (module_name is not None and name == module_name):
+            if (module_type is not None and isinstance(module, module_type)) or (
+                module_name is not None and name == module_name
+            ):
                 f(name, module, self)
 
     def freeze_modules(self, **kwargs) -> None:
@@ -202,9 +195,9 @@ class ModelUtil:
         self, module_type: Type | None = None, module_name: str | None = None
     ) -> bool:
         for name, module in self.get_modules():
-            if (
-                module_type is not None and isinstance(module, module_type)
-            ) or (module_name is not None and name == module_name):
+            if (module_type is not None and isinstance(module, module_type)) or (
+                module_name is not None and name == module_name
+            ):
                 return True
         return False
 
