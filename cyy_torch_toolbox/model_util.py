@@ -97,16 +97,11 @@ class ModelUtil:
 
         self.change_modules(f=impl, module_type=torch.nn.modules.batchnorm._NormBase)
 
-    def reset_statistical_values(self) -> None:
-        for k, v in self.model.state_dict().items():
-            if ".running_var" in k:
-                get_logger().debug("reset %s from model", k)
-                self.set_attr(k, torch.ones_like(v), as_parameter=False)
-            if ".running_mean" in k:
-                get_logger().debug("reset %s from model", k)
-                self.set_attr(k, torch.zeros_like(v), as_parameter=False)
-            elif k.startswith(".running_"):
-                raise RuntimeError(f"unchecked key {k}")
+    def reset_running_stats(self) -> None:
+        def impl(_, module, __):
+            module.reset_running_stats()
+
+        self.change_modules(f=impl, module_type=torch.nn.modules.batchnorm._NormBase)
 
     def register_module(self, name: str, module) -> None:
         if "." not in name:
