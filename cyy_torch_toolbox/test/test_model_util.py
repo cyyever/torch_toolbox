@@ -14,10 +14,3 @@ def test_get_modules():
     model_util = ModelUtil(get_model("LeNet5", mnist).model)
     result = model_util.get_modules()
     assert result
-
-
-def test_get_blocks():
-    cifar10 = create_dataset_collection(ClassificationDatasetCollection, "CIFAR10")
-    model_util = ModelUtil(get_model("Densenet40", cifar10).model)
-    result = model_util.get_module_blocks()
-    assert result
