@@ -44,7 +44,6 @@ class DatasetCollection:
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
-        self.tokenizer = None
 
     @property
     def dataset_type(self):
@@ -118,9 +117,9 @@ class DatasetCollection:
                 continue
             self.__transforms[phase].append(key, transform)
 
-    def cache_transforms(self, phases=None):
+    def cache_transforms(self):
         for phase in MachineLearningPhase:
-            if phases is not None and phase not in phases:
+            if not self.has_dataset(phase=phase):
                 continue
             dataset = self.get_dataset(phase=phase)
             transforms = self.get_transforms(phase=phase)
