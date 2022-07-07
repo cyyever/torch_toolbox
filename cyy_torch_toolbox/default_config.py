@@ -1,11 +1,12 @@
 import argparse
+import copy
 import datetime
 import os
 import uuid
 from dataclasses import dataclass
 
 from cyy_naive_lib.log import get_logger
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import OmegaConf
 
 from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
                                                   DatasetCollectionConfig)
@@ -32,29 +33,38 @@ class DefaultConfig:
         self.log_level = None
 
     @classmethod
-    def load_config(cls, obj, conf):
-        for attr in dir(conf):
-            if attr.startswith("_"):
-                continue
+    def load_config(cls, obj, conf, check_config: bool = True) -> dict:
+        if not isinstance(conf, dict):
+            conf_container = OmegaConf.to_container(conf)
+        else:
+            conf_container = conf
+        for attr in copy.copy(conf_container):
             if not hasattr(obj, attr):
                 continue
-            value = getattr(conf, attr)
+            value = conf_container.pop(attr)
             if value is not None:
                 match value:
-                    case DictConfig():
-                        setattr(
-                            obj,
-                            attr,
-                            OmegaConf.to_container(value) | getattr(obj, attr),
-                        )
+                    case dict():
+                        setattr(obj, attr, value | getattr(obj, attr))
                     case _:
                         setattr(obj, attr, value)
-            if hasattr(obj, "dc_config"):
-                cls.load_config(obj.dc_config, conf)
-            if hasattr(obj, "hyper_parameter_config"):
-                cls.load_config(obj.hyper_parameter_config, conf)
-            if hasattr(obj, "model_config"):
-                cls.load_config(obj.model_config, conf)
+        if hasattr(obj, "dc_config"):
+            conf_container = cls.load_config(
+                obj.dc_config, conf_container, check_config=False
+            )
+        if hasattr(obj, "hyper_parameter_config"):
+            conf_container = cls.load_config(
+                obj.hyper_parameter_config, conf_container, check_config=False
+            )
+        if hasattr(obj, "model_config"):
+            conf_container = cls.load_config(
+                obj.model_config, conf_container, check_config=False
+            )
+        if check_config:
+            if conf_container:
+                get_logger().error("remain config %s", conf_container)
+            assert not conf_container
+        return conf_container
 
     def load_args(self, parser=None):
         if parser is None:
