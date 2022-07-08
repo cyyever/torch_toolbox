@@ -12,7 +12,7 @@ def hello(task, args):
 
 def test_process_task_queue():
     if which("nvcc"):
-        queue = TorchProcessTaskQueue(hello, use_manager=True)
+        queue = TorchProcessTaskQueue(hello)
         queue.start()
         queue.add_task(())
         res = queue.get_result()
