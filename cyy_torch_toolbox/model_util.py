@@ -176,15 +176,15 @@ class ModelUtil:
         self.change_modules(f=freeze, **kwargs)
 
     def unfreeze_modules(self, **kwargs) -> None:
-        def freeze(name, module, model_util):
-            get_logger().info("freeze %s", name)
+        def unfreeze(name, module, model_util):
+            get_logger().info("unfreeze %s", name)
             parameter_dict = {}
             for param_name, parameter in module.named_parameters():
                 parameter_dict[name + "." + param_name] = parameter.data
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=True)
 
-        self.change_modules(f=freeze, **kwargs)
+        self.change_modules(f=unfreeze, **kwargs)
 
     def have_module(
         self, module_type: Type | None = None, module_name: str | None = None
