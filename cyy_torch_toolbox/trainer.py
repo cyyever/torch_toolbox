@@ -84,7 +84,6 @@ class Trainer(ModelExecutor):
     def get_inferencer(
         self, phase: MachineLearningPhase, copy_model: bool = False
     ) -> Inferencer:
-        assert phase != MachineLearningPhase.Training
         model_with_loss = self.copy_model_with_loss(deepcopy=copy_model)
 
         inferencer = None
