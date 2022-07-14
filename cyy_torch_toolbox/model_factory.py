@@ -22,7 +22,7 @@ def get_model_info() -> dict:
     github_repos = [
         "pytorch/vision:main",
         "cyyever/torch_models:main",
-        "lukemelas/EfficientNet-PyTorch:master",
+        "rwightman/pytorch-image-models:master",
     ]
 
     if not __model_info:
@@ -71,9 +71,9 @@ def get_model(
 ) -> ModelWithLoss:
     model_info = get_model_info()
 
-    dataset_util = dataset_collection.get_dataset_util()
     added_kwargs: dict = {}
     if dataset_collection.dataset_type == DatasetType.Vision:
+        dataset_util = dataset_collection.get_dataset_util()
         for k in ("input_channels", "channels"):
             if k not in model_kwargs:
                 added_kwargs |= {
