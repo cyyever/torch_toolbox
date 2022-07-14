@@ -186,11 +186,11 @@ class ModelConfig:
         if args.model_kwarg_json_path is not None:
             with open(args.model_kwarg_json_path, "rt", encoding="utf-8") as f:
                 self.model_kwargs |= json.load(f)
-        if self.pretrained:
-            self.model_kwargs["pretrained"] = self.pretrained
 
     def get_model(self, dc: DatasetCollection) -> ModelWithLoss:
         model_kwargs = copy.deepcopy(self.model_kwargs)
+        if self.pretrained:
+            model_kwargs["pretrained"] = True
         get_logger().info("use model %s", self.model_name)
         word_vector_name = model_kwargs.pop("word_vector_name", None)
         model_with_loss = get_model(self.model_name, dc, **model_kwargs)
