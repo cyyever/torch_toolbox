@@ -137,6 +137,7 @@ class Transforms:
             item["target"] = self.transform_target(item["target"], index=k)
             transformed_dataset[k] = item
         new_transforms = copy.deepcopy(self)
+        new_transforms.clear(TransformType.ExtractData)
         new_transforms.clear(TransformType.InputText)
         new_transforms.clear(TransformType.Input)
         new_transforms.clear(TransformType.Target)
