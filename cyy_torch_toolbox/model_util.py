@@ -95,13 +95,13 @@ class ModelUtil:
             module.register_buffer("running_var", None)
             module.register_buffer("num_batches_tracked", None)
 
-        self.__change_modules(f=impl, module_type=torch.nn.modules.batchnorm._NormBase)
+        self.change_modules(f=impl, module_type=torch.nn.modules.batchnorm._NormBase)
 
     def reset_running_stats(self) -> None:
         def impl(_, module, __):
             module.reset_running_stats()
 
-        self.__change_modules(f=impl, module_type=torch.nn.modules.batchnorm._NormBase)
+        self.change_modules(f=impl, module_type=torch.nn.modules.batchnorm._NormBase)
 
     def register_module(self, name: str, module) -> None:
         if "." not in name:
@@ -152,7 +152,7 @@ class ModelUtil:
             model = getattr(model, component)
         return True
 
-    def __change_modules(
+    def change_modules(
         self,
         f: Callable,
         module_type: Type | None = None,
@@ -176,7 +176,7 @@ class ModelUtil:
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=False)
 
-        self.__change_modules(f=freeze, **kwargs)
+        self.change_modules(f=freeze, **kwargs)
 
     def unfreeze_modules(self, **kwargs) -> None:
         def unfreeze(name, module, model_util):
@@ -187,7 +187,7 @@ class ModelUtil:
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=True)
 
-        self.__change_modules(f=unfreeze, **kwargs)
+        self.change_modules(f=unfreeze, **kwargs)
 
     def have_module(
         self, module_type: Type | None = None, module_name: str | None = None
