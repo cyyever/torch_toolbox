@@ -12,7 +12,7 @@ def default_data_extraction(data: Any) -> dict:
     match data:
         case {"data": real_data, "index": index}:
             return default_data_extraction(real_data) | {"index": index}
-        case[sample_input, target]:
+        case [sample_input, target]:
             return {"input": sample_input, "target": target}
         case _:
             return data
@@ -138,6 +138,9 @@ class Transforms:
             transformed_dataset[k] = item
         new_transforms = copy.deepcopy(self)
         new_transforms.clear(TransformType.ExtractData)
+        new_transforms.append(
+            key=TransformType.ExtractData, transform=default_data_extraction
+        )
         new_transforms.clear(TransformType.InputText)
         new_transforms.clear(TransformType.Input)
         new_transforms.clear(TransformType.Target)
