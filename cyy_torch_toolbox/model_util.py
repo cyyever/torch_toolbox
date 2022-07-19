@@ -158,14 +158,11 @@ class ModelUtil:
         module_type: Type | None = None,
         module_name: str | None = None,
     ) -> None:
-        has_module = False
         for name, module in self.get_modules():
             if (module_type is not None and isinstance(module, module_type)) or (
                 module_name is not None and name == module_name
             ):
                 f(name, module, self)
-                has_module = True
-        assert has_module
 
     def freeze_modules(self, **kwargs) -> None:
         def freeze(name, module, model_util):
