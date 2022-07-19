@@ -80,7 +80,7 @@ class Inferencer(ModelExecutor):
                     epoch=epoch,
                 )
             except StopExecutingException:
-                get_logger().warning("stop training")
+                get_logger().warning("stop inference")
             finally:
                 self._wait_stream()
             self.exec_hooks(ModelExecutorHookPoint.AFTER_EXECUTE)
