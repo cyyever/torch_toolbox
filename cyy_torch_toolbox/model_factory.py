@@ -5,7 +5,13 @@ import os
 import sys
 
 import torch
-import transformers
+
+try:
+    import transformers
+
+    has_hugging_face = True
+except ModuleNotFoundError:
+    has_hugging_face = False
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
@@ -52,17 +58,19 @@ def get_model_info() -> dict:
                     )
                 else:
                     get_logger().debug("ignore model_name %s", model_name)
-        for model_name in huggingface_models:
-            full_model_name = "sequence_classification_" + model_name
-            if full_model_name.lower() not in __model_info:
-                __model_info[full_model_name.lower()] = (
-                    full_model_name,
-                    functools.partial(
-                        transformers.AutoModelForSequenceClassification.from_pretrained,
-                        model_name,
-                    ),
-                    None,
-                )
+
+        if has_hugging_face:
+            for model_name in huggingface_models:
+                full_model_name = "sequence_classification_" + model_name
+                if full_model_name.lower() not in __model_info:
+                    __model_info[full_model_name.lower()] = (
+                        full_model_name,
+                        functools.partial(
+                            transformers.AutoModelForSequenceClassification.from_pretrained,
+                            model_name,
+                        ),
+                        None,
+                    )
     return __model_info
 
 
