@@ -200,7 +200,7 @@ class Trainer(ModelExecutor):
                         )
 
                         optimizer = self.get_optimizer()
-                        lr_scheduler = self.get_lr_scheduler()
+                        optimizer.zero_grad(set_to_none=True)
 
                         (
                             batch_size,
@@ -225,7 +225,6 @@ class Trainer(ModelExecutor):
                             batch=batch,
                             batch_size=batch_size,
                         )
-                        optimizer.zero_grad(set_to_none=True)
                         kwargs = {
                             "inputs": sample_inputs,
                             "targets": sample_targets,
@@ -241,6 +240,13 @@ class Trainer(ModelExecutor):
                             result = self.get_data("forward_result")
                         else:
                             result = self._model_with_loss(**kwargs)
+                        self.exec_hooks(
+                            ModelExecutorHookPoint.BEFORE_BACKWARD,
+                            inputs=result["inputs"],
+                            input_features=result["input_features"],
+                            targets=result["targets"],
+                            batch_info=other_info,
+                        )
                         if self.has_hook(ModelExecutorHookPoint.MODEL_BACKWARD):
                             self.exec_hooks(
                                 ModelExecutorHookPoint.MODEL_BACKWARD,
@@ -264,6 +270,7 @@ class Trainer(ModelExecutor):
                             self.exec_hooks(ModelExecutorHookPoint.OPTIMIZER_STEP)
                         else:
                             optimizer.step()
+                        lr_scheduler = self.get_lr_scheduler()
                         if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                             get_logger().debug("adjust lr after batch")
                             lr_scheduler.step()

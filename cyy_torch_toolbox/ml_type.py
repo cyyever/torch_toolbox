@@ -40,6 +40,7 @@ class ModelExecutorHookPoint(IntEnum):
     BEFORE_FETCH_BATCH = auto()
     AFTER_FETCH_BATCH = auto()
     BEFORE_BATCH = auto()
+    BEFORE_BACKWARD = auto()
     AFTER_BATCH = auto()
     AFTER_LOAD_MODEL = auto()
     AFTER_VALIDATION = auto()
