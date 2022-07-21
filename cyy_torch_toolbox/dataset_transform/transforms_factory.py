@@ -44,9 +44,7 @@ def replace_str(str, old, new):
     return str.replace(old, new)
 
 
-def add_transforms(dc, dataset_kwargs, model_kwargs=None):
-    if model_kwargs is None:
-        model_kwargs = {}
+def add_transforms(dc, dataset_kwargs, model_config):
     if dc.dataset_type == DatasetType.Vision:
         dc.append_transform(torchvision.transforms.ToTensor(), key=TransformType.Input)
         mean, std = get_mean_and_std(dc)
@@ -104,10 +102,17 @@ def add_transforms(dc, dataset_kwargs, model_kwargs=None):
                 dc.append_transform(f, key=TransformType.InputText, phases=[phase])
 
         # Input && InputBatch
-        dc.tokenizer = get_tokenizer(dataset_kwargs.get("tokenizer", {}), dc)
-        max_len = model_kwargs.get("max_len", None)
-        if max_len is None:
-            max_len = dataset_kwargs.get("max_len", None)
+        tokenizer_kwargs = dataset_kwargs.get("tokenizer", {})
+        if not tokenizer_kwargs and model_config is not None:
+            if "bert" in model_config.model_name:
+                tokenizer_kwargs["type"] = model_config.model_name.replace(
+                    "sequence_classification_", ""
+                )
+
+        dc.tokenizer = get_tokenizer(tokenizer_kwargs, dc)
+        max_len = dataset_kwargs.get("max_len", None)
+        if max_len is None and model_config is not None:
+            max_len = model_config.model_kwargs.get("max_len", None)
         match dc.tokenizer:
             case SpacyTokenizer():
                 dc.append_transform(dc.tokenizer, key=TransformType.Input)

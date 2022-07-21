@@ -110,7 +110,8 @@ class DefaultConfig:
     def create_dataset_collection(self):
         get_logger().info("use dataset %s", self.dc_config.dataset_name)
         return self.dc_config.create_dataset_collection(
-            save_dir=self.get_save_dir(), model_kwargs=self.model_config.model_kwargs
+            save_dir=self.get_save_dir(),
+            model_config=self.model_config,
         )
 
     def create_trainer(self, dc: DatasetCollection = None) -> Trainer:
