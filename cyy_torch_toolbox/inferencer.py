@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.ml_type import (ModelExecutorHookPoint,
@@ -16,14 +15,10 @@ class Inferencer(ModelExecutor):
         if epoch is None:
             epoch = 1
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
-        if use_grad and self._model_with_loss.model_util.have_module(
-            module_type=nn.RNNBase
-        ):
-            assert False
         with (torch.set_grad_enabled(use_grad), torch.cuda.stream(self.cuda_stream)):
             try:
                 self.model.zero_grad(set_to_none=True)
-                self._execute_epoch(epoch=epoch)
+                self._execute_epoch(epoch=epoch, need_backward=self._use_grad)
             except StopExecutingException:
                 get_logger().warning("stop inference")
             finally:
@@ -38,3 +33,9 @@ class Inferencer(ModelExecutor):
     def get_gradient(self):
         self.inference(use_grad=True)
         return self.model_util.get_gradient_list()
+
+    def get_optimizer(self):
+        return None
+
+    def get_lr_scheduler(self):
+        return None
