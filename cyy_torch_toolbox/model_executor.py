@@ -341,10 +341,10 @@ class ModelExecutor(ModelExecutorBase):
             else:
                 result = self._model_with_loss(**kwargs)
 
-            normalized_batch_loss = result["loss"]
             if result["is_averaged_loss"]:
-                normalized_batch_loss *= batch_size
-            normalized_batch_loss /= self.dataset_size
+                normalized_batch_loss = result["loss"] * batch_size / self.dataset_size
+            else:
+                normalized_batch_loss = result["loss"] / self.dataset_size
             result["normalized_batch_loss"] = normalized_batch_loss
             self.exec_hooks(
                 ModelExecutorHookPoint.AFTER_FORWARD,
