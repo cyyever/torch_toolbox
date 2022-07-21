@@ -31,6 +31,7 @@ class DefaultConfig:
         self.profile = False
         self.save_dir = None
         self.log_level = None
+        self.cache_transforms = None
 
     @classmethod
     def load_config(cls, obj, conf, check_config: bool = True) -> dict:
@@ -137,6 +138,7 @@ class DefaultConfig:
         if self.profile:
             get_logger().warning("profile the trainer")
             trainer.profiling_mode = True
+        trainer.cache_transforms = self.cache_transforms
         return trainer
 
     def create_inferencer(self, phase=MachineLearningPhase.Test) -> Inferencer:

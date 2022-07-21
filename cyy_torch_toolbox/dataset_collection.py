@@ -118,13 +118,15 @@ class DatasetCollection:
                 continue
             self.__transforms[phase].append(key, transform)
 
-    def cache_transforms(self):
+    def cache_transforms(self, device=None) -> None:
         for phase in MachineLearningPhase:
             if not self.has_dataset(phase=phase):
                 continue
             dataset = self.get_dataset(phase=phase)
             transforms = self.get_transforms(phase=phase)
-            transformed_dataset, new_transforms = transforms.cache_transforms(dataset)
+            transformed_dataset, new_transforms = transforms.cache_transforms(
+                dataset, device
+            )
             self._datasets[phase] = DictDataset(transformed_dataset)
             self.__transforms[phase] = new_transforms
             if phase == MachineLearningPhase.Training:
@@ -450,7 +452,6 @@ class DatasetCollectionConfig:
         self.training_dataset_label_map_path = None
         self.training_dataset_label_map = None
         self.training_dataset_label_noise_percentage = None
-        self.cache_transforms = False
 
     def add_args(self, parser):
         if self.dataset_name is None:
@@ -492,9 +493,6 @@ class DatasetCollectionConfig:
             )
 
         self.__transform_training_dataset(dc=dc, save_dir=save_dir)
-        if self.cache_transforms:
-            get_logger().warning("cache dataset in memory")
-            dc.cache_transforms()
         return dc
 
     def __transform_training_dataset(self, dc, save_dir=None):
