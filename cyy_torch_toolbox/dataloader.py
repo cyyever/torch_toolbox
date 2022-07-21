@@ -183,7 +183,7 @@ def get_dataloader(
     transforms = dc.get_transforms(phase=phase)
     collate_fn = transforms.collate_batch
     pin_memory = True
-    if transforms.has_transform() and "USE_PROCESS_DATALOADER" in os.environ:
+    if not dc.transforms_cached or "USE_PROCESS_DATALOADER" in os.environ:
         num_workers = 2
         prefetch_factor = 1
     else:
