@@ -302,8 +302,9 @@ class ModelExecutor(ModelExecutorBase):
                 sample_targets,
                 other_info,
             ) = self.decode_batch(batch)
-            if batch_size is None:
-                batch_size = self.get_batch_size(sample_targets)
+            assert batch_size is not None
+            # if batch_size is None:
+            #     batch_size = self.get_batch_size(sample_targets)
             batch = (sample_inputs, sample_targets, other_info)
             if (
                 self.phase == MachineLearningPhase.Training
