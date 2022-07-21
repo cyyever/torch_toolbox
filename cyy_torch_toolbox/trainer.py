@@ -230,3 +230,27 @@ class Trainer(ModelExecutor):
 
     def _get_backward_loss(self, result):
         return result["loss"]
+
+    def get_optimizer(self):
+        if not self.has_data("optimizer"):
+            self.set_data(
+                "optimizer",
+                self.hyper_parameter.get_optimizer(self),
+            )
+        return self.get_data("optimizer")
+
+    def remove_optimizer(self):
+        # Don't call this method until you are sure what you are doing in federated learning settings.
+        self.remove_data("optimizer")
+        self.remove_lr_scheduler()
+
+    def get_lr_scheduler(self):
+        if not self.has_data("lr_scheduler"):
+            self.set_data(
+                "lr_scheduler",
+                self.hyper_parameter.get_lr_scheduler(self),
+            )
+        return self.get_data("lr_scheduler")
+
+    def remove_lr_scheduler(self) -> None:
+        self.remove_data("lr_scheduler")

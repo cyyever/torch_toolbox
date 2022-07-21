@@ -22,14 +22,14 @@ class ModelExecutorLogger(Hook):
             len(model_util.get_parameter_list()),
         )
         get_logger().info("hyper_parameter is %s", model_executor.hyper_parameter)
-        if hasattr(model_executor, "get_optimizer"):
-            get_logger().info(
-                "optimizer is %s", getattr(model_executor, "get_optimizer")()
-            )
-        if hasattr(model_executor, "get_lr_scheduler"):
+        optimizer = model_executor.get_optimizer()
+        if optimizer is not None:
+            get_logger().info("optimizer is %s", optimizer)
+        lr_scheduler = model_executor.get_lr_scheduler()
+        if lr_scheduler is not None:
             get_logger().info(
                 "lr_scheduler is %s",
-                type(getattr(model_executor, "get_lr_scheduler")()),
+                type(lr_scheduler),
             )
 
     def _after_execute(self, **kwargs):
