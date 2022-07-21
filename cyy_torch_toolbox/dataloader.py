@@ -146,9 +146,16 @@ def get_dataloader(
     phase: MachineLearningPhase,
     hyper_parameter: HyperParameter,
     device=None,
+    cache_transforms=None,
     persistent_workers=True,
     use_dali=True,
 ):
+    match cache_transforms:
+        case "cpu" | True:
+            dc.cache_transforms()
+        case "cuda":
+            dc.cache_transforms(device=device)
+
     dataset = dc.get_dataset(phase)
     original_dataset = dc.get_original_dataset(phase)
     # We use DALI for ImageFolder only

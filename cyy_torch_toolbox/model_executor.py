@@ -54,6 +54,7 @@ class ModelExecutor(ModelExecutorBase):
         self.debugging_mode = False
         self.profiling_mode = False
         self.__save_dir: Optional[str] = None
+        self.cache_transforms = None
 
     @property
     def visualizer(self):
@@ -108,6 +109,7 @@ class ModelExecutor(ModelExecutorBase):
                 phase=self.__phase,
                 hyper_parameter=self.__hyper_parameter,
                 device=self.device,
+                cache_transforms=self.cache_transforms,
             )
         return self.__dataloader
 

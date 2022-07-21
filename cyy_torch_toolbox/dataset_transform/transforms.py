@@ -4,6 +4,7 @@ from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.dataset import get_dataset_size
+from cyy_torch_toolbox.device import put_data_to_device
 from cyy_torch_toolbox.ml_type import TransformType
 from torch.utils.data._utils.collate import default_collate
 
@@ -12,7 +13,7 @@ def default_data_extraction(data: Any) -> dict:
     match data:
         case {"data": real_data, "index": index}:
             return default_data_extraction(real_data) | {"index": index}
-        case [sample_input, target]:
+        case[sample_input, target]:
             return {"input": sample_input, "target": target}
         case _:
             return data
@@ -129,12 +130,19 @@ class Transforms:
             return {"size": batch_size, "data": (inputs, targets, other_info)}
         return {"size": batch_size, "data": (inputs, targets)}
 
-    def cache_transforms(self, dataset) -> tuple[dict, Any]:
+    def cache_transforms(self, dataset, device=None) -> tuple[dict, Any]:
+        if device is not None:
+            get_logger().warning("cache dataset to device %s", device)
+        else:
+            get_logger().warning("cache dataset to cpu")
         transformed_dataset = {}
         for k in range(get_dataset_size(dataset)):
             item = self.extract_data(dataset[k])
             item["input"] = self.transform_input(item["input"], apply_random=False)
             item["target"] = self.transform_target(item["target"], index=k)
+            if device is not None:
+                item["input"] = put_data_to_device(item["input"], device=device)
+                item["target"] = put_data_to_device(item["target"], device=device)
             transformed_dataset[k] = item
         new_transforms = copy.deepcopy(self)
         new_transforms.clear(TransformType.ExtractData)
