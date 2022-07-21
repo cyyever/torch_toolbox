@@ -246,6 +246,7 @@ class Trainer(ModelExecutor):
                             input_features=result["input_features"],
                             targets=result["targets"],
                             batch_info=other_info,
+                            batch_size=batch_size,
                         )
                         if self.has_hook(ModelExecutorHookPoint.MODEL_BACKWARD):
                             self.exec_hooks(
