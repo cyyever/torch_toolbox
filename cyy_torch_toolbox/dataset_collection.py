@@ -130,7 +130,7 @@ class DatasetCollection:
             self._datasets[phase] = DictDataset(transformed_dataset)
             self.__transforms[phase] = new_transforms
             if phase == MachineLearningPhase.Training:
-                get_logger().error("new training transforms are %s", new_transforms)
+                get_logger().debug("new training transforms are %s", new_transforms)
         self.__transforms_cached = True
 
     @property
@@ -338,9 +338,9 @@ class ClassificationDatasetCollection(DatasetCollection):
         dataset_kwargs = kwargs.get("dataset_kwargs", {})
         if not dataset_kwargs:
             dataset_kwargs = {}
-        model_kwargs = kwargs.pop("model_kwargs", None)
+        model_config = kwargs.pop("model_config", None)
         dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
-        add_transforms(dc, dataset_kwargs, model_kwargs)
+        add_transforms(dc, dataset_kwargs, model_config)
         if not dc.has_dataset(MachineLearningPhase.Test):
             dc._split_validation()
         return dc
@@ -417,7 +417,7 @@ class ClassificationDatasetCollection(DatasetCollection):
 
 
 def create_dataset_collection(
-    cls, name: str, dataset_kwargs: dict = None, model_kwargs: dict = None
+    cls, name: str, dataset_kwargs: dict = None, model_config=None
 ):
     with cls.lock:
         all_dataset_constructors = set()
@@ -429,7 +429,7 @@ def create_dataset_collection(
                     dataset_type=dataset_type,
                     dataset_constructor=dataset_constructor[name],
                     dataset_kwargs=dataset_kwargs,
-                    model_kwargs=model_kwargs,
+                    model_config=model_config,
                 )
             elif name.lower() in {k.lower() for k in dataset_constructor.keys()}:
                 get_logger().warning(
@@ -477,7 +477,7 @@ class DatasetCollectionConfig:
             with open(args.dataset_kwarg_json_path, "rt", encoding="utf-8") as f:
                 self.dataset_kwargs |= json.load(f)
 
-    def create_dataset_collection(self, save_dir=None, model_kwargs=None):
+    def create_dataset_collection(self, save_dir=None, model_config=None):
         if self.dataset_name is None:
             raise RuntimeError("dataset_name is None")
 
@@ -485,7 +485,7 @@ class DatasetCollectionConfig:
             ClassificationDatasetCollection,
             name=self.dataset_name,
             dataset_kwargs=self.dataset_kwargs,
-            model_kwargs=model_kwargs,
+            model_config=model_config,
         )
         if not dc.is_classification_dataset():
             dc = create_dataset_collection(
