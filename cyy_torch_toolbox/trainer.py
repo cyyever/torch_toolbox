@@ -6,14 +6,6 @@ from cyy_torch_toolbox.classification_inferencer import \
 from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.hooks.amp import AMP
-
-try:
-    from cyy_torch_toolbox.hooks.amp import ApexAMP
-
-    has_apex_amp = True
-except BaseException:
-    has_apex_amp = False
-
 from cyy_torch_toolbox.hooks.keep_model import KeepModelHook
 from cyy_torch_toolbox.hooks.learning_rate_hook import LearningRateHook
 from cyy_torch_toolbox.hooks.trainer_debugger import TrainerDebugger
@@ -56,16 +48,12 @@ class Trainer(ModelExecutor):
         for inferencer in self.__inferencers.values():
             inferencer.set_device(device)
 
-    def set_amp(self, enabled=True, use_apex=False):
+    def set_amp(self, enabled=True):
         if self.__amp_hook is not None:
             self.remove_hook(self.__amp_hook)
             self.__amp_hook = None
         if enabled:
-            if use_apex:
-                assert has_apex_amp
-                self.__amp_hook = ApexAMP()
-            else:
-                self.__amp_hook = AMP()
+            self.__amp_hook = AMP()
             self.append_hook(self.__amp_hook)
 
     @property
@@ -110,7 +98,6 @@ class Trainer(ModelExecutor):
         return self.get_data("optimizer")
 
     def remove_optimizer(self):
-        # Don't call this method until you are sure what you are doing in federated learning settings.
         self.remove_data("optimizer")
         self.remove_lr_scheduler()
 
@@ -183,7 +170,7 @@ class Trainer(ModelExecutor):
         with torch.cuda.stream(self.cuda_stream):
             try:
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
-                    self._execute_epoch(epoch=epoch)
+                    self._execute_epoch(epoch=epoch, need_backward=True)
 
                     for phase in (
                         MachineLearningPhase.Validation,
@@ -230,27 +217,3 @@ class Trainer(ModelExecutor):
 
     def _get_backward_loss(self, result):
         return result["loss"]
-
-    def get_optimizer(self):
-        if not self.has_data("optimizer"):
-            self.set_data(
-                "optimizer",
-                self.hyper_parameter.get_optimizer(self),
-            )
-        return self.get_data("optimizer")
-
-    def remove_optimizer(self):
-        # Don't call this method until you are sure what you are doing in federated learning settings.
-        self.remove_data("optimizer")
-        self.remove_lr_scheduler()
-
-    def get_lr_scheduler(self):
-        if not self.has_data("lr_scheduler"):
-            self.set_data(
-                "lr_scheduler",
-                self.hyper_parameter.get_lr_scheduler(self),
-            )
-        return self.get_data("lr_scheduler")
-
-    def remove_lr_scheduler(self) -> None:
-        self.remove_data("lr_scheduler")

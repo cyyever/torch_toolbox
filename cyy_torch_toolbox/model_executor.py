@@ -277,12 +277,12 @@ class ModelExecutor(ModelExecutorBase):
         return (batch_size, sample_inputs, sample_targets, {})
 
     def get_optimizer(self):
-        return None
+        raise NotImplementedError()
 
     def get_lr_scheduler(self):
-        return None
+        raise NotImplementedError()
 
-    def _execute_epoch(self, epoch: int) -> None:
+    def _execute_epoch(self, epoch: int, need_backward: bool) -> None:
         if epoch in self.get_data("skipped_epoch", set()):
             get_logger().warning("skip epoch %s", epoch)
             return
@@ -296,7 +296,6 @@ class ModelExecutor(ModelExecutorBase):
                 ModelExecutorHookPoint.AFTER_FETCH_BATCH,
                 batch_index=batch_index,
             )
-
             if self.phase == MachineLearningPhase.Training:
                 optimizer = self.get_optimizer()
                 optimizer.zero_grad(set_to_none=True)
@@ -330,6 +329,7 @@ class ModelExecutor(ModelExecutorBase):
                 "targets": sample_targets,
                 "phase": self.phase,
                 "device": self.device,
+                "need_backward": need_backward,
                 "non_blocking": True,
             }
             if self.has_hook(ModelExecutorHookPoint.MODEL_FORWARD):

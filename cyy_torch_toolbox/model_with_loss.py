@@ -85,9 +85,12 @@ class ModelWithLoss:
         device=None,
         non_blocking=False,
         input_features=None,
+        need_backward=None,
     ) -> dict:
         if phase is not None:
-            self.set_model_mode(phase == MachineLearningPhase.Training)
+            self.set_model_mode(
+                phase == MachineLearningPhase.Training, need_backward=need_backward
+            )
 
         # DALI returns nested targets
         if len(targets.shape) > 1:
@@ -212,7 +215,7 @@ class ModelWithLoss:
     def __repr__(self):
         return f"model: {self._model.__class__.__name__}, loss_fun: {self.loss_fun}"
 
-    def set_model_mode(self, is_training: bool) -> None:
+    def set_model_mode(self, is_training: bool, need_backward=None) -> None:
         if is_training:
             if self._model.training:
                 return
@@ -220,6 +223,10 @@ class ModelWithLoss:
             return
         if self._model.training:
             self._model.eval()
+            if need_backward:
+                self.model_util.change_modules(
+                    f=lambda _, module, __: module.train(), module_type=nn.RNNBase
+                )
 
 
 class CheckPointedModelWithLoss(ModelWithLoss):
