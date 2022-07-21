@@ -43,6 +43,8 @@ class ModelExecutor(ModelExecutorBase):
         self.__cuda_stream = None
         self.__logger = ModelExecutorLogger()
         self.append_hook(self.__logger)
+        self.__profiler = Profiler()
+        self.append_hook(self.__profiler)
         self.__performance_metric = PerformanceMetric(self._model_with_loss.model_type)
         self.append_hook(self.__performance_metric)
         self.__performance_metric_logger = PerformanceMetricLogger()
@@ -51,7 +53,6 @@ class ModelExecutor(ModelExecutorBase):
         self.append_hook(self.__metric_tb)
         self.debugging_mode = False
         self.profiling_mode = False
-        self.__profiler = None
         self.__save_dir: Optional[str] = None
 
     @property
@@ -144,14 +145,9 @@ class ModelExecutor(ModelExecutorBase):
 
         if self.profiling_mode:
             get_logger().warning("train in profiling mode")
-            if self.__profiler is None:
-                self.__profiler = Profiler()
-                self.append_hook(self.__profiler)
-            else:
-                self.enable_hook(self.__profiler)
+            self.enable_hook(self.__profiler)
         else:
-            if self.__profiler is not None:
-                self.disable_hook(self.__profiler)
+            self.disable_hook(self.__profiler)
 
     @property
     def dataset_collection(self) -> DatasetCollection:
