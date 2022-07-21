@@ -40,7 +40,9 @@ class KeepModelHook(Hook):
         ).get_epoch_metric(epoch, "accuracy")
         if self.__best_model is None or acc > self.__best_model[1]:
             self.__best_model = (
-                trainer.copy_model_with_loss().model.to(get_cpu_device()),
+                trainer.copy_model_with_loss().model.to(
+                    get_cpu_device(), non_blocking=True
+                ),
                 acc,
             )
 
