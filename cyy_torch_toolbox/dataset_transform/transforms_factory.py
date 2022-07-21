@@ -125,6 +125,7 @@ def add_transforms(dc, dataset_kwargs, model_kwargs=None):
                     key=TransformType.InputBatch,
                 )
             case transformers.PreTrainedTokenizerBase():
+                assert max_len is not None
                 dc.append_transform(
                     functools.partial(
                         dc.tokenizer,
