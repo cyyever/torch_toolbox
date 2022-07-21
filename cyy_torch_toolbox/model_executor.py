@@ -69,7 +69,7 @@ class ModelExecutor(ModelExecutorBase):
     def performance_metric_logger(self):
         return self.__performance_metric_logger
 
-    def set_save_dir(self, save_dir: str):
+    def set_save_dir(self, save_dir: str) -> None:
         self.__save_dir = save_dir
         if save_dir is not None:
             log_dir = os.path.join(save_dir, "visualizer")
@@ -94,7 +94,7 @@ class ModelExecutor(ModelExecutorBase):
     def dataset_size(self):
         return get_dataset_size(self.dataset)
 
-    def transform_dataset(self, transformer: Callable):
+    def transform_dataset(self, transformer: Callable) -> None:
         self.dataset_collection.transform_dataset(self.phase, transformer)
 
     @property
@@ -196,7 +196,7 @@ class ModelExecutor(ModelExecutorBase):
     def hyper_parameter(self):
         return self.__hyper_parameter
 
-    def set_model_with_loss(self, model_with_loss: ModelWithLoss):
+    def set_model_with_loss(self, model_with_loss: ModelWithLoss) -> None:
         self._wait_stream()
         self._model_with_loss = model_with_loss
 
@@ -227,27 +227,27 @@ class ModelExecutor(ModelExecutorBase):
     def offload_from_memory(self):
         assert self.save_dir is not None
         self.offload_from_gpu()
-        with open(os.path.join(self.save_dir, "model_and_loss.pk"), "wb") as f:
+        with open(os.path.join(self.save_dir, "model_and_loss.pk"), "wb") as file:
             pickle.dump(
                 self.model_with_loss,
-                f,
+                file,
             )
             self._model_with_loss = None
-        with open(os.path.join(self.save_dir, "dc.pk"), "wb") as f:
+        with open(os.path.join(self.save_dir, "dc.pk"), "wb") as file:
             pickle.dump(
                 self.__dataset_collection,
-                f,
+                file,
             )
             self.__dataset_collection = None
 
     def load_to_memory(self):
         assert self.save_dir is not None
         if self._model_with_loss is None:
-            with open(os.path.join(self.save_dir, "model_and_loss.pk"), "rb") as f:
-                self._model_with_loss = pickle.load(f)
+            with open(os.path.join(self.save_dir, "model_and_loss.pk"), "rb") as file:
+                self._model_with_loss = pickle.load(file)
         if self.__dataset_collection is None:
-            with open(os.path.join(self.save_dir, "dc.pk"), "rb") as f:
-                self.__dataset_collection = pickle.load(f)
+            with open(os.path.join(self.save_dir, "dc.pk"), "rb") as file:
+                self.__dataset_collection = pickle.load(file)
 
     @classmethod
     def decode_batch(cls, batch):
