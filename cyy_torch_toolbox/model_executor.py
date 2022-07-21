@@ -18,7 +18,8 @@ from cyy_torch_toolbox.metric_visualizers.metric_tensorboard import \
 from cyy_torch_toolbox.metric_visualizers.performance_metric_logger import \
     PerformanceMetricLogger
 from cyy_torch_toolbox.metrics.performance_metric import PerformanceMetric
-from cyy_torch_toolbox.ml_type import MachineLearningPhase
+from cyy_torch_toolbox.ml_type import (MachineLearningPhase,
+                                       ModelExecutorHookPoint)
 from cyy_torch_toolbox.model_executor_base import ModelExecutorBase
 from cyy_torch_toolbox.model_util import ModelUtil
 from cyy_torch_toolbox.model_with_loss import ModelWithLoss
@@ -274,3 +275,149 @@ class ModelExecutor(ModelExecutorBase):
         if len(batch) >= 3:
             return (batch_size, sample_inputs, sample_targets, batch[2])
         return (batch_size, sample_inputs, sample_targets, {})
+
+    def get_optimizer(self):
+        if not self.has_data("optimizer"):
+            self.set_data(
+                "optimizer",
+                self.hyper_parameter.get_optimizer(self),
+            )
+        return self.get_data("optimizer")
+
+    def remove_optimizer(self):
+        # Don't call this method until you are sure what you are doing in federated learning settings.
+        self.remove_data("optimizer")
+        self.remove_lr_scheduler()
+
+    def get_lr_scheduler(self):
+        if not self.has_data("lr_scheduler"):
+            self.set_data(
+                "lr_scheduler",
+                self.hyper_parameter.get_lr_scheduler(self),
+            )
+        return self.get_data("lr_scheduler")
+
+    def remove_lr_scheduler(self) -> None:
+        self.remove_data("lr_scheduler")
+
+    def _execute_epoch(self, epoch: int) -> None:
+        if epoch in self.get_data("skipped_epoch", set()):
+            get_logger().warning("skip epoch %s", epoch)
+            return
+        self.exec_hooks(
+            ModelExecutorHookPoint.BEFORE_EPOCH,
+            epoch=epoch,
+        )
+        self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
+        for batch_index, batch in enumerate(self.dataloader):
+            self.exec_hooks(
+                ModelExecutorHookPoint.AFTER_FETCH_BATCH,
+                batch_index=batch_index,
+            )
+
+            if self.phase == MachineLearningPhase.Training:
+                optimizer = self.get_optimizer()
+                optimizer.zero_grad(set_to_none=True)
+
+            (
+                batch_size,
+                sample_inputs,
+                sample_targets,
+                other_info,
+            ) = self.decode_batch(batch)
+            if batch_size is None:
+                batch_size = self.get_batch_size(sample_targets)
+            batch = (sample_inputs, sample_targets, other_info)
+            if (
+                self.phase == MachineLearningPhase.Training
+                and self.hyper_parameter.batch_size != 1
+                and batch_size == 1
+                and self._model_with_loss.has_batch_norm
+            ):
+                get_logger().debug("drop last one-batch for batchnorm")
+                continue
+
+            self.exec_hooks(
+                ModelExecutorHookPoint.BEFORE_BATCH,
+                batch_index=batch_index,
+                batch=batch,
+                batch_size=batch_size,
+            )
+            kwargs = {
+                "inputs": sample_inputs,
+                "targets": sample_targets,
+                "phase": self.phase,
+                "device": self.device,
+                "non_blocking": True,
+            }
+            if self.has_hook(ModelExecutorHookPoint.MODEL_FORWARD):
+                self.exec_hooks(
+                    ModelExecutorHookPoint.MODEL_FORWARD,
+                    model_kwargs=kwargs,
+                )
+                result = self.get_data("forward_result")
+            else:
+                result = self._model_with_loss(**kwargs)
+
+            normalized_batch_loss = result["loss"]
+            if result["is_averaged_loss"]:
+                normalized_batch_loss *= batch_size
+            normalized_batch_loss /= self.dataset_size
+            result["normalized_batch_loss"] = normalized_batch_loss
+            self.exec_hooks(
+                ModelExecutorHookPoint.AFTER_FORWARD,
+                inputs=result["inputs"],
+                input_features=result["input_features"],
+                targets=result["targets"],
+                batch_info=other_info,
+                batch_size=batch_size,
+            )
+
+            loss = self._get_backward_loss(result=result)
+            if loss is not None:
+                if self.has_hook(ModelExecutorHookPoint.MODEL_BACKWARD):
+                    self.exec_hooks(ModelExecutorHookPoint.MODEL_BACKWARD, loss=loss)
+                else:
+                    loss.backward()
+
+            self.exec_hooks(
+                ModelExecutorHookPoint.AFTER_BATCH,
+                batch_index=batch_index,
+                inputs=result["inputs"],
+                input_features=result["input_features"],
+                targets=result["targets"],
+                batch_info=other_info,
+                epoch=epoch,
+                result=result,
+                batch_size=batch_size,
+            )
+            if self.phase == MachineLearningPhase.Training:
+                if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
+                    self.exec_hooks(ModelExecutorHookPoint.OPTIMIZER_STEP)
+                else:
+                    optimizer.step()
+                lr_scheduler = self.get_lr_scheduler()
+                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+                    get_logger().debug("adjust lr after batch")
+                    lr_scheduler.step()
+
+                self.exec_hooks(
+                    ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
+                    epoch=epoch,
+                    batch_index=batch_index,
+                    batch=batch,
+                    batch_size=batch_size,
+                )
+
+            self.exec_hooks(
+                ModelExecutorHookPoint.BEFORE_FETCH_BATCH,
+                batch_index=batch_index + 1,
+            )
+
+        self.exec_hooks(
+            ModelExecutorHookPoint.AFTER_EPOCH,
+            epoch=epoch,
+        )
+
+    def _get_backward_loss(self, result):
+        raise NotImplementedError()

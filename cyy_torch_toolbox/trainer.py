@@ -53,8 +53,8 @@ class Trainer(ModelExecutor):
 
     def set_device(self, device):
         super().set_device(device)
-        for a in self.__inferencers.values():
-            a.set_device(device)
+        for inferencer in self.__inferencers.values():
+            inferencer.set_device(device)
 
     def set_amp(self, enabled=True, use_apex=False):
         if self.__amp_hook is not None:
@@ -183,116 +183,7 @@ class Trainer(ModelExecutor):
         with torch.cuda.stream(self.cuda_stream):
             try:
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
-                    if epoch in self.get_data("skipped_epoch", set()):
-                        get_logger().warning("skip epoch %s", epoch)
-                        continue
-                    self.exec_hooks(
-                        ModelExecutorHookPoint.BEFORE_EPOCH,
-                        epoch=epoch,
-                    )
-                    self.exec_hooks(
-                        ModelExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0
-                    )
-                    for batch_index, batch in enumerate(self.dataloader):
-                        self.exec_hooks(
-                            ModelExecutorHookPoint.AFTER_FETCH_BATCH,
-                            batch_index=batch_index,
-                        )
-
-                        optimizer = self.get_optimizer()
-                        optimizer.zero_grad(set_to_none=True)
-
-                        (
-                            batch_size,
-                            sample_inputs,
-                            sample_targets,
-                            other_info,
-                        ) = self.decode_batch(batch)
-                        if batch_size is None:
-                            batch_size = self.get_batch_size(sample_targets)
-                        batch = (sample_inputs, sample_targets, other_info)
-                        if (
-                            self.hyper_parameter.batch_size != 1
-                            and batch_size == 1
-                            and self._model_with_loss.has_batch_norm
-                        ):
-                            get_logger().debug("drop last one-batch for batchnorm")
-                            continue
-
-                        self.exec_hooks(
-                            ModelExecutorHookPoint.BEFORE_BATCH,
-                            batch_index=batch_index,
-                            batch=batch,
-                            batch_size=batch_size,
-                        )
-                        kwargs = {
-                            "inputs": sample_inputs,
-                            "targets": sample_targets,
-                            "phase": self.phase,
-                            "device": self.device,
-                            "non_blocking": True,
-                        }
-                        if self.has_hook(ModelExecutorHookPoint.MODEL_FORWARD):
-                            self.exec_hooks(
-                                ModelExecutorHookPoint.MODEL_FORWARD,
-                                model_kwargs=kwargs,
-                            )
-                            result = self.get_data("forward_result")
-                        else:
-                            result = self._model_with_loss(**kwargs)
-                        self.exec_hooks(
-                            ModelExecutorHookPoint.BEFORE_BACKWARD,
-                            inputs=result["inputs"],
-                            input_features=result["input_features"],
-                            targets=result["targets"],
-                            batch_info=other_info,
-                            batch_size=batch_size,
-                        )
-                        if self.has_hook(ModelExecutorHookPoint.MODEL_BACKWARD):
-                            self.exec_hooks(
-                                ModelExecutorHookPoint.MODEL_BACKWARD,
-                                loss=result["loss"],
-                            )
-                        else:
-                            result["loss"].backward()
-
-                        self.exec_hooks(
-                            ModelExecutorHookPoint.AFTER_BATCH,
-                            batch_index=batch_index,
-                            inputs=result["inputs"],
-                            input_features=result["input_features"],
-                            targets=result["targets"],
-                            batch_info=other_info,
-                            epoch=epoch,
-                            result=result,
-                            batch_size=batch_size,
-                        )
-                        if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
-                            self.exec_hooks(ModelExecutorHookPoint.OPTIMIZER_STEP)
-                        else:
-                            optimizer.step()
-                        lr_scheduler = self.get_lr_scheduler()
-                        if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                            get_logger().debug("adjust lr after batch")
-                            lr_scheduler.step()
-
-                        self.exec_hooks(
-                            ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
-                            epoch=epoch,
-                            batch_index=batch_index,
-                            batch=batch,
-                            batch_size=batch_size,
-                        )
-
-                        self.exec_hooks(
-                            ModelExecutorHookPoint.BEFORE_FETCH_BATCH,
-                            batch_index=batch_index + 1,
-                        )
-
-                    self.exec_hooks(
-                        ModelExecutorHookPoint.AFTER_EPOCH,
-                        epoch=epoch,
-                    )
+                    self._execute_epoch(epoch=epoch)
 
                     for phase in (
                         MachineLearningPhase.Validation,
@@ -315,6 +206,7 @@ class Trainer(ModelExecutor):
                         epoch=epoch,
                     )
                     # adjust learning rate
+                    lr_scheduler = self.get_lr_scheduler()
                     if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                         continue
                     match lr_scheduler:
@@ -335,3 +227,6 @@ class Trainer(ModelExecutor):
             ModelExecutorHookPoint.AFTER_EXECUTE,
             epoch=self.hyper_parameter.epoch,
         )
+
+    def _get_backward_loss(self, result):
+        return result["loss"]
