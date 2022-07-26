@@ -194,7 +194,7 @@ def get_dataloader(
         num_workers = 2
         prefetch_factor = 1
     else:
-        get_logger().warning("no transforms, use threads")
+        get_logger().warning("use threads")
         num_workers = 0
         persistent_workers = False
         prefetch_factor = 2
