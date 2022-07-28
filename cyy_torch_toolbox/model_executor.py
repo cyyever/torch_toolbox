@@ -55,6 +55,7 @@ class ModelExecutor(ModelExecutorBase):
         self.profiling_mode = False
         self.__save_dir: Optional[str] = None
         self.cache_transforms = None
+        self._trainer_flag = False
 
     @property
     def visualizer(self):
@@ -294,7 +295,7 @@ class ModelExecutor(ModelExecutorBase):
                 ModelExecutorHookPoint.AFTER_FETCH_BATCH,
                 batch_index=batch_index,
             )
-            if self.phase == MachineLearningPhase.Training:
+            if self._trainer_flag:
                 optimizer = self.get_optimizer()
                 optimizer.zero_grad(set_to_none=True)
 
@@ -309,7 +310,7 @@ class ModelExecutor(ModelExecutorBase):
             #     batch_size = self.get_batch_size(sample_targets)
             batch = (sample_inputs, sample_targets, other_info)
             if (
-                self.phase == MachineLearningPhase.Training
+                self._trainer_flag
                 and self.hyper_parameter.batch_size != 1
                 and batch_size == 1
                 and self._model_with_loss.has_batch_norm
@@ -372,7 +373,7 @@ class ModelExecutor(ModelExecutorBase):
                 result=result,
                 batch_size=batch_size,
             )
-            if self.phase == MachineLearningPhase.Training:
+            if self._trainer_flag:
                 if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
                     self.exec_hooks(ModelExecutorHookPoint.OPTIMIZER_STEP)
                 else:
