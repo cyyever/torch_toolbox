@@ -34,6 +34,7 @@ class Trainer(ModelExecutor):
             MachineLearningPhase.Training,
             hyper_parameter,
         )
+        self._trainer_flag = True
         self.append_hook(LearningRateHook())
         self.__inferencers: dict = {}
         self.__batch_loss_logger = BatchLossLogger()
