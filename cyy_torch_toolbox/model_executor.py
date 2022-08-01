@@ -112,6 +112,7 @@ class ModelExecutor(ModelExecutorBase):
                 device=self.device,
                 cache_transforms=self.cache_transforms,
             )
+            self.cache_transforms = None
         return self.__dataloader
 
     @property
