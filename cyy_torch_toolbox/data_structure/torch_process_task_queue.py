@@ -62,6 +62,11 @@ class TorchProcessTaskQueue(TaskQueue):
             result = put_data_to_device(result, get_cpu_device())
         super().put_result(result, **kwargs)
 
+    def put_data(self, result, **kwargs):
+        if self.__move_data_in_cpu:
+            result = put_data_to_device(result, get_cpu_device())
+        super().put_data(result, **kwargs)
+
     def _get_extra_task_arguments(self, worker_id):
         return super()._get_extra_task_arguments(worker_id) | {
             "device": self.__devices[worker_id % len(self.__devices)]
