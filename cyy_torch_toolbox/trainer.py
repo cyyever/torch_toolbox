@@ -87,6 +87,7 @@ class Trainer(ModelExecutor):
             raise RuntimeError(
                 "Unsupported model type:" + str(model_with_loss.model_type)
             )
+        inferencer.cache_transforms = self.cache_transforms
         inferencer.set_device(self.device)
         return inferencer
 
