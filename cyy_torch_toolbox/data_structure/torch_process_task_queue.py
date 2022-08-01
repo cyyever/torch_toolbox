@@ -19,8 +19,10 @@ class TorchProcessTaskQueue(TaskQueue):
         worker_num: int | None = None,
         move_data_in_cpu: bool = True,
         max_needed_cuda_bytes=None,
+        use_manager: bool = True,
     ):
         self.__devices = get_devices()
+        self.use_manager = use_manager
         if max_needed_cuda_bytes is not None:
             self.__devices = CudaDeviceGreedyAllocator().get_devices(
                 max_needed_cuda_bytes
@@ -39,6 +41,8 @@ class TorchProcessTaskQueue(TaskQueue):
         return TorchProcessTaskQueue.ctx
 
     def get_manager(self):
+        if not self.use_manager:
+            return None
         if TorchProcessTaskQueue.manager is None:
             TorchProcessTaskQueue.manager = self.get_ctx().Manager()
         return TorchProcessTaskQueue.manager
