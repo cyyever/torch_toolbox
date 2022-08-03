@@ -1,4 +1,3 @@
-import argparse
 import copy
 import datetime
 import os
@@ -66,34 +65,6 @@ class DefaultConfig:
                 get_logger().error("remain config %s", conf_container)
             assert not conf_container
         return conf_container
-
-    def load_args(self, parser=None):
-        if parser is None:
-            parser = argparse.ArgumentParser()
-
-        parser.add_argument("--save_dir", type=str, default=None)
-        parser.add_argument("--reproducible_env_load_path", type=str, default=None)
-        parser.add_argument(
-            "--make_reproducible_env", action="store_true", default=False
-        )
-        self.dc_config.add_args(parser)
-        self.hyper_parameter_config.add_args(parser)
-        self.model_config.add_args(parser)
-        parser.add_argument("--log_level", type=str, default=None)
-        parser.add_argument("--debug", action="store_true", default=False)
-        parser.add_argument("--profile", action="store_true", default=False)
-        args = parser.parse_args()
-        self.dc_config.load_args(args)
-        self.hyper_parameter_config.load_args(args)
-        self.model_config.load_args(args)
-
-        for attr in dir(args):
-            if attr.startswith("_"):
-                continue
-            value = getattr(args, attr)
-            if value is not None:
-                setattr(self, attr, value)
-        return args
 
     def get_save_dir(self):
         if self.save_dir is None:
