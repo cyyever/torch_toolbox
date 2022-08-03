@@ -88,11 +88,12 @@ class SpacyTokenizer:
 
     def __tokenize(self, s):
         tokens = self.__spacy.tokenizer(s)
-        if not self.__keep_punct:
-            tokens = [t for t in tokens if not t.is_punct]
-        if not self.__keep_stop:
-            tokens = [t for t in tokens if not t.is_stop]
-        return [t.text for t in tokens]
+        return [
+            t.text
+            for t in tokens
+            if (self.__keep_punct or not t.is_punct)
+            and (self.__keep_stop or not t.is_stop)
+        ]
 
     def __call__(self, s):
         return self.__vocab(self.__tokenize(s))
