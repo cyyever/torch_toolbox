@@ -108,7 +108,7 @@ class ModelWithLoss:
             targets = put_data_to_device(
                 targets, device=device, non_blocking=non_blocking
             )
-            self.model.to(device, non_blocking=non_blocking)
+            self.to(device=device, non_blocking=non_blocking)
 
         model = self.model
         if hasattr(model, "forward_input_feature"):
@@ -165,7 +165,7 @@ class ModelWithLoss:
         except StopIteration:
             param = next(self.model.buffers())
         if param.device != device:
-            self.model.to(device, non_blocking=non_blocking)
+            self.model.to(device=device, non_blocking=non_blocking)
 
     def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
         layers = [
