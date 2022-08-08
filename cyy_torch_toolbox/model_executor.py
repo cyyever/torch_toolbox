@@ -354,6 +354,7 @@ class ModelExecutor(ModelExecutorBase):
                 targets=result["targets"],
                 batch_info=other_info,
                 batch_size=batch_size,
+                epoch=epoch,
             )
 
             loss = self._get_backward_loss(result=result)
