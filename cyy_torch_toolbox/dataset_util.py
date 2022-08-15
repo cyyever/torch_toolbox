@@ -16,13 +16,13 @@ class DatasetUtil:
     def __init__(
         self,
         dataset: torch.utils.data.Dataset,
-        transforms: Transforms = None,
+        transforms: Transforms | None = None,
         name=None,
     ):
         self.dataset: torch.utils.data.Dataset = dataset
         self.__len = None
         self._name: str | None = name
-        self.__transforms = transforms
+        self.__transforms: Transforms | None = transforms
 
     def __len__(self):
         if self.__len is None:
