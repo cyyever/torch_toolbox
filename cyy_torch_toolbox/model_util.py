@@ -36,11 +36,12 @@ class ModelUtil:
             assert parameter_shapes
             parameter_dict = load_tensor_dict(parameter_shapes, parameter_list)
         else:
-            parameter_dict = self.get_parameter_dict()
-            assert parameter_dict
-            assert len(parameter_list) == len(parameter_dict)
-            for name in sorted(parameter_dict.keys()):
-                parameter_dict[name] = parameter_list.pop(0)
+            assert False
+            # parameter_dict = self.get_parameter_dict()
+            # assert parameter_dict
+            # assert len(parameter_list) == len(parameter_dict)
+            # for name in sorted(parameter_dict.keys()):
+            #     parameter_dict[name] = parameter_list.pop(0)
         self.load_parameter_dict(
             parameter_dict, check_parameter=check_parameter, as_parameter=as_parameter
         )
