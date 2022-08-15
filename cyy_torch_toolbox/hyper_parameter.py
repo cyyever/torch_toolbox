@@ -272,39 +272,10 @@ class HyperParameterConfig:
         self.find_learning_rate = True
         self.learning_rate = None
         self.learning_rate_scheduler = None
-        self.learning_rate_scheduler_arguments = {}
+        self.learning_rate_scheduler_kwargs = {}
         self.momentum = None
         self.weight_decay = None
         self.optimizer_name = None
-
-    def add_args(self, parser):
-        parser.add_argument("--epoch", type=int, default=None)
-        parser.add_argument("--batch_size", type=int, default=None)
-        parser.add_argument("--learning_rate", type=float, default=None)
-        parser.add_argument("--learning_rate_scheduler", type=str, default=None)
-        parser.add_argument("--find_learning_rate", action="store_true", default=False)
-        parser.add_argument("--momentum", type=float, default=None)
-        parser.add_argument("--weight_decay", type=float, default=None)
-        parser.add_argument("--optimizer_name", type=str, default=None)
-        parser.add_argument("--hyper_parameter_config_json", type=str, default=None)
-
-    def load_args(self, args):
-        if args.hyper_parameter_config_json is not None:
-            with open(args.hyper_parameter_config_json, "rt", encoding="utf8") as f:
-                config = json.load(f)
-                assert isinstance(config, dict)
-                for k, v in config.items():
-                    setattr(args, k, v)
-
-        for attr in dir(args):
-            if attr.startswith("_"):
-                continue
-            if not hasattr(self, attr):
-                continue
-            get_logger().debug("set dataset collection config attr %s", attr)
-            value = getattr(args, attr)
-            if value is not None:
-                setattr(self, attr, value)
 
     def create_hyper_parameter(self, dataset_name, model_name):
         hyper_parameter = get_recommended_hyper_parameter(dataset_name, model_name)
@@ -331,7 +302,7 @@ class HyperParameterConfig:
             hyper_parameter.set_lr_scheduler_factory(
                 HyperParameter.get_lr_scheduler_factory(
                     self.learning_rate_scheduler,
-                    **self.learning_rate_scheduler_arguments,
+                    **self.learning_rate_scheduler_kwargs,
                 )
             )
         return hyper_parameter

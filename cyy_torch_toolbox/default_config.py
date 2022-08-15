@@ -32,8 +32,11 @@ class DefaultConfig:
         self.log_level = None
         self.cache_transforms = None
 
+    def load_config(self, conf, check_config: bool = True) -> dict:
+        return DefaultConfig.__load_config(self, conf, check_config)
+
     @classmethod
-    def load_config(cls, obj, conf, check_config: bool = True) -> dict:
+    def __load_config(cls, obj, conf, check_config: bool = True) -> dict:
         if not isinstance(conf, dict):
             conf_container = OmegaConf.to_container(conf)
         else:
@@ -49,15 +52,15 @@ class DefaultConfig:
                     case _:
                         setattr(obj, attr, value)
         if hasattr(obj, "dc_config"):
-            conf_container = cls.load_config(
+            conf_container = cls.__load_config(
                 obj.dc_config, conf_container, check_config=False
             )
         if hasattr(obj, "hyper_parameter_config"):
-            conf_container = cls.load_config(
+            conf_container = cls.__load_config(
                 obj.hyper_parameter_config, conf_container, check_config=False
             )
         if hasattr(obj, "model_config"):
-            conf_container = cls.load_config(
+            conf_container = cls.__load_config(
                 obj.model_config, conf_container, check_config=False
             )
         if check_config:
