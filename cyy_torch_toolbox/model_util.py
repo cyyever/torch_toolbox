@@ -31,17 +31,12 @@ class ModelUtil:
         check_parameter: bool = True,
         as_parameter: bool = True,
     ) -> None:
-        if isinstance(parameter_list, torch.Tensor):
-            parameter_shapes = self.get_parameter_shapes()
-            assert parameter_shapes
-            parameter_dict = load_tensor_dict(parameter_shapes, parameter_list)
-        else:
-            assert False
-            # parameter_dict = self.get_parameter_dict()
-            # assert parameter_dict
-            # assert len(parameter_list) == len(parameter_dict)
-            # for name in sorted(parameter_dict.keys()):
-            #     parameter_dict[name] = parameter_list.pop(0)
+        parameter_shapes = self.get_parameter_shapes()
+        assert parameter_shapes
+        parameter_dict = load_tensor_dict(parameter_shapes, parameter_list)
+        # if isinstance(parameter_list, torch.Tensor):
+        # else:
+        #     assert False
         self.load_parameter_dict(
             parameter_dict, check_parameter=check_parameter, as_parameter=as_parameter
         )

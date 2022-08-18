@@ -44,7 +44,7 @@ class DatasetCollection:
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
-        self.__transforms_cached: bool = False
+        self.__transforms_cached: bool | str = False
 
     @property
     def dataset_type(self):
@@ -130,11 +130,14 @@ class DatasetCollection:
             self._datasets[phase] = DictDataset(transformed_dataset)
             self.__transforms[phase] = new_transforms
             if phase == MachineLearningPhase.Training:
-                get_logger().debug("new training transforms are %s", new_transforms)
-        self.__transforms_cached = True
+                get_logger().error("new training transforms are %s", new_transforms)
+        if device is not None:
+            self.__transforms_cached = device
+        else:
+            self.__transforms_cached = True
 
     @property
-    def transforms_cached(self) -> str:
+    def transforms_cached(self) -> str | bool:
         return self.__transforms_cached
 
     @property
