@@ -119,29 +119,26 @@ class ModelWithLoss:
             real_inputs = input_features
         else:
             real_inputs = inputs
+        loss = None
+        classification_output = None
         match real_inputs:
-            case tuple():
-                output = model(*real_inputs)
             case transformers.tokenization_utils_base.BatchEncoding():
                 output = model(**real_inputs, labels=targets)
-            case torch.Tensor():
-                output = model(real_inputs)
-            case _:
-                raise NotImplementedError()
-        loss = None
-        match real_inputs:
-            case transformers.tokenization_utils_base.BatchEncoding():
                 loss = output["loss"]
                 classification_output = output["logits"]
+            case torch.Tensor():
+                output = model(real_inputs)
+            case tuple():
+                output = model(*real_inputs)
             case _:
-                assert self.loss_fun is not None
-                match self.loss_fun:
-                    case nn.BCEWithLogitsLoss():
-                        targets = targets.to(
-                            dtype=output.dtype, non_blocking=non_blocking
-                        )
-                loss = self.loss_fun(output, targets)
-                classification_output = output
+                raise NotImplementedError()
+        if loss is None:
+            assert self.loss_fun is not None
+            match self.loss_fun:
+                case nn.BCEWithLogitsLoss():
+                    targets = targets.to(dtype=output.dtype, non_blocking=non_blocking)
+            loss = self.loss_fun(output, targets)
+            classification_output = output
         is_averaged_loss = self.__is_averaged_loss()
         if is_averaged_loss is None:
             is_averaged_loss = classification_output is not None

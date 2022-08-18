@@ -141,8 +141,12 @@ class Transforms:
             item["input"] = self.transform_input(item["input"], apply_random=False)
             item["target"] = self.transform_target(item["target"], index=k)
             if device is not None:
-                item["input"] = put_data_to_device(item["input"], device=device)
-                item["target"] = put_data_to_device(item["target"], device=device)
+                item["input"] = put_data_to_device(
+                    item["input"], device=device, non_blocking=True
+                )
+                item["target"] = put_data_to_device(
+                    item["target"], device=device, non_blocking=True
+                )
             transformed_dataset[k] = item
         new_transforms = copy.deepcopy(self)
         new_transforms.clear(TransformType.ExtractData)
