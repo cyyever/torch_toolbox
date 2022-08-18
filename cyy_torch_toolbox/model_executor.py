@@ -11,6 +11,7 @@ from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.dataset_util import DatasetUtil
 from cyy_torch_toolbox.device import get_device
+from cyy_torch_toolbox.hooks.amp import AMP
 from cyy_torch_toolbox.hooks.model_executor_logger import ModelExecutorLogger
 from cyy_torch_toolbox.hooks.profiler import Profiler
 from cyy_torch_toolbox.hyper_parameter import HyperParameter
@@ -57,6 +58,8 @@ class ModelExecutor(ModelExecutorBase):
         self.__save_dir: Optional[str] = None
         self.cache_transforms = None
         self._trainer_flag = False
+        self.__amp_hook = None
+        self._use_amp = False
 
     @property
     def visualizer(self):
@@ -142,6 +145,15 @@ class ModelExecutor(ModelExecutorBase):
         if deepcopy:
             return copy.deepcopy(self._model_with_loss)
         return copy.copy(self._model_with_loss)
+
+    def set_amp(self, enabled=True):
+        if self.__amp_hook is not None:
+            self.remove_hook(self.__amp_hook)
+            self.__amp_hook = None
+        if enabled:
+            self.__amp_hook = AMP()
+            self.append_hook(self.__amp_hook)
+        self._use_amp = enabled
 
     def _prepare_execution(self, **kwargs):
         self.clear_data()
@@ -343,7 +355,7 @@ class ModelExecutor(ModelExecutorBase):
                     ModelExecutorHookPoint.MODEL_FORWARD,
                     model_kwargs=kwargs,
                 )
-                result = self.get_data("forward_result")
+                result = self.pop_data("forward_result")
             else:
                 result = self._model_with_loss(**kwargs)
 

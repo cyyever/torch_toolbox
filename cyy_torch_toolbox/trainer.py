@@ -5,7 +5,6 @@ from cyy_torch_toolbox.classification_inferencer import \
     ClassificationInferencer
 from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.hooks.amp import AMP
 from cyy_torch_toolbox.hooks.keep_model import KeepModelHook
 from cyy_torch_toolbox.hooks.learning_rate_hook import LearningRateHook
 from cyy_torch_toolbox.hooks.trainer_debugger import TrainerDebugger
@@ -42,20 +41,11 @@ class Trainer(ModelExecutor):
         self.__keep_model_hook = KeepModelHook()
         self.append_hook(self.__keep_model_hook)
         self.__debugger = None
-        self.__amp_hook = None
 
     def set_device(self, device):
         super().set_device(device)
         for inferencer in self.__inferencers.values():
             inferencer.set_device(device)
-
-    def set_amp(self, enabled=True):
-        if self.__amp_hook is not None:
-            self.remove_hook(self.__amp_hook)
-            self.__amp_hook = None
-        if enabled:
-            self.__amp_hook = AMP()
-            self.append_hook(self.__amp_hook)
 
     @property
     def batch_loss_logger(self):
@@ -89,6 +79,7 @@ class Trainer(ModelExecutor):
             )
         inferencer.cache_transforms = self.cache_transforms
         inferencer.set_device(self.device)
+        inferencer.set_amp(enabled=self._use_amp)
         return inferencer
 
     def get_optimizer(self):

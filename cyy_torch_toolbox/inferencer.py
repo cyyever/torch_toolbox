@@ -16,8 +16,8 @@ class Inferencer(ModelExecutor):
             epoch = 1
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
         with (torch.set_grad_enabled(use_grad), torch.cuda.stream(self.cuda_stream)):
+            self.model.zero_grad(set_to_none=True)
             try:
-                self.model.zero_grad(set_to_none=True)
                 self._execute_epoch(epoch=epoch, need_backward=self._use_grad)
             except StopExecutingException:
                 get_logger().warning("stop inference")
