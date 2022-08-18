@@ -103,7 +103,7 @@ def add_transforms(dc, dataset_kwargs, model_config):
 
         # Input && InputBatch
         tokenizer_kwargs = dataset_kwargs.get("tokenizer", {})
-        if not tokenizer_kwargs and model_config is not None:
+        if model_config is not None:
             if "bert" in model_config.model_name:
                 tokenizer_kwargs["type"] = model_config.model_name.replace(
                     "sequence_classification_", ""
