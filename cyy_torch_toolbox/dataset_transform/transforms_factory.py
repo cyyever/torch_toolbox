@@ -10,7 +10,7 @@ from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
 
 from .tokenizer import SpacyTokenizer
-from .tokenizer_factory import get_tokenizer
+from .tokenizer_factory import get_hugging_face_tokenizer, get_spacy_tokenizer
 from .transforms import Transforms, str_target_to_int, swap_input_and_target
 
 
@@ -102,20 +102,27 @@ def add_transforms(dc, dataset_kwargs, model_config):
                 dc.append_transform(f, key=TransformType.InputText, phases=[phase])
 
         # Input && InputBatch
-        tokenizer_kwargs = dataset_kwargs.get("tokenizer", {})
+        dc.tokenizer = None
         if model_config is not None:
             if "bert" in model_config.model_name:
-                tokenizer_kwargs["type"] = model_config.model_name.replace(
-                    "sequence_classification_", ""
+                dc.tokenizer = get_hugging_face_tokenizer(
+                    model_config.model_name.replace("sequence_classification_", "")
                 )
+        tokenizer_kwargs = dataset_kwargs.get("tokenizer", {})
+        spacy_kwargs = tokenizer_kwargs.get("spacy_kwargs", {})
+        create_spacy: bool = dc.tokenizer is None or spacy_kwargs
+        dc.spacy_tokenizer = None
+        if create_spacy:
+            dc.spacy_tokenizer = get_spacy_tokenizer(dc, **spacy_kwargs)
+        if dc.tokenizer is None:
+            dc.tokenizer = dc.spacy_tokenizer
 
-        dc.tokenizer = get_tokenizer(tokenizer_kwargs, dc)
         max_len = dataset_kwargs.get("max_len", None)
         if max_len is None and model_config is not None:
             max_len = model_config.model_kwargs.get("max_len", None)
         match dc.tokenizer:
             case SpacyTokenizer():
-                dc.append_transform(dc.tokenizer, key=TransformType.Input)
+                dc.append_transform(dc.spacy_tokenizer, key=TransformType.Input)
                 if max_len is not None:
                     dc.append_transform(
                         torchtext.transforms.Truncate(max_seq_len=max_len),
@@ -142,7 +149,7 @@ def add_transforms(dc, dataset_kwargs, model_config):
                     key=TransformType.InputBatch,
                 )
             case _:
-                raise NotImplementedError()
+                raise NotImplementedError(str(type(dc.tokenizer)))
         # Target
         if isinstance(
             dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(

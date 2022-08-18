@@ -32,9 +32,9 @@ class ModelExecutorLogger(Hook):
                 type(lr_scheduler),
             )
 
-    def _after_execute(self, **kwargs):
-        model_executor = kwargs["model_executor"]
-        if os.getenv("draw_torch_model") is not None:
-            model_executor.visualizer.writer.add_graph(
-                model_executor.model, model_executor._model_with_loss.example_input
-            )
+    # def _after_execute(self, **kwargs):
+    #     model_executor = kwargs["model_executor"]
+    #     if os.getenv("draw_torch_model") is not None:
+    #         model_executor.visualizer.writer.add_graph(
+    #             model_executor.model, model_executor._model_with_loss.example_input
+    #         )

@@ -331,7 +331,9 @@ class ModelExecutor(ModelExecutorBase):
                 self._trainer_flag
                 and self.hyper_parameter.batch_size != 1
                 and batch_size == 1
-                and self._model_with_loss.has_batch_norm
+                and self._model_with_loss.model_util.have_module(
+                    module_type=torch.nn.BatchNorm2d
+                )
             ):
                 get_logger().debug("drop last one-batch for batchnorm")
                 continue

@@ -30,13 +30,7 @@ class ModelWithLoss:
         if loss_fun is not None:
             self.set_loss_fun(loss_fun)
         self.__model_type = model_type
-        self.__has_batch_norm = None
-        self.__example_input = None
-
-    @property
-    def example_input(self):
-        assert self.__example_input
-        return self.__example_input
+        self.need_input_features = False
 
     @property
     def model(self) -> torch.nn.Module:
@@ -45,14 +39,6 @@ class ModelWithLoss:
     @property
     def model_util(self) -> ModelUtil:
         return ModelUtil(self.model)
-
-    @property
-    def has_batch_norm(self):
-        if self.__has_batch_norm is None:
-            self.__has_batch_norm = self.model_util.have_module(
-                module_type=torch.nn.BatchNorm2d
-            )
-        return self.__has_batch_norm
 
     @property
     def model_type(self):
@@ -76,6 +62,16 @@ class ModelWithLoss:
     def offload_from_gpu(self):
         self.model.zero_grad(set_to_none=True)
         self.model.cpu()
+
+    def get_input_feature(self, inputs):
+        if hasattr(self.model, "get_input_feature"):
+            return self.model.get_input_feature(inputs)
+        if (
+            hasattr(self.model, "bert")
+            and "BertEmbeddings" in type(self.model.bert.embeddings).__name__
+        ):
+            return self.model.bert.embeddings(inputs)
+        return None
 
     def __call__(
         self,
@@ -111,11 +107,11 @@ class ModelWithLoss:
             self.to(device=device, non_blocking=non_blocking)
 
         model = self.model
-        if hasattr(model, "forward_input_feature"):
-            if input_features is None:
-                input_features = model.get_input_feature(inputs)
+        if input_features is None and self.need_input_features:
+            input_features = self.get_input_feature(inputs)
+            assert input_features is not None
+        if hasattr(model, "forward_input_feature") and input_features is not None:
             model = model.forward_input_feature
-        if input_features is not None:
             real_inputs = input_features
         else:
             real_inputs = inputs
@@ -243,6 +239,10 @@ class CheckPointedModelWithLoss(ModelWithLoss):
             if input_features is not None:
                 input_features.requires_grad_()
         return super().__call__(**kwargs)
+
+
+class NLPModelWithLoss(ModelWithLoss):
+    pass
 
 
 class ParallelModelWithLoss(ModelWithLoss):
