@@ -14,6 +14,8 @@ class ModelExecutorBase:
 
     def get_data(self, key: str, default_value=None):
         return self.__data.get(key, default_value)
+    def pop_data(self, key: str, default_value=None):
+        return self.__data.pop(key, default_value)
 
     def set_data(self, key: str, value) -> None:
         self.__data[key] = value
