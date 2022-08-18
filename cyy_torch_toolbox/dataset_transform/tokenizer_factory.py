@@ -3,8 +3,9 @@ from transformers import AutoTokenizer
 from .tokenizer import SpacyTokenizer
 
 
-def get_tokenizer(tokenizer_kwargs, dc=None):
-    tokenizer_type = tokenizer_kwargs.get("type", "spacy")
-    if tokenizer_type == "spacy":
-        return SpacyTokenizer(dc, **tokenizer_kwargs)
-    return AutoTokenizer.from_pretrained(tokenizer_type, **tokenizer_kwargs)
+def get_spacy_tokenizer(dc, **spacy_kwargs) -> SpacyTokenizer:
+    return SpacyTokenizer(dc, **spacy_kwargs)
+
+
+def get_hugging_face_tokenizer(tokenizer_type):
+    return AutoTokenizer.from_pretrained(tokenizer_type)
