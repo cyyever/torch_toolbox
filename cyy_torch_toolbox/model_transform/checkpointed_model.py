@@ -25,7 +25,6 @@ def get_checkpointed_model(model) -> torch.nn.Module:
     checkpointed_blocks = ModelUtil(model).get_module_blocks(
         block_types={(nn.Conv2d, nn.BatchNorm2d)}
     )
-    assert checkpointed_blocks
     checkpointed_model = copy.deepcopy(model)
     checkpointed_model.load_state_dict(model.state_dict())
     checkpointed_model_util = ModelUtil(checkpointed_model)
