@@ -21,8 +21,8 @@ class ModelWithLoss:
     def __init__(
         self,
         model: torch.nn.Module,
-        loss_fun: str | Callable | None = None,
         model_type: ModelType = None,
+        loss_fun: str | Callable | None = None,
     ):
         self._model: torch.nn.Module = model
 
@@ -61,7 +61,7 @@ class ModelWithLoss:
 
     def offload_from_gpu(self):
         self.model.zero_grad(set_to_none=True)
-        self.model.cpu()
+        self.to(device="cpu")
 
     def get_input_feature(self, inputs):
         if hasattr(self.model, "get_input_feature"):
@@ -79,13 +79,14 @@ class ModelWithLoss:
         targets,
         phase: MachineLearningPhase = None,
         device=None,
-        non_blocking=False,
+        non_blocking: bool = False,
         input_features=None,
-        need_backward=None,
+        need_backward: bool = False,
     ) -> dict:
         if phase is not None:
-            self.set_model_mode(
-                phase == MachineLearningPhase.Training, need_backward=need_backward
+            self.__set_model_mode(
+                is_training=(phase == MachineLearningPhase.Training),
+                need_backward=need_backward,
             )
 
         # DALI returns nested targets
@@ -208,7 +209,7 @@ class ModelWithLoss:
     def __repr__(self):
         return f"model: {self._model.__class__.__name__}, loss_fun: {self.loss_fun}"
 
-    def set_model_mode(self, is_training: bool, need_backward=None) -> None:
+    def __set_model_mode(self, is_training: bool, need_backward: bool = False) -> None:
         if is_training:
             if self._model.training:
                 return
@@ -222,27 +223,42 @@ class ModelWithLoss:
                 )
 
 
-class CheckPointedModelWithLoss(ModelWithLoss):
+class CheckPointedModelWithLoss:
     """
     Combine a model with a loss function.
     """
 
-    def __init__(self, model: torch.nn.Module, *args, **kwargs):
-        super().__init__(get_checkpointed_model(model), *args, **kwargs)
+    def __init__(self, model_with_loss: ModelWithLoss):
+        self.__model_with_loss = model_with_loss.replace_model(
+            get_checkpointed_model(model_with_loss.model)
+        )
+
+    def __getattr__(self, attr):
+        return getattr(self.__model_with_loss, attr)
 
     def __call__(self, **kwargs) -> dict:
-        if self.model.training:
+        phase = kwargs["phase"]
+        if phase == MachineLearningPhase.Training:
             inputs = kwargs.get("inputs", None)
             if inputs is not None:
                 inputs.requires_grad_()
             input_features = kwargs.get("input_features", None)
             if input_features is not None:
                 input_features.requires_grad_()
-        return super().__call__(**kwargs)
+        return self.__model_with_loss.__call__(**kwargs)
 
 
-class NLPModelWithLoss(ModelWithLoss):
-    pass
+class TextModelWithLoss(ModelWithLoss):
+    def get_input_feature(self, inputs):
+        res = super().get_input_feature(inputs)
+        if res is not None:
+            return res
+        if (
+            hasattr(self.model, "bert")
+            and "BertEmbeddings" in type(self.model.bert.embeddings).__name__
+        ):
+            return self.model.bert.embeddings(inputs)
+        return None
 
 
 class ParallelModelWithLoss(ModelWithLoss):
