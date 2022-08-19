@@ -112,6 +112,7 @@ def get_model(
     except Exception:
         pass
     loss_fun_name = model_kwargs.pop("loss_fun_name", None)
+    use_checkpointing = model_kwargs.pop("use_checkpointing", False)
     while True:
         try:
             _, model_constructor, repo = model_info.get(
@@ -132,8 +133,8 @@ def get_model(
                 loss_fun=loss_fun_name,
                 model_type=model_type,
             )
-            if model_kwargs.get("use_checkpointing", False):
-                model_with_loss = CheckPointedModelWithLoss(model_with_loss)
+            # if use_checkpointing:
+            #     model_with_loss = CheckPointedModelWithLoss(model_with_loss)
             if repo is not None:
                 # we need the path to pickle models
                 hub_dir = torch.hub.get_dir()

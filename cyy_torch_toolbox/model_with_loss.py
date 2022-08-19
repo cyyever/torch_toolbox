@@ -236,12 +236,13 @@ class CheckPointedModelWithLoss:
     def __call__(self, **kwargs) -> dict:
         phase = kwargs["phase"]
         if phase == MachineLearningPhase.Training:
-            inputs = kwargs.get("inputs", None)
-            if inputs is not None:
-                inputs.requires_grad_()
             input_features = kwargs.get("input_features", None)
             if input_features is not None:
                 input_features.requires_grad_()
+            else:
+                inputs = kwargs.get("inputs", None)
+                if inputs is not None:
+                    inputs.requires_grad_()
         return self.__model_with_loss.__call__(**kwargs)
 
 
