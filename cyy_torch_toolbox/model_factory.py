@@ -17,7 +17,8 @@ from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.ml_type import DatasetType, ModelType
 from cyy_torch_toolbox.model_with_loss import (CheckPointedModelWithLoss,
-                                               ModelWithLoss, NLPModelWithLoss)
+                                               ModelWithLoss,
+                                               TextModelWithLoss)
 from cyy_torch_toolbox.models.huggingface_models import huggingface_models
 from cyy_torch_toolbox.word_vector import PretrainedWordVector
 
@@ -123,15 +124,16 @@ def get_model(
                 )
             model = model_constructor(**(added_kwargs | model_kwargs))
             get_logger().warning("use model arguments %s", model_kwargs | added_kwargs)
-            if model_kwargs.get("use_checkpointing", False):
-                model_with_loss_fun = CheckPointedModelWithLoss
-            else:
-                model_with_loss_fun = ModelWithLoss
+            model_with_loss_fun = ModelWithLoss
+            if dataset_collection.dataset_type == DatasetType.Text:
+                model_with_loss_fun = TextModelWithLoss
             model_with_loss = model_with_loss_fun(
                 model=model,
                 loss_fun=loss_fun_name,
                 model_type=model_type,
             )
+            if model_kwargs.get("use_checkpointing", False):
+                model_with_loss = CheckPointedModelWithLoss(model_with_loss)
             if repo is not None:
                 # we need the path to pickle models
                 hub_dir = torch.hub.get_dir()

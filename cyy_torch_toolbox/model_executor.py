@@ -154,6 +154,7 @@ class ModelExecutor(ModelExecutorBase):
             self.__amp_hook = AMP()
             self.append_hook(self.__amp_hook)
         self._use_amp = enabled
+        get_logger().debug("use AMP")
 
     def _prepare_execution(self, **kwargs):
         self.clear_data()

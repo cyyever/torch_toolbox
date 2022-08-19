@@ -31,7 +31,7 @@ class DefaultConfig:
         self.save_dir = None
         self.log_level = None
         self.cache_transforms = None
-        self.use_amp = False
+        self.use_amp = True
 
     def load_config(self, conf, check_config: bool = True) -> dict:
         return DefaultConfig.__load_config(self, conf, check_config)
