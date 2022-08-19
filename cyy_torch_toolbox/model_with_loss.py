@@ -117,7 +117,7 @@ class ModelWithLoss:
                             dtype=output.dtype, non_blocking=non_blocking
                         )
                 loss = self.loss_fun(output, targets)
-                output = {"loss": loss, "classification_output": loss}
+                output = {"loss": loss, "classification_output": output}
         is_averaged_loss = self.__is_averaged_loss()
         if is_averaged_loss is None:
             is_averaged_loss = output["classification_output"] is not None
