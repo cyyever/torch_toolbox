@@ -249,14 +249,19 @@ class CheckPointedModelWithLoss:
 
 
 class TextModelWithLoss(ModelWithLoss):
+    @property
+    def __is_bert_model(self) -> bool:
+        return (
+            hasattr(self.model, "bert")
+            and hasattr(self.model.bert, "embeddings")
+            and "BertEmbeddings" in type(self.model.bert.embeddings).__name__
+        )
+
     def get_input_feature(self, inputs):
         res = super().get_input_feature(inputs)
         if res is not None:
             return res
-        if (
-            hasattr(self.model, "bert")
-            and "BertEmbeddings" in type(self.model.bert.embeddings).__name__
-        ):
+        if self.__is_bert_model():
             return self.model.bert.embeddings(inputs)
         return None
 
