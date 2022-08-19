@@ -2,7 +2,7 @@ from typing import Callable
 
 import torch
 import torch.nn as nn
-import transformers
+# import transformers
 from cyy_naive_lib.log import get_logger
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -66,11 +66,6 @@ class ModelWithLoss:
     def get_input_feature(self, inputs):
         if hasattr(self.model, "get_input_feature"):
             return self.model.get_input_feature(inputs)
-        if (
-            hasattr(self.model, "bert")
-            and "BertEmbeddings" in type(self.model.bert.embeddings).__name__
-        ):
-            return self.model.bert.embeddings(inputs)
         return None
 
     def __call__(
@@ -107,46 +102,48 @@ class ModelWithLoss:
             )
             self.to(device=device, non_blocking=non_blocking)
 
-        model = self.model
         if input_features is None and self.need_input_features:
             input_features = self.get_input_feature(inputs)
             assert input_features is not None
-        if hasattr(model, "forward_input_feature") and input_features is not None:
-            model = model.forward_input_feature
-            real_inputs = input_features
-        else:
-            real_inputs = inputs
-        loss = None
-        classification_output = None
-        match real_inputs:
-            case transformers.tokenization_utils_base.BatchEncoding():
-                output = model(**real_inputs, labels=targets)
-                loss = output["loss"]
-                classification_output = output["logits"]
+        output = self._foward_model(
+            inputs=inputs, input_features=input_features, targets=targets
+        )
+        match output:
             case torch.Tensor():
-                output = model(real_inputs)
-            case tuple():
-                output = model(*real_inputs)
-            case _:
-                raise NotImplementedError()
-        if loss is None:
-            assert self.loss_fun is not None
-            match self.loss_fun:
-                case nn.BCEWithLogitsLoss():
-                    targets = targets.to(dtype=output.dtype, non_blocking=non_blocking)
-            loss = self.loss_fun(output, targets)
-            classification_output = output
+                assert self.loss_fun is not None
+                match self.loss_fun:
+                    case nn.BCEWithLogitsLoss():
+                        targets = targets.to(
+                            dtype=output.dtype, non_blocking=non_blocking
+                        )
+                loss = self.loss_fun(output, targets)
+                output = {"loss": loss, "classification_output": loss}
         is_averaged_loss = self.__is_averaged_loss()
         if is_averaged_loss is None:
-            is_averaged_loss = classification_output is not None
-        return {
-            "loss": loss,
-            "classification_output": classification_output,
+            is_averaged_loss = output["classification_output"] is not None
+        return output | {
             "inputs": inputs,
             "input_features": input_features,
             "targets": targets,
             "is_averaged_loss": is_averaged_loss,
         }
+
+    def _foward_model(
+        self, inputs, targets, input_features=None
+    ) -> dict | torch.Tensor:
+        model = self.model
+        if hasattr(model, "forward_input_feature") and input_features is not None:
+            model = model.forward_input_feature
+            real_inputs = input_features
+        else:
+            real_inputs = inputs
+        match real_inputs:
+            case torch.Tensor():
+                return model(real_inputs)
+            case tuple():
+                return model(*real_inputs)
+            case _:
+                raise NotImplementedError()
 
     def replace_model(self, model):
         return ModelWithLoss(
@@ -253,17 +250,32 @@ class TextModelWithLoss(ModelWithLoss):
     def __is_bert_model(self) -> bool:
         return (
             hasattr(self.model, "bert")
-            and hasattr(self.model.bert, "embeddings")
-            and "BertEmbeddings" in type(self.model.bert.embeddings).__name__
+            and "BertModel" in type(self.model.bert).__name__
         )
 
     def get_input_feature(self, inputs):
         res = super().get_input_feature(inputs)
         if res is not None:
             return res
-        if self.__is_bert_model():
-            return self.model.bert.embeddings(inputs)
+        if self.__is_bert_model:
+            return self.model.bert.get_input_embeddings()(inputs["input_ids"])
         return None
+
+    def _foward_model(
+        self, inputs, targets, input_features=None
+    ) -> dict | torch.Tensor:
+        if self.__is_bert_model:
+            if input_features is not None:
+                inputs["input_ids"] = None
+                inputs["inputs_embeds"] = input_features
+            output = self.model(**inputs, labels=targets)
+            return {
+                "loss": output["loss"],
+                "classification_output": output["logits"],
+            }
+        return super()._foward_model(
+            inputs=inputs, targets=targets, input_features=input_features
+        )
 
 
 class ParallelModelWithLoss(ModelWithLoss):
