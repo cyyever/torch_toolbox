@@ -2,7 +2,7 @@ from typing import Callable
 
 import torch
 import torch.nn as nn
-# import transformers
+import transformers
 from cyy_naive_lib.log import get_logger
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -259,7 +259,12 @@ class TextModelWithLoss(ModelWithLoss):
         if res is not None:
             return res
         if self.__is_bert_model:
-            return self.model.bert.get_input_embeddings()(inputs["input_ids"])
+            match inputs:
+                case transformers.tokenization_utils_base.BatchEncoding():
+                    input_ids = inputs["input_ids"]
+                case _:
+                    input_ids = inputs
+            return self.model.bert.get_input_embeddings()(input_ids)
         return None
 
     def _foward_model(
