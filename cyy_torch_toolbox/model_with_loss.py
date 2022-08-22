@@ -11,6 +11,7 @@ from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 from cyy_torch_toolbox.model_transform.checkpointed_model import \
     get_checkpointed_model
 from cyy_torch_toolbox.model_util import ModelUtil
+from cyy_torch_toolbox.reflection import get_kwarg_names
 
 
 class ModelWithLoss:
@@ -143,7 +144,7 @@ class ModelWithLoss:
             case tuple():
                 return model(*real_inputs)
             case _:
-                raise NotImplementedError()
+                raise NotImplementedError(type(real_inputs))
 
     def replace_model(self, model):
         return ModelWithLoss(
@@ -248,29 +249,33 @@ class CheckPointedModelWithLoss:
 
 class TextModelWithLoss(ModelWithLoss):
     @property
-    def __is_bert_model(self) -> bool:
-        return (
-            hasattr(self.model, "bert")
-            and "BertModel" in type(self.model.bert).__name__
-        )
+    def __is_hugging_face_model(self) -> bool:
+        return isinstance(self.model, transformers.modeling_utils.PreTrainedModel)
 
     def get_input_feature(self, inputs):
         res = super().get_input_feature(inputs)
         if res is not None:
             return res
-        if self.__is_bert_model:
+        if self.__is_hugging_face_model:
             match inputs:
                 case transformers.tokenization_utils_base.BatchEncoding():
                     input_ids = inputs["input_ids"]
                 case _:
                     input_ids = inputs
-            return self.model.bert.get_input_embeddings()(input_ids)
+            if hasattr(self.model, "distilbert"):
+                return self.model.distilbert.embeddings(input_ids)
+            return self.model.get_input_embeddings()(input_ids)
         return None
 
     def _foward_model(
         self, inputs, targets, input_features=None
     ) -> dict | torch.Tensor:
-        if self.__is_bert_model:
+
+        if hasattr(self.model, "forward"):
+            kwarg_names = get_kwarg_names(self.model.forward)
+        else:
+            kwarg_names = get_kwarg_names(self.model)
+        if "input_ids" in kwarg_names and "inputs_embeds" in kwarg_names:
             if input_features is not None:
                 inputs["input_ids"] = None
                 inputs["inputs_embeds"] = input_features
