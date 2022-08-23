@@ -110,10 +110,15 @@ def add_transforms(dc, dataset_kwargs, model_config):
                 )
         tokenizer_kwargs = dataset_kwargs.get("tokenizer", {})
         spacy_kwargs = tokenizer_kwargs.get("spacy_kwargs", {})
-        create_spacy: bool = dc.tokenizer is None or spacy_kwargs
-        dc.spacy_tokenizer = None
+        create_spacy: bool = (
+            dc.tokenizer is None
+            or spacy_kwargs
+            or tokenizer_kwargs.get("create_spacy", False)
+        )
         if create_spacy:
             dc.spacy_tokenizer = get_spacy_tokenizer(dc, **spacy_kwargs)
+        else:
+            dc.spacy_tokenizer = None
         if dc.tokenizer is None:
             dc.tokenizer = dc.spacy_tokenizer
 
