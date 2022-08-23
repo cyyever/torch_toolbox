@@ -199,6 +199,7 @@ class ModelExecutor(ModelExecutorBase):
     def cuda_stream(self):
         if self.__cuda_stream is None and "cuda" in self.device.type.lower():
             self.__cuda_stream = torch.cuda.Stream(device=self.device)
+            self.__cuda_stream.wait_stream(torch.cuda.current_stream())
         return self.__cuda_stream
 
     def _wait_stream(self):
