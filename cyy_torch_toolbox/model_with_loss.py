@@ -66,7 +66,7 @@ class ModelWithLoss:
 
     def get_input_feature(self, inputs):
         if hasattr(self.model, "get_input_feature"):
-            return self.model.get_input_feature(inputs)
+            return self.model.get_input_feature(inputs).detach()
         return None
 
     def __call__(
@@ -265,8 +265,8 @@ class TextModelWithLoss(ModelWithLoss):
             if hasattr(self.model, "distilbert"):
                 if len(list(input_ids.shape)) == 1:
                     input_ids = input_ids.unsqueeze(dim=0)
-                return self.model.distilbert.embeddings(input_ids)
-            return self.model.get_input_embeddings()(input_ids)
+                return self.model.distilbert.embeddings(input_ids).detach()
+            return self.model.get_input_embeddings()(input_ids).detach()
         return None
 
     def _foward_model(
