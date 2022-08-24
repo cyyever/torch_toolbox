@@ -279,7 +279,7 @@ class TextModelWithLoss(ModelWithLoss):
             kwarg_names = get_kwarg_names(self.model)
         if "input_ids" in kwarg_names and "inputs_embeds" in kwarg_names:
             if input_features is not None:
-                inputs["input_ids"] = None
+                inputs.pop("input_ids",None)
                 inputs["inputs_embeds"] = input_features
             output = self.model(**inputs, labels=targets)
             return {
