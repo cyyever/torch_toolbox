@@ -263,6 +263,8 @@ class TextModelWithLoss(ModelWithLoss):
                 case _:
                     input_ids = inputs
             if hasattr(self.model, "distilbert"):
+                if len(list(input_ids.shape)) == 1:
+                    input_ids = input_ids.unsqueeze(dim=0)
                 return self.model.distilbert.embeddings(input_ids)
             return self.model.get_input_embeddings()(input_ids)
         return None
