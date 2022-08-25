@@ -66,7 +66,7 @@ class ModelWithLoss:
 
     def get_input_feature(self, inputs):
         if hasattr(self.model, "get_input_feature"):
-            return self.model.get_input_feature(inputs).detach()
+            return self.model.get_input_feature(inputs)
         return None
 
     def __call__(
@@ -279,9 +279,11 @@ class TextModelWithLoss(ModelWithLoss):
             kwarg_names = get_kwarg_names(self.model)
         if "input_ids" in kwarg_names and "inputs_embeds" in kwarg_names:
             if input_features is not None:
-                inputs.pop("input_ids",None)
-                inputs["inputs_embeds"] = input_features
-            output = self.model(**inputs, labels=targets)
+                # inputs.pop("input_ids", None)
+                # inputs["inputs_embeds"] = input_features
+                output = self.model(inputs_embeds=input_features, labels=targets)
+            else:
+                output = self.model(**inputs, labels=targets)
             return {
                 "loss": output["loss"],
                 "classification_output": output["logits"],
