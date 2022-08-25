@@ -11,7 +11,6 @@ from tensor import cat_tensors_to_vector, load_tensor_dict
 class ModelUtil:
     def __init__(self, model: torch.nn.Module):
         self.__model = model
-        self.__parameter_dict: Optional[dict] = None
         self.__parameter_shapes: Optional[dict] = None
 
     @property
@@ -52,18 +51,14 @@ class ModelUtil:
             if check_parameter:
                 assert self.has_attr(name)
             self.set_attr(name, parameter, as_parameter=as_parameter)
-        self.__parameter_dict = None
 
     def get_parameter_dict(self, detach: bool = True) -> dict:
-        if self.__parameter_dict is not None:
-            return self.__parameter_dict
         res: dict = {}
         for name, parameter in self.model.named_parameters():
             if detach:
                 parameter = parameter.detach()
             res[name] = parameter
-        self.__parameter_dict = res
-        return self.__parameter_dict
+        return res
 
     def get_parameter_shapes(self) -> dict:
         if self.__parameter_shapes is not None:
@@ -75,13 +70,14 @@ class ModelUtil:
         return self.__parameter_shapes
 
     def get_gradient_list(self):
-        return cat_tensors_to_vector(
-            (
-                parameter.grad
-                for parameter in self.get_parameter_seq(detach=False)
-                if parameter.grad is not None
+        try:
+            return cat_tensors_to_vector(
+                (parameter.grad for parameter in self.get_parameter_seq(detach=False))
             )
-        )
+        except BaseException:
+            for k, v in self.get_parameter_dict(detach=False).items():
+                if v.grad is None:
+                    raise NotImplementedError(k)
 
     def disable_running_stats(self) -> None:
         def impl(_, module, __):
@@ -120,8 +116,6 @@ class ModelUtil:
                     model.register_parameter(component, nn.Parameter(value))
                 else:
                     model.register_buffer(component, value)
-        if self.__parameter_dict is not None:
-            self.__parameter_dict = None
 
     def get_attr(self, name: str) -> Any:
         val = self.model
