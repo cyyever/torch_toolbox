@@ -1,3 +1,4 @@
+import copy
 from typing import Callable
 
 import torch
@@ -279,9 +280,13 @@ class TextModelWithLoss(ModelWithLoss):
             kwarg_names = get_kwarg_names(self.model)
         if "input_ids" in kwarg_names and "inputs_embeds" in kwarg_names:
             if input_features is not None:
-                # inputs.pop("input_ids", None)
-                # inputs["inputs_embeds"] = input_features
-                output = self.model(inputs_embeds=input_features, labels=targets)
+                if inputs is not None:
+                    new_inputs = copy.copy(inputs)
+                    new_inputs.pop("input_ids", None)
+                else:
+                    new_inputs = {}
+                new_inputs["inputs_embeds"] = input_features
+                output = self.model(**new_inputs, labels=targets)
             else:
                 output = self.model(**inputs, labels=targets)
             return {
