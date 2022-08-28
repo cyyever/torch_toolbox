@@ -267,7 +267,8 @@ class TextModelWithLoss(ModelWithLoss):
                 if len(list(input_ids.shape)) == 1:
                     input_ids = input_ids.unsqueeze(dim=0)
                 return self.model.distilbert.embeddings(input_ids).detach()
-            return self.model.get_input_embeddings()(input_ids).detach()
+            if hasattr(self.model, "bert"):
+                return self.model.get_input_embeddings()(input_ids).detach()
         return None
 
     def _foward_model(
