@@ -31,10 +31,19 @@ class SpacyTokenizer:
                 dataset = dc.get_dataset(phase=phase)
                 for data in dataset:
                     data = dc.get_transforms(phase=phase).extract_data(data)
-                    text = data["input"]
-                    text = dc.get_transforms(phase=phase).transform_text(text)
-                    tokens = self.__tokenize(text)
-                    counter.update(tokens)
+                    input_data = data["input"]
+                    match input_data:
+                        case str():
+                            elements = [input_data]
+                            pass
+                        case [*elements]:
+                            pass
+                        case _:
+                            raise NotImplementedError(type(input_data))
+                    for text in elements:
+                        text = dc.get_transforms(phase=phase).transform_text(text)
+                        tokens = self.__tokenize(text)
+                        counter.update(tokens)
             return counter
 
         counter: Counter = dc.get_cached_data(
