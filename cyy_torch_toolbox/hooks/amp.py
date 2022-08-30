@@ -25,7 +25,7 @@ class AMP(Hook):
             result = model_executor._model_with_loss(**model_kwargs)
             model_executor.set_data("forward_result", result)
 
-    def _model_backward(self, model_executor, loss, **kwargs):
+    def _model_backward(self, loss, **kwargs):
         if self.__scaler is None:
             self.__scaler = torch.cuda.amp.GradScaler()
         self.__scaler.scale(loss).backward()
