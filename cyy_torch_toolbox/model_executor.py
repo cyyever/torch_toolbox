@@ -267,31 +267,31 @@ class ModelExecutor(ModelExecutorBase):
             with open(os.path.join(self.save_dir, "dc.pk"), "rb") as file:
                 self.__dataset_collection = pickle.load(file)
 
-    @classmethod
-    def decode_batch(cls, batch):
-        batch_size = None
-        sample_inputs = None
-        sample_targets = None
-        match batch:
-            case dict():
-                batch_size = batch["size"]
-                batch = batch["data"]
-                sample_inputs = batch[0]
-                sample_targets = batch[1]
-            case list():
-                if len(batch) == 1:
-                    batch = batch[0]
-                match batch:
-                    case {"data": sample_inputs, "label": sample_targets}:
-                        pass
-                    case _:
-                        raise NotImplementedError()
-            case _:
-                raise NotImplementedError()
+    # @classmethod
+    # def decode_batch(cls, batch):
+    #     batch_size = None
+    #     sample_inputs = None
+    #     sample_targets = None
+    #     match batch:
+    #         case dict():
+    #             batch_size = batch["size"]
+    #             batch = batch["data"]
+    #             sample_inputs = batch[0]
+    #             sample_targets = batch[1]
+    #         case list():
+    #             if len(batch) == 1:
+    #                 batch = batch[0]
+    #             match batch:
+    #                 case {"data": sample_inputs, "label": sample_targets}:
+    #                     pass
+    #                 case _:
+    #                     raise NotImplementedError()
+    #         case _:
+    #             raise NotImplementedError()
 
-        if len(batch) >= 3:
-            return (batch_size, sample_inputs, sample_targets, batch[2])
-        return (batch_size, sample_inputs, sample_targets, {})
+    #     if len(batch) >= 3:
+    #         return (batch_size, sample_inputs, sample_targets, batch[2])
+    #     return (batch_size, sample_inputs, sample_targets, {})
 
     def get_optimizer(self):
         raise NotImplementedError()
@@ -319,20 +319,18 @@ class ModelExecutor(ModelExecutorBase):
                 optimizer = self.get_optimizer()
                 optimizer.zero_grad(set_to_none=True)
 
-            (
-                batch_size,
-                sample_inputs,
-                sample_targets,
-                other_info,
-            ) = self.decode_batch(batch)
-            assert batch_size is not None
-            # if batch_size is None:
-            #     batch_size = self.get_batch_size(sample_targets)
-            batch = (sample_inputs, sample_targets, other_info)
+            # (
+            #     batch_size,
+            #     sample_inputs,
+            #     sample_targets,
+            #     other_info,
+            # ) = self.decode_batch(batch)
+            # assert batch_size is not None
+            # batch = (sample_inputs, sample_targets, other_info)
             if (
                 in_training
                 and self.hyper_parameter.batch_size != 1
-                and batch_size == 1
+                and batch["batch_size"] == 1
                 and self._model_with_loss.model_util.have_module(
                     module_type=torch.nn.BatchNorm2d
                 )
@@ -343,12 +341,13 @@ class ModelExecutor(ModelExecutorBase):
             self.exec_hooks(
                 ModelExecutorHookPoint.BEFORE_BATCH,
                 batch_index=batch_index,
-                batch=batch,
-                batch_size=batch_size,
+                **batch,
+                # batch=batch,
+                # batch_size=batch_size,
             )
             kwargs = {
-                "inputs": sample_inputs,
-                "targets": sample_targets,
+                "inputs": batch["inputs"],
+                "targets": batch["targets"],
                 "phase": self.phase,
                 "device": self.device,
                 "need_backward": need_backward,
@@ -364,18 +363,21 @@ class ModelExecutor(ModelExecutorBase):
                 result = self._model_with_loss(**kwargs)
 
             if result["is_averaged_loss"]:
-                normalized_batch_loss = result["loss"] * batch_size / self.dataset_size
+                normalized_batch_loss = (
+                    result["loss"] * batch["batch_size"] / self.dataset_size
+                )
             else:
                 normalized_batch_loss = result["loss"] / self.dataset_size
             result["normalized_batch_loss"] = normalized_batch_loss
             self.exec_hooks(
                 ModelExecutorHookPoint.AFTER_FORWARD,
-                inputs=result["inputs"],
+                # inputs=result["inputs"],
                 input_features=result["input_features"],
-                targets=result["targets"],
-                batch_info=other_info,
-                batch_size=batch_size,
+                # targets=result["targets"],
                 epoch=epoch,
+                **batch,
+                # batch_info=other_info,
+                # batch_size=batch_size,
             )
 
             loss = self._get_backward_loss(result=result)
@@ -388,13 +390,14 @@ class ModelExecutor(ModelExecutorBase):
             self.exec_hooks(
                 ModelExecutorHookPoint.AFTER_BATCH,
                 batch_index=batch_index,
-                inputs=result["inputs"],
+                # inputs=result["inputs"],
                 input_features=result["input_features"],
-                targets=result["targets"],
-                batch_info=other_info,
+                # targets=result["targets"],
+                # batch_info=other_info,
                 epoch=epoch,
                 result=result,
-                batch_size=batch_size,
+                **batch
+                # batch_size=batch_size,
             )
             if in_training:
                 if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
@@ -410,8 +413,9 @@ class ModelExecutor(ModelExecutorBase):
                     ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
                     epoch=epoch,
                     batch_index=batch_index,
-                    batch=batch,
-                    batch_size=batch_size,
+                    **batch
+                    # batch=batch,
+                    # batch_size=batch_size,
                 )
 
             self.exec_hooks(

@@ -109,7 +109,7 @@ class Transforms:
             targets = f(targets)
         return targets.reshape(-1)
 
-    def collate_batch(self, batch):
+    def collate_batch(self, batch) -> dict:
         inputs = []
         targets = []
         other_info = []
@@ -117,18 +117,33 @@ class Transforms:
             data = copy.copy(self.extract_data(data))
             sample_input = self.transform_input(data.pop("input"))
             inputs.append(sample_input)
-            index = data.get("index", None)
             targets.append(
-                self.transform_target(target=data.pop("target"), index=index)
+                self.transform_target(
+                    target=data.pop("target"), index=data.get("index", None)
+                )
             )
             other_info.append(data)
         inputs = self.transform_inputs(inputs)
         targets = self.transform_targets(targets)
-        batch_size = len(batch)
         if other_info:
             other_info = default_collate(other_info)
-            return {"size": batch_size, "data": (inputs, targets, other_info)}
-        return {"size": batch_size, "data": (inputs, targets)}
+            assert isinstance(other_info, dict)
+            if "index" in other_info:
+                other_info["sample_indices"] = other_info.pop("index")
+        else:
+            other_info = {}
+        batch_size = len(batch)
+        assert "batch_size" not in other_info
+        return {
+            "batch_size": batch_size,
+            "inputs": inputs,
+            "targets": targets,
+        } | other_info
+        # if other_info:
+        #     other_info = default_collate(other_info)
+        #     assert isinstance(other_info, dict)
+        #     return {"size": batch_size, "data": (inputs, targets, other_info)}
+        # return {"size": batch_size, "data": (inputs, targets)}
 
     def cache_transforms(self, dataset, device=None) -> tuple[dict, Any]:
         if device is not None:

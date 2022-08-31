@@ -2,12 +2,11 @@ from cyy_torch_toolbox.hook import Hook
 
 
 class GradientSanitizer(Hook):
-    def _before_batch(self, **kwargs):
-        batch_index = kwargs["batch_index"]
+    def _before_batch(self, model_executor, batch_index, **kwargs):
         if batch_index % 100 != 0:
             return
         # check parameters can be updated
-        trainer = kwargs["model_executor"]
+        trainer = model_executor
         optimizer = trainer.get_optimizer()
         for name, parameter in trainer.model.named_parameters():
             flag = False
