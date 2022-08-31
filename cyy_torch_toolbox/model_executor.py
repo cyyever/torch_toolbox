@@ -57,9 +57,7 @@ class ModelExecutor(ModelExecutorBase):
         self.profiling_mode = False
         self.__save_dir: Optional[str] = None
         self.cache_transforms = None
-        self._trainer_flag = False
         self.__amp_hook = None
-        self._use_amp = False
 
     @property
     def visualizer(self):
@@ -146,6 +144,9 @@ class ModelExecutor(ModelExecutorBase):
             return copy.deepcopy(self._model_with_loss)
         return copy.copy(self._model_with_loss)
 
+    def has_amp(self) -> bool:
+        return self.__amp_hook is not None
+
     def set_amp(self, enabled=True):
         if self.__amp_hook is not None:
             self.remove_hook(self.__amp_hook)
@@ -153,7 +154,6 @@ class ModelExecutor(ModelExecutorBase):
         if enabled:
             self.__amp_hook = AMP()
             self.append_hook(self.__amp_hook)
-        self._use_amp = enabled
         get_logger().debug("use AMP")
 
     def _prepare_execution(self, **kwargs):
@@ -301,7 +301,9 @@ class ModelExecutor(ModelExecutorBase):
     def get_lr_scheduler(self):
         raise NotImplementedError()
 
-    def _execute_epoch(self, epoch: int, need_backward: bool) -> None:
+    def _execute_epoch(
+        self, epoch: int, need_backward: bool, in_training: bool
+    ) -> None:
         if epoch in self.get_data("skipped_epoch", set()):
             get_logger().warning("skip epoch %s", epoch)
             return
@@ -315,7 +317,7 @@ class ModelExecutor(ModelExecutorBase):
                 ModelExecutorHookPoint.AFTER_FETCH_BATCH,
                 batch_index=batch_index,
             )
-            if self._trainer_flag:
+            if in_training:
                 optimizer = self.get_optimizer()
                 optimizer.zero_grad(set_to_none=True)
 
@@ -330,7 +332,7 @@ class ModelExecutor(ModelExecutorBase):
             #     batch_size = self.get_batch_size(sample_targets)
             batch = (sample_inputs, sample_targets, other_info)
             if (
-                self._trainer_flag
+                in_training
                 and self.hyper_parameter.batch_size != 1
                 and batch_size == 1
                 and self._model_with_loss.model_util.have_module(
@@ -396,7 +398,7 @@ class ModelExecutor(ModelExecutorBase):
                 result=result,
                 batch_size=batch_size,
             )
-            if self._trainer_flag:
+            if in_training:
                 if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
                     self.exec_hooks(ModelExecutorHookPoint.OPTIMIZER_STEP)
                 else:
