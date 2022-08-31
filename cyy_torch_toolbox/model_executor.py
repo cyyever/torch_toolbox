@@ -166,7 +166,7 @@ class ModelExecutor(ModelExecutorBase):
                 attr.clear_metric()
 
         if self.profiling_mode:
-            get_logger().warning("train in profiling mode")
+            get_logger().warning("use profiling mode")
             self.enable_hook(self.__profiler)
         else:
             self.disable_hook(self.__profiler)
@@ -233,8 +233,6 @@ class ModelExecutor(ModelExecutorBase):
             case torch.Tensor():
                 return batch.shape[0]
         raise RuntimeError("invalid batch:" + str(batch))
-        # if isinstance(batch, list):
-        #     return len(batch)
 
     def offload_from_gpu(self):
         self._wait_stream()
