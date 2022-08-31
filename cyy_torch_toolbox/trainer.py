@@ -33,7 +33,6 @@ class Trainer(ModelExecutor):
             MachineLearningPhase.Training,
             hyper_parameter,
         )
-        self._trainer_flag = True
         self.append_hook(LearningRateHook())
         self.__inferencers: dict = {}
         self.__batch_loss_logger = BatchLossLogger()
@@ -79,7 +78,8 @@ class Trainer(ModelExecutor):
             )
         inferencer.cache_transforms = self.cache_transforms
         inferencer.set_device(self.device)
-        inferencer.set_amp(enabled=self._use_amp)
+        if self.has_amp():
+            inferencer.set_amp()
         return inferencer
 
     def get_optimizer(self):
@@ -163,7 +163,9 @@ class Trainer(ModelExecutor):
         with torch.cuda.stream(self.cuda_stream):
             try:
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
-                    self._execute_epoch(epoch=epoch, need_backward=True)
+                    self._execute_epoch(
+                        epoch=epoch, need_backward=True, in_training=True
+                    )
 
                     for phase in (
                         MachineLearningPhase.Validation,

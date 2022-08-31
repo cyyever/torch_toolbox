@@ -18,7 +18,9 @@ class Inferencer(ModelExecutor):
         with (torch.set_grad_enabled(use_grad), torch.cuda.stream(self.cuda_stream)):
             self.model.zero_grad(set_to_none=True)
             try:
-                self._execute_epoch(epoch=epoch, need_backward=self._use_grad)
+                self._execute_epoch(
+                    epoch=epoch, need_backward=self._use_grad, in_training=False
+                )
             except StopExecutingException:
                 get_logger().warning("stop inference")
             finally:

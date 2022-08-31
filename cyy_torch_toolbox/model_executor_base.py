@@ -1,5 +1,5 @@
 import copy
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List
 
 from cyy_torch_toolbox.hook import Hook
 from cyy_torch_toolbox.ml_type import ModelExecutorHookPoint
@@ -12,12 +12,13 @@ class ModelExecutorBase:
         self.__stripable_hooks: set = set()
         self.__disabled_hooks: set = set()
 
-    def get_data(self, key: str, default_value=None):
+    def get_data(self, key: str, default_value: Any = None) -> Any:
         return self.__data.get(key, default_value)
-    def pop_data(self, key: str, default_value=None):
+
+    def pop_data(self, key: str, default_value: Any = None) -> Any:
         return self.__data.pop(key, default_value)
 
-    def set_data(self, key: str, value) -> None:
+    def set_data(self, key: str, value: Any) -> None:
         self.__data[key] = value
 
     def remove_data(self, key: str) -> None:
@@ -29,7 +30,7 @@ class ModelExecutorBase:
     def clear_data(self):
         self.__data.clear()
 
-    def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs):
+    def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs: dict) -> None:
         for hook in copy.copy(self.__hooks.get(hook_point, [])):
             for name, fun in copy.copy(hook).items():
                 if name not in self.__disabled_hooks:
@@ -38,7 +39,7 @@ class ModelExecutorBase:
     def has_hook(
         self,
         hook_point: ModelExecutorHookPoint,
-    ):
+    ) -> bool:
         return hook_point in self.__hooks
 
     def hooks(self):
@@ -55,8 +56,8 @@ class ModelExecutorBase:
         hook_point: ModelExecutorHookPoint,
         name: str,
         fun: Callable,
-        stripable=False,
-    ):
+        stripable: bool = False,
+    ) -> None:
         self.insert_callback(-1, hook_point, name, fun, stripable)
 
     def prepend_named_hook(
@@ -64,18 +65,18 @@ class ModelExecutorBase:
         hook_point: ModelExecutorHookPoint,
         name: str,
         fun: Callable,
-        stripable=False,
-    ):
+        stripable: bool = False,
+    ) -> None:
         self.insert_callback(0, hook_point, name, fun, stripable)
 
     def insert_callback(
         self,
-        pos,
+        pos: int,
         hook_point: ModelExecutorHookPoint,
         name: str,
         fun: Callable,
-        stripable=False,
-    ):
+        stripable: bool = False,
+    ) -> None:
         if stripable:
             self.__stripable_hooks.add(name)
         data = {name: fun}
@@ -90,33 +91,33 @@ class ModelExecutorBase:
             else:
                 self.__hooks[hook_point].insert(pos, data)
 
-    def insert_hook(self, pos, hook: Hook):
+    def insert_hook(self, pos: int, hook: Hook) -> None:
         flag = False
         for hook_point, name, fun in hook.yield_hooks():
             self.insert_callback(pos, hook_point, name, fun, hook.stripable)
             flag = True
         assert flag
 
-    def append_hook(self, hook: Hook):
+    def append_hook(self, hook: Hook) -> None:
         self.insert_hook(-1, hook)
 
-    def prepend_hook(self, hook: Hook):
+    def prepend_hook(self, hook: Hook) -> None:
         self.insert_hook(0, hook)
 
-    def enable_hook(self, hook: Hook):
+    def enable_hook(self, hook: Hook) -> None:
         for name in hook.yield_hook_names():
             if name in self.__disabled_hooks:
                 self.__disabled_hooks.remove(name)
 
-    def disable_hook(self, hook: Hook):
+    def disable_hook(self, hook: Hook) -> None:
         for name in hook.yield_hook_names():
             self.__disabled_hooks.add(name)
 
-    def remove_hook_obj(self, hook: Hook):
-        for hook_point, name, fun in hook.yield_hooks():
+    def remove_hook_obj(self, hook: Hook) -> None:
+        for hook_point, name, _ in hook.yield_hooks():
             self.remove_hook(name, hook_point)
 
-    def remove_hook(self, name: str, hook_point: ModelExecutorHookPoint = None):
+    def remove_hook(self, name: str, hook_point: ModelExecutorHookPoint = None) -> None:
         for cur_hook_point, hooks in self.__hooks.items():
             if hook_point is not None and cur_hook_point != hook_point:
                 continue
