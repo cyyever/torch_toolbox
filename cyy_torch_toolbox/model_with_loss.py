@@ -269,6 +269,7 @@ class TextModelWithLoss(ModelWithLoss):
                 return self.model.distilbert.embeddings(input_ids).detach()
             if hasattr(self.model, "bert"):
                 return self.model.get_input_embeddings()(input_ids).detach()
+            raise NotImplementedError(self.model)
         return None
 
     def _foward_model(
