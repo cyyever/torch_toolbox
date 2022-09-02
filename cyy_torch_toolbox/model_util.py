@@ -12,6 +12,7 @@ class ModelUtil:
     def __init__(self, model: torch.nn.Module):
         self.__model = model
         self.__parameter_shapes: Optional[dict] = None
+        self.__cached_buffer_names: set | None = None
 
     @property
     def model(self):
@@ -153,6 +154,15 @@ class ModelUtil:
                 module_name is not None and name == module_name
             ):
                 f(name, module, self)
+
+    def cache_buffer_names(self) -> None:
+        self.__cached_buffer_names = set()
+        for param_name, _ in self.__model.named_buffers():
+            self.__cached_buffer_names.add(param_name)
+
+    @property
+    def cached_buffer_names(self):
+        return self.__cached_buffer_names
 
     def freeze_modules(self, **kwargs) -> None:
         def freeze(name, module, model_util):

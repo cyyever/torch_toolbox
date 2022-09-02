@@ -1,4 +1,5 @@
 import copy
+import functools
 from typing import Callable
 
 import torch
@@ -27,6 +28,7 @@ class ModelWithLoss:
         loss_fun: str | Callable | None = None,
     ):
         self._model: torch.nn.Module = model
+        self._model_util = None
 
         self.__loss_fun: Callable | None = None
         if loss_fun is not None:
@@ -38,7 +40,7 @@ class ModelWithLoss:
     def model(self) -> torch.nn.Module:
         return self._model
 
-    @property
+    @functools.cached_property
     def model_util(self) -> ModelUtil:
         return ModelUtil(self.model)
 
@@ -79,6 +81,7 @@ class ModelWithLoss:
         non_blocking: bool = False,
         input_features=None,
         need_backward: bool = False,
+        model_to_device: bool = True,
     ) -> dict:
         if phase is not None:
             self.__set_model_mode(
@@ -102,7 +105,8 @@ class ModelWithLoss:
             targets = put_data_to_device(
                 targets, device=device, non_blocking=non_blocking
             )
-            self.to(device=device, non_blocking=non_blocking)
+            if model_to_device:
+                self.to(device=device, non_blocking=non_blocking)
 
         if input_features is None and self.need_input_features:
             input_features = self.get_input_feature(inputs)
