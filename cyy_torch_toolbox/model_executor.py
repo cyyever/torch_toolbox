@@ -12,6 +12,13 @@ from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.dataset_util import DatasetUtil
 from cyy_torch_toolbox.device import get_device
 from cyy_torch_toolbox.hooks.amp import AMP
+
+try:
+    from cyy_torch_toolbox.hooks.amp import ApexAMP
+
+    has_apex_amp = 1
+except BaseException:
+    has_apex_amp = 0
 from cyy_torch_toolbox.hooks.model_executor_logger import ModelExecutorLogger
 from cyy_torch_toolbox.hooks.profiler import Profiler
 from cyy_torch_toolbox.hyper_parameter import HyperParameter
@@ -147,12 +154,15 @@ class ModelExecutor(ModelExecutorBase):
     def has_amp(self) -> bool:
         return self.__amp_hook is not None
 
-    def set_amp(self, enabled=True):
+    def set_amp(self, enabled=True, use_apex=False):
         if self.__amp_hook is not None:
             self.remove_hook(self.__amp_hook)
             self.__amp_hook = None
         if enabled:
-            self.__amp_hook = AMP()
+            if use_apex:
+                self.__amp_hook = ApexAMP()
+            else:
+                self.__amp_hook = AMP()
             self.append_hook(self.__amp_hook)
         get_logger().debug("use AMP")
 
