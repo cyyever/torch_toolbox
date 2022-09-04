@@ -1,6 +1,7 @@
 import copy
 import os
 import pickle
+import shutil
 from typing import Callable, Optional
 
 import torch
@@ -226,9 +227,19 @@ class ModelExecutor(ModelExecutorBase):
     def hyper_parameter(self):
         return self.__hyper_parameter
 
+    def set_dataset_collection(self, dc: DatasetCollection) -> None:
+        self._wait_stream()
+        self.__dataset_collection = dc
+        if self.save_dir is not None:
+            shutil.rmtree(os.path.join(self.save_dir, "dc.pk"), ignore_errors=True)
+
     def set_model_with_loss(self, model_with_loss: ModelWithLoss) -> None:
         self._wait_stream()
         self._model_with_loss = model_with_loss
+        if self.save_dir is not None:
+            shutil.rmtree(
+                os.path.join(self.save_dir, "model_and_loss.pk"), ignore_errors=True
+            )
 
     def load_model(self, model_path):
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
@@ -379,15 +390,15 @@ class ModelExecutor(ModelExecutorBase):
             else:
                 normalized_batch_loss = result["loss"] / self.dataset_size
             result["normalized_batch_loss"] = normalized_batch_loss
+            batch["cpu_inputs"] = batch["inputs"]
+            batch["cpu_targets"] = batch["targets"]
+            batch["inputs"] = result["inputs"]
+            batch["targets"] = result["targets"]
             self.exec_hooks(
                 ModelExecutorHookPoint.AFTER_FORWARD,
-                # inputs=result["inputs"],
                 input_features=result["input_features"],
-                # targets=result["targets"],
                 epoch=epoch,
                 **batch,
-                # batch_info=other_info,
-                # batch_size=batch_size,
             )
 
             loss = self._get_backward_loss(result=result)
@@ -400,14 +411,10 @@ class ModelExecutor(ModelExecutorBase):
             self.exec_hooks(
                 ModelExecutorHookPoint.AFTER_BATCH,
                 batch_index=batch_index,
-                # inputs=result["inputs"],
                 input_features=result["input_features"],
-                # targets=result["targets"],
-                # batch_info=other_info,
                 epoch=epoch,
                 result=result,
-                **batch
-                # batch_size=batch_size,
+                **batch,
             )
             if in_training:
                 if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):

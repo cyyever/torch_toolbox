@@ -48,7 +48,7 @@ class DictDataset(torch.utils.data.MapDataPipe):
     def __getitem__(self, index):
         if index not in self.__items:
             raise StopIteration()
-        return {"data": self.__items[index], "index": index}
+        return self.__items[index]
 
     def __len__(self):
         return len(self.__items)
