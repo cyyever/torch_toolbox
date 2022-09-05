@@ -13,6 +13,7 @@ from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.dataset_util import DatasetUtil
 from cyy_torch_toolbox.device import get_device
 from cyy_torch_toolbox.hooks.amp import AMP
+from cyy_torch_toolbox.ml_type import DatasetType
 
 try:
     from cyy_torch_toolbox.hooks.amp import ApexAMP
@@ -288,31 +289,34 @@ class ModelExecutor(ModelExecutorBase):
             with open(os.path.join(self.save_dir, "dc.pk"), "rb") as file:
                 self.__dataset_collection = pickle.load(file)
 
-    # @classmethod
-    # def decode_batch(cls, batch):
-    #     batch_size = None
-    #     sample_inputs = None
-    #     sample_targets = None
-    #     match batch:
-    #         case dict():
-    #             batch_size = batch["size"]
-    #             batch = batch["data"]
-    #             sample_inputs = batch[0]
-    #             sample_targets = batch[1]
-    #         case list():
-    #             if len(batch) == 1:
-    #                 batch = batch[0]
-    #             match batch:
-    #                 case {"data": sample_inputs, "label": sample_targets}:
-    #                     pass
-    #                 case _:
-    #                     raise NotImplementedError()
-    #         case _:
-    #             raise NotImplementedError()
+    def split_batch_input(self, inputs, input_features, targets):
+        batch_dim = 0
+        if self.dataset_collection.dataset_type == DatasetType.Text:
+            if "BatchEncoding" in type(inputs).__name__:
+                new_inputs = []
+                first_value = next(iter(inputs.values()))
+                assert isinstance(first_value, torch.Tensor)
+                for i in range(first_value.size(dim=0)):
+                    new_inputs.append({k: v[i] for k, v in inputs.items()})
+                inputs = new_inputs
 
-    #     if len(batch) >= 3:
-    #         return (batch_size, sample_inputs, sample_targets, batch[2])
-    #     return (batch_size, sample_inputs, sample_targets, {})
+            if input_features is not None and isinstance(input_features, torch.Tensor):
+                if (
+                    input_features.shape[0] != targets.shape[0]
+                    and input_features.shape[1] == targets.shape[0]
+                ):
+                    batch_dim = 1
+                    input_features = input_features.permute(1, 0, 2)
+            if isinstance(inputs, torch.Tensor):
+                if (
+                    batch_dim == 0
+                    and inputs.shape[0] != targets.shape[0]
+                    and inputs.shape[1] == targets.shape[0]
+                ):
+                    batch_dim = 1
+                if batch_dim != 0:
+                    inputs = inputs.permute(batch_dim, 0)
+        return inputs, batch_dim
 
     def get_optimizer(self):
         raise NotImplementedError()
@@ -340,14 +344,6 @@ class ModelExecutor(ModelExecutorBase):
                 optimizer = self.get_optimizer()
                 optimizer.zero_grad(set_to_none=True)
 
-            # (
-            #     batch_size,
-            #     sample_inputs,
-            #     sample_targets,
-            #     other_info,
-            # ) = self.decode_batch(batch)
-            # assert batch_size is not None
-            # batch = (sample_inputs, sample_targets, other_info)
             if (
                 in_training
                 and self.hyper_parameter.batch_size != 1
@@ -363,8 +359,6 @@ class ModelExecutor(ModelExecutorBase):
                 ModelExecutorHookPoint.BEFORE_BATCH,
                 batch_index=batch_index,
                 **batch,
-                # batch=batch,
-                # batch_size=batch_size,
             )
             kwargs = {
                 "inputs": batch["inputs"],
@@ -430,9 +424,7 @@ class ModelExecutor(ModelExecutorBase):
                     ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
                     epoch=epoch,
                     batch_index=batch_index,
-                    **batch
-                    # batch=batch,
-                    # batch_size=batch_size,
+                    **batch,
                 )
 
             self.exec_hooks(
