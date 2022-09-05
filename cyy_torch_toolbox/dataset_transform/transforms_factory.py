@@ -11,15 +11,16 @@ from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
 
 from .tokenizer import SpacyTokenizer
 from .tokenizer_factory import get_hugging_face_tokenizer, get_spacy_tokenizer
-from .transforms import Transforms, str_target_to_int, swap_input_and_target
+from .transforms import (Transforms, default_data_extraction,
+                         str_target_to_int, swap_input_and_target)
 
 
 def multi_nli_data_extraction(data: Any) -> dict:
     match data:
-        case {"data": real_data, "index": index}:
-            return multi_nli_data_extraction(real_data) | {"index": index}
         case {"premise": premise, "hypothesis": hypothesis, "label": label, **kw}:
             return {"input": [premise, hypothesis], "target": label}
+        case _:
+            return multi_nli_data_extraction(default_data_extraction(data))
     raise NotImplementedError()
 
 

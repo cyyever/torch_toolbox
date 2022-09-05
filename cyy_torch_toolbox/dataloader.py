@@ -190,6 +190,9 @@ def get_dataloader(
     transforms = dc.get_transforms(phase=phase)
     collate_fn = transforms.collate_batch
     pin_memory = True
+    pin_memory_device = ""
+    if device:
+        pin_memory_device = str(device)
     if not dc.transforms_cached or "USE_PROCESS_DATALOADER" in os.environ:
         num_workers = 2
         prefetch_factor = 1
@@ -198,7 +201,6 @@ def get_dataloader(
         num_workers = 0
         persistent_workers = False
         prefetch_factor = 2
-        pin_memory = False
     return torch.utils.data.DataLoader(
         dataset,
         batch_size=hyper_parameter.batch_size,
@@ -207,5 +209,6 @@ def get_dataloader(
         persistent_workers=persistent_workers,
         prefetch_factor=prefetch_factor,
         pin_memory=pin_memory,
+        pin_memory_device=pin_memory_device,
         collate_fn=collate_fn,
     )
