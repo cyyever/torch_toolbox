@@ -289,7 +289,7 @@ class ModelExecutor(ModelExecutorBase):
             with open(os.path.join(self.save_dir, "dc.pk"), "rb") as file:
                 self.__dataset_collection = pickle.load(file)
 
-    def split_batch_input(self, inputs, input_features, targets):
+    def split_batch_input(self, inputs, targets):
         batch_dim = 0
         if self.dataset_collection.dataset_type == DatasetType.Text:
             if "BatchEncoding" in type(inputs).__name__:
@@ -300,13 +300,6 @@ class ModelExecutor(ModelExecutorBase):
                     new_inputs.append({k: v[i] for k, v in inputs.items()})
                 inputs = new_inputs
 
-            if input_features is not None and isinstance(input_features, torch.Tensor):
-                if (
-                    input_features.shape[0] != targets.shape[0]
-                    and input_features.shape[1] == targets.shape[0]
-                ):
-                    batch_dim = 1
-                    input_features = input_features.permute(1, 0, 2)
             if isinstance(inputs, torch.Tensor):
                 if (
                     batch_dim == 0
