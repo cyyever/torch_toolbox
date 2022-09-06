@@ -18,7 +18,10 @@ from .transforms import (Transforms, default_data_extraction,
 def multi_nli_data_extraction(data: Any) -> dict:
     match data:
         case {"premise": premise, "hypothesis": hypothesis, "label": label, **kw}:
-            return {"input": [premise, hypothesis], "target": label}
+            item = {"input": [premise, hypothesis], "target": label}
+            if "index" in kw:
+                item["index"] = kw["index"]
+            return item
         case _:
             return multi_nli_data_extraction(default_data_extraction(data))
     raise NotImplementedError()
