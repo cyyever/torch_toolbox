@@ -52,7 +52,7 @@ class SpacyTokenizer:
 
         if special_tokens is None:
             special_tokens = []
-        for token in ("<pad>", "<unk>", "<mask>"):
+        for token in ("<pad>", "<unk>", "<mask>", "<cls>", "<sep>"):
             if token not in special_tokens:
                 special_tokens.append(token)
         for token in special_tokens:
