@@ -84,12 +84,13 @@ def sample_dataset(
     return sub_dataset(dataset, [index])
 
 
-def __add_index_to_item(index, item):
+def add_index_to_item(index, item):
+    print("item is",item)
     return {"data": item, "index": index}
 
 
 def dataset_with_indices(dataset: torch.utils.data.Dataset) -> DatasetMapper:
-    return DatasetMapper(dataset, [__add_index_to_item])
+    return DatasetMapper(dataset, [add_index_to_item])
 
 
 def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
