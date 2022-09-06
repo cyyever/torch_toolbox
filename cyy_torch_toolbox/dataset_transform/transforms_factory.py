@@ -50,6 +50,10 @@ def create_multi_nli_text(sample_input, cls_token, sep_token):
     return cls_token + " " + premise + " " + sep_token + " " + hypothesis
 
 
+def replace_str(str, old, new):
+    return str.replace(old, new)
+
+
 def add_transforms(dc, dataset_kwargs, model_config):
     if dc.dataset_type == DatasetType.Vision:
         dc.append_transform(torchvision.transforms.ToTensor(), key=TransformType.Input)
