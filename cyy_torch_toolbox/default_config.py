@@ -32,7 +32,6 @@ class DefaultConfig:
         self.log_level = None
         self.cache_transforms = None
         self.use_amp = True
-        self.use_apex_amp = False
 
     def load_config(self, conf, check_config: bool = True) -> dict:
         return DefaultConfig.__load_config(self, conf, check_config)
@@ -117,10 +116,8 @@ class DefaultConfig:
             get_logger().warning("profile the trainer")
             trainer.profiling_mode = True
         trainer.cache_transforms = self.cache_transforms
-        if self.use_apex_amp:
-            self.use_amp = True
         if self.use_amp:
-            trainer.set_amp(use_apex=self.use_apex_amp)
+            trainer.set_amp()
         return trainer
 
     def create_inferencer(self, phase=MachineLearningPhase.Test) -> Inferencer:

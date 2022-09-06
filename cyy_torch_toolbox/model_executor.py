@@ -13,14 +13,6 @@ from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.dataset_util import DatasetUtil
 from cyy_torch_toolbox.device import get_device
 from cyy_torch_toolbox.hooks.amp import AMP
-from cyy_torch_toolbox.ml_type import DatasetType
-
-try:
-    from cyy_torch_toolbox.hooks.amp import ApexAMP
-
-    has_apex_amp = 1
-except BaseException:
-    has_apex_amp = 0
 from cyy_torch_toolbox.hooks.model_executor_logger import ModelExecutorLogger
 from cyy_torch_toolbox.hooks.profiler import Profiler
 from cyy_torch_toolbox.hyper_parameter import HyperParameter
@@ -29,7 +21,7 @@ from cyy_torch_toolbox.metric_visualizers.metric_tensorboard import \
 from cyy_torch_toolbox.metric_visualizers.performance_metric_logger import \
     PerformanceMetricLogger
 from cyy_torch_toolbox.metrics.performance_metric import PerformanceMetric
-from cyy_torch_toolbox.ml_type import (MachineLearningPhase,
+from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        ModelExecutorHookPoint)
 from cyy_torch_toolbox.model_executor_base import ModelExecutorBase
 from cyy_torch_toolbox.model_util import ModelUtil
@@ -156,15 +148,12 @@ class ModelExecutor(ModelExecutorBase):
     def has_amp(self) -> bool:
         return self.__amp_hook is not None
 
-    def set_amp(self, enabled=True, use_apex=False):
+    def set_amp(self, enabled=True):
         if self.__amp_hook is not None:
             self.remove_hook(self.__amp_hook)
             self.__amp_hook = None
         if enabled:
-            if use_apex:
-                self.__amp_hook = ApexAMP()
-            else:
-                self.__amp_hook = AMP()
+            self.__amp_hook = AMP()
             self.append_hook(self.__amp_hook)
         get_logger().debug("use AMP")
 
@@ -405,9 +394,12 @@ class ModelExecutor(ModelExecutorBase):
             )
             if in_training:
                 if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
+                    self.set_data("step_skipped", False)
                     self.exec_hooks(ModelExecutorHookPoint.OPTIMIZER_STEP)
+                    step_skipped: bool = self.get_data("step_skipped")
                 else:
                     optimizer.step()
+                    step_skipped: bool = False
                 lr_scheduler = self.get_lr_scheduler()
                 if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                     get_logger().debug("adjust lr after batch")
@@ -417,6 +409,7 @@ class ModelExecutor(ModelExecutorBase):
                     ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
                     epoch=epoch,
                     batch_index=batch_index,
+                    step_skipped=step_skipped,
                     **batch,
                 )
 
