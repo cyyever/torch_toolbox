@@ -30,7 +30,7 @@ class AMP(Hook):
         if sum(
             self.__scaler._found_inf_per_device(optimizer=optimizer).values()
         ).item():
-            self.set_data("step_skipped", True)
+            model_executor.set_data("step_skipped", True)
             get_logger().warning("found inf in AMP")
 
         # Updates the scale for next iteration.
