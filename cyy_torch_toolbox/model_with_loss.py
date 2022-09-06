@@ -117,6 +117,7 @@ class ModelWithLoss:
                 assert self.loss_fun is not None
                 match self.loss_fun:
                     case nn.BCEWithLogitsLoss():
+                        output = output.view(-1)
                         targets = targets.to(
                             dtype=output.dtype, non_blocking=non_blocking
                         )
