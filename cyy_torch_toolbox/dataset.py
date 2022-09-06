@@ -85,7 +85,6 @@ def sample_dataset(
 
 
 def add_index_to_item(index, item):
-    print("item is",item)
     return {"data": item, "index": index}
 
 
