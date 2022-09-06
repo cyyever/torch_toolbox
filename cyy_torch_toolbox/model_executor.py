@@ -367,12 +367,11 @@ class ModelExecutor(ModelExecutorBase):
                 normalized_batch_loss = result["loss"] / self.dataset_size
             result["normalized_batch_loss"] = normalized_batch_loss
             batch["cpu_inputs"] = batch["inputs"]
-            batch["cpu_targets"] = batch["targets"]
             batch["inputs"] = result["inputs"]
             batch["targets"] = result["targets"]
+            batch["input_features"] = result["input_features"]
             self.exec_hooks(
                 ModelExecutorHookPoint.AFTER_FORWARD,
-                input_features=result["input_features"],
                 epoch=epoch,
                 **batch,
             )
@@ -387,7 +386,6 @@ class ModelExecutor(ModelExecutorBase):
             self.exec_hooks(
                 ModelExecutorHookPoint.AFTER_BATCH,
                 batch_index=batch_index,
-                input_features=result["input_features"],
                 epoch=epoch,
                 result=result,
                 **batch,
