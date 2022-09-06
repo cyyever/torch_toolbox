@@ -137,14 +137,15 @@ def add_transforms(dc, dataset_kwargs, model_config):
             max_len = model_config.model_kwargs.get("max_len", None)
         match dc.tokenizer:
             case SpacyTokenizer():
-                dc.append_transform(
-                    functools.partial(
-                        create_multi_nli_text,
-                        cls_token="<cls>",
-                        sep_token="<sep>",
-                    ),
-                    key=TransformType.InputText,
-                )
+                if dc.name.lower() == "multi_nli":
+                    dc.append_transform(
+                        functools.partial(
+                            create_multi_nli_text,
+                            cls_token="<cls>",
+                            sep_token="<sep>",
+                        ),
+                        key=TransformType.InputText,
+                    )
                 dc.append_transform(dc.spacy_tokenizer, key=TransformType.Input)
                 if max_len is not None:
                     dc.append_transform(
