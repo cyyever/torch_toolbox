@@ -1,12 +1,6 @@
 import torch
+from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.hook import Hook
-
-try:
-    import apex
-
-    has_apex = 1
-except BaseException:
-    has_apex = 0
 
 
 class AMP(Hook):
@@ -31,36 +25,14 @@ class AMP(Hook):
         self.__scaler.scale(loss).backward()
 
     def _optimizer_step(self, model_executor, **kwargs):
-        self.__scaler.step(model_executor.get_optimizer())
+        optimizer = model_executor.get_optimizer()
+        self.__scaler.step(optimizer)
+        if sum(
+            self.__scaler._found_inf_per_device(optimizer=optimizer).values()
+        ).item():
+            model_executor.set_data("step_happened", False)
+            get_logger().warning("found inf in AMP")
+        model_executor.set_data("step_happened", True)
+
         # Updates the scale for next iteration.
         self.__scaler.update()
-
-
-if has_apex:
-
-    class ApexAMP(Hook):
-        __amp_model_with_loss = None
-
-        def _before_execute(self, model_executor, **kwargs):
-            # model_executor._model_with_loss.set_mod
-            model_executor.model_with_loss.to(model_executor.device)
-            model, optimizer = apex.amp.initialize(
-                model_executor.model_with_loss.model,
-                model_executor.get_optimizer(),
-                opt_level="O1",
-            )
-            self.__amp_model_with_loss = model_executor.model_with_loss.replace_model(
-                model
-            )
-            model_executor.remove_optimizer()
-            model_executor.set_data("optimizer", optimizer)
-
-        def _model_forward(self, model_executor, model_kwargs, **kwargs):
-            result = self.__amp_model_with_loss(**model_kwargs)
-            model_executor.set_data("forward_result", result)
-
-        def _model_backward(self, model_executor, loss, **kwargs):
-            with apex.amp.scale_loss(
-                loss, model_executor.get_optimizer()
-            ) as scaled_loss:
-                scaled_loss.backward()
