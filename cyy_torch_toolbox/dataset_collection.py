@@ -310,10 +310,7 @@ class DatasetCollection:
         assert not self.has_dataset(phase=MachineLearningPhase.Test)
         get_logger().debug("split validation dataset for %s", self.name)
         datasets = None
-        dataset_util = DatasetSplitter(
-            dataset=self.get_dataset(phase=MachineLearningPhase.Validation),
-            transforms=self.get_transforms(phase=MachineLearningPhase.Validation),
-        )
+        dataset_util = self.get_dataset_util(phase=MachineLearningPhase.Validation)
 
         def computation_fun():
             nonlocal datasets
