@@ -365,7 +365,7 @@ class ModelExecutor(ModelExecutorBase):
             else:
                 normalized_batch_loss = result["loss"] / self.dataset_size
             result["normalized_batch_loss"] = normalized_batch_loss
-            batch["cpu_inputs"] = batch["inputs"]
+            batch["cpu_inputs"] = result["cpu_inputs"]
             batch["inputs"] = result["inputs"]
             batch["targets"] = result["targets"]
             batch["input_features"] = result["input_features"]
