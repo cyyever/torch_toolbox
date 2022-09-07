@@ -18,8 +18,8 @@ from cyy_torch_toolbox.dataset_transform.transforms import (Transforms,
                                                             replace_target)
 from cyy_torch_toolbox.dataset_transform.transforms_factory import \
     add_transforms
-from cyy_torch_toolbox.dataset_util import (DatasetSplitter, DatasetUtil,
-                                            TextDatasetUtil, VisionDatasetUtil)
+from cyy_torch_toolbox.dataset_util import (DatasetUtil, TextDatasetUtil,
+                                            VisionDatasetUtil)
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
 from cyy_torch_toolbox.reflection import get_kwarg_names
