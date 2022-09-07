@@ -30,7 +30,7 @@ class ModelExecutorBase:
     def clear_data(self):
         self.__data.clear()
 
-    def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs: dict) -> None:
+    def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs) -> None:
         for hook in copy.copy(self.__hooks.get(hook_point, [])):
             for name, fun in copy.copy(hook).items():
                 if name not in self.__disabled_hooks:

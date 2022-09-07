@@ -309,9 +309,9 @@ class ModelExecutor(ModelExecutorBase):
     def _execute_epoch(
         self, epoch: int, need_backward: bool, in_training: bool
     ) -> None:
-        if epoch in self.get_data("skipped_epoch", set()):
-            get_logger().warning("skip epoch %s", epoch)
-            return
+        # if epoch in self.get_data("skipped_epoch", set()):
+        #     get_logger().warning("skip epoch %s", epoch)
+        #     return
         self.exec_hooks(
             ModelExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
@@ -323,19 +323,18 @@ class ModelExecutor(ModelExecutorBase):
                 batch_index=batch_index,
             )
             if in_training:
+                if (
+                    self.hyper_parameter.batch_size != 1
+                    and batch["batch_size"] == 1
+                    and self._model_with_loss.model_util.have_module(
+                        module_type=torch.nn.BatchNorm2d
+                    )
+                ):
+                    get_logger().debug("drop last one-batch for batchnorm")
+                    continue
+
                 optimizer = self.get_optimizer()
                 optimizer.zero_grad(set_to_none=True)
-
-            if (
-                in_training
-                and self.hyper_parameter.batch_size != 1
-                and batch["batch_size"] == 1
-                and self._model_with_loss.model_util.have_module(
-                    module_type=torch.nn.BatchNorm2d
-                )
-            ):
-                get_logger().debug("drop last one-batch for batchnorm")
-                continue
 
             self.exec_hooks(
                 ModelExecutorHookPoint.BEFORE_BATCH,
