@@ -35,6 +35,7 @@ class ModelWithLoss:
             self.set_loss_fun(loss_fun)
         self.__model_type = model_type
         self.need_input_features = False
+        self.need_cpu_inputs = False
 
     @property
     def model(self) -> torch.nn.Module:
@@ -92,7 +93,10 @@ class ModelWithLoss:
         if len(targets.shape) > 1:
             targets = targets.view(-1).long()
 
+        cpu_inputs = inputs
         if device is not None:
+            if self.need_cpu_inputs:
+                cpu_inputs = copy.deepcopy(inputs)
             if input_features is not None:
                 input_features = put_data_to_device(
                     input_features, device=device, non_blocking=non_blocking
@@ -128,6 +132,7 @@ class ModelWithLoss:
             is_averaged_loss = output["classification_output"] is not None
         return output | {
             "inputs": inputs,
+            "cpu_inputs": cpu_inputs,
             "input_features": input_features,
             "targets": targets,
             "is_averaged_loss": is_averaged_loss,
