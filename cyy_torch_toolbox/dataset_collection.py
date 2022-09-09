@@ -55,7 +55,7 @@ class DatasetCollection:
     ) -> None:
         dataset = self.get_dataset(phase)
         dataset_util = self.get_dataset_util(phase)
-        self._datasets[phase] = transformer(dataset, dataset_util)
+        self._datasets[phase] = transformer(dataset, dataset_util, phase)
 
     def foreach_dataset(self):
         for phase in MachineLearningPhase:
