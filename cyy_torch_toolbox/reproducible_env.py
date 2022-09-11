@@ -131,6 +131,7 @@ class ReproducibleEnv:
                 obj: dict = pickle.load(f)
                 self.__torch_seed = obj["torch_seed"]
                 self.__torch_cuda_rng_state = obj["torch_cuda_rng_state"]
+                self.__torch_rng_state = obj["torch_rng_state"]
                 self.__randomlib_state = obj["randomlib_state"]
                 self.__numpy_state = obj["numpy_state"]
 
