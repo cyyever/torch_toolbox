@@ -75,15 +75,13 @@ def get_model_info() -> dict:
                         "use huggingface without pretrained parameters"
                     )
                     old_embedding = pretrained_model.get_input_embeddings()
-                    print("old_embedding", old_embedding)
                     config = transformers.AutoConfig.from_pretrained(
                         model_name, **model_kwargs
                     )
-                    print(config)
                     model = transformers.AutoModelForSequenceClassification.from_config(
                         config
                     )
-                    # model.set_input_embeddings(old_embedding)
+                    model.set_input_embeddings(old_embedding)
                     return model
 
                 if full_model_name.lower() not in __model_info:
