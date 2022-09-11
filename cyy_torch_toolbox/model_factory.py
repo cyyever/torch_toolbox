@@ -1,6 +1,6 @@
 import copy
 import functools
-import json
+# import json
 import os
 import sys
 
@@ -16,9 +16,8 @@ from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.ml_type import DatasetType, ModelType
-from cyy_torch_toolbox.model_with_loss import (CheckPointedModelWithLoss,
-                                               ModelWithLoss,
-                                               TextModelWithLoss)
+from cyy_torch_toolbox.model_with_loss import ModelWithLoss, TextModelWithLoss
+# CheckPointedModelWithLoss,
 from cyy_torch_toolbox.models.huggingface_models import huggingface_models
 from cyy_torch_toolbox.word_vector import PretrainedWordVector
 
@@ -63,11 +62,35 @@ def get_model_info() -> dict:
         if has_hugging_face:
             for model_name in huggingface_models:
                 full_model_name = "sequence_classification_" + model_name
+
+                def create_model(model_name, pretrained, **model_kwargs):
+                    pretrained_model = (
+                        transformers.AutoModelForSequenceClassification.from_pretrained(
+                            model_name, **model_kwargs
+                        )
+                    )
+                    if pretrained:
+                        return pretrained_model
+                    get_logger().warning(
+                        "use huggingface without pretrained parameters"
+                    )
+                    old_embedding = pretrained_model.get_input_embeddings()
+                    print("old_embedding", old_embedding)
+                    config = transformers.AutoConfig.from_pretrained(
+                        model_name, **model_kwargs
+                    )
+                    print(config)
+                    model = transformers.AutoModelForSequenceClassification.from_config(
+                        config
+                    )
+                    # model.set_input_embeddings(old_embedding)
+                    return model
+
                 if full_model_name.lower() not in __model_info:
                     __model_info[full_model_name.lower()] = (
                         full_model_name,
                         functools.partial(
-                            transformers.AutoModelForSequenceClassification.from_pretrained,
+                            create_model,
                             model_name,
                         ),
                         None,
@@ -171,37 +194,15 @@ def get_model(
 
 class ModelConfig:
     def __init__(self, model_name=None):
-        self.model_name = model_name
+        self.model_name: str | None = model_name
         self.model_path = None
-        self.pretrained = False
-        self.model_kwargs = {}
-        self.model_kwarg_json_path = None
-
-    def add_args(self, parser) -> None:
-        if self.model_name is None:
-            parser.add_argument("--model_name", type=str, required=True)
-        parser.add_argument("--model_path", type=str, default=None)
-        parser.add_argument("--pretrained", action="store_true", default=False)
-        parser.add_argument("--model_kwarg_json_path", type=str, default=None)
-
-    def load_args(self, args) -> None:
-        for attr in dir(args):
-            if attr.startswith("_"):
-                continue
-            if not hasattr(self, attr):
-                continue
-            get_logger().debug("set dataset collection config attr %s", attr)
-            value = getattr(args, attr)
-            if value is not None:
-                setattr(self, attr, value)
-        if args.model_kwarg_json_path is not None:
-            with open(args.model_kwarg_json_path, "rt", encoding="utf-8") as f:
-                self.model_kwargs |= json.load(f)
+        self.pretrained: bool = False
+        self.model_kwargs: dict = {}
 
     def get_model(self, dc: DatasetCollection) -> ModelWithLoss:
+        assert not (self.pretrained and self.model_path is not None)
         model_kwargs = copy.deepcopy(self.model_kwargs)
-        if self.pretrained:
-            model_kwargs["pretrained"] = True
+        model_kwargs["pretrained"] = self.pretrained
         get_logger().info("use model %s", self.model_name)
         word_vector_name = model_kwargs.pop("word_vector_name", None)
         model_with_loss = get_model(self.model_name, dc, **model_kwargs)
