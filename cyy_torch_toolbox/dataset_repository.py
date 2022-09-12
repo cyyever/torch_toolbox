@@ -31,7 +31,7 @@ except ModuleNotFoundError:
 
 import cyy_torch_toolbox.datasets.vision as local_vision_datasets
 from cyy_torch_toolbox.ml_type import DatasetType
-from cyy_torch_toolbox.reflection import get_class_attrs
+from cyy_naive_lib.reflection import get_class_attrs
 
 
 def get_dataset_constructors(dataset_type: DatasetType = None) -> dict:

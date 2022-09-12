@@ -1,16 +1,15 @@
 import copy
 import functools
-import json
 from enum import IntEnum, auto
 from typing import Callable, Optional, Union
 
 import torch
 from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.reflection import call_fun, get_class_attrs
 
 from cyy_torch_toolbox.algorithm.lr_finder import LRFinder
 from cyy_torch_toolbox.data_structure.torch_thread_task_queue import \
     TorchThreadTaskQueue
-from cyy_torch_toolbox.reflection import call_fun, get_class_attrs
 
 
 def determin_learning_rate(task, *args):
@@ -69,7 +68,6 @@ class HyperParameter:
 
     def get_learning_rate(self, trainer):
         if isinstance(self.__learning_rate, HyperParameterAction):
-
             task_queue = TorchThreadTaskQueue(worker_fun=determin_learning_rate)
             device = trainer.device
             trainer.offload_from_gpu()
@@ -178,6 +176,7 @@ class HyperParameter:
     def get_optimizer_names():
         return sorted(HyperParameter.__get_optimizer_classes().keys())
 
+    @staticmethod
     def get_lr_scheduler_names() -> list:
         return ["ReduceLROnPlateau", "OneCycleLR", "CosineAnnealingLR", "MultiStepLR"]
 

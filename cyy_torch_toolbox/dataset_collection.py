@@ -7,6 +7,7 @@ from typing import Callable
 import torch
 import torchvision
 from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.reflection import get_kwarg_names
 from cyy_naive_lib.storage import get_cached_data
 from ssd_checker import is_ssd
 
@@ -22,7 +23,6 @@ from cyy_torch_toolbox.dataset_util import (DatasetUtil, TextDatasetUtil,
                                             VisionDatasetUtil)
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
-from cyy_torch_toolbox.reflection import get_kwarg_names
 
 
 class DatasetCollection:
@@ -401,7 +401,7 @@ class ClassificationDatasetCollection(DatasetCollection):
         reversed_label_names = {v: k for k, v in label_names.items()}
         return reversed_label_names[label_name]
 
-    def adapt_to_model(self, model, model_kwargs=None):
+    def adapt_to_model(self, model, model_kwargs):
         """add more transformers for model"""
         if self.dataset_type == DatasetType.Vision:
             input_size = getattr(model.__class__, "input_size", None)
