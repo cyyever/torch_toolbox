@@ -119,11 +119,10 @@ class Trainer(ModelExecutor):
 
     def offload_from_memory(self):
         super().offload_from_memory()
-        self.__keep_model_hook.offload_from_memory(self.save_dir)
+        self.__keep_model_hook.offload_from_memory()
 
     def load_to_memory(self):
         super().load_to_memory()
-        self.__keep_model_hook.load_to_memory(self.save_dir)
 
     def add_skipped_epoch(self, epoch):
         key = "skipped_epoch"
@@ -131,8 +130,15 @@ class Trainer(ModelExecutor):
         old_data.add(epoch)
         self.set_data(key, old_data)
 
-    def _prepare_execution(self, use_DDP=False, save_model=False, **kwargs):
-        self.__keep_model_hook.save_flag = save_model and self.save_dir is not None
+    def _prepare_execution(
+        self,
+        use_DDP: bool = False,
+        save_best_model: bool = False,
+        save_epoch_model: bool = False,
+        **kwargs
+    ):
+        self.__keep_model_hook.save_best_model = save_best_model
+        self.__keep_model_hook.save_epoch_model = save_epoch_model
         self.__inferencers.clear()
         if self.debugging_mode:
             get_logger().warning("train in debugging mode")
