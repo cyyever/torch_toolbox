@@ -147,7 +147,6 @@ def get_dataloader(
     hyper_parameter: HyperParameter,
     device=None,
     cache_transforms=None,
-    persistent_workers=True,
     use_dali=True,
 ):
     match cache_transforms:
@@ -191,6 +190,7 @@ def get_dataloader(
     collate_fn = transforms.collate_batch
     pin_memory = True
     pin_memory_device = ""
+    persistent_workers = True
     if device:
         pin_memory_device = str(device)
     if not dc.transforms_cached or "USE_PROCESS_DATALOADER" in os.environ:
