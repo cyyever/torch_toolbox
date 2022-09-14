@@ -453,30 +453,6 @@ class DatasetCollectionConfig:
         self.training_dataset_label_map = None
         self.training_dataset_label_noise_percentage = None
 
-    def add_args(self, parser):
-        if self.dataset_name is None:
-            parser.add_argument("--dataset_name", type=str, required=True)
-        parser.add_argument("--training_dataset_percentage", type=float, default=None)
-        parser.add_argument("--training_dataset_indices_path", type=str, default=None)
-        parser.add_argument(
-            "--training_dataset_label_noise_percentage", type=float, default=None
-        )
-        parser.add_argument("--dataset_kwarg_json_path", type=str, default=None)
-
-    def load_args(self, args):
-        for attr in dir(args):
-            if attr.startswith("_"):
-                continue
-            if not hasattr(self, attr):
-                continue
-            get_logger().debug("set dataset collection config attr %s", attr)
-            value = getattr(args, attr)
-            if value is not None:
-                setattr(self, attr, value)
-        if args.dataset_kwarg_json_path is not None:
-            with open(args.dataset_kwarg_json_path, "rt", encoding="utf-8") as f:
-                self.dataset_kwargs |= json.load(f)
-
     def create_dataset_collection(self, save_dir=None, model_config=None):
         if self.dataset_name is None:
             raise RuntimeError("dataset_name is None")
