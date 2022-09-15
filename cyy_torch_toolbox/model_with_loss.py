@@ -9,7 +9,7 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_kwarg_names
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-from cyy_torch_toolbox.device import get_devices, put_data_to_device
+from cyy_torch_toolbox.device import get_devices, put_data_to_device, tensor_to
 from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 from cyy_torch_toolbox.model_transform.checkpointed_model import \
     get_checkpointed_model
@@ -254,6 +254,17 @@ class CheckPointedModelWithLoss:
                 if inputs is not None:
                     inputs.requires_grad_()
         return self.__model_with_loss.__call__(**kwargs)
+
+
+class VisionModelWithLoss(ModelWithLoss):
+    pass
+    # def __call__(self, inputs, **kwargs):
+    #     inputs = tensor_to(inputs, non_blocking=True, memory_format=torch.channels_last)
+    #     return super().__call__(inputs=inputs, **kwargs)
+
+    # def to(self, device, non_blocking=False):
+    #     self.model.to(non_blocking=non_blocking, memory_format=torch.channels_last)
+    #     super().to(device=device, non_blocking=non_blocking)
 
 
 class TextModelWithLoss(ModelWithLoss):

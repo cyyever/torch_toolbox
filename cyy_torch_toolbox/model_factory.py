@@ -16,7 +16,9 @@ from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.ml_type import DatasetType, ModelType
-from cyy_torch_toolbox.model_with_loss import ModelWithLoss, TextModelWithLoss
+from cyy_torch_toolbox.model_with_loss import (ModelWithLoss,
+                                               TextModelWithLoss,
+                                               VisionModelWithLoss)
 # CheckPointedModelWithLoss,
 from cyy_torch_toolbox.models.huggingface_models import huggingface_models
 
@@ -146,7 +148,9 @@ def get_model(
             model = model_constructor(**(added_kwargs | model_kwargs))
             get_logger().warning("use model arguments %s", model_kwargs | added_kwargs)
             model_with_loss_fun = ModelWithLoss
-            if dataset_collection.dataset_type == DatasetType.Text:
+            if dataset_collection.dataset_type == DatasetType.Vision:
+                model_with_loss_fun = VisionModelWithLoss
+            elif dataset_collection.dataset_type == DatasetType.Text:
                 model_with_loss_fun = TextModelWithLoss
             model_with_loss = model_with_loss_fun(
                 model=model,
@@ -156,7 +160,7 @@ def get_model(
             # if use_checkpointing:
             #     model_with_loss = CheckPointedModelWithLoss(model_with_loss)
             if repo is not None:
-                # we need the path to pickle models
+                # we need the model path to pickle models
                 hub_dir = torch.hub.get_dir()
                 # Parse github repo information
                 repo_owner, repo_name, ref = torch.hub._parse_repo_info(repo)
@@ -207,6 +211,7 @@ class ModelConfig:
             model_with_loss.model.load_state_dict(torch.load(self.model_path))
         if word_vector_name is not None:
             from cyy_torch_toolbox.word_vector import PretrainedWordVector
+
             PretrainedWordVector(word_vector_name).load_to_model(
                 model_with_loss=model_with_loss, tokenizer=dc.tokenizer
             )

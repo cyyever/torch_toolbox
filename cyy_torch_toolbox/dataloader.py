@@ -188,10 +188,10 @@ def get_dataloader(
         )
     transforms = dc.get_transforms(phase=phase)
     collate_fn = transforms.collate_batch
-    pin_memory = True
-    pin_memory_device = ""
     persistent_workers = True
-    if device:
+    pin_memory = str(device) == "cpu"
+    pin_memory_device = ""
+    if str(device) != "cpu":
         pin_memory_device = str(device)
     if not dc.transforms_cached or "USE_PROCESS_DATALOADER" in os.environ:
         num_workers = 2
