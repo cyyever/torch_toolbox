@@ -19,7 +19,6 @@ from cyy_torch_toolbox.ml_type import DatasetType, ModelType
 from cyy_torch_toolbox.model_with_loss import ModelWithLoss, TextModelWithLoss
 # CheckPointedModelWithLoss,
 from cyy_torch_toolbox.models.huggingface_models import huggingface_models
-from cyy_torch_toolbox.word_vector import PretrainedWordVector
 
 __model_info: dict = {}
 
@@ -133,7 +132,7 @@ def get_model(
     except Exception:
         pass
     loss_fun_name = model_kwargs.pop("loss_fun_name", None)
-    use_checkpointing = model_kwargs.pop("use_checkpointing", False)
+    # use_checkpointing = model_kwargs.pop("use_checkpointing", False)
     while True:
         try:
             _, model_constructor, repo = model_info.get(
@@ -207,6 +206,7 @@ class ModelConfig:
         if self.model_path is not None:
             model_with_loss.model.load_state_dict(torch.load(self.model_path))
         if word_vector_name is not None:
+            from cyy_torch_toolbox.word_vector import PretrainedWordVector
             PretrainedWordVector(word_vector_name).load_to_model(
                 model_with_loss=model_with_loss, tokenizer=dc.tokenizer
             )
