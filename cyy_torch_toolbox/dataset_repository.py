@@ -1,8 +1,14 @@
 import functools
 
 import torch
-import torchtext
 import torchvision
+
+try:
+    import torchtext
+
+    has_torchtext = True
+except ModuleNotFoundError:
+    has_torchtext = False
 
 try:
     import torchaudio
@@ -29,9 +35,10 @@ except ModuleNotFoundError:
     has_hugging_face = False
 
 
+from cyy_naive_lib.reflection import get_class_attrs
+
 import cyy_torch_toolbox.datasets.vision as local_vision_datasets
 from cyy_torch_toolbox.ml_type import DatasetType
-from cyy_naive_lib.reflection import get_class_attrs
 
 
 def get_dataset_constructors(dataset_type: DatasetType = None) -> dict:
@@ -39,7 +46,8 @@ def get_dataset_constructors(dataset_type: DatasetType = None) -> dict:
     if dataset_type is None or dataset_type == DatasetType.Vision:
         repositories += [torchvision.datasets, local_vision_datasets]
     if dataset_type is None or dataset_type == DatasetType.Text:
-        repositories += [torchtext.datasets]
+        if has_torchtext:
+            repositories += [torchtext.datasets]
     if dataset_type is None or dataset_type == DatasetType.Audio:
         if has_torchaudio:
             repositories += [torchaudio.datasets, local_audio_datasets]

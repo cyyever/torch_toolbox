@@ -2,15 +2,24 @@ import functools
 from typing import Any
 
 import torch
-import torchtext
+
+try:
+    import torchtext
+
+    from .tokenizer import SpacyTokenizer
+    from .tokenizer_factory import (get_hugging_face_tokenizer,
+                                    get_spacy_tokenizer)
+
+    has_torchtext = True
+except ModuleNotFoundError:
+    has_torchtext = False
+
 import torchvision
 import transformers
 from cyy_torch_toolbox.dataset_util import VisionDatasetUtil
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
 
-from .tokenizer import SpacyTokenizer
-from .tokenizer_factory import get_hugging_face_tokenizer, get_spacy_tokenizer
 from .transforms import (Transforms, default_data_extraction,
                          str_target_to_int, swap_input_and_target)
 
@@ -91,7 +100,7 @@ def add_transforms(dc, dataset_kwargs, model_config):
                 phases={MachineLearningPhase.Validation, MachineLearningPhase.Test},
             )
         return
-    if dc.dataset_type == DatasetType.Text:
+    if dc.dataset_type == DatasetType.Text and has_torchtext:
         # ExtractData
         dc.append_transform(swap_input_and_target, key=TransformType.ExtractData)
         if dc.name.lower() == "multi_nli":
