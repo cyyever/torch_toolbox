@@ -20,12 +20,18 @@ class AMP(Hook):
             model_executor.set_data("forward_result", result)
 
     def _model_backward(self, loss, **kwargs):
-        if self.__scaler is None:
+        if self.__scaler is None and str(self.__ctx.device) != "cpu":
             self.__scaler = torch.cuda.amp.GradScaler()
-        self.__scaler.scale(loss).backward()
+        if self.__scaler is not None:
+            self.__scaler.scale(loss).backward()
+        else:
+            loss.backward()
 
     def _optimizer_step(self, model_executor, **kwargs):
         optimizer = model_executor.get_optimizer()
+        if self.__scaler is None:
+            optimizer.step()
+            return
         self.__scaler.step(optimizer)
         if sum(
             self.__scaler._found_inf_per_device(optimizer=optimizer).values()
