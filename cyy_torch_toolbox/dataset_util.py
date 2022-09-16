@@ -102,8 +102,8 @@ class DatasetUtil:
             if classes and isinstance(classes[0], str):
                 return dict(enumerate(classes))
 
-        def get_label_name(container: set, idx) -> set:
-            label = self.get_sample_label(idx)
+        def get_label_name(container: set, index) -> set:
+            label = self.get_sample_label(index)
             if isinstance(label, str):
                 container.add(label)
             return container
@@ -143,8 +143,8 @@ class DatasetSplitter(DatasetUtil):
     def get_label_number(self) -> int:
         return len(self.get_labels())
 
-    def get_sample_text(self, idx: int) -> str:
-        return self.dataset[idx][0]
+    def get_sample_text(self, index: int) -> str:
+        return self.dataset[index][0]
 
     def iid_split_indices(self, parts: list) -> list:
         return self.__get_split_indices(parts, iid=True)
@@ -163,7 +163,7 @@ class DatasetSplitter(DatasetUtil):
         if len(parts) == 1:
             return [list(range(len(self)))]
 
-        def split_idx_impl(indices_list: list) -> list[list]:
+        def split_index_impl(indices_list: list) -> list[list]:
             part_lens = []
             for part in parts:
                 part_len = int(len(indices_list) * part / sum(parts))
@@ -179,13 +179,13 @@ class DatasetSplitter(DatasetUtil):
         if not iid:
             index_list = list(range(len(self)))
             random.shuffle(index_list)
-            return split_idx_impl(index_list)
+            return split_index_impl(index_list)
 
         sub_index_list: list[list] = []
         for _ in parts:
             sub_index_list.append([])
         for v in self.label_sample_dict.values():
-            part_index_list = split_idx_impl(sorted(v))
+            part_index_list = split_index_impl(sorted(v))
             random.shuffle(part_index_list)
             for a, b in zip(sub_index_list, part_index_list):
                 a += b
@@ -243,16 +243,16 @@ class VisionDatasetUtil(DatasetSplitter):
             std = torch.Tensor([0.229, 0.224, 0.225])
             return (mean, std)
         mean = torch.zeros(self.channel)
-        for idx in range(len(self)):
-            x = self._get_sample_input(idx)
+        for index in range(len(self)):
+            x = self._get_sample_input(index)
             for i in range(self.channel):
                 mean[i] += x[i, :, :].mean()
         mean.div_(len(self))
 
         wh = None
         std = torch.zeros(self.channel)
-        for idx in range(len(self)):
-            x = self._get_sample_input(idx)
+        for index in range(len(self)):
+            x = self._get_sample_input(index)
             if wh is None:
                 wh = x.shape[1] * x.shape[2]
             for i in range(self.channel):
@@ -260,9 +260,9 @@ class VisionDatasetUtil(DatasetSplitter):
         std = std.div(len(self)).sqrt()
         return mean, std
 
-    def save_sample_image(self, idx: int, path: str) -> None:
+    def save_sample_image(self, index: int, path: str) -> None:
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        sample_input = self._get_sample_input(idx, apply_transform=False)
+        sample_input = self._get_sample_input(index, apply_transform=False)
         match sample_input:
             case PIL.Image.Image():
                 sample_input.save(path)
@@ -270,8 +270,8 @@ class VisionDatasetUtil(DatasetSplitter):
                 torchvision.utils.save_image(sample_input, path)
 
     @torch.no_grad()
-    def get_sample_image(self, idx: int) -> PIL.Image:
-        tensor = self._get_sample_input(idx, apply_transform=False)
+    def get_sample_image(self, index: int) -> PIL.Image:
+        tensor = self._get_sample_input(index, apply_transform=False)
         if isinstance(tensor, PIL.Image.Image):
             return tensor
         grid = torchvision.utils.make_grid(tensor)
@@ -289,5 +289,5 @@ class VisionDatasetUtil(DatasetSplitter):
 
 class TextDatasetUtil(DatasetSplitter):
     @torch.no_grad()
-    def get_sample_text(self, idx: int) -> str:
-        return self._get_sample_input(idx, apply_transform=False)
+    def get_sample_text(self, index: int) -> str:
+        return self._get_sample_input(index, apply_transform=False)
