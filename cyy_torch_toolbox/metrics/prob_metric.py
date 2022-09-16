@@ -13,13 +13,13 @@ class ProbabilityMetric(Metric, AddIndexToDataset):
         Metric._before_execute(self, **kwargs)
         AddIndexToDataset._before_execute(self, **kwargs)
 
-    def _after_batch(self, model_executor, epoch, result, batch_info, **kwargs):
+    def _after_batch(self, model_executor, epoch, result, sample_indices, **kwargs):
         output = result["classification_output"]
         last_layer = list(model_executor.model.modules())[-1]
         epoch_prob = self.get_prob(epoch)
         if epoch_prob is None:
             epoch_prob = {}
-        for i, sample_index in enumerate(batch_info["index"]):
+        for i, sample_index in enumerate(sample_indices):
             sample_index = sample_index.data.item()
             probs = None
             if isinstance(last_layer, nn.LogSoftmax):
