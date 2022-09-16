@@ -9,6 +9,7 @@ from cyy_torch_toolbox.ml_type import MachineLearningPhase
 class KeepModelHook(Hook):
     __best_model: DataStorage = DataStorage(data=None)
     save_epoch_model: bool = False
+    save_last_model: bool = False
     save_best_model: bool = False
 
     @property
@@ -56,7 +57,7 @@ class KeepModelHook(Hook):
 
     def _after_execute(self, model_executor, **kwargs):
         trainer = model_executor
-        if self.save_epoch_model:
+        if self.save_last_model:
             trainer.save_model(
                 os.path.join(self.__get_model_dir(trainer.save_dir), "last.pt")
             )

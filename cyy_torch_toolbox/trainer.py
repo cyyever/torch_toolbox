@@ -135,10 +135,12 @@ class Trainer(ModelExecutor):
         use_DDP: bool = False,
         save_best_model: bool = False,
         save_epoch_model: bool = False,
+        save_last_model: bool = False,
         **kwargs
     ):
         self.__keep_model_hook.save_best_model = save_best_model
         self.__keep_model_hook.save_epoch_model = save_epoch_model
+        self.__keep_model_hook.save_last_model = save_last_model
         self.__inferencers.clear()
         if self.debugging_mode:
             get_logger().warning("train in debugging mode")
