@@ -9,11 +9,12 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_kwarg_names
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-from cyy_torch_toolbox.device import get_devices, put_data_to_device, tensor_to
+from cyy_torch_toolbox.device import get_devices
 from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 from cyy_torch_toolbox.model_transform.checkpointed_model import \
     get_checkpointed_model
 from cyy_torch_toolbox.model_util import ModelUtil
+from cyy_torch_toolbox.tensor import tensor_to
 
 
 class ModelWithLoss:
@@ -98,16 +99,12 @@ class ModelWithLoss:
             if self.need_cpu_inputs:
                 cpu_inputs = copy.deepcopy(inputs)
             if input_features is not None:
-                input_features = put_data_to_device(
+                input_features = tensor_to(
                     input_features, device=device, non_blocking=non_blocking
                 )
             else:
-                inputs = put_data_to_device(
-                    inputs, device=device, non_blocking=non_blocking
-                )
-            targets = put_data_to_device(
-                targets, device=device, non_blocking=non_blocking
-            )
+                inputs = tensor_to(inputs, device=device, non_blocking=non_blocking)
+            targets = tensor_to(targets, device=device, non_blocking=non_blocking)
             self.to(device=device, non_blocking=non_blocking)
 
         if input_features is None and self.need_input_features:

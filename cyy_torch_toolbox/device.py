@@ -53,24 +53,6 @@ def put_data_to_device(data, device, non_blocking=False):
     return data
 
 
-def tensor_to(data, non_blocking=False, **kwargs):
-    match data:
-        case torch.Tensor():
-            return data.to(non_blocking=non_blocking, **kwargs)
-        case transformers.tokenization_utils_base.BatchEncoding():
-            data.data = tensor_to(data.data, non_blocking=non_blocking, **kwargs)
-            return data
-        case list():
-            for idx, element in enumerate(data):
-                data[idx] = tensor_to(element, non_blocking=non_blocking, **kwargs)
-            return data
-        case tuple():
-            return tuple(tensor_to(list(data), non_blocking=non_blocking, **kwargs))
-        case dict():
-            for k, v in data.items():
-                data[k] = tensor_to(v, non_blocking=non_blocking, **kwargs)
-            return data
-    return data
 
 
 class CudaDeviceRoundRobinAllocator:

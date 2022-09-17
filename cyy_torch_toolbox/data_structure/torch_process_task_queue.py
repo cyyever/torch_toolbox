@@ -5,8 +5,8 @@ from typing import Callable
 import torch.multiprocessing
 from cyy_naive_lib.data_structure.task_queue import TaskQueue
 from cyy_torch_toolbox.device import (CudaDeviceGreedyAllocator,
-                                      get_cpu_device, get_devices,
-                                      put_data_to_device)
+                                      get_cpu_device, get_devices)
+from cyy_torch_toolbox.tensor import tensor_to
 
 
 class TorchProcessTaskQueue(TaskQueue):
@@ -54,17 +54,17 @@ class TorchProcessTaskQueue(TaskQueue):
 
     def add_task(self, task, **kwargs):
         if self.__move_data_in_cpu:
-            task = put_data_to_device(task, get_cpu_device())
+            task = tensor_to(task, device=get_cpu_device())
         super().add_task(task, **kwargs)
 
     def put_result(self, result, **kwargs):
         if self.__move_data_in_cpu:
-            result = put_data_to_device(result, get_cpu_device())
+            result = tensor_to(result, device=get_cpu_device())
         super().put_result(result, **kwargs)
 
     def put_data(self, result, **kwargs):
         if self.__move_data_in_cpu:
-            result = put_data_to_device(result, get_cpu_device())
+            result = tensor_to(result, device=get_cpu_device())
         super().put_data(result, **kwargs)
 
     def _get_extra_task_arguments(self, worker_id):

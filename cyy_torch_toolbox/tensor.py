@@ -4,6 +4,13 @@ import numpy
 import torch
 import torch.nn as nn
 
+try:
+    import transformers
+
+    has_hugging_face = True
+except ModuleNotFoundError:
+    has_hugging_face = False
+
 
 def cat_tensors_to_vector(tensors: list) -> torch.Tensor:
     return nn.utils.parameters_to_vector([t.reshape(-1) for t in tensors])
@@ -45,3 +52,25 @@ def split_tensor_to_list(shapes: list, tensor: torch.Tensor) -> list:
 
 def get_tensor_serialization_size(data):
     return len(pickle.dumps(data))
+
+
+def tensor_to(data, non_blocking=False, **kwargs):
+    match data:
+        case torch.Tensor():
+            return data.to(non_blocking=non_blocking, **kwargs)
+        case list():
+            for idx, element in enumerate(data):
+                data[idx] = tensor_to(element, non_blocking=non_blocking, **kwargs)
+            return data
+        case tuple():
+            return tuple(tensor_to(list(data), non_blocking=non_blocking, **kwargs))
+        case dict():
+            for k, v in data.items():
+                data[k] = tensor_to(v, non_blocking=non_blocking, **kwargs)
+            return data
+    if has_hugging_face:
+        match data:
+            case transformers.tokenization_utils_base.BatchEncoding():
+                data.data = tensor_to(data.data, non_blocking=non_blocking, **kwargs)
+                return data
+    return data
