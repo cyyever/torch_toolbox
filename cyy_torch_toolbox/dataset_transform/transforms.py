@@ -4,8 +4,8 @@ from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.dataset import get_dataset_size
-from cyy_torch_toolbox.device import put_data_to_device
 from cyy_torch_toolbox.ml_type import TransformType
+from cyy_torch_toolbox.tensor import tensor_to
 from torch.utils.data._utils.collate import default_collate
 
 
@@ -13,7 +13,7 @@ def default_data_extraction(data: Any) -> dict:
     match data:
         case {"data": real_data, "index": index}:
             return default_data_extraction(real_data) | {"index": index}
-        case[sample_input, target]:
+        case [sample_input, target]:
             return {"input": sample_input, "target": target}
         case _:
             return data
@@ -156,10 +156,10 @@ class Transforms:
             item["input"] = self.transform_input(item["input"], apply_random=False)
             item["target"] = self.transform_target(item["target"], index=k)
             if device is not None:
-                item["input"] = put_data_to_device(
+                item["input"] = tensor_to(
                     item["input"], device=device, non_blocking=True
                 )
-                item["target"] = put_data_to_device(
+                item["target"] = tensor_to(
                     item["target"], device=device, non_blocking=True
                 )
             transformed_dataset[k] = item
