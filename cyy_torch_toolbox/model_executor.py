@@ -288,7 +288,9 @@ class ModelExecutor(ModelExecutorBase):
                 first_value = next(iter(inputs.values()))
                 assert isinstance(first_value, torch.Tensor)
                 for i in range(first_value.size(dim=0)):
-                    new_inputs.append({k: v[i] for k, v in inputs.items()})
+                    new_inputs.append(
+                        {k: v[i].unsqueeze(dim=0) for k, v in inputs.items()}
+                    )
                 inputs = new_inputs
 
             if isinstance(inputs, torch.Tensor):
