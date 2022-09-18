@@ -151,8 +151,10 @@ def get_dataloader(
 ):
     match cache_transforms:
         case "cpu" | True:
+            assert not dc.transforms_cached
             dc.cache_transforms()
         case "cuda":
+            assert not dc.transforms_cached
             dc.cache_transforms(device=device)
 
     dataset = dc.get_dataset(phase)
