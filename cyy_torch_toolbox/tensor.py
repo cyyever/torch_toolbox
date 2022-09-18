@@ -74,3 +74,19 @@ def tensor_to(data, non_blocking=False, **kwargs):
                 data.data = tensor_to(data.data, non_blocking=non_blocking, **kwargs)
                 return data
     return data
+
+
+def tensor_clone(data, detach=True):
+    match data:
+        case torch.Tensor():
+            new_data = data.clone()
+            if detach:
+                new_data = new_data.detach()
+            return new_data
+        case list():
+            return [tensor_clone(a, detach=detach) for a in data]
+        case tuple():
+            return tuple(tensor_clone(list(data), detach=detach))
+        case dict():
+            return {k: tensor_clone(v, detach=detach) for k, v in data.items()}
+    return data

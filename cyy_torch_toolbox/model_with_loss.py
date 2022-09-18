@@ -14,7 +14,7 @@ from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 from cyy_torch_toolbox.model_transform.checkpointed_model import \
     get_checkpointed_model
 from cyy_torch_toolbox.model_util import ModelUtil
-from cyy_torch_toolbox.tensor import tensor_to
+from cyy_torch_toolbox.tensor import tensor_clone, tensor_to
 
 
 class ModelWithLoss:
@@ -97,10 +97,7 @@ class ModelWithLoss:
         cpu_inputs = inputs
         if device is not None:
             if self.need_cpu_inputs:
-                if isinstance(inputs, torch.Tensor):
-                    cpu_inputs = inputs.clone().detach().cpu()
-                else:
-                    cpu_inputs = copy.deepcopy(inputs)
+                cpu_inputs = tensor_to(tensor_clone(inputs), device="cpu")
             if input_features is not None:
                 input_features = tensor_to(
                     input_features, device=device, non_blocking=non_blocking
@@ -278,7 +275,7 @@ class TextModelWithLoss(ModelWithLoss):
             return res
         if self.__is_hugging_face_model:
             match inputs:
-                case transformers.tokenization_utils_base.BatchEncoding():
+                case transformers.tokenization_utils_base.BatchEncoding() | dict():
                     input_ids = inputs["input_ids"]
                 case _:
                     input_ids = inputs
