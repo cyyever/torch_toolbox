@@ -1,7 +1,9 @@
 import functools
+import os
 
 import torch
 import torchvision
+from cyy_naive_lib.storage import get_cached_data
 
 try:
     import torchtext
@@ -41,7 +43,7 @@ import cyy_torch_toolbox.datasets.vision as local_vision_datasets
 from cyy_torch_toolbox.ml_type import DatasetType
 
 
-def get_dataset_constructors(dataset_type: DatasetType = None) -> dict:
+def get_dataset_constructors(dataset_type: DatasetType = None, cache_dir=None) -> dict:
     repositories = []
     if dataset_type is None or dataset_type == DatasetType.Vision:
         repositories += [torchvision.datasets, local_vision_datasets]
@@ -73,9 +75,21 @@ def get_dataset_constructors(dataset_type: DatasetType = None) -> dict:
     if has_hugging_face and (dataset_type is None or dataset_type == DatasetType.Text):
         dataset_names = set(a.lower() for a in dataset_constructors.keys())
 
-        for name in datasets.list_datasets(
-            with_community_datasets=False, with_details=False
-        ):
+        def data_fun():
+            return set(
+                datasets.list_datasets(
+                    with_community_datasets=False, with_details=False
+                )
+            )
+
+        if cache_dir is not None:
+            os.makedirs(cache_dir, exist_ok=True)
+            huggingface_datasets = get_cached_data(
+                os.path.join(cache_dir, "huggingface_datasets"), data_fun
+            )
+        else:
+            huggingface_datasets = data_fun()
+        for name in huggingface_datasets:
             if name.lower() not in dataset_names:
                 dataset_constructors[name] = functools.partial(
                     datasets.load_dataset, name
