@@ -422,7 +422,12 @@ def create_dataset_collection(
     with cls.lock:
         all_dataset_constructors = set()
         for dataset_type in DatasetType:
-            dataset_constructor = get_dataset_constructors(dataset_type)
+            dataset_constructor = get_dataset_constructors(
+                dataset_type,
+                cache_dir=os.path.join(
+                    DatasetCollection.get_dataset_root_dir(), ".cache"
+                ),
+            )
             if name in dataset_constructor:
                 return cls.create(
                     name=name,

@@ -97,7 +97,10 @@ class ModelWithLoss:
         cpu_inputs = inputs
         if device is not None:
             if self.need_cpu_inputs:
-                cpu_inputs = inputs.clone().detach()
+                if isinstance(inputs, torch.Tensor):
+                    cpu_inputs = inputs.clone().detach().cpu()
+                else:
+                    cpu_inputs = copy.deepcopy(inputs)
             if input_features is not None:
                 input_features = tensor_to(
                     input_features, device=device, non_blocking=non_blocking
