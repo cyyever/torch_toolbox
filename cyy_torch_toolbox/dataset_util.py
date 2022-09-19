@@ -202,15 +202,19 @@ class DatasetSplitter(DatasetUtil):
         sample_size = int(len(self) * percentage)
         return random.sample(range(len(self)), k=sample_size)
 
-    def iid_sample(self, percentage: float) -> dict:
+    def sample_by_labels(self, percents: list[float]) -> Iterable:
         sample_indices = {}
-        for label, v in self.label_sample_dict.items():
-            sample_size = int(len(v) * percentage)
+        for idx, label in enumerate(sorted(self.label_sample_dict.keys())):
+            v = self.label_sample_dict[label]
+            sample_size = int(len(v) * percents[idx])
             if sample_size == 0:
                 get_logger().warning("percentage is too small, use sample size 1")
                 sample_size = 1
             sample_indices[label] = random.sample(v, k=sample_size)
         return sample_indices
+
+    def iid_sample(self, percentage: float) -> dict:
+        return self.sample_by_labels([percentage] * len(self.label_sample_dict))
 
     def randomize_subset_label(self, percentage: float) -> dict:
         sample_indices = self.iid_sample(percentage)
