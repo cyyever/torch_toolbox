@@ -1,4 +1,5 @@
 import pickle
+from typing import Any
 
 import numpy
 import torch
@@ -54,39 +55,44 @@ def get_tensor_serialization_size(data):
     return len(pickle.dumps(data))
 
 
-def tensor_to(data, non_blocking=False, **kwargs):
+def recursive_tensor_op(data, fun, **kwargs) -> Any:
     match data:
         case torch.Tensor():
-            return data.to(non_blocking=non_blocking, **kwargs)
+            return fun(data, **kwargs)
         case list():
             for idx, element in enumerate(data):
-                data[idx] = tensor_to(element, non_blocking=non_blocking, **kwargs)
+                data[idx] = recursive_tensor_op(element, fun, **kwargs)
             return data
         case tuple():
-            return tuple(tensor_to(list(data), non_blocking=non_blocking, **kwargs))
+            return tuple(recursive_tensor_op(list(data), fun, **kwargs))
         case dict():
             for k, v in data.items():
-                data[k] = tensor_to(v, non_blocking=non_blocking, **kwargs)
+                data[k] = recursive_tensor_op(v, fun, **kwargs)
             return data
     if has_hugging_face:
         match data:
             case transformers.tokenization_utils_base.BatchEncoding():
-                data.data = tensor_to(data.data, non_blocking=non_blocking, **kwargs)
+                data.data = recursive_tensor_op(data.data, fun, **kwargs)
                 return data
     return data
 
 
+def tensor_to(data, non_blocking=False, check_pin=False, **kwargs):
+    def fun(data, check_pin, **kwargs):
+        if check_pin and str(data.device) == "cpu" and not data.is_pinned():
+            raise RuntimeError("tensor is not pinned")
+        return data.to(**kwargs)
+
+    return recursive_tensor_op(
+        data, fun, non_blocking=non_blocking, check_pin=check_pin, **kwargs
+    )
+
+
 def tensor_clone(data, detach=True):
-    match data:
-        case torch.Tensor():
-            new_data = data.clone()
-            if detach:
-                new_data = new_data.detach()
-            return new_data
-        case list():
-            return [tensor_clone(a, detach=detach) for a in data]
-        case tuple():
-            return tuple(tensor_clone(list(data), detach=detach))
-        case dict():
-            return {k: tensor_clone(v, detach=detach) for k, v in data.items()}
-    return data
+    def fun(data, detach):
+        new_data = data.clone()
+        if detach:
+            new_data = new_data.detach()
+        return new_data
+
+    return recursive_tensor_op(data, fun, detach=detach)
