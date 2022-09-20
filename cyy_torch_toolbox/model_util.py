@@ -30,13 +30,12 @@ class ModelUtil:
         parameter_list: torch.Tensor,
         check_parameter: bool = True,
         as_parameter: bool = True,
+        parameter_shapes: None | dict = None,
     ) -> None:
-        parameter_shapes = self.get_parameter_shapes()
+        if parameter_shapes is None:
+            parameter_shapes = self.get_parameter_shapes()
         assert parameter_shapes
         parameter_dict = load_tensor_dict(parameter_shapes, parameter_list)
-        # if isinstance(parameter_list, torch.Tensor):
-        # else:
-        #     assert False
         self.load_parameter_dict(
             parameter_dict, check_parameter=check_parameter, as_parameter=as_parameter
         )
@@ -52,6 +51,13 @@ class ModelUtil:
             if check_parameter:
                 assert self.has_attr(name)
             self.set_attr(name, parameter, as_parameter=as_parameter)
+
+    def get_buffer_dict(self) -> dict:
+        return dict(self.model.named_buffers())
+
+    def load_buffer_dict(self, buffer_dict: dict) -> None:
+        for name, parameter in buffer_dict.items():
+            self.set_attr(name, parameter, as_parameter=False)
 
     def get_parameter_dict(self, detach: bool = True) -> dict:
         res: dict = {}
@@ -75,10 +81,11 @@ class ModelUtil:
             return cat_tensors_to_vector(
                 (parameter.grad for parameter in self.get_parameter_seq(detach=False))
             )
-        except BaseException:
+        except BaseException as e:
             for k, v in self.get_parameter_dict(detach=False).items():
                 if v.grad is None:
-                    raise NotImplementedError(k)
+                    raise NotImplementedError(k) from e
+            raise e
 
     def disable_running_stats(self) -> None:
         def impl(_, module, __):
