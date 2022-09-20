@@ -4,7 +4,13 @@ from typing import Callable
 
 import torch
 import torch.nn as nn
-import transformers
+
+try:
+    import transformers
+
+    has_hugging_face = True
+except ModuleNotFoundError:
+    has_hugging_face = False
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_kwarg_names
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -269,7 +275,9 @@ class VisionModelWithLoss(ModelWithLoss):
 class TextModelWithLoss(ModelWithLoss):
     @property
     def __is_hugging_face_model(self) -> bool:
-        return isinstance(self.model, transformers.modeling_utils.PreTrainedModel)
+        return has_hugging_face and isinstance(
+            self.model, transformers.modeling_utils.PreTrainedModel
+        )
 
     def get_input_feature(self, inputs):
         res = super().get_input_feature(inputs)
