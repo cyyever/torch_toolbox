@@ -39,7 +39,7 @@ class Trainer(ModelExecutor):
         self.append_hook(self.__batch_loss_logger)
         self.__keep_model_hook = KeepModelHook()
         self.append_hook(self.__keep_model_hook)
-        self.__debugger = None
+        self.__debugger: None | TrainerDebugger = None
 
     def set_device(self, device):
         super().set_device(device)
@@ -121,9 +121,6 @@ class Trainer(ModelExecutor):
         super().offload_from_memory()
         self.__keep_model_hook.offload_from_memory()
 
-    def load_to_memory(self):
-        super().load_to_memory()
-
     def add_skipped_epoch(self, epoch):
         key = "skipped_epoch"
         old_data = self.get_data(key, set())
@@ -137,7 +134,7 @@ class Trainer(ModelExecutor):
         save_epoch_model: bool = False,
         save_last_model: bool = False,
         **kwargs
-    ):
+    ) -> None:
         self.__keep_model_hook.save_best_model = save_best_model
         self.__keep_model_hook.save_epoch_model = save_epoch_model
         self.__keep_model_hook.save_last_model = save_last_model
@@ -166,9 +163,8 @@ class Trainer(ModelExecutor):
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
 
     def train(self, **kwargs):
-        self._prepare_execution(**kwargs)
-
-        with torch.cuda.stream(self.cuda_stream):
+        with (torch.cuda.device(self.device), torch.cuda.stream(self.cuda_stream)):
+            self._prepare_execution(**kwargs)
             try:
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
                     self._execute_epoch(

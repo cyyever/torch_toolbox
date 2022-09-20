@@ -1,3 +1,4 @@
+import functools
 import pickle
 from typing import Any
 
@@ -69,6 +70,12 @@ def recursive_tensor_op(data, fun, **kwargs) -> Any:
             for k, v in data.items():
                 data[k] = recursive_tensor_op(v, fun, **kwargs)
             return data
+        case functools.partial():
+            return functools.partial(
+                data.func,
+                *recursive_tensor_op(data.args, fun, **kwargs),
+                **recursive_tensor_op(data.keywords, fun, **kwargs)
+            )
     if has_hugging_face:
         match data:
             case transformers.tokenization_utils_base.BatchEncoding():
