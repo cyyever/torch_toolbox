@@ -6,7 +6,6 @@ import torch
 if torch.cuda.is_available():
     import pynvml
 
-import transformers
 from cyy_naive_lib.log import get_logger
 
 
@@ -27,32 +26,6 @@ def get_devices():
     if torch.cuda.is_available():
         return get_cuda_devices()
     return [torch.device("cpu")]
-
-
-def put_data_to_device(data, device, non_blocking=False):
-    match data:
-        case torch.Tensor():
-            return data.to(device, non_blocking=non_blocking)
-        case transformers.tokenization_utils_base.BatchEncoding():
-            data.data = put_data_to_device(data.data, device, non_blocking)
-            return data
-        case list():
-            for idx, element in enumerate(data):
-                data[idx] = put_data_to_device(
-                    element, device, non_blocking=non_blocking
-                )
-            return data
-        case tuple():
-            return tuple(
-                put_data_to_device(list(data), device, non_blocking=non_blocking)
-            )
-        case dict():
-            for k, v in data.items():
-                data[k] = put_data_to_device(v, device, non_blocking=non_blocking)
-            return data
-    return data
-
-
 
 
 class CudaDeviceRoundRobinAllocator:
