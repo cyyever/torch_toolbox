@@ -44,6 +44,7 @@ class DatasetCollection:
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
+        self.__old_transforms: dict[MachineLearningPhase, Transforms] = None
         self.__transforms_cached: bool | str = False
 
     @property
@@ -79,7 +80,9 @@ class DatasetCollection:
     def get_training_dataset(self) -> torch.utils.data.Dataset:
         return self.get_dataset(MachineLearningPhase.Training)
 
-    def get_transforms(self, phase) -> Transforms:
+    def get_transforms(self, phase, original: bool = False) -> Transforms:
+        if original and self.__old_transforms:
+            return self.__old_transforms[phase]
         return self.__transforms[phase]
 
     def get_original_dataset(
@@ -119,6 +122,8 @@ class DatasetCollection:
             self.__transforms[phase].append(key, transform)
 
     def cache_transforms(self, device=None) -> None:
+        assert not self.__transforms_cached
+        self.__old_transforms = {}
         for phase in MachineLearningPhase:
             if not self.has_dataset(phase=phase):
                 continue
@@ -128,6 +133,7 @@ class DatasetCollection:
                 dataset, device
             )
             self._datasets[phase] = DictDataset(transformed_dataset)
+            self.__old_transforms[phase] = self.__transforms[phase]
             self.__transforms[phase] = new_transforms
             if phase == MachineLearningPhase.Training:
                 get_logger().error("new training transforms are %s", new_transforms)
