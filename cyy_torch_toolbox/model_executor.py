@@ -326,6 +326,7 @@ class ModelExecutor(ModelExecutorBase):
                 ModelExecutorHookPoint.AFTER_FETCH_BATCH,
                 batch_index=batch_index,
             )
+            batch["batch_index"] = batch_index
             if in_training:
                 if (
                     self.hyper_parameter.batch_size != 1
@@ -342,7 +343,6 @@ class ModelExecutor(ModelExecutorBase):
 
             self.exec_hooks(
                 ModelExecutorHookPoint.BEFORE_BATCH,
-                batch_index=batch_index,
                 **batch,
             )
             kwargs = {
@@ -388,7 +388,6 @@ class ModelExecutor(ModelExecutorBase):
 
             self.exec_hooks(
                 ModelExecutorHookPoint.AFTER_BATCH,
-                batch_index=batch_index,
                 epoch=epoch,
                 result=result,
                 **batch,
@@ -409,7 +408,6 @@ class ModelExecutor(ModelExecutorBase):
                 self.exec_hooks(
                     ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
                     epoch=epoch,
-                    batch_index=batch_index,
                     step_skipped=step_skipped,
                     **batch,
                 )
