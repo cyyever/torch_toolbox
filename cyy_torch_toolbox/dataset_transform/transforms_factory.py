@@ -5,6 +5,7 @@ import torch
 
 try:
     import torchtext
+    import transformers
 
     from .tokenizer import SpacyTokenizer
     from .tokenizer_factory import (get_hugging_face_tokenizer,
@@ -15,7 +16,6 @@ except ModuleNotFoundError:
     has_torchtext = False
 
 import torchvision
-import transformers
 from cyy_torch_toolbox.dataset_util import VisionDatasetUtil
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
