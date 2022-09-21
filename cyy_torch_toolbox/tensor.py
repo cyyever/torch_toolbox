@@ -81,7 +81,7 @@ def recursive_tensor_op(data, fun, **kwargs) -> Any:
     return data
 
 
-def tensor_to(data, non_blocking=False, check_slowdown=True, **kwargs):
+def tensor_to(data, non_blocking=False, check_slowdown=False, **kwargs):
     def fun(data, check_slowdown, **kwargs):
         if check_slowdown:
             device = kwargs.get("device", None)
