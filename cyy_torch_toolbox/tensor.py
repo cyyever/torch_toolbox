@@ -62,15 +62,11 @@ def recursive_tensor_op(data, fun, **kwargs) -> Any:
         case torch.Tensor():
             return fun(data, **kwargs)
         case list():
-            for idx, element in enumerate(data):
-                data[idx] = recursive_tensor_op(element, fun, **kwargs)
-            return data
+            return [recursive_tensor_op(element, fun, **kwargs) for element in data]
         case tuple():
             return tuple(recursive_tensor_op(list(data), fun, **kwargs))
         case dict():
-            for k, v in data.items():
-                data[k] = recursive_tensor_op(v, fun, **kwargs)
-            return data
+            return {k: recursive_tensor_op(v, fun, **kwargs) for k, v in data.items()}
         case functools.partial():
             return functools.partial(
                 data.func,
@@ -85,14 +81,31 @@ def recursive_tensor_op(data, fun, **kwargs) -> Any:
     return data
 
 
-def tensor_to(data, non_blocking=False, check_pin=False, **kwargs):
-    def fun(data, check_pin, **kwargs):
-        if check_pin and str(data.device) == "cpu" and not data.is_pinned():
-            raise RuntimeError("tensor is not pinned")
+def tensor_to(data, non_blocking=False, check_slowdown=True, **kwargs):
+    def fun(data, check_slowdown, **kwargs):
+        if check_slowdown:
+            device = kwargs.get("device", None)
+            non_blocking = kwargs.get("non_blocking", False)
+            if (
+                str(data.device) == "cpu"
+                and device is not None
+                and device != data.device
+            ):
+                if not data.is_pinned():
+                    raise RuntimeError("tensor is not pinned")
+                if not non_blocking:
+                    raise RuntimeError(
+                        "cpu to device copy is blocking",
+                    )
+            else:
+                if device is not None and not kwargs.get("non_blocking", False):
+                    raise RuntimeError(
+                        "device to device copy is blocking",
+                    )
         return data.to(**kwargs)
 
     return recursive_tensor_op(
-        data, fun, non_blocking=non_blocking, check_pin=check_pin, **kwargs
+        data, fun, non_blocking=non_blocking, check_slowdown=check_slowdown, **kwargs
     )
 
 
