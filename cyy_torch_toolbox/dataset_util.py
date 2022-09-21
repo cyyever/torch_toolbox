@@ -6,7 +6,6 @@ from typing import Iterable
 import PIL
 import torch
 import torchvision
-from cyy_naive_lib.log import get_logger
 
 from .dataset import get_dataset_size, sub_dataset
 from .dataset_transform.transforms import Transforms
@@ -208,9 +207,9 @@ class DatasetSplitter(DatasetUtil):
             v = self.label_sample_dict[label]
             sample_size = int(len(v) * percents[idx])
             if sample_size == 0:
-                get_logger().warning("percentage is too small, use sample size 1")
-                sample_size = 1
-            sample_indices[label] = random.sample(v, k=sample_size)
+                sample_indices[label] = []
+            else:
+                sample_indices[label] = random.sample(v, k=sample_size)
         return sample_indices
 
     def iid_sample(self, percentage: float) -> dict:
