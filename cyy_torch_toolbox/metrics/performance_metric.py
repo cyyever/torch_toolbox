@@ -1,3 +1,4 @@
+import math
 import os
 import time
 
@@ -30,6 +31,7 @@ class PerformanceMetric(Metric):
         self._set_epoch_metric(epoch, "duration", time.time() - self.__epoch_time_point)
         loss_metric = self.__loss_metric.get_epoch_metric(epoch)
         for k, v in loss_metric.items():
+            assert not math.isnan(v)
             self._set_epoch_metric(epoch, k, v)
         if self.__accuracy_metric is not None:
             self._set_epoch_metric(
