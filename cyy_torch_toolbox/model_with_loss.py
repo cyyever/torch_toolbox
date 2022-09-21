@@ -103,9 +103,7 @@ class ModelWithLoss:
         cpu_inputs = inputs
         if device is not None:
             if self.need_cpu_inputs:
-                cpu_inputs = tensor_to(
-                    tensor_clone(inputs), device="cpu", non_blocking=non_blocking
-                )
+                cpu_inputs = tensor_to(inputs, device="cpu", non_blocking=non_blocking)
             if input_features is not None:
                 input_features = tensor_to(
                     input_features, device=device, non_blocking=non_blocking
