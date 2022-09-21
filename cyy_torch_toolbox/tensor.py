@@ -21,12 +21,13 @@ def cat_tensors_to_vector(tensors: list) -> torch.Tensor:
 def load_tensor_dict(shapes: dict, tensor: torch.Tensor) -> dict:
     bias = 0
     result = {}
+    total_size = tensor.numel()
     for name in sorted(shapes.keys()):
         shape = shapes[name]
         param_element_num = numpy.prod(shape)
-        result[name] = tensor.narrow(0, bias, param_element_num).view(*shape)
+        result[name] = tensor[bias: bias + param_element_num].view(*shape)
         bias += param_element_num
-    assert bias == tensor.shape[0]
+    assert bias == total_size
     return result
 
 
