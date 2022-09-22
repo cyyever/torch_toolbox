@@ -1,7 +1,6 @@
 from typing import Any, Callable, Optional, Type
 
 import torch
-import torch.nn as nn
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 from cyy_naive_lib.log import get_logger
 
@@ -99,7 +98,7 @@ class ModelUtil:
             if hasattr(module, "reset_running_stats"):
                 module.reset_running_stats()
 
-    def register_module(self, name: str, module) -> None:
+    def register_module(self, name: str, module: Any) -> None:
         if "." not in name:
             self.model.register_module(name, module)
         else:
@@ -117,7 +116,7 @@ class ModelUtil:
                 if hasattr(model, component):
                     delattr(model, component)
                 if as_parameter:
-                    model.register_parameter(component, nn.Parameter(value))
+                    model.register_parameter(component, torch.nn.Parameter(value))
                 else:
                     model.register_buffer(component, value)
 
@@ -200,13 +199,13 @@ class ModelUtil:
         return False
 
     def get_modules(self) -> list[tuple[str, Any]]:
-        def get_module_impl(model, prefix: str):
+        def get_module_impl(model: Any, prefix: str) -> list[tuple[str, Any]]:
             result = [(prefix, model)]
             for name, module in model._modules.items():
                 if module is None:
                     continue
                 module_prefix: str = prefix + ("." if prefix else "") + name
-                if isinstance(module, nn.Conv2d):
+                if isinstance(module, torch.nn.Conv2d):
                     result.append((module_prefix, module))
                     continue
                 sub_result = get_module_impl(module, module_prefix)
