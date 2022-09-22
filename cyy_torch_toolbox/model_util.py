@@ -88,20 +88,16 @@ class ModelUtil:
             raise e
 
     def disable_running_stats(self) -> None:
-        def impl(_, module, __):
-            # Those lines are copied from the official code
-            module.track_running_stats = False
-            module.register_buffer("running_mean", None)
-            module.register_buffer("running_var", None)
-            module.register_buffer("num_batches_tracked", None)
-
-        self.change_modules(f=impl, module_type=torch.nn.modules.batchnorm._NormBase)
+        for name, module in self.get_modules():
+            if hasattr(module, "reset_running_stats"):
+                module.reset_running_stats()
+            if hasattr(module, "track_running_stats"):
+                module.track_running_stats = False
 
     def reset_running_stats(self) -> None:
-        def impl(_, module, __):
-            module.reset_running_stats()
-
-        self.change_modules(f=impl, module_type=torch.nn.modules.batchnorm._NormBase)
+        for name, module in self.get_modules():
+            if hasattr(module, "reset_running_stats"):
+                module.reset_running_stats()
 
     def register_module(self, name: str, module) -> None:
         if "." not in name:
