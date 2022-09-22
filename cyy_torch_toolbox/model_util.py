@@ -110,24 +110,10 @@ class ModelUtil:
 
         self.change_modules(f=impl, module_type=torch.nn.modules.batchnorm._NormBase)
 
-    # def disable_running_stats(self) -> None:
-    #      for name, module in self.get_modules():
-    #          if hasattr(module, "reset_running_stats"):
-    #              module.reset_running_stats()
-    #          if hasattr(module, "track_running_stats"):
-    #              module.track_running_stats = False
-
-    # def reset_running_stats(self) -> None:
-    #     for name, module in self.get_modules():
-    #         if hasattr(module, "reset_running_stats"):
-    #             module.reset_running_stats()
-
     def reset_running_stats(self) -> None:
-        def impl(_, module, __):
-            module.reset_running_stats()
-            self.change_modules(
-                f=impl, module_type=torch.nn.modules.batchnorm._NormBase
-            )
+        for name, module in self.get_modules():
+            if hasattr(module, "reset_running_stats"):
+                module.reset_running_stats()
 
     def register_module(self, name: str, module: Any) -> None:
         if "." not in name:
