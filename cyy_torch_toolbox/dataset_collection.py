@@ -136,7 +136,7 @@ class DatasetCollection:
             self.__old_transforms[phase] = self.__transforms[phase]
             self.__transforms[phase] = new_transforms
             if phase == MachineLearningPhase.Training:
-                get_logger().error("new training transforms are %s", new_transforms)
+                get_logger().debug("new training transforms are %s", new_transforms)
         if device is not None:
             self.__transforms_cached = device
         else:
