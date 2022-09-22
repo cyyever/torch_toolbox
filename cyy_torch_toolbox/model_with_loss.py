@@ -100,7 +100,7 @@ class ModelWithLoss:
         if len(targets.shape) > 1:
             targets = targets.view(-1).long()
 
-        cpu_inputs = inputs
+        cpu_inputs = None
         if device is not None:
             if self.need_cpu_inputs:
                 cpu_inputs = tensor_to(inputs, device="cpu", non_blocking=non_blocking)
