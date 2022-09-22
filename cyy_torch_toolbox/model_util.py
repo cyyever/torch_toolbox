@@ -27,7 +27,7 @@ class ModelUtil:
     def load_parameter_list(
         self,
         parameter_list: torch.Tensor,
-        check_parameter: bool = True,
+        check_parameter: bool = False,
         as_parameter: bool = True,
         parameter_shapes: None | dict = None,
     ) -> None:
@@ -36,20 +36,26 @@ class ModelUtil:
         assert parameter_shapes
         parameter_dict = load_tensor_dict(parameter_shapes, parameter_list)
         self.load_parameter_dict(
-            parameter_dict, check_parameter=check_parameter, as_parameter=as_parameter
+            parameter_dict,
+            check_parameter=check_parameter,
+            as_parameter=as_parameter,
+            update_parameter_shapes=False,
         )
 
     def load_parameter_dict(
         self,
         parameter_dict: dict,
-        check_parameter: bool = True,
+        check_parameter: bool = False,
         as_parameter: bool = True,
+        update_parameter_shapes: bool = True,
     ) -> None:
         assert parameter_dict
         for name, parameter in parameter_dict.items():
             if check_parameter:
                 assert self.has_attr(name)
             self.set_attr(name, parameter, as_parameter=as_parameter)
+        if update_parameter_shapes:
+            self.__parameter_shapes = None
 
     def get_buffer_dict(self) -> dict:
         return dict(self.model.named_buffers())
@@ -57,6 +63,15 @@ class ModelUtil:
     def load_buffer_dict(self, buffer_dict: dict) -> None:
         for name, parameter in buffer_dict.items():
             self.set_attr(name, parameter, as_parameter=False)
+
+    def clear_parameters(self) -> None:
+        def clear(module) -> None:
+            module._parameters = {
+                k: v for k, v in module._parameters.items() if v is None
+            }
+
+        for _, module in self.get_modules():
+            clear(module)
 
     def get_parameter_dict(self, detach: bool = True) -> dict:
         res: dict = {}
@@ -113,8 +128,6 @@ class ModelUtil:
             if i + 1 != len(components):
                 model = getattr(model, component)
             else:
-                if hasattr(model, component):
-                    delattr(model, component)
                 if as_parameter:
                     model.register_parameter(component, torch.nn.Parameter(value))
                 else:
