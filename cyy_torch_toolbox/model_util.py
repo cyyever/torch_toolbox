@@ -128,6 +128,8 @@ class ModelUtil:
             if i + 1 != len(components):
                 model = getattr(model, component)
             else:
+                if hasattr(model, component):
+                    delattr(model, component)
                 if as_parameter:
                     model.register_parameter(component, torch.nn.Parameter(value))
                 else:
