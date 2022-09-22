@@ -150,7 +150,7 @@ class ModelExecutor(ModelExecutorBase):
 
     def set_amp(self, enabled=True):
         if self.__amp_hook is not None:
-            self.remove_hook(self.__amp_hook)
+            self.remove_hook_obj(self.__amp_hook)
             self.__amp_hook = None
         if enabled:
             self.__amp_hook = AMP()
