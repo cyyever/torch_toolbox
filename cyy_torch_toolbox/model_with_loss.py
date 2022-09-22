@@ -20,7 +20,7 @@ from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 from cyy_torch_toolbox.model_transform.checkpointed_model import \
     get_checkpointed_model
 from cyy_torch_toolbox.model_util import ModelUtil
-from cyy_torch_toolbox.tensor import tensor_clone, tensor_to
+from cyy_torch_toolbox.tensor import tensor_to
 
 
 class ModelWithLoss:
@@ -166,10 +166,17 @@ class ModelWithLoss:
     def to(self, device, non_blocking=False):
         try:
             param = next(self.model.parameters())
+            if param.device != device:
+                self.model.to(device=device, non_blocking=non_blocking)
+                return
         except StopIteration:
-            param = next(self.model.buffers())
-        if param.device != device:
-            self.model.to(device=device, non_blocking=non_blocking)
+            try:
+                buffer = next(self.model.buffers())
+                if buffer.device != device:
+                    self.model.to(device=device, non_blocking=non_blocking)
+                    return
+            except StopIteration:
+                pass
 
     def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
         layers = [
