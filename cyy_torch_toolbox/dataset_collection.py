@@ -44,8 +44,7 @@ class DatasetCollection:
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
-        self.__old_transforms: dict[MachineLearningPhase, Transforms] = None
-        self.__transforms_cached: bool | str = False
+        self.__old_transforms: dict[MachineLearningPhase, Transforms] = {}
 
     @property
     def dataset_type(self):
@@ -81,7 +80,7 @@ class DatasetCollection:
         return self.get_dataset(MachineLearningPhase.Training)
 
     def get_transforms(self, phase, original: bool = False) -> Transforms:
-        if original and self.__old_transforms:
+        if original and phase in self.__old_transforms:
             return self.__old_transforms[phase]
         return self.__transforms[phase]
 
@@ -121,30 +120,22 @@ class DatasetCollection:
                 continue
             self.__transforms[phase].append(key, transform)
 
-    def cache_transforms(self, device=None) -> None:
-        assert not self.__transforms_cached
-        self.__old_transforms = {}
-        for phase in MachineLearningPhase:
-            if not self.has_dataset(phase=phase):
-                continue
-            dataset = self.get_dataset(phase=phase)
-            transforms = self.get_transforms(phase=phase)
-            transformed_dataset, new_transforms = transforms.cache_transforms(
-                dataset, device
-            )
-            self._datasets[phase] = DictDataset(transformed_dataset)
-            self.__old_transforms[phase] = self.__transforms[phase]
-            self.__transforms[phase] = new_transforms
-            if phase == MachineLearningPhase.Training:
-                get_logger().debug("new training transforms are %s", new_transforms)
-        if device is not None:
-            self.__transforms_cached = device
-        else:
-            self.__transforms_cached = True
+    def transforms_cached(self, phase):
+        return phase in self.__old_transforms
 
-    @property
-    def transforms_cached(self) -> str | bool:
-        return self.__transforms_cached
+    def cache_transforms(self, phase: MachineLearningPhase, device=None) -> None:
+        if self.transforms_cached(phase=phase):
+            return
+        assert self.has_dataset(phase=phase)
+        dataset = self.get_dataset(phase=phase)
+        transforms = self.get_transforms(phase=phase)
+        transformed_dataset, new_transforms = transforms.cache_transforms(
+            dataset, device
+        )
+        self._datasets[phase] = DictDataset(transformed_dataset)
+        self.__old_transforms[phase] = self.__transforms[phase]
+        self.__transforms[phase] = new_transforms
+        get_logger().debug("new training transforms are %s", new_transforms)
 
     @property
     def name(self) -> str:

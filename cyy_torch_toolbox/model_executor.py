@@ -119,7 +119,6 @@ class ModelExecutor(ModelExecutorBase):
                 device=self.device,
                 cache_transforms=self.cache_transforms,
             )
-            self.cache_transforms = None
         return self.__dataloader
 
     @property
@@ -248,9 +247,9 @@ class ModelExecutor(ModelExecutorBase):
     def offload_from_gpu(self):
         self._wait_stream()
         self._model_with_loss.offload_from_gpu()
-        if self.__dataloader is not None:
-            del self.__dataloader
-            self.__dataloader = None
+        # if self.__dataloader is not None:
+        #     del self.__dataloader
+        #     self.__dataloader = None
         torch.cuda.empty_cache()
 
     def offload_from_memory(self):

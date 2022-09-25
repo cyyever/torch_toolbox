@@ -151,11 +151,9 @@ def get_dataloader(
 ):
     match cache_transforms:
         case "cpu" | True:
-            assert not dc.transforms_cached
-            dc.cache_transforms()
+            dc.cache_transforms(phase=phase)
         case "cuda":
-            assert not dc.transforms_cached
-            dc.cache_transforms(device=device)
+            dc.cache_transforms(phase=phase, device=device)
 
     dataset = dc.get_dataset(phase)
     original_dataset = dc.get_original_dataset(phase)
@@ -195,7 +193,7 @@ def get_dataloader(
     pin_memory_device = ""
     if pin_memory:
         pin_memory_device = str(device)
-    if not dc.transforms_cached or "USE_PROCESS_DATALOADER" in os.environ:
+    if not dc.transforms_cached(phase=phase) or "USE_PROCESS_DATALOADER" in os.environ:
         num_workers = 2
         prefetch_factor = 1
     else:
