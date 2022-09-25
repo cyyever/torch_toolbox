@@ -139,11 +139,6 @@ class Transforms:
             "inputs": inputs,
             "targets": targets,
         } | other_info
-        # if other_info:
-        #     other_info = default_collate(other_info)
-        #     assert isinstance(other_info, dict)
-        #     return {"size": batch_size, "data": (inputs, targets, other_info)}
-        # return {"size": batch_size, "data": (inputs, targets)}
 
     def cache_transforms(self, dataset, device=None) -> tuple[dict, Any]:
         if device is not None:
