@@ -4,6 +4,7 @@ import os
 import uuid
 from dataclasses import dataclass
 
+import torch
 from cyy_naive_lib.log import get_logger
 from omegaconf import OmegaConf
 
@@ -32,9 +33,14 @@ class DefaultConfig:
         self.log_level = None
         self.cache_transforms = None
         self.use_amp = True
+        self.benchmark_cudnn = True
 
     def load_config(self, conf, check_config: bool = True) -> dict:
-        return DefaultConfig.__load_config(self, conf, check_config)
+        res = DefaultConfig.__load_config(self, conf, check_config)
+        if self.benchmark_cudnn:
+            get_logger().info("benchmark cudnn")
+            torch.backends.cudnn.benchmark = True
+        return res
 
     @classmethod
     def __load_config(cls, obj, conf, check_config: bool = True) -> dict:
