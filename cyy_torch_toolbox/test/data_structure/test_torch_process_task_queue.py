@@ -3,9 +3,8 @@ from cyy_torch_toolbox.data_structure.torch_process_task_queue import \
     TorchProcessTaskQueue
 
 
-def hello(task, args):
-    assert not task
-    assert args
+def hello(task, **kwargs):
+    assert task == tuple()
     return {"1": torch.Tensor([1, 2, 3])}
 
 
