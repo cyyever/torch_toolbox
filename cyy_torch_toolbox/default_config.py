@@ -36,11 +36,7 @@ class DefaultConfig:
         self.benchmark_cudnn = True
 
     def load_config(self, conf, check_config: bool = True) -> dict:
-        res = DefaultConfig.__load_config(self, conf, check_config)
-        if self.benchmark_cudnn:
-            get_logger().info("benchmark cudnn")
-            torch.backends.cudnn.benchmark = True
-        return res
+        return DefaultConfig.__load_config(self, conf, check_config)
 
     @classmethod
     def __load_config(cls, obj, conf, check_config: bool = True) -> dict:
@@ -133,6 +129,9 @@ class DefaultConfig:
     def apply_global_config(self):
         if self.log_level is not None:
             get_logger().setLevel(self.log_level)
+        if self.benchmark_cudnn:
+            get_logger().info("benchmark cudnn")
+        torch.backends.cudnn.benchmark = self.benchmark_cudnn
         self.__set_reproducible_env()
 
     def __set_reproducible_env(self):

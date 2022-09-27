@@ -61,7 +61,7 @@ class TorchProcessTaskQueue(TaskQueue):
         super().add_task(task, **kwargs)
 
     def put_result(self, result, **kwargs):
-        super().put_result(self.__process_tensor(result), **kwargs)
+        super().put_result(result=self.__process_tensor(result), **kwargs)
 
     def __process_tensor(self, data):
         if self.__send_tensor_in_cpu:
@@ -71,7 +71,7 @@ class TorchProcessTaskQueue(TaskQueue):
         return data
 
     def put_data(self, data, **kwargs):
-        return super().put_data(self.__process_tensor(data), **kwargs)
+        return super().put_data(data=self.__process_tensor(data), **kwargs)
 
     def get_result(self, **kwargs):
         result = super().get_result(**kwargs)
