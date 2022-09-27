@@ -15,7 +15,12 @@ except ModuleNotFoundError:
 
 
 def cat_tensors_to_vector(tensors: list) -> torch.Tensor:
-    return nn.utils.parameters_to_vector([t.reshape(-1) for t in tensors])
+    return nn.utils.parameters_to_vector([t.view(-1) for t in tensors])
+
+
+class __RecursiveCheckPoint:
+    def __init__(self, data):
+        self.data = data
 
 
 def load_tensor_dict(shapes: dict, tensor: torch.Tensor) -> dict:
@@ -57,26 +62,32 @@ def get_tensor_serialization_size(data):
     return len(pickle.dumps(data))
 
 
-def recursive_tensor_op(data, fun, **kwargs) -> Any:
+def __recursive_tensor_op(data, fun, **kwargs) -> Any:
     match data:
+        case __RecursiveCheckPoint():
+            return fun(data.data, **kwargs)
         case torch.Tensor():
             return fun(data, **kwargs)
         case list():
-            return [recursive_tensor_op(element, fun, **kwargs) for element in data]
+            return [__recursive_tensor_op(element, fun, **kwargs) for element in data]
         case tuple():
-            return tuple(recursive_tensor_op(list(data), fun, **kwargs))
+            return tuple(__recursive_tensor_op(list(data), fun, **kwargs))
         case dict():
-            return {k: recursive_tensor_op(v, fun, **kwargs) for k, v in data.items()}
+            # we need to check in key order because that order may be useful
+            return {
+                k: __recursive_tensor_op(data[k], fun, **kwargs)
+                for k in sorted(data.keys())
+            }
         case functools.partial():
             return functools.partial(
                 data.func,
-                *recursive_tensor_op(data.args, fun, **kwargs),
-                **recursive_tensor_op(data.keywords, fun, **kwargs)
+                *__recursive_tensor_op(data.args, fun, **kwargs),
+                **__recursive_tensor_op(data.keywords, fun, **kwargs)
             )
     if has_hugging_face:
         match data:
             case transformers.tokenization_utils_base.BatchEncoding():
-                data.data = recursive_tensor_op(data.data, fun, **kwargs)
+                data.data = __recursive_tensor_op(data.data, fun, **kwargs)
                 return data
     return data
 
@@ -104,7 +115,7 @@ def tensor_to(data, non_blocking=False, check_slowdown=False, **kwargs):
                     )
         return data.to(**kwargs)
 
-    return recursive_tensor_op(
+    return __recursive_tensor_op(
         data, fun, non_blocking=non_blocking, check_slowdown=check_slowdown, **kwargs
     )
 
@@ -116,4 +127,31 @@ def tensor_clone(data, detach=True):
             new_data = new_data.detach()
         return new_data
 
-    return recursive_tensor_op(data, fun, detach=detach)
+    return __recursive_tensor_op(data, fun, detach=detach)
+
+
+def assemble_tensors(data: Any) -> tuple[torch.Tensor, Any]:
+    single_tensor = []
+    offset = 0
+
+    def fun(data: Any) -> __RecursiveCheckPoint:
+        nonlocal offset
+        shape = data.shape
+        old_offset = offset
+        single_tensor.append(data.view(-1))
+        offset += data.numel()
+        return __RecursiveCheckPoint(data=(shape, old_offset))
+
+    res = __recursive_tensor_op(data, fun)
+    return cat_tensors_to_vector(single_tensor), res
+
+
+def disassemble_tensor(single_tensor, data: Any, clone=True) -> Any:
+    def fun(data) -> torch.Tensor:
+        shape, offset = data
+        tensor = single_tensor[offset: offset + numpy.prod(shape)].view(*shape)
+        if clone:
+            tensor = tensor.clone()
+        return tensor
+
+    return __recursive_tensor_op(data, fun)
