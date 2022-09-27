@@ -53,19 +53,18 @@ class TorchProcessTaskQueue(TaskQueue):
         return state
 
     def add_task(self, task, **kwargs):
-        if self.__move_data_in_cpu:
-            task = tensor_to(task, device=get_cpu_device())
-        super().add_task(task, **kwargs)
+        super().add_task(self.__process_tensor(task), **kwargs)
 
     def put_result(self, result, **kwargs):
-        if self.__move_data_in_cpu:
-            result = tensor_to(result, device=get_cpu_device())
-        super().put_result(result, **kwargs)
+        super().put_result(self.__process_tensor(result), **kwargs)
 
-    def put_data(self, result, **kwargs):
+    def __process_tensor(self, data):
         if self.__move_data_in_cpu:
-            result = tensor_to(result, device=get_cpu_device())
-        super().put_data(result, **kwargs)
+            data = tensor_to(data, device=get_cpu_device())
+        return data
+
+    def put_data(self, data, **kwargs):
+        super().put_data(self.__process_tensor(data), **kwargs)
 
     def _get_extra_task_arguments(self, worker_id):
         return super()._get_extra_task_arguments(worker_id) | {
