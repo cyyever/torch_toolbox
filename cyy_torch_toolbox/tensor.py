@@ -143,7 +143,12 @@ def assemble_tensors(data: Any) -> tuple[torch.Tensor, Any]:
         return __RecursiveCheckPoint(data=(shape, old_offset))
 
     res = __recursive_tensor_op(data, fun)
-    return cat_tensors_to_vector(single_tensor), res
+    if offset == 0:
+        assert not single_tensor
+    if single_tensor:
+        assert offset != 0
+        return cat_tensors_to_vector(single_tensor), res
+    return None, res
 
 
 def disassemble_tensor(single_tensor, data: Any, clone=True) -> Any:
