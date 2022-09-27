@@ -44,7 +44,7 @@ class CudaDeviceRoundRobinAllocator:
 def get_device_memory_info() -> dict:
     result = {}
     pynvml.nvmlInit()
-    for device_idx in range(pynvml.nvmlDeviceGetCount()):
+    for device_idx in range(torch.cuda.device_count()):
         handle = pynvml.nvmlDeviceGetHandleByIndex(device_idx)
         info = pynvml.nvmlDeviceGetMemoryInfo(handle)
         cache_size = torch.cuda.memory_reserved(device=device_idx)
