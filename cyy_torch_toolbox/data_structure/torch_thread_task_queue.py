@@ -7,7 +7,7 @@ class TorchThreadTaskQueue(ThreadTaskQueue):
         self.__devices = get_devices()
         super().__init__(*args, **kwargs)
 
-    def _get_extra_task_arguments(self, worker_id):
-        return super()._get_extra_task_arguments(worker_id) | {
+    def _get_task_kwargs(self, worker_id) -> dict:
+        return super()._get_task_kwargs(worker_id) | {
             "device": self.__devices[worker_id % len(self.__devices)]
         }
