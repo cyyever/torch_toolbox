@@ -1,13 +1,47 @@
 #!/usr/bin/env python3
 import os
+import time
 from typing import Callable
 
+import pynvml
 import torch.multiprocessing
 from cyy_naive_lib.data_structure.task_queue import TaskQueue
+from cyy_naive_lib.time_counter import TimeCounter
 from cyy_torch_toolbox.device import (CudaDeviceGreedyAllocator,
-                                      get_cpu_device, get_devices)
+                                      get_cpu_device, get_device_memory_info,
+                                      get_devices)
 from cyy_torch_toolbox.tensor import (assemble_tensors, disassemble_tensor,
                                       tensor_to)
+
+
+class CudaBatchPolicy:
+    def __init__(self):
+        self.__processing_times = {}
+        self.__time_counter = TimeCounter()
+        # pynvml.nvmlInit()
+        # for device_idx in pynvml.nvmlDeviceGetCount():
+        #     h = pynvml.nvmlDeviceGetHandleByIndex(device_idx)
+        #     info = pynvml.nvmlDeviceGetMemoryInfo(h)
+        #     self.__free_memory_dict[device] = info.free + torch.cuda.memory_reserved(
+        #         device=device
+        #     )
+        # pynvml.nvmlShutdown()
+
+    def start_batch(self, batch_size, **kwargs):
+        self.__time_counter.reset_start_time()
+
+    def adjust_batch_size(self, batch_size, real_batch_size, **kwargs):
+        self.__processing_times[real_batch_size] = (
+            self.__time_counter.elapsed_milliseconds() / real_batch_size
+        )
+        if real_batch_size + 1 not in self.__processing_times:
+            return real_batch_size + 1
+        if (
+            self.__processing_times[real_batch_size + 1]
+            < self.__processing_times[real_batch_size]
+        ):
+            return real_batch_size + 1
+        return real_batch_size
 
 
 class TorchProcessTaskQueue(TaskQueue):

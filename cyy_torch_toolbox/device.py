@@ -41,49 +41,35 @@ class CudaDeviceRoundRobinAllocator:
         return device
 
 
+def get_device_memory_info() -> dict:
+    result = {}
+    pynvml.nvmlInit()
+    for device_idx in range(pynvml.nvmlDeviceGetCount()):
+        handle = pynvml.nvmlDeviceGetHandleByIndex(device_idx)
+        info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+        cache_size = torch.cuda.memory_reserved(device=device_idx)
+        info.used -= cache_size
+        info.free += cache_size
+        result[device_idx] = info
+    pynvml.nvmlShutdown()
+    return result
+
+
 class CudaDeviceGreedyAllocator:
-    def __init__(self):
-        self.__devices = get_cuda_devices()
-        self.__free_memory_dict: dict = {}
-        for device in self.__devices:
-            self.__free_memory_dict[device] = 0
-
-    def __refresh_memory_info(self):
-        torch.cuda.empty_cache()
-        pynvml.nvmlInit()
-        for device in self.__free_memory_dict:
-            h = pynvml.nvmlDeviceGetHandleByIndex(device.index)
-            info = pynvml.nvmlDeviceGetMemoryInfo(h)
-            self.__free_memory_dict[device] = info.free + torch.cuda.memory_reserved(
-                device=device
-            )
-        pynvml.nvmlShutdown()
-
     def get_devices(self, max_needed_bytes):
+        memory_info = get_device_memory_info()
         return [
-            device
-            for device, memory in self.__sort_devices()
-            if max_needed_bytes is None or memory >= max_needed_bytes
+            torch.device("cuda:" + str(device_id))
+            for device_id in sorted(memory_info.keys())
+            if max_needed_bytes is None
+            or memory_info[device_id].free >= max_needed_bytes
         ]
 
     def get_device(self, max_needed_bytes=None):
         devices = self.get_devices(max_needed_bytes=max_needed_bytes)
         if not devices:
             return None
-        # cuda_device = torch.cuda.current_device()
-        # if cuda_device >= 0:
-        #     if cuda_device in {d.index for d in devices}:
-        #         return torch.device(f"cuda:{cuda_device}")
-        # get_logger().debug(
-        #     "current_device %s choose device %s", cuda_device, devices[0]
-        # )
         return devices[0]
-
-    def __sort_devices(self) -> list:
-        self.__refresh_memory_info()
-        return sorted(
-            self.__free_memory_dict.items(), key=lambda item: item[1], reverse=True
-        )
 
 
 def get_device(max_needed_bytes=None, use_cuda_only=False):
