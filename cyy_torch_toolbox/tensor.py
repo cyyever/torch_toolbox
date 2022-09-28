@@ -73,11 +73,12 @@ def __recursive_tensor_op(data, fun, **kwargs) -> Any:
         case tuple():
             return tuple(__recursive_tensor_op(list(data), fun, **kwargs))
         case dict():
-            # we need to check in key order because that order may be useful
-            return {
-                k: __recursive_tensor_op(data[k], fun, **kwargs)
-                for k in sorted(data.keys())
-            }
+            try:
+                # we need to check in key order because that order may be useful
+                keys = sorted(data.keys())
+            except BaseException:
+                keys = list(data.keys())
+            return {k: __recursive_tensor_op(data[k], fun, **kwargs) for k in keys}
         case functools.partial():
             return functools.partial(
                 data.func,
