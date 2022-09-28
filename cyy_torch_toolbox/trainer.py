@@ -1,3 +1,5 @@
+import contextlib
+
 import torch
 from cyy_naive_lib.log import get_logger
 
@@ -163,7 +165,12 @@ class Trainer(ModelExecutor):
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
 
     def train(self, **kwargs):
-        with (torch.cuda.device(self.device), torch.cuda.stream(self.cuda_stream)):
+        with (
+            torch.cuda.device(self.device)
+            if self.cuda_stream is not None
+            else contextlib.nullcontext(),
+            torch.cuda.stream(self.cuda_stream),
+        ):
             self._prepare_execution(**kwargs)
             try:
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
