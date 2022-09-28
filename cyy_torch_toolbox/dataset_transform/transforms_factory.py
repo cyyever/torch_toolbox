@@ -63,6 +63,10 @@ def replace_str(str, old, new):
     return str.replace(old, new)
 
 
+def minus_one(target, index):
+    return target - 1
+
+
 def add_transforms(dc, dataset_kwargs, model_config):
     if dc.dataset_type == DatasetType.Vision:
         dc.append_transform(torchvision.transforms.ToTensor(), key=TransformType.Input)
@@ -113,6 +117,10 @@ def add_transforms(dc, dataset_kwargs, model_config):
             dc.append_transform(
                 functools.partial(replace_str, old="<br />", new=""),
                 key=TransformType.InputText,
+            )
+            dc.append_transform(
+                minus_one,
+                key=TransformType.Target,
             )
 
         text_transforms = dataset_kwargs.get("text_transforms", {})
