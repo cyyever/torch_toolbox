@@ -89,9 +89,6 @@ class TorchProcessTaskQueue(TaskQueue):
         state["_TorchProcessTaskQueue__manager"] = None
         return state
 
-    def put_result(self, result, **kwargs):
-        super().put_result(result=self.__process_tensor(result), **kwargs)
-
     def __process_tensor(self, data):
         if self.__send_tensor_in_cpu:
             data = tensor_to(data, device=get_cpu_device())
