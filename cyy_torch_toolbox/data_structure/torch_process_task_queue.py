@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 import os
-import time
 from typing import Callable
 
-import pynvml
+import torch
 import torch.multiprocessing
 from cyy_naive_lib.data_structure.task_queue import TaskQueue
 from cyy_naive_lib.time_counter import TimeCounter
@@ -18,30 +17,28 @@ class CudaBatchPolicy:
     def __init__(self):
         self.__processing_times = {}
         self.__time_counter = TimeCounter()
-        # pynvml.nvmlInit()
-        # for device_idx in pynvml.nvmlDeviceGetCount():
-        #     h = pynvml.nvmlDeviceGetHandleByIndex(device_idx)
-        #     info = pynvml.nvmlDeviceGetMemoryInfo(h)
-        #     self.__free_memory_dict[device] = info.free + torch.cuda.memory_reserved(
-        #         device=device
-        #     )
-        # pynvml.nvmlShutdown()
 
-    def start_batch(self, batch_size, **kwargs):
+    def start_batch(self, **kwargs):
         self.__time_counter.reset_start_time()
 
-    def adjust_batch_size(self, batch_size, real_batch_size, **kwargs):
-        self.__processing_times[real_batch_size] = (
-            self.__time_counter.elapsed_milliseconds() / real_batch_size
+    def adjust_batch_size(self, batch_size, **kwargs):
+        self.__processing_times[batch_size] = (
+            self.__time_counter.elapsed_milliseconds() / batch_size
         )
-        if real_batch_size + 1 not in self.__processing_times:
-            return real_batch_size + 1
         if (
-            self.__processing_times[real_batch_size + 1]
-            < self.__processing_times[real_batch_size]
+            batch_size + 1 not in self.__processing_times
+            or self.__processing_times[batch_size + 1]
+            < self.__processing_times[batch_size]
         ):
-            return real_batch_size + 1
-        return real_batch_size
+            memory_info = get_device_memory_info()
+
+            if (
+                memory_info[torch.cuda.current_device()].free
+                / memory_info[torch.cuda.current_device()].total
+                > 0.2
+            ):
+                return batch_size + 1
+        return batch_size
 
 
 class TorchProcessTaskQueue(TaskQueue):
@@ -56,6 +53,7 @@ class TorchProcessTaskQueue(TaskQueue):
         max_needed_cuda_bytes=None,
         use_manager: bool = True,
         assemble_tensor: bool = False,
+        **kwargs
     ):
         self.__devices = get_devices()
         self.use_manager = use_manager
@@ -72,7 +70,7 @@ class TorchProcessTaskQueue(TaskQueue):
         if assemble_tensor:
             assert send_tensor_in_cpu
         self.__assemble_tensor = assemble_tensor
-        super().__init__(worker_fun=worker_fun, worker_num=worker_num)
+        super().__init__(worker_fun=worker_fun, worker_num=worker_num, **kwargs)
 
     def get_ctx(self):
         if TorchProcessTaskQueue.ctx is None:
@@ -90,9 +88,6 @@ class TorchProcessTaskQueue(TaskQueue):
         state = super().__getstate__()
         state["_TorchProcessTaskQueue__manager"] = None
         return state
-
-    def add_task(self, task, **kwargs):
-        super().add_task(task, **kwargs)
 
     def put_result(self, result, **kwargs):
         super().put_result(result=self.__process_tensor(result), **kwargs)
@@ -119,7 +114,11 @@ class TorchProcessTaskQueue(TaskQueue):
             data = disassemble_tensor(*data)
         return data
 
-    def _get_task_kwargs(self, worker_id):
-        return super()._get_task_kwargs(worker_id) | {
+    def _get_task_kwargs(self, worker_id) -> dict:
+        kwargs = super()._get_task_kwargs(worker_id) | {
             "device": self.__devices[worker_id % len(self.__devices)]
         }
+        if self._batch_process:
+            if torch.cuda.is_available():
+                kwargs["batch_policy"] = CudaBatchPolicy()
+        return kwargs
