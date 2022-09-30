@@ -6,7 +6,30 @@ import torch
 if torch.cuda.is_available():
     import pynvml
 
+import os
+
 from cyy_naive_lib.log import get_logger
+
+
+def get_device_memory_info() -> dict:
+    result = {}
+    pynvml.nvmlInit()
+    for device_idx in range(torch.cuda.device_count()):
+        handle = pynvml.nvmlDeviceGetHandleByIndex(device_idx)
+        mode = pynvml.nvmlDeviceGetComputeMode(handle)
+        if mode == pynvml.NVML_COMPUTEMODE_EXCLUSIVE_PROCESS:
+            processes = pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
+            if processes:
+                continue
+                # if processes[0].pid != os.getpid():
+                #     continue
+        info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+        cache_size = torch.cuda.memory_reserved(device=device_idx)
+        info.used -= cache_size
+        info.free += cache_size
+        result[device_idx] = info
+    pynvml.nvmlShutdown()
+    return result
 
 
 def get_cpu_device():
@@ -16,10 +39,7 @@ def get_cpu_device():
 def get_cuda_devices():
     device_count = torch.cuda.device_count()
     assert device_count > 0
-    devices = []
-    for device_id in range(device_count):
-        devices.append(torch.device("cuda:" + str(device_id)))
-    return devices
+    return [torch.device(f"cuda:{device_id}") for device_id in get_device_memory_info()]
 
 
 def get_devices():
@@ -39,20 +59,6 @@ class CudaDeviceRoundRobinAllocator:
         if self.__idx >= len(self.__devices):
             self.__idx = 0
         return device
-
-
-def get_device_memory_info() -> dict:
-    result = {}
-    pynvml.nvmlInit()
-    for device_idx in range(torch.cuda.device_count()):
-        handle = pynvml.nvmlDeviceGetHandleByIndex(device_idx)
-        info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-        cache_size = torch.cuda.memory_reserved(device=device_idx)
-        info.used -= cache_size
-        info.free += cache_size
-        result[device_idx] = info
-    pynvml.nvmlShutdown()
-    return result
 
 
 class CudaDeviceGreedyAllocator:
