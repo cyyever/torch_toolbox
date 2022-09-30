@@ -1,4 +1,5 @@
 torch
+nvidia-ml-py
 hydra-core
 omegaconf
 torchtext
