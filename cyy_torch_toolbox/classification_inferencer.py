@@ -13,7 +13,7 @@ class ClassificationInferencer(Inferencer):
     def prob_metric(self) -> ProbabilityMetric:
         return self.__prob_metric
 
-    def inference(self, **kwargs):
+    def inference(self, **kwargs) -> bool:
         sample_prob = kwargs.get("sample_prob", False)
         if sample_prob:
             if self.__prob_metric is None:
@@ -22,7 +22,7 @@ class ClassificationInferencer(Inferencer):
         else:
             if self.__prob_metric is not None:
                 self.disable_hook(self.__prob_metric)
-        super().inference(**kwargs)
+        return super().inference(**kwargs)
 
 
 # class DetectionInferencer(Inferencer):
