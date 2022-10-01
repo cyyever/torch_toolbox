@@ -14,7 +14,7 @@ def test_process_task_queue():
     )
     queue.start()
     queue.add_task(())
-    res = queue.get_result()
+    res = queue.get_data()
     assert len(res) == 1
     assert "1" in res
     assert res["1"].tolist() == [1, 2, 3]
