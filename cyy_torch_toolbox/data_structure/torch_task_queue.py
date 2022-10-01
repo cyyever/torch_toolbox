@@ -17,10 +17,12 @@ class CudaBatchPolicy:
     def start_batch(self, **kwargs):
         self.__time_counter.reset_start_time()
 
-    def adjust_batch_size(self, batch_size, **kwargs):
+    def end_batch(self, batch_size, **kwargs):
         self.__processing_times[batch_size] = (
             self.__time_counter.elapsed_milliseconds() / batch_size
         )
+
+    def adjust_batch_size(self, batch_size, **kwargs):
         if (
             batch_size + 1 not in self.__processing_times
             or self.__processing_times[batch_size + 1]
