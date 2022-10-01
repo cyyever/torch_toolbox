@@ -6,12 +6,12 @@ import torch
 if torch.cuda.is_available():
     import pynvml
 
-import os
+# import os
 
 from cyy_naive_lib.log import get_logger
 
 
-def get_device_memory_info() -> dict:
+def get_device_memory_info(consider_cache: bool = False) -> dict:
     result = {}
     pynvml.nvmlInit()
     for device_idx in range(torch.cuda.device_count()):
@@ -24,9 +24,10 @@ def get_device_memory_info() -> dict:
                 # if processes[0].pid != os.getpid():
                 #     continue
         info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-        cache_size = torch.cuda.memory_reserved(device=device_idx)
-        info.used -= cache_size
-        info.free += cache_size
+        if consider_cache:
+            cache_size = torch.cuda.memory_reserved(device=device_idx)
+            info.used -= cache_size
+            info.free += cache_size
         result[device_idx] = info
     pynvml.nvmlShutdown()
     return result
@@ -63,7 +64,7 @@ class CudaDeviceRoundRobinAllocator:
 
 class CudaDeviceGreedyAllocator:
     def get_devices(self, max_needed_bytes):
-        memory_info = get_device_memory_info()
+        memory_info = get_device_memory_info(consider_cache=True)
         return [
             torch.device("cuda:" + str(device_id))
             for device_id in sorted(memory_info.keys())

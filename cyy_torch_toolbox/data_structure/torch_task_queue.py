@@ -26,11 +26,12 @@ class CudaBatchPolicy:
             or self.__processing_times[batch_size + 1]
             < self.__processing_times[batch_size]
         ):
-            memory_info = get_device_memory_info()
+            memory_info = get_device_memory_info(consider_cache=True)
+            current_device_idx = torch.cuda.current_device()
 
             if (
-                memory_info[torch.cuda.current_device()].free
-                / memory_info[torch.cuda.current_device()].total
+                memory_info[current_device_idx].free
+                / memory_info[current_device_idx].total
                 > 0.2
             ):
                 return batch_size + 1
