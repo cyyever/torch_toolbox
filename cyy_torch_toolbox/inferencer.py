@@ -7,10 +7,7 @@ from cyy_torch_toolbox.model_executor import ModelExecutor
 
 
 class Inferencer(ModelExecutor):
-    _use_grad = False
-
     def inference(self, use_grad=False, epoch=1, **kwargs) -> bool:
-        self._use_grad = use_grad
         self._prepare_execution(**kwargs)
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
         early_stop: bool = False
@@ -18,7 +15,7 @@ class Inferencer(ModelExecutor):
             self.model.zero_grad(set_to_none=True)
             try:
                 self._execute_epoch(
-                    epoch=epoch, need_backward=self._use_grad, in_training=False
+                    epoch=epoch, need_backward=use_grad, in_training=False
                 )
             except StopExecutingException:
                 get_logger().warning("stop inference")
@@ -28,8 +25,8 @@ class Inferencer(ModelExecutor):
             self.exec_hooks(ModelExecutorHookPoint.AFTER_EXECUTE)
         return not early_stop
 
-    def _get_backward_loss(self, result):
-        if self._use_grad:
+    def _get_backward_loss(self, result, need_backward):
+        if need_backward:
             return result["normalized_batch_loss"]
         return None
 

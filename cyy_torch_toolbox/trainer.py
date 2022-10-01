@@ -221,5 +221,5 @@ class Trainer(ModelExecutor):
             epoch=self.hyper_parameter.epoch,
         )
 
-    def _get_backward_loss(self, result):
+    def _get_backward_loss(self, result, need_backward):
         return result["loss"]
