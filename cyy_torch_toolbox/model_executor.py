@@ -366,6 +366,7 @@ class ModelExecutor(ModelExecutorBase):
                     result["loss"] * batch["batch_size"] / self.dataset_size
                 )
             else:
+                assert False
                 normalized_batch_loss = result["loss"] / self.dataset_size
             result["normalized_batch_loss"] = normalized_batch_loss
             batch["cpu_inputs"] = result["cpu_inputs"]
@@ -378,7 +379,7 @@ class ModelExecutor(ModelExecutorBase):
                 **batch,
             )
 
-            loss = self._get_backward_loss(result=result)
+            loss = self._get_backward_loss(result=result, need_backward=need_backward)
             if loss is not None:
                 if self.has_hook(ModelExecutorHookPoint.MODEL_BACKWARD):
                     self.exec_hooks(ModelExecutorHookPoint.MODEL_BACKWARD, loss=loss)
@@ -421,5 +422,5 @@ class ModelExecutor(ModelExecutorBase):
             epoch=epoch,
         )
 
-    def _get_backward_loss(self, result):
+    def _get_backward_loss(self, result, need_backward):
         raise NotImplementedError()
