@@ -85,6 +85,8 @@ def __recursive_tensor_op(data, fun, **kwargs) -> Any:
                 *__recursive_tensor_op(data.args, fun, **kwargs),
                 **__recursive_tensor_op(data.keywords, fun, **kwargs)
             )
+        # case _:
+        #     print("unsupported tensor type", type(data))
     if has_hugging_face:
         match data:
             case transformers.tokenization_utils_base.BatchEncoding():
@@ -132,32 +134,39 @@ def tensor_clone(data, detach=True):
 
 
 def assemble_tensors(data: Any) -> tuple[torch.Tensor, Any]:
-    single_tensor = []
+    tensor_list = []
     offset = 0
 
-    def fun(data: Any) -> __RecursiveCheckPoint:
+    def fun(data: torch.Tensor) -> __RecursiveCheckPoint:
         nonlocal offset
-        shape = data.shape
+        if data.numel() == 0:
+            return __RecursiveCheckPoint(data=(data,))
+        shape = list(data.shape)
+        assert shape
         old_offset = offset
-        single_tensor.append(data.view(-1))
+        tensor_list.append(data.view(-1))
         offset += data.numel()
         return __RecursiveCheckPoint(data=(shape, old_offset))
 
     res = __recursive_tensor_op(data, fun)
     if offset == 0:
-        assert not single_tensor
-    if single_tensor:
-        assert offset != 0
-        return cat_tensors_to_vector(single_tensor), res
-    return None, res
+        assert not tensor_list
+        return None, res
+    assert tensor_list
+    return cat_tensors_to_vector(tensor_list), res
 
 
-def disassemble_tensor(single_tensor, data: Any, clone=True) -> Any:
+def disassemble_tensor(concatenated_tensor, data: Any, clone=True) -> Any:
     def fun(data) -> torch.Tensor:
+        if len(data) == 1:
+            return data[0]
         shape, offset = data
-        tensor = single_tensor[offset: offset + numpy.prod(shape)].view(*shape)
+        tensor = concatenated_tensor[offset: offset + numpy.prod(shape)].view(*shape)
         if clone:
             tensor = tensor.clone()
         return tensor
+
+    if concatenated_tensor is None:
+        return data
 
     return __recursive_tensor_op(data, fun)
