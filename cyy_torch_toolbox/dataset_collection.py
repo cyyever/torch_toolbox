@@ -6,10 +6,10 @@ from typing import Callable
 
 import torch
 import torchvision
+from cyy_naive_lib.fs.ssd import is_ssd
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_kwarg_names
 from cyy_naive_lib.storage import get_cached_data
-from ssd_checker import is_ssd
 
 from cyy_torch_toolbox.dataset import (DictDataset,
                                        convert_iterable_dataset_to_map,
@@ -162,11 +162,13 @@ class DatasetCollection:
         dataset_dir = os.path.join(cls.get_dataset_root_dir(), name)
         if not os.path.isdir(dataset_dir):
             os.makedirs(dataset_dir, exist_ok=True)
-        if name.lower() == "imagenet":
+        try:
             if not is_ssd(dataset_dir):
                 get_logger().warning(
                     "dataset %s is not on a SSD disk: %s", name, dataset_dir
                 )
+        except BaseException:
+            pass
         return dataset_dir
 
     @classmethod
@@ -245,7 +247,7 @@ class DatasetCollection:
         cls,
         name: str,
         constructor_kwargs: set,
-        dataset_kwargs: dict = None,
+        dataset_kwargs: dict | None = None,
     ) -> Callable:
         if dataset_kwargs is None:
             dataset_kwargs = {}
@@ -433,7 +435,7 @@ def create_dataset_collection(
                     dataset_kwargs=dataset_kwargs,
                     model_config=model_config,
                 )
-            elif name.lower() in {k.lower() for k in dataset_constructor.keys()}:
+            if name.lower() in {k.lower() for k in dataset_constructor.keys()}:
                 get_logger().warning(
                     "there is a similar name in dataset type %s", str(dataset_type)
                 )
