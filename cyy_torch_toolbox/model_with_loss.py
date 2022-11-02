@@ -31,7 +31,7 @@ class ModelWithLoss:
     def __init__(
         self,
         model: torch.nn.Module,
-        model_type: ModelType = None,
+        model_type: None | ModelType = None,
         loss_fun: str | Callable | None = None,
     ):
         self._model: torch.nn.Module = model
@@ -53,7 +53,7 @@ class ModelWithLoss:
         return ModelUtil(self.model)
 
     @property
-    def model_type(self):
+    def model_type(self) -> ModelType | None:
         return self.__model_type
 
     @property
