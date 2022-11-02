@@ -21,7 +21,8 @@ class ModelExecutorLogger(Hook):
             "parameter number is %s",
             len(model_util.get_parameter_list()),
         )
-        get_logger().info("hyper_parameter is %s", model_executor.hyper_parameter)
+        if hasattr(model_executor,"hyper_parameter"):
+            get_logger().info("hyper_parameter is %s", model_executor.hyper_parameter)
         optimizer = model_executor.get_optimizer()
         if optimizer is not None:
             get_logger().info("optimizer is %s", optimizer)
