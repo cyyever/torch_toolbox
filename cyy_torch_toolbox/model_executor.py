@@ -98,6 +98,9 @@ class ModelExecutor(ModelExecutorBase):
     def dataset_util(self) -> DatasetUtil:
         return self.dataset_collection.get_dataset_util(phase=self.__phase)
 
+    def transform_dataset(self, transformer: Callable) -> None:
+        self.dataset_collection.transform_dataset(self.phase, transformer)
+
     @property
     def dataset_size(self):
         return get_dataset_size(self.dataset)
