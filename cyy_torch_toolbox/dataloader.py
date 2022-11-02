@@ -18,7 +18,6 @@ except ModuleNotFoundError:
 
 from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.hyper_parameter import HyperParameter
 from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 
 if has_dali:
@@ -144,7 +143,7 @@ def get_dataloader(
     dc: DatasetCollection,
     model_type: ModelType,
     phase: MachineLearningPhase,
-    hyper_parameter: HyperParameter,
+    batch_size: int,
     device=None,
     cache_transforms=None,
     use_dali=True,
@@ -169,7 +168,7 @@ def get_dataloader(
         if device is not None:
             device_id = device.index
         pipeline = create_dali_pipeline(
-            batch_size=hyper_parameter.batch_size,
+            batch_size=batch_size,
             num_threads=2,
             py_start_method="spawn",
             device_id=device_id,
@@ -203,7 +202,7 @@ def get_dataloader(
         prefetch_factor = 2
     return torch.utils.data.DataLoader(
         dataset,
-        batch_size=hyper_parameter.batch_size,
+        batch_size=batch_size,
         shuffle=(phase == MachineLearningPhase.Training),
         num_workers=num_workers,
         persistent_workers=persistent_workers,
