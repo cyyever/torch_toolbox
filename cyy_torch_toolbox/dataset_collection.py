@@ -31,8 +31,8 @@ class DatasetCollection:
         training_dataset: torch.utils.data.Dataset,
         validation_dataset: torch.utils.data.Dataset,
         test_dataset: torch.utils.data.Dataset,
-        dataset_type: DatasetType | None,
-        name: str | None,
+        dataset_type: DatasetType | None = None,
+        name: str | None = None,
     ):
         self.__name: str | None = name
         self._datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
