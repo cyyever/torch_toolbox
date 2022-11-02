@@ -112,7 +112,7 @@ class ModelExecutor(ModelExecutorBase):
                 dc=self.dataset_collection,
                 model_type=self._model_with_loss.model_type,
                 phase=self.__phase,
-                hyper_parameter=self.__hyper_parameter,
+                batch_size=self.__hyper_parameter.batch_size,
                 device=self.device,
                 cache_transforms=self.cache_transforms,
             )
