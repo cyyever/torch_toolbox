@@ -31,23 +31,23 @@ class DatasetCollection:
         training_dataset: torch.utils.data.Dataset,
         validation_dataset: torch.utils.data.Dataset,
         test_dataset: torch.utils.data.Dataset,
-        dataset_type: DatasetType,
-        name: str,
+        dataset_type: DatasetType | None,
+        name: str | None,
     ):
-        self.__name = name
+        self.__name: str | None = name
         self._datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
         self._datasets[MachineLearningPhase.Training] = training_dataset
         self._datasets[MachineLearningPhase.Validation] = validation_dataset
         if test_dataset is not None:
             self._datasets[MachineLearningPhase.Test] = test_dataset
-        self.__dataset_type = dataset_type
+        self.__dataset_type: DatasetType | None = dataset_type
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
         self.__old_transforms: dict[MachineLearningPhase, Transforms] = {}
 
     @property
-    def dataset_type(self):
+    def dataset_type(self) -> None | DatasetType:
         return self.__dataset_type
 
     def transform_dataset(
@@ -138,7 +138,7 @@ class DatasetCollection:
         get_logger().debug("new training transforms are %s", new_transforms)
 
     @property
-    def name(self) -> str:
+    def name(self) -> str | None:
         return self.__name
 
     def transform_text(self, phase, text):
@@ -162,13 +162,10 @@ class DatasetCollection:
         dataset_dir = os.path.join(cls.get_dataset_root_dir(), name)
         if not os.path.isdir(dataset_dir):
             os.makedirs(dataset_dir, exist_ok=True)
-        try:
-            if not is_ssd(dataset_dir):
-                get_logger().warning(
-                    "dataset %s is not on a SSD disk: %s", name, dataset_dir
-                )
-        except BaseException:
-            pass
+        if not is_ssd(dataset_dir):
+            get_logger().warning(
+                "dataset %s is not on a SSD disk: %s", name, dataset_dir
+            )
         return dataset_dir
 
     @classmethod
@@ -381,7 +378,7 @@ class ClassificationDatasetCollection(DatasetCollection):
                 dataset_util.get_sample_text(index),
                 dataset_util.get_sample_label(index),
             )
-        raise RuntimeError("Unimplemented Code")
+        raise NotImplementedError()
 
     def generate_raw_data(self, phase: MachineLearningPhase):
         if self.dataset_type == DatasetType.Vision:
@@ -393,7 +390,7 @@ class ClassificationDatasetCollection(DatasetCollection):
                 )
                 for i in range(len(dataset_util))
             )
-        raise RuntimeError("Unimplemented Code")
+        raise NotImplementedError()
 
     @classmethod
     def get_label(cls, label_name, label_names):
