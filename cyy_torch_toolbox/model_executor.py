@@ -2,6 +2,7 @@ import copy
 import os
 import pickle
 import shutil
+from typing import Callable
 
 import torch
 from cyy_naive_lib.log import get_logger
