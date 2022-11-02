@@ -33,8 +33,8 @@ class Trainer(ModelExecutor):
             model_with_loss,
             dataset_collection,
             MachineLearningPhase.Training,
-            hyper_parameter,
         )
+        self.__hyper_parameter = hyper_parameter
         self.append_hook(LearningRateHook())
         self.__inferencers: dict = {}
         self.__batch_loss_logger = BatchLossLogger()
@@ -42,6 +42,13 @@ class Trainer(ModelExecutor):
         self.__keep_model_hook = KeepModelHook()
         self.append_hook(self.__keep_model_hook)
         self.__debugger: None | TrainerDebugger = None
+
+    @property
+    def hyper_parameter(self):
+        return self.__hyper_parameter
+
+    def _get_batch_size(self) -> int:
+        return self.hyper_parameter.batch_size
 
     def set_device(self, device):
         super().set_device(device)
@@ -72,7 +79,7 @@ class Trainer(ModelExecutor):
                 model_with_loss,
                 self.dataset_collection,
                 phase=phase,
-                hyper_parameter=self.hyper_parameter,
+                batch_size=self._get_batch_size(),
             )
         if inferencer is None:
             raise RuntimeError(

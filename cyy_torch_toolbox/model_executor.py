@@ -2,7 +2,6 @@ import copy
 import os
 import pickle
 import shutil
-from typing import Callable, Optional
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -34,13 +33,11 @@ class ModelExecutor(ModelExecutorBase):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         phase: MachineLearningPhase,
-        hyper_parameter: HyperParameter,
     ):
         super().__init__()
         self._model_with_loss = model_with_loss
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase = phase
-        self.__hyper_parameter = hyper_parameter
         self.__device = None
         self.__dataloader = None
         self.__cuda_stream = None
@@ -56,7 +53,7 @@ class ModelExecutor(ModelExecutorBase):
         self.append_hook(self.__metric_tb)
         self.debugging_mode = False
         self.profiling_mode = False
-        self.__save_dir: Optional[str] = None
+        self.__save_dir: None | str = None
         self.cache_transforms = None
         self.__amp_hook = None
 
@@ -105,6 +102,9 @@ class ModelExecutor(ModelExecutorBase):
     def dataset_size(self):
         return get_dataset_size(self.dataset)
 
+    def _get_batch_size(self) -> int:
+        raise NotImplementedError()
+
     @property
     def dataloader(self):
         if self.__dataloader is None:
@@ -112,7 +112,7 @@ class ModelExecutor(ModelExecutorBase):
                 dc=self.dataset_collection,
                 model_type=self._model_with_loss.model_type,
                 phase=self.__phase,
-                batch_size=self.__hyper_parameter.batch_size,
+                batch_size=self._get_batch_size(),
                 device=self.device,
                 cache_transforms=self.cache_transforms,
             )
@@ -204,14 +204,6 @@ class ModelExecutor(ModelExecutorBase):
             self.__cuda_stream.synchronize()
             if self.debugging_mode:
                 assert self.__cuda_stream.query()
-
-    def set_hyper_parameter(self, hyper_parameter):
-        self.__hyper_parameter = hyper_parameter
-        self.__dataloader = None
-
-    @property
-    def hyper_parameter(self):
-        return self.__hyper_parameter
 
     def set_dataset_collection(self, dc: DatasetCollection) -> None:
         self._wait_stream()
@@ -325,7 +317,7 @@ class ModelExecutor(ModelExecutorBase):
             batch["batch_index"] = batch_index
             if in_training:
                 if (
-                    self.hyper_parameter.batch_size != 1
+                    self._get_batch_size() != 1
                     and batch["batch_size"] == 1
                     and self._model_with_loss.model_util.have_module(
                         module_type=torch.nn.BatchNorm2d

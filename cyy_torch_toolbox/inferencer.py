@@ -7,6 +7,13 @@ from cyy_torch_toolbox.model_executor import ModelExecutor
 
 
 class Inferencer(ModelExecutor):
+    def __init__(self, *args, batch_size=8, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__batch_size = batch_size
+
+    def _get_batch_size(self) -> int:
+        return self.__batch_size
+
     def inference(self, use_grad=False, epoch=1, **kwargs) -> bool:
         self._prepare_execution(**kwargs)
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
