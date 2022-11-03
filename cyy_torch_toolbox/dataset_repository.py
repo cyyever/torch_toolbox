@@ -20,7 +20,7 @@ except ModuleNotFoundError:
     has_torchaudio = False
 
 if has_torchaudio:
-    import cyy_torch_toolbox.datasets.audio as local_audio_datasets
+    import cyy_torch_toolbox.dataset_wrapper.audio as local_audio_datasets
 
 try:
     import medmnist
@@ -39,7 +39,7 @@ except ModuleNotFoundError:
 
 from cyy_naive_lib.reflection import get_class_attrs
 
-import cyy_torch_toolbox.datasets.vision as local_vision_datasets
+import cyy_torch_toolbox.dataset_wrapper.vision as local_vision_datasets
 from cyy_torch_toolbox.ml_type import DatasetType
 
 
