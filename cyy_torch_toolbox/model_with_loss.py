@@ -84,7 +84,7 @@ class ModelWithLoss:
         self,
         inputs,
         targets,
-        phase: MachineLearningPhase = None,
+        phase: MachineLearningPhase | None = None,
         device=None,
         non_blocking: bool = False,
         input_features=None,

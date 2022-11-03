@@ -194,8 +194,8 @@ def get_model(
 
 
 class ModelConfig:
-    def __init__(self, model_name=None):
-        self.model_name: str | None = model_name
+    def __init__(self, model_name: str):
+        self.model_name: str = model_name
         self.model_path = None
         self.pretrained: bool = False
         self.model_kwargs: dict = {}

@@ -67,7 +67,7 @@ def minus_one(target, index):
     return target - 1
 
 
-def add_transforms(dc, dataset_kwargs, model_config):
+def add_transforms(dc, dataset_kwargs=None, model_config=None):
     if dc.dataset_type == DatasetType.Vision:
         dc.append_transform(torchvision.transforms.ToTensor(), key=TransformType.Input)
         mean, std = get_mean_and_std(dc)
@@ -122,6 +122,9 @@ def add_transforms(dc, dataset_kwargs, model_config):
                 minus_one,
                 key=TransformType.Target,
             )
+
+        if not dataset_kwargs:
+            dataset_kwargs = {}
 
         text_transforms = dataset_kwargs.get("text_transforms", {})
         for phase, transforms in text_transforms.items():
