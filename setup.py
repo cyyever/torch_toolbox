@@ -13,9 +13,9 @@ setuptools.setup(
     url="https://github.com/cyyever/torch_toolbox",
     packages=[
         "cyy_torch_toolbox",
-        "cyy_torch_toolbox/datasets",
-        "cyy_torch_toolbox/datasets/vision",
-        "cyy_torch_toolbox/datasets/audio",
+        "cyy_torch_toolbox/dataset_wrapper",
+        "cyy_torch_toolbox/dataset_wrapper/vision",
+        "cyy_torch_toolbox/dataset_wrapper/audio",
         "cyy_torch_toolbox/model_transform",
         "cyy_torch_toolbox/dataset_transform",
         "cyy_torch_toolbox/metrics",
