@@ -386,13 +386,13 @@ class ModelExecutor(ModelExecutorBase):
                 **batch,
             )
             if in_training:
+                step_skipped: bool = False
                 if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
                     self.set_data("step_skipped", False)
                     self.exec_hooks(ModelExecutorHookPoint.OPTIMIZER_STEP)
-                    step_skipped: bool = self.get_data("step_skipped")
+                    step_skipped = self.get_data("step_skipped")
                 else:
                     optimizer.step()
-                    step_skipped: bool = False
                 lr_scheduler = self.get_lr_scheduler()
                 if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                     get_logger().debug("adjust lr after batch")

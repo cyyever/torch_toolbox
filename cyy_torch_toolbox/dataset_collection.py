@@ -158,7 +158,8 @@ class DatasetCollection:
             cls.__dataset_root_dir = root_dir
 
     @classmethod
-    def __get_dataset_dir(cls, name: str):
+    def __get_dataset_dir(cls, name: str | None):
+        assert name is not None
         dataset_dir = os.path.join(cls.get_dataset_root_dir(), name)
         if not os.path.isdir(dataset_dir):
             os.makedirs(dataset_dir, exist_ok=True)
@@ -172,7 +173,7 @@ class DatasetCollection:
     def __get_dataset_cache_dir(
         cls,
         name: str,
-        phase: MachineLearningPhase = None,
+        phase: MachineLearningPhase | None = None,
     ) -> str:
         cache_dir = os.path.join(cls.__get_dataset_dir(name), ".cache")
         if phase is not None:
@@ -187,7 +188,7 @@ class DatasetCollection:
         name: str,
         dataset_type: DatasetType,
         dataset_constructor,
-        dataset_kwargs: dict = None,
+        dataset_kwargs: dict | None = None,
     ) -> tuple:
         constructor_kwargs = get_kwarg_names(dataset_constructor)
         dataset_kwargs_fun = cls.__prepare_dataset_kwargs(
@@ -246,7 +247,7 @@ class DatasetCollection:
         constructor_kwargs: set,
         dataset_kwargs: dict | None = None,
     ) -> Callable:
-        if dataset_kwargs is None:
+        if not dataset_kwargs:
             dataset_kwargs = {}
             new_dataset_kwargs = {}
         else:
@@ -266,19 +267,19 @@ class DatasetCollection:
                 new_dataset_kwargs["train"] = phase == MachineLearningPhase.Training
             elif "split" in constructor_kwargs:
                 if phase == MachineLearningPhase.Training:
-                    new_dataset_kwargs["split"] = dataset_kwargs.get(
+                    new_dataset_kwargs["split"] = new_dataset_kwargs.get(
                         "train_split", "train"
                     )
                 elif phase == MachineLearningPhase.Validation:
-                    if "val_split" in dataset_kwargs:
-                        new_dataset_kwargs["split"] = dataset_kwargs["val_split"]
+                    if "val_split" in new_dataset_kwargs:
+                        new_dataset_kwargs["split"] = new_dataset_kwargs["val_split"]
                     else:
                         if dataset_type == DatasetType.Text:
                             new_dataset_kwargs["split"] = "valid"
                         else:
                             new_dataset_kwargs["split"] = "val"
                 else:
-                    new_dataset_kwargs["split"] = dataset_kwargs.get(
+                    new_dataset_kwargs["split"] = new_dataset_kwargs.get(
                         "test_split", "test"
                     )
             elif "subset" in constructor_kwargs:
@@ -330,11 +331,7 @@ class DatasetCollection:
 
 class ClassificationDatasetCollection(DatasetCollection):
     @classmethod
-    def create(cls, **kwargs):
-        dataset_kwargs = kwargs.get("dataset_kwargs", {})
-        if not dataset_kwargs:
-            dataset_kwargs = {}
-        model_config = kwargs.pop("model_config", None)
+    def create(cls, model_config=None, dataset_kwargs=None, **kwargs):
         dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
         add_transforms(dc, dataset_kwargs, model_config)
         if not dc.has_dataset(MachineLearningPhase.Test):
@@ -413,7 +410,7 @@ class ClassificationDatasetCollection(DatasetCollection):
 
 
 def create_dataset_collection(
-    cls, name: str, dataset_kwargs: dict = None, model_config=None
+    cls, name: str, dataset_kwargs: dict | None = None, model_config=None
 ):
     with cls.lock:
         all_dataset_constructors = set()

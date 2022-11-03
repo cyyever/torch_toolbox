@@ -15,7 +15,7 @@ class TorchProcessTaskQueue(TorchTaskQueue):
 
     def __init__(
         self,
-        worker_fun: Callable = None,
+        worker_fun: Callable | None = None,
         send_tensor_in_cpu: bool = True,
         use_manager: bool = True,
         assemble_tensor: bool = False,

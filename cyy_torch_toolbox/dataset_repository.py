@@ -43,7 +43,9 @@ import cyy_torch_toolbox.dataset_wrapper.vision as local_vision_datasets
 from cyy_torch_toolbox.ml_type import DatasetType
 
 
-def get_dataset_constructors(dataset_type: DatasetType = None, cache_dir=None) -> dict:
+def get_dataset_constructors(
+    dataset_type: DatasetType | None = None, cache_dir: str | None = None
+) -> dict:
     repositories = []
     if dataset_type is None or dataset_type == DatasetType.Vision:
         repositories += [torchvision.datasets, local_vision_datasets]

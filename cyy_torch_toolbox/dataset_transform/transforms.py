@@ -19,7 +19,9 @@ def default_data_extraction(data: Any) -> dict:
             return data
 
 
-def __get_int_target(reversed_label_names, label_name: str, index: int = None) -> int:
+def __get_int_target(
+    reversed_label_names, label_name: str, index: int | None = None
+) -> int:
     return reversed_label_names[label_name]
 
 

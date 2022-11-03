@@ -91,7 +91,7 @@ class DefaultConfig:
             model_config=self.model_config,
         )
 
-    def create_trainer(self, dc: DatasetCollection = None) -> Trainer:
+    def create_trainer(self, dc: DatasetCollection | None = None) -> Trainer:
         if dc is None:
             dc = self.create_dataset_collection()
         model_with_loss = self.model_config.get_model(dc)
