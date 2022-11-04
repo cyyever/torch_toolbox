@@ -296,7 +296,7 @@ class ModelExecutor(ModelExecutorBase):
                     inputs = inputs.permute(batch_dim, 0)
             if batch_dim != 0 and isinstance(input_features, torch.Tensor):
                 input_features = input_features.permute(batch_dim, 0, 2)
-        return inputs, input_features
+        return inputs, batch_dim, input_features
 
     def get_optimizer(self):
         raise NotImplementedError()
