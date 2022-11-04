@@ -272,7 +272,7 @@ class ModelExecutor(ModelExecutorBase):
             with open(os.path.join(self.save_dir, "dc.pk"), "rb") as file:
                 self.__dataset_collection = pickle.load(file)
 
-    def split_batch_input(self, inputs, targets):
+    def split_batch_input(self, inputs, targets, input_features=None):
         batch_dim = 0
         if self.dataset_collection.dataset_type == DatasetType.Text:
             if "BatchEncoding" in type(inputs).__name__:
@@ -294,7 +294,9 @@ class ModelExecutor(ModelExecutorBase):
                     batch_dim = 1
                 if batch_dim != 0:
                     inputs = inputs.permute(batch_dim, 0)
-        return inputs, batch_dim
+            if batch_dim != 0 and isinstance(input_features, torch.Tensor):
+                input_features = input_features.permute(batch_dim, 0, 2)
+        return inputs, input_features
 
     def get_optimizer(self):
         raise NotImplementedError()
