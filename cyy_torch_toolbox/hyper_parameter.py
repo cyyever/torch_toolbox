@@ -12,7 +12,7 @@ from cyy_torch_toolbox.data_structure.torch_thread_task_queue import \
     TorchThreadTaskQueue
 
 
-def determin_learning_rate(task, *args):
+def determin_learning_rate(task, **kwargs):
     tmp_trainer, device = task
     tmp_trainer.set_device(device)
     tmp_trainer.disable_stripable_hooks()
@@ -72,7 +72,7 @@ class HyperParameter:
             device = trainer.device
             trainer.offload_from_gpu()
             task_queue.add_task((copy.deepcopy(trainer), device))
-            self.__learning_rate = task_queue.get_result()
+            self.__learning_rate = task_queue.get_data()
             trainer.set_device(device)
             task_queue.stop()
         return self.__learning_rate
