@@ -188,7 +188,7 @@ def get_dataloader(
     transforms = dc.get_transforms(phase=phase)
     collate_fn = transforms.collate_batch
     persistent_workers = True
-    pin_memory = str(device) != "cpu"
+    pin_memory = "cuda" in str(device).lower()
     pin_memory_device = ""
     if pin_memory:
         pin_memory_device = str(device)

@@ -6,7 +6,7 @@ import torch.multiprocessing
 from cyy_naive_lib.data_structure.task_queue import TaskQueue
 from cyy_naive_lib.time_counter import TimeCounter
 from cyy_torch_toolbox.device import (CudaDeviceGreedyAllocator,
-                                      get_device_memory_info, get_devices)
+                                      get_cuda_device_memory_info, get_devices)
 
 
 class CudaBatchPolicy:
@@ -28,7 +28,7 @@ class CudaBatchPolicy:
             or self.__processing_times[batch_size + 1]
             < self.__processing_times[batch_size]
         ):
-            memory_info = get_device_memory_info(consider_cache=True)
+            memory_info = get_cuda_device_memory_info(consider_cache=True)
             current_device_idx = torch.cuda.current_device()
 
             if (

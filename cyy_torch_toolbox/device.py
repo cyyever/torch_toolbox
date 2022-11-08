@@ -11,7 +11,7 @@ if torch.cuda.is_available():
 from cyy_naive_lib.log import get_logger
 
 
-def get_device_memory_info(consider_cache: bool = False) -> dict:
+def get_cuda_device_memory_info(consider_cache: bool = False) -> dict:
     result = {}
     pynvml.nvmlInit()
     for device_idx in range(torch.cuda.device_count()):
@@ -40,12 +40,16 @@ def get_cpu_device():
 def get_cuda_devices():
     device_count = torch.cuda.device_count()
     assert device_count > 0
-    return [torch.device(f"cuda:{device_id}") for device_id in get_device_memory_info()]
+    return [
+        torch.device(f"cuda:{device_id}") for device_id in get_cuda_device_memory_info()
+    ]
 
 
 def get_devices():
     if torch.cuda.is_available():
         return get_cuda_devices()
+    if torch.backends.mps.is_available():
+        return [torch.device("mps")]
     return [torch.device("cpu")]
 
 
@@ -64,7 +68,7 @@ class CudaDeviceRoundRobinAllocator:
 
 class CudaDeviceGreedyAllocator:
     def get_devices(self, max_needed_bytes):
-        memory_info = get_device_memory_info(consider_cache=True)
+        memory_info = get_cuda_device_memory_info(consider_cache=True)
         return [
             torch.device("cuda:" + str(device_id))
             for device_id in sorted(memory_info.keys())
@@ -92,4 +96,6 @@ def get_device(max_needed_bytes=None, use_cuda_only=False):
             "cuda device is unavaiable, max_needed_bytes is %s, switch to CPU",
             max_needed_bytes,
         )
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
     return get_cpu_device()
