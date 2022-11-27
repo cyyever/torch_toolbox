@@ -47,7 +47,7 @@ class PretrainedWordVector:
                 len(itos),
                 len(next(iter(self.word_vector_dict.values()))),
             ], "Shape of weight does not match num_embeddings and embedding_dim"
-            layer.weight = nn.Parameter(torch.Tensor(embeddings))
+            layer.weight = nn.Parameter(torch.tensor(embeddings))
             if unknown_token_cnt != 0:
                 get_logger().info(
                     "there are %s unrecognized tokens in word vectors for a total of %s",
@@ -98,7 +98,7 @@ class PretrainedWordVector:
                 with open(f"{self.__name}.txt", "r", encoding="utf-8") as f:
                     for line in f:
                         s = line.strip().split()
-                        word_vector_dict[" ".join(s[:-dim])] = torch.Tensor(
+                        word_vector_dict[" ".join(s[:-dim])] = torch.tensor(
                             [float(i) for i in s[-dim:]]
                         )
         with open(pickle_file, "wb") as f:
