@@ -38,7 +38,9 @@ class KeepModelHook(Hook):
         acc = trainer.get_inferencer_performance_metric(
             MachineLearningPhase.Validation
         ).get_epoch_metric(epoch, "accuracy")
-        if self.best_model is None or acc > self.best_model[1]:
+        if self.save_best_model and (
+            self.best_model is None or acc > self.best_model[1]
+        ):
             self.__best_model.set_data(
                 (
                     trainer.copy_model_with_loss().model.to(
@@ -47,13 +49,12 @@ class KeepModelHook(Hook):
                     acc,
                 )
             )
-            if trainer.save_dir is not None:
-                self.__best_model.set_data_path(
-                    os.path.join(
-                        self.__get_model_dir(trainer.save_dir), "best_model.pk"
-                    )
-                )
-                self.__best_model.save()
+
+            assert trainer.save_dir is not None
+            self.__best_model.set_data_path(
+                os.path.join(self.__get_model_dir(trainer.save_dir), "best_model.pk")
+            )
+            self.__best_model.save()
 
     def _after_execute(self, model_executor, **kwargs):
         trainer = model_executor

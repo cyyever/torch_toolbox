@@ -199,7 +199,7 @@ def get_dataloader(
         get_logger().debug("use threads")
         num_workers = 0
         persistent_workers = False
-        prefetch_factor = 2
+        prefetch_factor = None
     return torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,
