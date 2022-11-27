@@ -242,8 +242,8 @@ class VisionDatasetUtil(DatasetSplitter):
 
     def get_mean_and_std(self):
         if self._name is not None and self._name.lower() == "imagenet":
-            mean = torch.Tensor([0.485, 0.456, 0.406])
-            std = torch.Tensor([0.229, 0.224, 0.225])
+            mean = torch.tensor([0.485, 0.456, 0.406])
+            std = torch.tensor([0.229, 0.224, 0.225])
             return (mean, std)
         mean = torch.zeros(self.channel)
         for index in range(len(self)):
