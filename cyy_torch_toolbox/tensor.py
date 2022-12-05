@@ -18,11 +18,6 @@ def cat_tensors_to_vector(tensors: list) -> torch.Tensor:
     return nn.utils.parameters_to_vector([t.view(-1) for t in tensors])
 
 
-class __RecursiveCheckPoint:
-    def __init__(self, data):
-        self.data = data
-
-
 def load_tensor_dict(shapes: dict, tensor: torch.Tensor) -> dict:
     bias = 0
     result = {}
@@ -36,30 +31,28 @@ def load_tensor_dict(shapes: dict, tensor: torch.Tensor) -> dict:
     return result
 
 
-# def split_tensor_to_dict(name_and_shapes: list, tensor: torch.Tensor) -> dict:
-#     data = {}
-#     bias = 0
-#     for (name, shape) in name_and_shapes:
-#         param_element_num = numpy.prod(shape)
-#         data[name] = tensor.narrow(0, bias, param_element_num).view(*shape)
-#         bias += param_element_num
-#     assert bias == tensor.shape[0]
-#     return data
+def decompose_tensor_to_dict(shapes: dict, tensor: torch.Tensor) -> dict:
+    return load_tensor_dict(shapes, tensor)
 
 
-# def split_tensor_to_list(shapes: list, tensor: torch.Tensor) -> list:
-#     data = []
-#     bias = 0
-#     for shape in shapes:
-#         param_element_num = numpy.prod(shape)
-#         data.append(tensor.narrow(0, bias, param_element_num).view(*shape))
-#         bias += param_element_num
-#     assert bias == tensor.shape[0]
-#     return data
+def decompose_tensor_to_list(shapes: list, tensor: torch.Tensor) -> list:
+    result = []
+    bias = 0
+    for shape in shapes:
+        param_element_num = numpy.prod(shape)
+        result.append(tensor[bias: bias + param_element_num].view(*shape))
+        bias += param_element_num
+    assert bias == tensor.shape[0]
+    return result
 
 
 def get_tensor_serialization_size(data):
     return len(pickle.dumps(data))
+
+
+class __RecursiveCheckPoint:
+    def __init__(self, data):
+        self.data = data
 
 
 def __recursive_tensor_op(data, fun, **kwargs) -> Any:
