@@ -1,7 +1,9 @@
-import os
-
 from cyy_naive_lib.log import get_logger
+from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.hook import Hook
+from cyy_torch_toolbox.ml_type import MachineLearningPhase
+
+# import os
 
 
 class ModelExecutorLogger(Hook):
@@ -11,8 +13,6 @@ class ModelExecutorLogger(Hook):
     def _before_execute(self, **kwargs):
         model_executor = kwargs["model_executor"]
         model_util = model_executor.model_util
-        if os.getenv("draw_torch_model") is not None:
-            model_executor._model_with_loss.trace_input = True
         get_logger().info("dataset is %s", model_executor.dataset)
         get_logger().info("model type is %s", model_executor.model.__class__)
         get_logger().debug("model is %s", model_executor.model)
@@ -21,7 +21,7 @@ class ModelExecutorLogger(Hook):
             "parameter number is %s",
             len(model_util.get_parameter_list()),
         )
-        if hasattr(model_executor,"hyper_parameter"):
+        if hasattr(model_executor, "hyper_parameter"):
             get_logger().info("hyper_parameter is %s", model_executor.hyper_parameter)
         optimizer = model_executor.get_optimizer()
         if optimizer is not None:
@@ -32,6 +32,17 @@ class ModelExecutorLogger(Hook):
                 "lr_scheduler is %s",
                 type(lr_scheduler),
             )
+        for phase in MachineLearningPhase:
+            if model_executor.dataset_collection.has_dataset(phase):
+                get_logger().info(
+                    "%s dataset len %s",
+                    phase,
+                    get_dataset_size(
+                        model_executor.dataset_collection.get_dataset(phase=phase)
+                    ),
+                )
+        # if os.getenv("draw_torch_model") is not None:
+        #     model_executor._model_with_loss.trace_input = True
 
     # def _after_execute(self, **kwargs):
     #     model_executor = kwargs["model_executor"]
