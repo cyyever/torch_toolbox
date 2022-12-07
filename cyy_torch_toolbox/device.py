@@ -69,12 +69,20 @@ class CudaDeviceRoundRobinAllocator:
 class CudaDeviceGreedyAllocator:
     def get_devices(self, max_needed_bytes):
         memory_info = get_cuda_device_memory_info(consider_cache=True)
-        return [
-            torch.device("cuda:" + str(device_id))
-            for device_id in sorted(memory_info.keys())
-            if max_needed_bytes is None
-            or memory_info[device_id].free >= max_needed_bytes
-        ]
+        memory_to_device = {}
+        for device_id, info in memory_info.items():
+            if (
+                max_needed_bytes is not None
+                and memory_info[device_id].free < max_needed_bytes
+            ):
+                continue
+            if info.free not in memory_to_device:
+                memory_to_device[info.free] = []
+            memory_to_device[info.free].append(torch.device(f"cuda:{device_id}"))
+        devices = []
+        for k in reversed(sorted(memory_to_device.keys())):
+            devices += memory_to_device[k]
+        return devices
 
     def get_device(self, max_needed_bytes=None):
         devices = self.get_devices(max_needed_bytes=max_needed_bytes)
@@ -93,7 +101,7 @@ def get_device(max_needed_bytes=None, use_cuda_only=False):
         if use_cuda_only:
             raise RuntimeError("no cuda device avaiable")
         get_logger().warning(
-            "cuda device is unavaiable, max_needed_bytes is %s, switch to CPU",
+            "cuda device is unavailable, max_needed_bytes is %s, switch to CPU",
             max_needed_bytes,
         )
     if torch.backends.mps.is_available():
