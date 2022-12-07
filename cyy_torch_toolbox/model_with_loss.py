@@ -44,8 +44,8 @@ class ModelWithLoss:
         self.need_cpu_inputs = False
 
     def compile_model(self) -> None:
-        return
-        self._model = torch.compile(self._original_model)
+        raise NotImplementedError()
+        # self._model = torch.compile(self._original_model)
 
     @property
     def model(self) -> torch.nn.Module:
