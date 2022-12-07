@@ -104,7 +104,7 @@ class DefaultConfig:
             dc = self.create_dataset_collection()
         if hasattr(dc, "adapt_to_model"):
             dc.adapt_to_model(
-                model_with_loss.get_real_model(), self.model_config.model_kwargs
+                model_with_loss.get_underlying_model(), self.model_config.model_kwargs
             )
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
             self.dc_config.dataset_name, self.model_config.model_name

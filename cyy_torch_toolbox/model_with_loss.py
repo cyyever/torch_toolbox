@@ -34,15 +34,18 @@ class ModelWithLoss:
         model_type: None | ModelType = None,
         loss_fun: str | Callable | None = None,
     ):
+        self._original_model: torch.nn.Module = model
         self._model: torch.nn.Module = model
-        self._model_util = None
-
         self.__loss_fun: Callable | None = None
         if loss_fun is not None:
             self.set_loss_fun(loss_fun)
         self.__model_type = model_type
         self.need_input_features = False
         self.need_cpu_inputs = False
+
+    def compile_model(self) -> None:
+        return
+        self._model = torch.compile(self._original_model)
 
     @property
     def model(self) -> torch.nn.Module:
@@ -144,23 +147,25 @@ class ModelWithLoss:
     def _foward_model(
         self, inputs, targets, input_features=None
     ) -> dict | torch.Tensor:
-        model = self.model
-        if hasattr(model, "forward_input_feature") and input_features is not None:
-            model = model.forward_input_feature
+        fun: Callable = self.model
+        if hasattr(self.model, "forward_input_feature") and input_features is not None:
+            fun = self.model.forward_input_feature
             real_inputs = input_features
         else:
             real_inputs = inputs
         match real_inputs:
             case torch.Tensor():
-                return model(real_inputs)
+                return fun(real_inputs)
             case tuple():
-                return model(*real_inputs)
+                return fun(*real_inputs)
             case _:
                 raise NotImplementedError(type(real_inputs))
 
     def replace_model(self, model):
         return ModelWithLoss(
-            model=model, loss_fun=self.loss_fun, model_type=self.model_type
+            model=model,
+            loss_fun=self.loss_fun,
+            model_type=self.model_type,
         )
 
     def to(self, device, non_blocking=False):
@@ -211,10 +216,11 @@ class ModelWithLoss:
         get_logger().error("can't choose a loss function, model is %s", self._model)
         raise NotImplementedError(type(last_layer))
 
-    def get_real_model(self):
-        if isinstance(self._model, torch.quantization.stubs.QuantWrapper):
-            return self._model.module
-        return self._model
+    def get_underlying_model(self):
+        model = self._original_model
+        if isinstance(model, torch.quantization.stubs.QuantWrapper):
+            return model.module
+        return model
 
     def __is_averaged_loss(self) -> bool | None:
         if hasattr(self.loss_fun, "reduction"):
@@ -241,10 +247,6 @@ class ModelWithLoss:
 
 
 class CheckPointedModelWithLoss:
-    """
-    Combine a model with a loss function.
-    """
-
     def __init__(self, model_with_loss: ModelWithLoss):
         self.__model_with_loss = model_with_loss.replace_model(
             get_checkpointed_model(model_with_loss.model)
@@ -259,10 +261,9 @@ class CheckPointedModelWithLoss:
             input_features = kwargs.get("input_features", None)
             if input_features is not None:
                 input_features.requires_grad_()
-            else:
-                inputs = kwargs.get("inputs", None)
-                if inputs is not None:
-                    inputs.requires_grad_()
+            inputs = kwargs.get("inputs", None)
+            if inputs is not None:
+                inputs.requires_grad_()
         return self.__model_with_loss.__call__(**kwargs)
 
 
