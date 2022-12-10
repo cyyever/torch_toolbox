@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from hooks.add_index_to_dataset import AddIndexToDataset
+from cyy_torch_toolbox.hooks.add_index_to_dataset import AddIndexToDataset
 
 from .metric import Metric
 
