@@ -4,7 +4,7 @@ from cyy_torch_toolbox.hook import Hook
 
 
 class AMP(Hook):
-    __ctx = torch.autocast(device_type=("cuda" if torch.cuda.is_available() else "cpu"))
+    __ctx = None
     __scaler = None
 
     def _model_forward(self, model_executor, model_kwargs, **kwargs):
@@ -13,14 +13,18 @@ class AMP(Hook):
             device_type = "cuda"
         else:
             device_type = "cpu"
-        if device_type != self.__ctx.device:
+        if self.__ctx is None or device_type != self.__ctx.device:
             self.__ctx = torch.autocast(device_type=device_type)
         with self.__ctx:
             result = model_executor._model_with_loss(**model_kwargs)
             model_executor.set_data("forward_result", result)
 
     def _model_backward(self, loss, **kwargs):
-        if self.__scaler is None and str(self.__ctx.device) != "cpu":
+        if (
+            self.__scaler is None
+            and self.__ctx is not None
+            and str(self.__ctx.device) != "cpu"
+        ):
             self.__scaler = torch.cuda.amp.GradScaler()
         if self.__scaler is not None:
             self.__scaler.scale(loss).backward()
