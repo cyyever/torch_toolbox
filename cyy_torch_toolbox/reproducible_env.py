@@ -39,7 +39,6 @@ class ReproducibleEnv:
                 get_logger().warning("%s use reproducible env", id(self))
             else:
                 get_logger().warning("%s initialize and use reproducible env", id(self))
-            os.environ["reseed_dropout"] = "1"
             os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
@@ -59,7 +58,7 @@ class ReproducibleEnv:
             if self.__torch_cuda_rng_state is not None:
                 get_logger().debug("overwrite torch cuda rng state")
                 torch.cuda.set_rng_state_all(self.__torch_cuda_rng_state)
-            else:
+            elif torch.cuda.is_available():
                 get_logger().debug("collect torch cuda rng state")
                 self.__torch_cuda_rng_state = torch.cuda.get_rng_state_all()
 
@@ -89,10 +88,7 @@ class ReproducibleEnv:
         get_logger().warning("disable reproducible env")
         with ReproducibleEnv.lock:
             torch.use_deterministic_algorithms(False)
-            try:
-                torch.set_deterministic_debug_mode(0)
-            except BaseException:
-                pass
+            torch.set_deterministic_debug_mode(0)
             self.__enabled = False
 
     def __enter__(self):
