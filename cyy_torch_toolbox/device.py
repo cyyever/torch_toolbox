@@ -53,7 +53,7 @@ def get_devices():
     return [torch.device("cpu")]
 
 
-class CudaDeviceRoundRobinAllocator:
+class CUDADeviceRoundRobinAllocator:
     def __init__(self):
         self.__devices = get_cuda_devices()
         self.__idx = 0
@@ -66,7 +66,7 @@ class CudaDeviceRoundRobinAllocator:
         return device
 
 
-class CudaDeviceGreedyAllocator:
+class CUDADeviceGreedyAllocator:
     def get_devices(self, max_needed_bytes):
         memory_info = get_cuda_device_memory_info(consider_cache=True)
         memory_to_device = {}
@@ -93,7 +93,7 @@ class CudaDeviceGreedyAllocator:
 
 def get_device(max_needed_bytes=None, use_cuda_only=False):
     if torch.cuda.is_available():
-        device = CudaDeviceGreedyAllocator().get_device(
+        device = CUDADeviceGreedyAllocator().get_device(
             max_needed_bytes=max_needed_bytes
         )
         if device is not None:

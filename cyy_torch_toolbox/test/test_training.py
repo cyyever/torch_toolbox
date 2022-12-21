@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import torch
 from cyy_torch_toolbox.default_config import DefaultConfig
-from cyy_torch_toolbox.device import CudaDeviceGreedyAllocator
+from cyy_torch_toolbox.device import CUDADeviceGreedyAllocator
 from cyy_torch_toolbox.ml_type import (ModelExecutorHookPoint,
                                        StopExecutingException)
 
@@ -24,7 +24,7 @@ def test_vision_training():
 
 def test_text_training():
     if torch.cuda.is_available():
-        device = CudaDeviceGreedyAllocator().get_device(
+        device = CUDADeviceGreedyAllocator().get_device(
             max_needed_bytes=9 * 1024 * 1024 * 1024
         )
         if device is None:
