@@ -49,7 +49,7 @@ class Trainer(ModelExecutor):
     def _get_batch_size(self) -> int:
         return self.hyper_parameter.batch_size
 
-    def set_device(self, device):
+    def set_device(self, device) -> None:
         super().set_device(device)
         for inferencer in self.__inferencers.values():
             inferencer.set_device(device)
