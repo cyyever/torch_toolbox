@@ -4,7 +4,6 @@ from typing import Any
 
 import numpy
 import torch
-import torch.nn as nn
 
 try:
     import transformers
@@ -15,7 +14,17 @@ except ModuleNotFoundError:
 
 
 def cat_tensors_to_vector(tensors: list) -> torch.Tensor:
-    return nn.utils.parameters_to_vector([t.view(-1) for t in tensors])
+    return torch.cat([t.view(-1) for t in tensors])
+
+
+def load_tensor_dict_from_seq(shapes: dict, tensor_seq: list) -> dict:
+    result = {}
+    for name in sorted(shapes.keys()):
+        shape = shapes[name]
+        assert tensor_seq[0].shape == shape
+        result[name] = tensor_seq[0]
+        tensor_seq = tensor_seq[1:]
+    return result
 
 
 def load_tensor_dict(shapes: dict, tensor: torch.Tensor) -> dict:

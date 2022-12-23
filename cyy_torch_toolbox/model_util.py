@@ -4,7 +4,8 @@ import torch
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 from cyy_naive_lib.log import get_logger
 
-from tensor import cat_tensors_to_vector, load_tensor_dict
+from tensor import (cat_tensors_to_vector, load_tensor_dict,
+                    load_tensor_dict_from_seq)
 
 
 class ModelUtil:
@@ -23,6 +24,24 @@ class ModelUtil:
 
     def get_parameter_list(self, detach: bool = True) -> torch.Tensor:
         return cat_tensors_to_vector(self.get_parameter_seq(detach=detach))
+
+    def load_parameter_seq(
+        self,
+        parameter_seq: list,
+        check_parameter: bool = False,
+        as_parameter: bool = True,
+        parameter_shapes: None | dict = None,
+    ) -> None:
+        if parameter_shapes is None:
+            parameter_shapes = self.get_parameter_shapes()
+        assert parameter_shapes
+        parameter_dict = load_tensor_dict_from_seq(parameter_shapes, parameter_seq)
+        self.load_parameter_dict(
+            parameter_dict,
+            check_parameter=check_parameter,
+            as_parameter=as_parameter,
+            update_parameter_shapes=False,
+        )
 
     def load_parameter_list(
         self,
