@@ -397,10 +397,11 @@ class ModelExecutor(ModelExecutorBase):
                     step_skipped = self.get_data("step_skipped")
                 else:
                     optimizer.step()
-                lr_scheduler = self.get_lr_scheduler()
-                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                    get_logger().debug("adjust lr after batch")
-                    lr_scheduler.step()
+                if not step_skipped:
+                    lr_scheduler = self.get_lr_scheduler()
+                    if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+                        get_logger().debug("adjust lr after batch")
+                        lr_scheduler.step()
 
                 self.exec_hooks(
                     ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
