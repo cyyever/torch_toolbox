@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from typing import Callable
 
-import torch
 import torch.multiprocessing
 from cyy_torch_toolbox.data_structure.torch_task_queue import TorchTaskQueue
 from cyy_torch_toolbox.device import get_cpu_device
