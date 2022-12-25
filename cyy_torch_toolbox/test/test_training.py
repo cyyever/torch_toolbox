@@ -15,8 +15,8 @@ def test_vision_training():
     config.hyper_parameter_config.epoch = 1
     config.hyper_parameter_config.learning_rate = 0.01
     trainer = config.create_trainer()
-    trainer.insert_callback(
-        -1, ModelExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
+    trainer.append_named_hook(
+        ModelExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
     )
     # trainer.model_with_loss.compile_model()
     trainer.train()
@@ -34,7 +34,7 @@ def test_text_training():
     config.hyper_parameter_config.learning_rate = 0.01
     trainer = config.create_trainer()
     # trainer.model_with_loss.compile_model()
-    trainer.insert_callback(
-        -1, ModelExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
+    trainer.append_named_hook(
+        ModelExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
     )
     trainer.train()
