@@ -63,7 +63,7 @@ class HookCollection:
         for hook in copy.copy(self.__hooks.get(hook_point, [])):
             for name, fun in copy.copy(hook).items():
                 if name not in self.__disabled_hooks:
-                    fun(model_executor=self, **kwargs)
+                    fun(**kwargs)
 
     def has_hook(
         self,
