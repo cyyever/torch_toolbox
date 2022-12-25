@@ -146,9 +146,7 @@ class HookCollection:
         for hook_point, name, _ in hook.yield_hooks():
             self.remove_named_hook(name, hook_point)
 
-    def remove_named_hook(
-        self, name: str, hook_point: ModelExecutorHookPoint | None = None
-    ) -> None:
+    def remove_named_hook(self, name: str, hook_point: ModelExecutorHookPoint) -> None:
         for cur_hook_point, hooks in self.__hooks.items():
             if hook_point is not None and cur_hook_point != hook_point:
                 continue
