@@ -8,6 +8,9 @@ class ModelExecutorBase(HookCollection):
         super().__init__()
         self.__data: dict = {}
 
+    def exec_hooks(self, *args, **kwargs: dict) -> None:
+        super().exec_hooks(*args, model_executor=self, **kwargs)
+
     def get_data(self, key: str, default_value: Any = None) -> Any:
         return self.__data.get(key, default_value)
 
