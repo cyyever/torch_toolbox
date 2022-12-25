@@ -4,8 +4,11 @@ from cyy_torch_toolbox.hook import Hook
 
 
 class AMP(Hook):
-    __ctx = None
-    __scaler = None
+    def __init__(self, *args, **kwargs):
+        assert torch.cuda.is_available()
+        super().__init__(*args, **kwargs)
+        self.__ctx = None
+        self.__scaler = None
 
     def _model_forward(self, model_executor, model_kwargs, **kwargs):
         device = model_kwargs.get("device", None)
