@@ -64,35 +64,37 @@ class __RecursiveCheckPoint:
         self.data = data
 
 
-def __recursive_tensor_op(data, fun, **kwargs) -> Any:
+def recursive_tensor_op(data, fun, **kwargs) -> Any:
     match data:
         case __RecursiveCheckPoint():
             return fun(data.data, **kwargs)
         case torch.Tensor():
             return fun(data, **kwargs)
         case list():
-            return [__recursive_tensor_op(element, fun, **kwargs) for element in data]
+            return [recursive_tensor_op(element, fun, **kwargs) for element in data]
         case tuple():
-            return tuple(__recursive_tensor_op(list(data), fun, **kwargs))
+            return tuple(
+                recursive_tensor_op(element, fun, **kwargs) for element in data
+            )
         case dict():
             try:
                 # we need to check in key order because that order may be useful
                 keys = sorted(data.keys())
             except BaseException:
                 keys = list(data.keys())
-            return {k: __recursive_tensor_op(data[k], fun, **kwargs) for k in keys}
+            return {k: recursive_tensor_op(data[k], fun, **kwargs) for k in keys}
         case functools.partial():
             return functools.partial(
                 data.func,
-                *__recursive_tensor_op(data.args, fun, **kwargs),
-                **__recursive_tensor_op(data.keywords, fun, **kwargs)
+                *recursive_tensor_op(data.args, fun, **kwargs),
+                **recursive_tensor_op(data.keywords, fun, **kwargs)
             )
         # case _:
         #     print("unsupported tensor type", type(data))
     if has_hugging_face:
         match data:
             case transformers.tokenization_utils_base.BatchEncoding():
-                data.data = __recursive_tensor_op(data.data, fun, **kwargs)
+                data.data = recursive_tensor_op(data.data, fun, **kwargs)
                 return data
     return data
 
@@ -111,7 +113,7 @@ def tensor_to(data, non_blocking=False, check_slowdown=False, **kwargs):
                     raise RuntimeError("tensor is not pinned")
                 if not non_blocking:
                     raise RuntimeError(
-                        "cpu to device copy is blocking",
+                        "copy is blocking",
                     )
             else:
                 if device is not None and not kwargs.get("non_blocking", False):
@@ -120,7 +122,7 @@ def tensor_to(data, non_blocking=False, check_slowdown=False, **kwargs):
                     )
         return data.to(**kwargs)
 
-    return __recursive_tensor_op(
+    return recursive_tensor_op(
         data, fun, non_blocking=non_blocking, check_slowdown=check_slowdown, **kwargs
     )
 
@@ -132,7 +134,7 @@ def tensor_clone(data, detach=True):
             new_data = new_data.detach()
         return new_data
 
-    return __recursive_tensor_op(data, fun, detach=detach)
+    return recursive_tensor_op(data, fun, detach=detach)
 
 
 def assemble_tensors(data: Any) -> tuple[torch.Tensor, Any]:
@@ -150,7 +152,7 @@ def assemble_tensors(data: Any) -> tuple[torch.Tensor, Any]:
         offset += data.numel()
         return __RecursiveCheckPoint(data=(shape, old_offset))
 
-    res = __recursive_tensor_op(data, fun)
+    res = recursive_tensor_op(data, fun)
     if offset == 0:
         assert not tensor_list
         return None, res
@@ -158,7 +160,9 @@ def assemble_tensors(data: Any) -> tuple[torch.Tensor, Any]:
     return cat_tensors_to_vector(tensor_list), res
 
 
-def disassemble_tensor(concatenated_tensor, data: Any, clone=True) -> Any:
+def disassemble_tensor(
+    concatenated_tensor: torch.Tensor, data: Any, clone: bool = True
+) -> Any:
     def fun(data) -> torch.Tensor:
         if len(data) == 1:
             return data[0]
@@ -171,4 +175,4 @@ def disassemble_tensor(concatenated_tensor, data: Any, clone=True) -> Any:
     if concatenated_tensor is None:
         return data
 
-    return __recursive_tensor_op(data, fun)
+    return recursive_tensor_op(data, fun)
