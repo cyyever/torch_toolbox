@@ -161,7 +161,6 @@ class Trainer(ModelExecutor):
         if use_DDP:
             self._model_with_loss = ParallelModelWithLoss.create(self._model_with_loss)
         super()._prepare_execution(**kwargs)
-        self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
 
     def train(self, **kwargs):
         with (
@@ -173,9 +172,7 @@ class Trainer(ModelExecutor):
             self._prepare_execution(**kwargs)
             try:
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
-                    self._execute_epoch(
-                        epoch=epoch, need_backward=True, in_training=True
-                    )
+                    self._execute_epoch(epoch=epoch)
 
                     for phase in (
                         MachineLearningPhase.Validation,
@@ -220,5 +217,5 @@ class Trainer(ModelExecutor):
             epoch=self.hyper_parameter.epoch,
         )
 
-    def _get_backward_loss(self, result, need_backward):
+    def _get_backward_loss(self, result):
         return result["loss"]

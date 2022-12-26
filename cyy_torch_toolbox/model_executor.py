@@ -171,6 +171,7 @@ class ModelExecutor(ModelExecutorBase):
             self.enable_hook(self.__profiler)
         else:
             self.disable_hook(self.__profiler)
+        self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
 
     @property
     def dataset_collection(self) -> DatasetCollection:
@@ -304,14 +305,13 @@ class ModelExecutor(ModelExecutorBase):
     def get_lr_scheduler(self):
         raise NotImplementedError()
 
-    def _execute_epoch(
-        self, epoch: int, in_training: bool, need_backward: bool = False
-    ) -> None:
+    def _execute_epoch(self, epoch: int, need_backward: bool = False) -> None:
         self.exec_hooks(
             ModelExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
         )
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
+        in_training = self.phase == MachineLearningPhase.Training
         for batch_index, batch in enumerate(self.dataloader):
             self.exec_hooks(
                 ModelExecutorHookPoint.AFTER_FETCH_BATCH,
@@ -371,8 +371,9 @@ class ModelExecutor(ModelExecutorBase):
                 **batch,
             )
 
-            loss = self._get_backward_loss(result=result, need_backward=need_backward)
-            if loss is not None:
+            if need_backward:
+                loss = self._get_backward_loss(result=result)
+                assert loss is not None
                 if self.has_hook(ModelExecutorHookPoint.MODEL_BACKWARD):
                     self.exec_hooks(ModelExecutorHookPoint.MODEL_BACKWARD, loss=loss)
                 else:
@@ -415,5 +416,5 @@ class ModelExecutor(ModelExecutorBase):
             epoch=epoch,
         )
 
-    def _get_backward_loss(self, result, need_backward):
+    def _get_backward_loss(self, result):
         raise NotImplementedError()
