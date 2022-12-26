@@ -14,28 +14,26 @@ class Inferencer(ModelExecutor):
     def _get_batch_size(self) -> int:
         return self.__batch_size
 
-    def inference(self, use_grad=False, epoch=1, **kwargs) -> bool:
-        self._prepare_execution(**kwargs)
-        self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
-        early_stop: bool = False
-        with (torch.set_grad_enabled(use_grad), torch.cuda.stream(self.cuda_stream)):
-            self.model.zero_grad(set_to_none=True)
-            try:
-                self._execute_epoch(
-                    epoch=epoch, need_backward=use_grad, in_training=False
-                )
-            except StopExecutingException:
-                get_logger().warning("stop inference")
-                early_stop = True
-            finally:
-                self._wait_stream()
+    def inference(self, use_grad: bool = False, epoch: int = 1, **kwargs: dict) -> bool:
+        error_return: bool = False
+        try:
+            self._prepare_execution(**kwargs)
+            with (
+                torch.set_grad_enabled(use_grad),
+                torch.cuda.stream(self.cuda_stream),
+            ):
+                self.model.zero_grad(set_to_none=True)
+                self._execute_epoch(epoch=epoch, need_backward=use_grad)
             self.exec_hooks(ModelExecutorHookPoint.AFTER_EXECUTE)
-        return not early_stop
+        except StopExecutingException:
+            get_logger().warning("stop inference")
+            error_return = True
+        finally:
+            self._wait_stream()
+        return not error_return
 
-    def _get_backward_loss(self, result, need_backward):
-        if need_backward:
-            return result["normalized_batch_loss"]
-        return None
+    def _get_backward_loss(self, result):
+        return result["normalized_batch_loss"]
 
     def get_gradient(self):
         normal_stop: bool = self.inference(use_grad=True)

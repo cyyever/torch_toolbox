@@ -124,7 +124,6 @@ class ModelWithLoss:
         )
         match output:
             case torch.Tensor():
-                assert self.loss_fun is not None
                 match self.loss_fun:
                     case nn.BCEWithLogitsLoss():
                         output = output.view(-1)
@@ -224,7 +223,7 @@ class ModelWithLoss:
 
     def __is_averaged_loss(self) -> bool | None:
         if hasattr(self.loss_fun, "reduction"):
-            if self.loss_fun.reduction in ("mean", "elementwise_mean"):
+            if self.loss_fun.reduction in ("mean",):
                 return True
             return False
         return None
