@@ -305,11 +305,8 @@ class ModelExecutor(ModelExecutorBase):
         raise NotImplementedError()
 
     def _execute_epoch(
-        self, epoch: int, need_backward: bool, in_training: bool
+        self, epoch: int, in_training: bool, need_backward: bool = False
     ) -> None:
-        # if epoch in self.get_data("skipped_epoch", set()):
-        #     get_logger().warning("skip epoch %s", epoch)
-        #     return
         self.exec_hooks(
             ModelExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
@@ -331,7 +328,7 @@ class ModelExecutor(ModelExecutorBase):
                 ):
                     get_logger().debug("drop last one-batch for batchnorm")
                     continue
-
+                need_backward = True
                 optimizer = self.get_optimizer()
                 optimizer.zero_grad(set_to_none=True)
 
