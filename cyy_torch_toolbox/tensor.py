@@ -67,10 +67,12 @@ class __RecursiveCheckPoint:
 def recursive_tensor_op(data: Any, fun: Callable, **kwargs: dict) -> Any:
     match data:
         case __RecursiveCheckPoint():
-            if not kwargs.pop("__check_recursive_point", False):
-                return data
-            return fun(data.data, **kwargs)
+            if kwargs.pop("__check_recursive_point", False):
+                return fun(data.data, **kwargs)
+            return data
         case torch.Tensor():
+            if kwargs.get("__check_recursive_point", False):
+                return data
             return fun(data, **kwargs)
         case list():
             return [recursive_tensor_op(element, fun, **kwargs) for element in data]
@@ -148,9 +150,9 @@ def assemble_tensors(data: Any) -> tuple[torch.Tensor, Any]:
         if data.numel() == 0:
             return __RecursiveCheckPoint(data=(data,))
         shape = list(data.shape)
-        old_offset = offset
         if not shape:
-            assert data.numel() == 1
+            return __RecursiveCheckPoint(data=(data.item(),))
+        old_offset = offset
         tensor_list.append(data.view(-1))
         offset += data.numel()
         return __RecursiveCheckPoint(data=(shape, old_offset))
@@ -170,13 +172,7 @@ def disassemble_tensor(
         if len(data) == 1:
             return data[0]
         shape, offset = data
-        if shape:
-            tensor = concatenated_tensor[offset: offset + numpy.prod(shape)].view(
-                *shape
-            )
-        else:
-            tensor = torch.tensor(concatenated_tensor[offset])
-
+        tensor = concatenated_tensor[offset: offset + numpy.prod(shape)].view(*shape)
         if clone:
             tensor = tensor.clone()
         return tensor
