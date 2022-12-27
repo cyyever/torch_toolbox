@@ -152,6 +152,8 @@ def assemble_tensors(data: Any) -> tuple[torch.Tensor, Any]:
         shape = list(data.shape)
         if not shape:
             return __RecursiveCheckPoint(data=(data.item(),))
+        if data.dtype != torch.float32:
+            return __RecursiveCheckPoint(data=(data,))
         old_offset = offset
         tensor_list.append(data.view(-1))
         offset += data.numel()
