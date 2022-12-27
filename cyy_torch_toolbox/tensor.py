@@ -1,6 +1,6 @@
 import functools
 import pickle
-from typing import Any
+from typing import Any, Callable
 
 import numpy
 import torch
@@ -64,9 +64,11 @@ class __RecursiveCheckPoint:
         self.data = data
 
 
-def recursive_tensor_op(data, fun, **kwargs) -> Any:
+def recursive_tensor_op(data: Any, fun: Callable, **kwargs: dict) -> Any:
     match data:
         case __RecursiveCheckPoint():
+            if kwargs.get("__check_recursive_point", False):
+                return data
             return fun(data.data, **kwargs)
         case torch.Tensor():
             return fun(data, **kwargs)
@@ -163,7 +165,7 @@ def assemble_tensors(data: Any) -> tuple[torch.Tensor, Any]:
 def disassemble_tensor(
     concatenated_tensor: torch.Tensor, data: Any, clone: bool = True
 ) -> Any:
-    def fun(data) -> torch.Tensor:
+    def fun(data: __RecursiveCheckPoint) -> torch.Tensor:
         if len(data) == 1:
             return data[0]
         shape, offset = data
@@ -175,4 +177,4 @@ def disassemble_tensor(
     if concatenated_tensor is None:
         return data
 
-    return recursive_tensor_op(data, fun)
+    return recursive_tensor_op(data, fun, __check_recursive_point=True)
