@@ -9,14 +9,14 @@ try:
     import torchtext
 
     has_torchtext = True
-except ModuleNotFoundError:
+except BaseException:
     has_torchtext = False
 
 try:
     import torchaudio
 
     has_torchaudio = True
-except ModuleNotFoundError:
+except BaseException:
     has_torchaudio = False
 
 if has_torchaudio:
@@ -26,14 +26,14 @@ try:
     import medmnist
 
     has_medmnist = True
-except ModuleNotFoundError:
+except BaseException:
     has_medmnist = False
 
 try:
     import datasets
 
     has_hugging_face = True
-except ModuleNotFoundError:
+except BaseException:
     has_hugging_face = False
 
 
