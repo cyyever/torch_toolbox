@@ -141,6 +141,7 @@ class Trainer(ModelExecutor):
         save_best_model: bool = False,
         save_epoch_model: bool = False,
         save_last_model: bool = False,
+        batch_loss_log_times: None | int = None,
         **kwargs: dict
     ) -> None:
         self.__keep_model_hook.save_best_model = save_best_model
@@ -157,6 +158,8 @@ class Trainer(ModelExecutor):
         else:
             if self.__debugger is not None:
                 self.disable_hook(self.__debugger)
+        if batch_loss_log_times is not None:
+            self.__batch_loss_logger.log_times = batch_loss_log_times
 
         if use_DDP:
             self._model_with_loss = ParallelModelWithLoss.create(self._model_with_loss)
