@@ -31,7 +31,12 @@ class PerformanceMetricLogger(MetricLogger):
                 metric_str = metric_str + "{}:{:e}, ".format(k, value)
         metric_str = metric_str[:-2]
         get_logger().info(
-            "%s epoch: %s, %s %s", self.prefix, epoch, phase_str, metric_str
+            "%s epoch: %s, %s %s, in %.3f seconds",
+            self.prefix,
+            epoch,
+            phase_str,
+            metric_str,
+            model_executor.performance_metric.get_epoch_metric(epoch, "duration"),
         )
 
         if model_executor.phase == MachineLearningPhase.Training:
@@ -41,13 +46,6 @@ class PerformanceMetricLogger(MetricLogger):
                     "%s epoch: %s, grad norm is %s", self.prefix, epoch, grad_norm
                 )
 
-        get_logger().info(
-            "%s epoch: %s, %s use %.3f seconds",
-            self.prefix,
-            epoch,
-            phase_str,
-            model_executor.performance_metric.get_epoch_metric(epoch, "duration"),
-        )
         data_waiting_time = model_executor.performance_metric.get_epoch_metric(
             epoch, "data_waiting_time"
         )
