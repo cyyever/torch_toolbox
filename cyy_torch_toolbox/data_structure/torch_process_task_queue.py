@@ -15,10 +15,10 @@ class TorchProcessTaskQueue(TorchTaskQueue):
     def __init__(
         self,
         worker_fun: Callable | None = None,
-        send_tensor_in_cpu: bool = True,
+        send_tensor_in_cpu: bool = False,
         use_manager: bool = True,
         assemble_tensor: bool = False,
-        **kwargs
+        **kwargs: dict
     ):
         self.use_manager = use_manager
         self.__send_tensor_in_cpu = send_tensor_in_cpu
