@@ -32,7 +32,7 @@ class DefaultConfig:
         self.save_dir = None
         self.log_level = None
         self.cache_transforms = None
-        self.use_amp = True
+        self.use_amp = torch.cuda.is_available()
         self.benchmark_cudnn = True
 
     def load_config(self, conf, check_config: bool = True) -> dict:

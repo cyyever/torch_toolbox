@@ -99,7 +99,7 @@ class HyperParameter:
     def set_lr_scheduler_factory(self, lr_scheduler_factory: Callable) -> None:
         self.__lr_scheduler_factory = lr_scheduler_factory
 
-    def __get_iterations_per_epoch(self, training_dataset_size):
+    def get_iterations_per_epoch(self, training_dataset_size):
         if self.batch_size == 1:
             return training_dataset_size
         return (training_dataset_size + self.batch_size - 1) // self.batch_size
@@ -146,7 +146,7 @@ class HyperParameter:
             full_kwargs["max_lr"] = 10 * hyper_parameter.get_learning_rate(trainer)
             full_kwargs[
                 "total_steps"
-            ] = hyper_parameter.epoch * hyper_parameter.__get_iterations_per_epoch(
+            ] = hyper_parameter.epoch * hyper_parameter.get_iterations_per_epoch(
                 training_dataset_size
             )
             full_kwargs["anneal_strategy"] = "linear"
@@ -192,12 +192,13 @@ class HyperParameter:
 
     def get_optimizer(self, trainer):
         assert self.__optimizer_factory is not None
+        foreach = not torch.backends.mps.is_available()
         kwargs: dict = {
             "params": trainer.model.parameters(),
             "lr": self.get_learning_rate(trainer),
             "momentum": self.momentum,
             "weight_decay": self.weight_decay / trainer.dataset_size,
-            "foreach": True,
+            "foreach": foreach,
         }
         return call_fun(self.__optimizer_factory, kwargs)
 
