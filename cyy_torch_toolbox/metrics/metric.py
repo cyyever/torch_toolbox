@@ -1,4 +1,4 @@
-from hook import Hook
+from cyy_torch_toolbox.hook import Hook
 
 
 class Metric(Hook):

@@ -1,5 +1,5 @@
 import torch
-from hook import Hook
+from cyy_torch_toolbox.hook import Hook
 
 from .cuda_memory_profiler import CUDAMemoryProfiler
 from .cuda_stream_profiler import CUDAStreamProfiler
