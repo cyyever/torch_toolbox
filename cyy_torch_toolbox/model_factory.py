@@ -10,7 +10,7 @@ try:
     import transformers
 
     has_hugging_face = True
-except ModuleNotFoundError:
+except BaseException:
     has_hugging_face = False
 from cyy_naive_lib.log import get_logger
 
