@@ -39,18 +39,15 @@ class Hook:
             return (hook_point, name, getattr(self, method_name))
         return None
 
-    def yield_hook_of_hook_point(self, hook_point):
-        for c in self._sub_hooks:
-            for hook in c.yield_hook_of_hook_point(hook_point):
-                yield hook
-        res = self.__get_hook(hook_point)
-        if res is not None:
-            yield res
-
     def yield_hooks(self):
-        for hook_point in ModelExecutorHookPoint:
-            for hook in self.yield_hook_of_hook_point(hook_point):
+        for c in self._sub_hooks:
+            for hook in c.yield_hooks():
                 yield hook
+
+        for hook_point in ModelExecutorHookPoint:
+            res = self.__get_hook(hook_point)
+            if res is not None:
+                yield res
 
 
 class HookCollection:
