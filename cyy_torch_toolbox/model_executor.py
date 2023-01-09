@@ -42,60 +42,32 @@ class ModelExecutor(ModelExecutorBase):
         self.__device = None
         self.__dataloader = None
         self.__cuda_stream = None
-        self.__logger: ModelExecutorLogger = ModelExecutorLogger()
-        self.append_hook(self.__logger)
-        self.__profiler = Profiler()
-        self.append_hook(self.__profiler)
-        self.__performance_metric = PerformanceMetric(self._model_with_loss.model_type)
-        self.append_hook(self.__performance_metric)
-        self.__performance_metric_logger = PerformanceMetricLogger()
-        self.append_hook(self.__performance_metric_logger)
-        self.__metric_tb: MetricTensorBoard = MetricTensorBoard()
-        self.append_hook(self.__metric_tb)
+        self.append_hook(ModelExecutorLogger(), "logger")
+        self.append_hook(Profiler(), "profiler")
+        self.append_hook(
+            PerformanceMetric(self._model_with_loss.model_type), "performance_metric"
+        )
+        self.append_hook(PerformanceMetricLogger(), "performance_metric_logger")
+        self.append_hook(MetricTensorBoard(), "tensor_board_visualizer")
         self.debugging_mode = False
         self.profiling_mode = False
         self.__save_dir: None | str = None
         self.cache_transforms = None
-        self.__amp_hook = None
-
-    @property
-    def visualizer(self):
-        return self.__metric_tb
 
     @property
     def phase(self):
         return self.__phase
 
-    @property
-    def performance_metric(self):
-        return self.__performance_metric
-
-    @property
-    def performance_metric_logger(self):
-        return self.__performance_metric_logger
-
-    @property
-    def profiler(self):
-        if "profiler" not in self._data["hooks"]:
-            self._data["hooks"] = Profiler()
-        return self.__profiler
-
     def set_save_dir(self, save_dir: str) -> None:
         self.__save_dir = save_dir
         if save_dir is not None:
-            log_dir = os.path.join(save_dir, "visualizer")
-            os.makedirs(log_dir, exist_ok=True)
-            self.__metric_tb.set_log_dir(log_dir)
+            data_dir = os.path.join(save_dir, "visualizer")
+            os.makedirs(data_dir, exist_ok=True)
+            # self.__metric_tb.set_data_dir(data_dir)
 
     @property
     def save_dir(self):
         return self.__save_dir
-
-    def disable_logger(self):
-        self.disable_hook(self.__logger)
-
-    def disable_performance_metric_logger(self):
-        self.disable_hook(self.__performance_metric_logger)
 
     @property
     def dataset(self):
@@ -152,16 +124,16 @@ class ModelExecutor(ModelExecutorBase):
         return copy.copy(self._model_with_loss)
 
     def has_amp(self) -> bool:
-        return self.__amp_hook is not None
+        return self.has_hook_obj("AMP")
 
-    def set_amp(self, enabled=True):
-        if self.__amp_hook is not None:
-            self.remove_hook(self.__amp_hook)
-            self.__amp_hook = None
+    def set_amp(self, enabled: bool = True) -> None:
+        if enabled and not self.has_amp():
+            self.append_hook(AMP(), "AMP")
         if enabled:
-            self.__amp_hook = AMP()
-            self.append_hook(self.__amp_hook)
-        get_logger().debug("use AMP")
+            self.enable_hook("AMP")
+            get_logger().debug("use AMP")
+        else:
+            self.disable_hook("AMP")
 
     def _prepare_execution(self, **kwargs):
         self._data.clear()
@@ -174,9 +146,9 @@ class ModelExecutor(ModelExecutorBase):
 
         if self.profiling_mode:
             get_logger().warning("use profiling mode")
-            self.enable_hook(self.__profiler)
+            self.enable_hook(hook_name="profiler")
         else:
-            self.disable_hook(self.__profiler)
+            self.disable_hook(hook_name="profiler")
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
 
     @property
