@@ -82,6 +82,10 @@ class Trainer(ModelExecutor):
         inferencer.set_device(self.device)
         if self.has_amp():
             inferencer.set_amp()
+        if self.save_dir is not None:
+            inferencer.set_save_dir(self.save_dir)
+        if self._visualizer_prefix is not None:
+            inferencer.set_visualizer_prefix(self._visualizer_prefix)
         return inferencer
 
     def get_optimizer(self):

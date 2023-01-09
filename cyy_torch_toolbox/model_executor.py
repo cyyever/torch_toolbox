@@ -54,6 +54,7 @@ class ModelExecutor(ModelExecutorBase):
         self.debugging_mode = False
         self.profiling_mode = False
         self.__save_dir: None | str = None
+        self._visualizer_prefix: None | str = None
         self.cache_transforms = None
 
     @property
@@ -74,6 +75,7 @@ class ModelExecutor(ModelExecutorBase):
                     hook.set_data_dir(data_dir)
 
     def set_visualizer_prefix(self, prefix: str) -> None:
+        self._visualizer_prefix = prefix
         for hook in self.get_hooks():
             if isinstance(hook, MetricVisualizer):
                 hook.set_prefix(prefix)

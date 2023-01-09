@@ -30,8 +30,8 @@ class PerformanceMetricLogger(MetricVisualizer):
                 metric_str = metric_str + "{}:{:e}, ".format(k, value)
         metric_str = metric_str[:-2]
         get_logger().info(
-            "%s epoch: %s, %s %s, in %.3f seconds",
-            self.prefix,
+            "%sepoch: %s, %s %s, in %.3f seconds",
+            self.prefix + " " if self.prefix else "",
             epoch,
             phase_str,
             metric_str,
@@ -42,7 +42,10 @@ class PerformanceMetricLogger(MetricVisualizer):
             grad_norm = performance_metric.get_grad_norm(epoch)
             if grad_norm is not None:
                 get_logger().info(
-                    "%s epoch: %s, grad norm is %s", self.prefix, epoch, grad_norm
+                    "%sepoch: %s, grad norm is %s",
+                    self.prefix + " " if self.prefix else "",
+                    epoch,
+                    grad_norm,
                 )
 
         data_waiting_time = performance_metric.get_epoch_metric(
@@ -51,8 +54,8 @@ class PerformanceMetricLogger(MetricVisualizer):
 
         if data_waiting_time is not None:
             get_logger().info(
-                "%s epoch: %s, %s use time %s to wait data",
-                self.prefix,
+                "%sepoch: %s, %s use time %s to wait data",
+                self.prefix + " " if self.prefix else "",
                 epoch,
                 phase_str,
                 data_waiting_time,
