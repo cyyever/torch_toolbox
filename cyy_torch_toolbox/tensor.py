@@ -141,7 +141,7 @@ def tensor_clone(data, detach=True):
     return recursive_tensor_op(data, fun, detach=detach)
 
 
-def assemble_tensors(data: Any) -> tuple[torch.Tensor, Any]:
+def assemble_tensors(data: Any) -> tuple[torch.Tensor | None, Any]:
     tensor_list = []
     offset = 0
 
@@ -170,7 +170,7 @@ def assemble_tensors(data: Any) -> tuple[torch.Tensor, Any]:
 def disassemble_tensor(
     concatenated_tensor: torch.Tensor, data: Any, clone: bool = True
 ) -> Any:
-    def fun(data: __RecursiveCheckPoint) -> torch.Tensor:
+    def fun(data: __RecursiveCheckPoint) -> Any:
         if len(data) == 1:
             return data[0]
         shape, offset = data

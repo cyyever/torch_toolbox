@@ -34,7 +34,7 @@ class ModelExecutor(ModelExecutorBase):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         phase: MachineLearningPhase,
-    ):
+    ) -> None:
         super().__init__()
         self._model_with_loss = model_with_loss
         self.__dataset_collection: DatasetCollection = dataset_collection
@@ -42,7 +42,7 @@ class ModelExecutor(ModelExecutorBase):
         self.__device = None
         self.__dataloader = None
         self.__cuda_stream = None
-        self.__logger = ModelExecutorLogger()
+        self.__logger: ModelExecutorLogger = ModelExecutorLogger()
         self.append_hook(self.__logger)
         self.__profiler = Profiler()
         self.append_hook(self.__profiler)
@@ -73,6 +73,12 @@ class ModelExecutor(ModelExecutorBase):
     @property
     def performance_metric_logger(self):
         return self.__performance_metric_logger
+
+    @property
+    def profiler(self):
+        if "profiler" not in self._data["hooks"]:
+            self._data["hooks"] = Profiler()
+        return self.__profiler
 
     def set_save_dir(self, save_dir: str) -> None:
         self.__save_dir = save_dir
@@ -158,7 +164,7 @@ class ModelExecutor(ModelExecutorBase):
         get_logger().debug("use AMP")
 
     def _prepare_execution(self, **kwargs):
-        self.clear_data()
+        self._data.clear()
         for name in dir(self):
             if isinstance(getattr(type(self), name, None), property):
                 continue
@@ -349,7 +355,7 @@ class ModelExecutor(ModelExecutorBase):
                     ModelExecutorHookPoint.MODEL_FORWARD,
                     model_kwargs=kwargs,
                 )
-                result = self.pop_data("forward_result")
+                result = self._data.pop("forward_result")
             else:
                 result = self._model_with_loss(**kwargs)
 
@@ -388,9 +394,9 @@ class ModelExecutor(ModelExecutorBase):
             if in_training:
                 step_skipped: bool = False
                 if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
-                    self.set_data("step_skipped", False)
+                    self._data["step_skipped"] = False
                     self.exec_hooks(ModelExecutorHookPoint.OPTIMIZER_STEP)
-                    step_skipped = self.get_data("step_skipped")
+                    step_skipped = self._data["step_skipped"]
                 else:
                     optimizer.step()
                 if not step_skipped:

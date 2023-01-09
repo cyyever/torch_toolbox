@@ -17,6 +17,6 @@ class BatchLossLogger(MetricLogger):
                 self.prefix,
                 epoch,
                 batch_index,
-                model_executor.get_data("cur_learning_rates", None)[0],
+                model_executor._data["cur_learning_rates"][0],
                 result["loss"],
             )

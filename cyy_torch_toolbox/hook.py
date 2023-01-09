@@ -30,26 +30,26 @@ class Hook:
         for _, name, __ in self.yield_hooks():
             yield name
 
-    def __get_hook(self, cb_point):
+    def __get_hook(self, hook_point: ModelExecutorHookPoint) -> tuple | None:
         if not self._enabled:
             return None
-        method_name = "_" + str(cb_point).split(".")[-1].lower()
+        method_name = "_" + str(hook_point).split(".")[-1].lower()
         name = self.__class__.__name__ + "." + str(method_name)
         if hasattr(self, method_name):
-            return (cb_point, name, getattr(self, method_name))
+            return (hook_point, name, getattr(self, method_name))
         return None
 
-    def yield_hook_of_cb_point(self, cb_point):
+    def yield_hook_of_hook_point(self, hook_point):
         for c in self._sub_hooks:
-            for hook in c.yield_hook_of_cb_point(cb_point):
+            for hook in c.yield_hook_of_hook_point(hook_point):
                 yield hook
-        res = self.__get_hook(cb_point)
+        res = self.__get_hook(hook_point)
         if res is not None:
             yield res
 
     def yield_hooks(self):
-        for cb_point in ModelExecutorHookPoint:
-            for hook in self.yield_hook_of_cb_point(cb_point):
+        for hook_point in ModelExecutorHookPoint:
+            for hook in self.yield_hook_of_hook_point(hook_point):
                 yield hook
 
 
@@ -58,6 +58,7 @@ class HookCollection:
         self.__hooks: Dict[ModelExecutorHookPoint, List[Dict[str, Callable]]] = {}
         self.__stripable_hooks: set = set()
         self.__disabled_hooks: set = set()
+        self.__hook_objs: dict = {}
 
     def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs: dict) -> None:
         for hook in copy.copy(self.__hooks.get(hook_point, [])):
@@ -87,7 +88,7 @@ class HookCollection:
         fun: Callable,
         stripable: bool = False,
     ) -> None:
-        self.__insert_callback(-1, hook_point, name, fun, stripable)
+        self.__insert_hook(-1, hook_point, name, fun, stripable)
 
     def prepend_named_hook(
         self,
@@ -96,9 +97,9 @@ class HookCollection:
         fun: Callable,
         stripable: bool = False,
     ) -> None:
-        self.__insert_callback(0, hook_point, name, fun, stripable)
+        self.__insert_hook(0, hook_point, name, fun, stripable)
 
-    def __insert_callback(
+    def __insert_hook(
         self,
         pos: int,
         hook_point: ModelExecutorHookPoint,
@@ -120,18 +121,25 @@ class HookCollection:
             else:
                 self.__hooks[hook_point].insert(pos, data)
 
-    def insert_hook(self, pos: int, hook: Hook) -> None:
+    def insert_hook(self, pos: int, hook: Hook, hook_name: str | None = None) -> None:
+        if hook_name is not None:
+            assert hook_name not in self.__hook_objs
+            self.__hook_objs[hook_name] = hook
         flag = False
         for hook_point, name, fun in hook.yield_hooks():
-            self.__insert_callback(pos, hook_point, name, fun, hook.stripable)
+            self.__insert_hook(pos, hook_point, name, fun, hook.stripable)
             flag = True
+
         assert flag
 
-    def append_hook(self, hook: Hook) -> None:
-        self.insert_hook(-1, hook)
+    def get_hook(self, hook_name: str) -> Hook:
+        return self.__hook_objs[hook_name]
 
-    def prepend_hook(self, hook: Hook) -> None:
-        self.insert_hook(0, hook)
+    def append_hook(self, hook: Hook, hook_name: str | None = None) -> None:
+        self.insert_hook(-1, hook, hook_name)
+
+    def prepend_hook(self, hook: Hook, hook_name: str | None = None) -> None:
+        self.insert_hook(0, hook, hook_name)
 
     def enable_hook(self, hook: Hook) -> None:
         for name in hook.yield_hook_names():
@@ -142,7 +150,9 @@ class HookCollection:
         for name in hook.yield_hook_names():
             self.__disabled_hooks.add(name)
 
-    def remove_hook(self, hook: Hook) -> None:
+    def remove_hook(self, hook: Hook, hook_name: str | None = None) -> None:
+        if hook_name is not None:
+            hook = self.__hook_objs.pop(hook_name)
         for hook_point, name, _ in hook.yield_hooks():
             self.remove_named_hook(name, hook_point)
 
