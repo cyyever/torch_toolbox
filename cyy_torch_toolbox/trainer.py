@@ -58,8 +58,8 @@ class Trainer(ModelExecutor):
             return None
         return keep_model_hook.best_model[0]
 
-    def get_inferencer_performance_metric(self, phase):
-        return self.__inferencers[phase].performance_metric
+    def get_cached_inferencer(self, phase) -> Inferencer:
+        return self.__inferencers[phase]
 
     def get_inferencer(
         self, phase: MachineLearningPhase, copy_model: bool = False

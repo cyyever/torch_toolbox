@@ -16,8 +16,10 @@ from cyy_torch_toolbox.hooks.amp import AMP
 from cyy_torch_toolbox.hooks.model_executor_logger import ModelExecutorLogger
 from cyy_torch_toolbox.hooks.profiler import Profiler
 from cyy_torch_toolbox.hyper_parameter import HyperParameter
-from cyy_torch_toolbox.metric_visualizers.metric_tensorboard import \
-    MetricTensorBoard
+# from cyy_torch_toolbox.metric_visualizers.metric_tensorboard import \
+#     MetricTensorBoard
+from cyy_torch_toolbox.metric_visualizers.metric_visualizer import \
+    MetricVisualizer
 from cyy_torch_toolbox.metric_visualizers.performance_metric_logger import \
     PerformanceMetricLogger
 from cyy_torch_toolbox.metrics.performance_metric import PerformanceMetric
@@ -48,11 +50,15 @@ class ModelExecutor(ModelExecutorBase):
             PerformanceMetric(self._model_with_loss.model_type), "performance_metric"
         )
         self.append_hook(PerformanceMetricLogger(), "performance_metric_logger")
-        self.append_hook(MetricTensorBoard(), "tensor_board_visualizer")
+        # self.append_hook(MetricTensorBoard(), "tensor_board_visualizer")
         self.debugging_mode = False
         self.profiling_mode = False
         self.__save_dir: None | str = None
         self.cache_transforms = None
+
+    @property
+    def performance_metric(self):
+        return self.get_hook("performance_metric")
 
     @property
     def phase(self):
@@ -64,8 +70,13 @@ class ModelExecutor(ModelExecutorBase):
             data_dir = os.path.join(save_dir, "visualizer")
             os.makedirs(data_dir, exist_ok=True)
             for hook in self.get_hooks():
-                if hasattr(hook, "set_data_dir"):
+                if isinstance(hook, MetricVisualizer):
                     hook.set_data_dir(data_dir)
+
+    def set_visualizer_prefix(self, prefix: str) -> None:
+        for hook in self.get_hooks():
+            if isinstance(hook, MetricVisualizer):
+                hook.set_prefix(prefix)
 
     @property
     def save_dir(self):

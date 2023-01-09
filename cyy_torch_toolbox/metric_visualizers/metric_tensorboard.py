@@ -66,13 +66,14 @@ class MetricTensorBoard(MetricVisualizer):
                 momentum = group["momentum"]
                 self.writer.add_scalar(self.get_tag_name("momentum"), momentum, epoch)
 
-        validation_metric = trainer.get_inferencer_performance_metric(
+        validation_metric = trainer.get_cached_inferencer(
             MachineLearningPhase.Validation
-        )
+        ).get_hook("performance_metric")
+        performance_metric = trainer.get_hook("performance_metric")
         self.writer.add_scalars(
             self.get_tag_name("training & validation loss"),
             {
-                "training loss": trainer.performance_metric.get_loss(epoch),
+                "training loss": performance_metric.get_loss(epoch),
                 "validation loss": validation_metric.get_loss(epoch),
             },
             epoch,
@@ -81,7 +82,7 @@ class MetricTensorBoard(MetricVisualizer):
         self.writer.add_scalars(
             self.get_tag_name("training & validation accuracy"),
             {
-                "training accuracy": trainer.performance_metric.get_accuracy(epoch),
+                "training accuracy": performance_metric.get_accuracy(epoch),
                 "validation accuracy": validation_metric.get_accuracy(epoch),
             },
             epoch,
@@ -101,8 +102,8 @@ class MetricTensorBoard(MetricVisualizer):
         #                 },
         #                 epoch,
         #             )
-        test_metric = trainer.get_inferencer_performance_metric(
-            MachineLearningPhase.Test
+        test_metric = trainer.get_cached_inferencer(MachineLearningPhase.Test).get_hook(
+            "performance_metric"
         )
         self.writer.add_scalar(
             self.get_tag_name("test loss"),
