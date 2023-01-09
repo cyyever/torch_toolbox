@@ -13,8 +13,8 @@ class BatchLossLogger(MetricVisualizer):
         interval = model_executor.dataset_size // (self.log_times * batch_size)
         if interval == 0 or batch_index % interval == 0:
             get_logger().info(
-                "%s epoch: %s, batch: %s, learning rate: %e, batch loss: %e",
-                self.prefix,
+                "%sepoch: %s, batch: %s, learning rate: %e, batch loss: %e",
+                self.prefix + " " if self.prefix else "",
                 epoch,
                 batch_index,
                 model_executor._data["cur_learning_rates"][0],
