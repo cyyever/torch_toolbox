@@ -52,10 +52,6 @@ class Trainer(ModelExecutor):
             inferencer.set_device(device)
 
     @property
-    def batch_loss_logger(self):
-        return self.get_hook("batch_loss_logger")
-
-    @property
     def best_model(self):
         keep_model_hook = self.get_hook("keep_model_hook")
         if keep_model_hook.best_model is None:
@@ -146,7 +142,6 @@ class Trainer(ModelExecutor):
                 self.disable_hook(hook_name="debugger")
         if batch_loss_log_times is not None:
             self.get_hook("batch_loss_logger").log_times = batch_loss_log_times
-
         if use_DDP:
             self._model_with_loss = ParallelModelWithLoss.create(self._model_with_loss)
         super()._prepare_execution(**kwargs)
@@ -172,7 +167,7 @@ class Trainer(ModelExecutor):
                             and self.dataset_collection.has_dataset(phase=phase)
                         ):
                             inferencer = self.get_inferencer(phase)
-                            inferencer.disable_logger()
+                            inferencer.disable_hook("logger")
                             self.__inferencers[phase] = inferencer
                         inferencer = self.__inferencers.get(phase, None)
                         if inferencer is not None:
@@ -189,7 +184,9 @@ class Trainer(ModelExecutor):
                         continue
                     match lr_scheduler:
                         case torch.optim.lr_scheduler.ReduceLROnPlateau():
-                            training_loss = self.performance_metric.get_loss(epoch)
+                            training_loss = self.get_hook(
+                                "performance_metric"
+                            ).get_loss(epoch)
                             get_logger().debug(
                                 "call ReduceLROnPlateau for training loss %s",
                                 training_loss,

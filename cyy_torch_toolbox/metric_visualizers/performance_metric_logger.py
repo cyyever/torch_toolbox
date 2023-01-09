@@ -2,25 +2,24 @@ import torch
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 
-from .metric_logger import MetricLogger
+from .metric_visualizer import MetricVisualizer
 
 
-class PerformanceMetricLogger(MetricLogger):
-    def _after_epoch(self, model_executor, **kwargs):
-        epoch = kwargs["epoch"]
-
+class PerformanceMetricLogger(MetricVisualizer):
+    def _after_epoch(self, model_executor, epoch, **kwargs):
         phase_str = "training"
         if model_executor.phase == MachineLearningPhase.Validation:
             phase_str = "validation"
         elif model_executor.phase == MachineLearningPhase.Test:
             phase_str = "test"
+        performance_metric = model_executor.get_hook("performance_metric")
 
         metric_str = ""
         metrics = ("loss", "accuracy", "class_accuracy")
         if model_executor.dataset_collection.dataset_type == DatasetType.Text:
             metrics = metrics + ("perplexity",)
         for k in metrics:
-            value = model_executor.performance_metric.get_epoch_metric(epoch, k)
+            value = performance_metric.get_epoch_metric(epoch, k)
             if value is None:
                 continue
             if isinstance(value, torch.Tensor):
@@ -36,17 +35,17 @@ class PerformanceMetricLogger(MetricLogger):
             epoch,
             phase_str,
             metric_str,
-            model_executor.performance_metric.get_epoch_metric(epoch, "duration"),
+            performance_metric.get_epoch_metric(epoch, "duration"),
         )
 
         if model_executor.phase == MachineLearningPhase.Training:
-            grad_norm = model_executor.performance_metric.get_grad_norm(epoch)
+            grad_norm = performance_metric.get_grad_norm(epoch)
             if grad_norm is not None:
                 get_logger().info(
                     "%s epoch: %s, grad norm is %s", self.prefix, epoch, grad_norm
                 )
 
-        data_waiting_time = model_executor.performance_metric.get_epoch_metric(
+        data_waiting_time = performance_metric.get_epoch_metric(
             epoch, "data_waiting_time"
         )
 

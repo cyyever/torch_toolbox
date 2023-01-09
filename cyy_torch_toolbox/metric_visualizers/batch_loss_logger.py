@@ -1,9 +1,9 @@
 from cyy_naive_lib.log import get_logger
 
-from .metric_logger import MetricLogger
+from .metric_visualizer import MetricVisualizer
 
 
-class BatchLossLogger(MetricLogger):
+class BatchLossLogger(MetricVisualizer):
     log_times = 5
 
     def _after_batch(self, epoch, batch_index, batch_size, result, **kwargs):

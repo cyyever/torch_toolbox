@@ -1,5 +1,5 @@
 import copy
-from typing import Callable, Dict, List
+from typing import Callable, Dict, Generator, List
 
 from cyy_torch_toolbox.ml_type import ModelExecutorHookPoint
 
@@ -16,6 +16,9 @@ class Hook:
             self._sub_hooks.append(value)
         super().__setattr__(name, value)
 
+    def enable(self):
+        self._enabled = True
+
     def disable(self):
         self._enabled = False
 
@@ -26,7 +29,7 @@ class Hook:
     def set_stripable(self):
         self.__stripable = True
 
-    def yield_hook_names(self):
+    def yield_hook_names(self) -> Generator:
         for _, name, __ in self.yield_hooks():
             yield name
 
@@ -132,6 +135,9 @@ class HookCollection:
     def get_hook(self, hook_name: str) -> Hook:
         return self.__hook_objs[hook_name]
 
+    def get_hooks(self) -> Generator:
+        return self.__hook_objs.values()
+
     def has_hook_obj(self, hook_name: str) -> bool:
         return hook_name in self.__hook_objs
 
@@ -141,22 +147,17 @@ class HookCollection:
     def prepend_hook(self, hook: Hook, hook_name: str | None = None) -> None:
         self.insert_hook(0, hook, hook_name)
 
-    def enable_hook(
-        self, hook: Hook | None = None, hook_name: str | None = None
-    ) -> None:
-        if hook_name is not None:
-            hook = self.get_hook(hook_name)
+    def enable_hook(self, hook_name: str) -> None:
+        hook = self.get_hook(hook_name)
         for name in hook.yield_hook_names():
             if name in self.__disabled_hooks:
                 self.__disabled_hooks.remove(name)
 
-    def disable_hook(
-        self, hook: Hook | None = None, hook_name: str | None = None
-    ) -> None:
-        if hook_name is not None:
+    def disable_hook(self, hook_name: str) -> None:
+        if self.has_hook_obj(hook_name):
             hook = self.get_hook(hook_name)
-        for name in hook.yield_hook_names():
-            self.__disabled_hooks.add(name)
+            for name in hook.yield_hook_names():
+                self.__disabled_hooks.add(name)
 
     def remove_hook(self, hook: Hook, hook_name: str | None = None) -> None:
         if hook_name is not None:

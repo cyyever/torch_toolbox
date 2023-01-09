@@ -7,21 +7,15 @@ from cyy_torch_toolbox.metrics.prob_metric import ProbabilityMetric
 class ClassificationInferencer(Inferencer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__prob_metric = None
-
-    @property
-    def prob_metric(self) -> ProbabilityMetric:
-        return self.__prob_metric
 
     def inference(self, **kwargs) -> bool:
         sample_prob = kwargs.get("sample_prob", False)
         if sample_prob:
-            if self.__prob_metric is None:
-                self.__prob_metric = ProbabilityMetric()
-                self.append_hook(self.__prob_metric)
+            if not self.has_hook_obj("probability_metric"):
+                self.append_hook(ProbabilityMetric(), "probability_metric")
+            self.enable_hook(hook_name="probability_metric")
         else:
-            if self.__prob_metric is not None:
-                self.disable_hook(self.__prob_metric)
+            self.disable_hook(hook_name="probability_metric")
         return super().inference(**kwargs)
 
 
