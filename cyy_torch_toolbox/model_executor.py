@@ -63,7 +63,9 @@ class ModelExecutor(ModelExecutorBase):
         if save_dir is not None:
             data_dir = os.path.join(save_dir, "visualizer")
             os.makedirs(data_dir, exist_ok=True)
-            # self.__metric_tb.set_data_dir(data_dir)
+            for hook in self.get_hooks():
+                if hasattr(hook, "set_data_dir"):
+                    hook.set_data_dir(data_dir)
 
     @property
     def save_dir(self):
