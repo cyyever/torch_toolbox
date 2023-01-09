@@ -91,27 +91,21 @@ class Trainer(ModelExecutor):
         return inferencer
 
     def get_optimizer(self):
-        if not self.has_data("optimizer"):
-            self.set_data(
-                "optimizer",
-                self.hyper_parameter.get_optimizer(self),
-            )
-        return self.get_data("optimizer")
+        if "optimizer" not in self._data:
+            self._data["optimizer"] = self.hyper_parameter.get_optimizer(self)
+        return self._data["optimizer"]
 
     def remove_optimizer(self):
-        self.remove_data("optimizer")
+        self._data.pop("optimizer", None)
         self.remove_lr_scheduler()
 
     def get_lr_scheduler(self):
-        if not self.has_data("lr_scheduler"):
-            self.set_data(
-                "lr_scheduler",
-                self.hyper_parameter.get_lr_scheduler(self),
-            )
-        return self.get_data("lr_scheduler")
+        if "lr_scheduler" not in self._data:
+            self._data["lr_scheduler"] = self.hyper_parameter.get_lr_scheduler(self)
+        return self._data["lr_scheduler"]
 
     def remove_lr_scheduler(self):
-        self.remove_data("lr_scheduler")
+        self._data.pop("lr_scheduler", None)
 
     def load_model(self, model_path):
         super().load_model(model_path)
@@ -128,12 +122,6 @@ class Trainer(ModelExecutor):
     def offload_from_memory(self):
         super().offload_from_memory()
         self.__keep_model_hook.offload_from_memory()
-
-    def add_skipped_epoch(self, epoch):
-        key = "skipped_epoch"
-        old_data = self.get_data(key, set())
-        old_data.add(epoch)
-        self.set_data(key, old_data)
 
     def _prepare_execution(
         self,
