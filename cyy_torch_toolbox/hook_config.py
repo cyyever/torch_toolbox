@@ -6,6 +6,7 @@ from cyy_torch_toolbox.hooks.debugger import Debugger
 from cyy_torch_toolbox.hooks.profiler import Profiler
 from cyy_torch_toolbox.metric_visualizers.performance_metric_recorder import \
     PerformanceMetricRecorder
+from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
 class HookConfig:
@@ -16,7 +17,8 @@ class HookConfig:
         self.save_performance_metric = True
 
     def append_hooks(self, model_executor) -> None:
-        model_executor.enable_or_disable_hook("AMP", self.use_amp, AMP())
+        if model_executor.phase == MachineLearningPhase.Training:
+            model_executor.enable_or_disable_hook("AMP", self.use_amp, AMP())
         model_executor.enable_or_disable_hook("debugger", self.debug, Debugger())
         model_executor.enable_or_disable_hook("profiler", self.profile, Profiler())
         model_executor.enable_or_disable_hook(

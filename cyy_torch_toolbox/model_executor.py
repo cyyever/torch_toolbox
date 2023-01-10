@@ -41,7 +41,7 @@ class ModelExecutor(ModelExecutorBase):
         self._model_with_loss = model_with_loss
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase = phase
-        self.__hook_config = hook_config
+        self._hook_config = hook_config
         self.__device = None
         self.__dataloader = None
         self.__cuda_stream = None
@@ -138,12 +138,12 @@ class ModelExecutor(ModelExecutorBase):
 
     def _prepare_execution(self, **kwargs):
         self._data.clear()
-        if self.__hook_config:
+        if self._hook_config:
             for k, v in kwargs.items():
-                if not hasattr(self.__hook_config, k):
+                if not hasattr(self._hook_config, k):
                     continue
-                setattr(self.__hook_config, k, v)
-            self.__hook_config.append_hooks(self)
+                setattr(self._hook_config, k, v)
+            self._hook_config.append_hooks(self)
         if self.__save_dir is not None:
             self.set_save_dir(self.__save_dir)
 
