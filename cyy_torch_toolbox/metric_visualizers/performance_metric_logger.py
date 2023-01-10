@@ -24,9 +24,9 @@ class PerformanceMetricLogger(MetricVisualizer):
             if "accuracy" in k:
                 metric_str = metric_str + "{}:{:.2%}, ".format(k, value)
             elif k == "duration":
-                metric_str = metric_str + "in {:.3%} seconds, ".format(value)
+                metric_str = metric_str + "in {:.3} seconds, ".format(value)
             elif k == "data_waiting_time":
-                metric_str = metric_str + "data loader uses {:.3%} seconds, ".format(
+                metric_str = metric_str + "data loader uses {:.3} seconds, ".format(
                     value
                 )
             else:

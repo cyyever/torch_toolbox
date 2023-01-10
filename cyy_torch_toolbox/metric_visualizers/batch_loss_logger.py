@@ -1,10 +1,14 @@
 from cyy_naive_lib.log import get_logger
+from cyy_torch_toolbox.hooks.learning_rate_hook import LearningRateHook
 
 from .metric_visualizer import MetricVisualizer
 
 
 class BatchLossLogger(MetricVisualizer):
-    log_times = 5
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.__learning_rate_hook = LearningRateHook()
+        self.log_times = 5
 
     def _after_batch(self, epoch, batch_index, batch_size, result, **kwargs):
         if self.log_times == 0:

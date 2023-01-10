@@ -10,6 +10,7 @@ from omegaconf import OmegaConf
 
 from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
                                                   DatasetCollectionConfig)
+from cyy_torch_toolbox.hook_config import HookConfig
 from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
@@ -27,12 +28,10 @@ class DefaultConfig:
         self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
         self.hyper_parameter_config: HyperParameterConfig = HyperParameterConfig()
         self.model_config = ModelConfig(model_name=model_name)
-        self.debug = False
-        self.profile = False
+        self.hook_config = HookConfig()
         self.save_dir = None
         self.log_level = None
         self.cache_transforms = None
-        self.use_amp = torch.cuda.is_available()
         self.benchmark_cudnn = True
 
     def load_config(self, conf, check_config: bool = True) -> dict:
@@ -65,6 +64,10 @@ class DefaultConfig:
         if hasattr(obj, "model_config"):
             conf_container = cls.__load_config(
                 obj.model_config, conf_container, check_config=False
+            )
+        if hasattr(obj, "hook_config"):
+            conf_container = cls.__load_config(
+                obj.hook_config, conf_container, check_config=False
             )
         if check_config:
             if conf_container:
@@ -109,20 +112,16 @@ class DefaultConfig:
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
             self.dc_config.dataset_name, self.model_config.model_name
         )
-        trainer = Trainer(model_with_loss, dc, hyper_parameter)
+        trainer = Trainer(
+            model_with_loss, dc, hyper_parameter, hook_config=self.hook_config
+        )
         trainer.set_save_dir(self.get_save_dir())
-        if self.debug:
-            get_logger().warning("debug the trainer")
-            trainer.debugging_mode = True
-        if self.profile:
-            get_logger().warning("profile the trainer")
-            trainer.profiling_mode = True
         trainer.cache_transforms = self.cache_transforms
-        if self.use_amp:
-            trainer.set_amp()
         return trainer
 
-    def create_inferencer(self, phase=MachineLearningPhase.Test) -> Inferencer:
+    def create_inferencer(
+        self, phase: MachineLearningPhase = MachineLearningPhase.Test
+    ) -> Inferencer:
         trainer = self.create_trainer()
         return trainer.get_inferencer(phase)
 

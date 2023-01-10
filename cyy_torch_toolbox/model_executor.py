@@ -12,9 +12,8 @@ from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.dataset_util import DatasetUtil
 from cyy_torch_toolbox.device import get_device
-from cyy_torch_toolbox.hooks.amp import AMP
+from cyy_torch_toolbox.hook_config import HookConfig
 from cyy_torch_toolbox.hooks.model_executor_logger import ModelExecutorLogger
-from cyy_torch_toolbox.hooks.profiler import Profiler
 from cyy_torch_toolbox.hyper_parameter import HyperParameter
 # from cyy_torch_toolbox.metric_visualizers.metric_tensorboard import \
 #     MetricTensorBoard
@@ -22,8 +21,6 @@ from cyy_torch_toolbox.metric_visualizers.metric_visualizer import \
     MetricVisualizer
 from cyy_torch_toolbox.metric_visualizers.performance_metric_logger import \
     PerformanceMetricLogger
-from cyy_torch_toolbox.metric_visualizers.performance_metric_recorder import \
-    PerformanceMetricRecorder
 from cyy_torch_toolbox.metrics.performance_metric import PerformanceMetric
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        ModelExecutorHookPoint)
@@ -38,24 +35,22 @@ class ModelExecutor(ModelExecutorBase):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         phase: MachineLearningPhase,
+        hook_config: HookConfig | None = None,
     ) -> None:
         super().__init__()
         self._model_with_loss = model_with_loss
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase = phase
+        self.__hook_config = hook_config
         self.__device = None
         self.__dataloader = None
         self.__cuda_stream = None
         self.append_hook(ModelExecutorLogger(), "logger")
-        self.append_hook(Profiler(), "profiler")
         self.append_hook(
             PerformanceMetric(self._model_with_loss.model_type), "performance_metric"
         )
         self.append_hook(PerformanceMetricLogger(), "performance_metric_logger")
-        self.append_hook(PerformanceMetricRecorder(), "performance_metric_recorder")
         # self.append_hook(MetricTensorBoard(), "tensor_board_visualizer")
-        self.debugging_mode = False
-        self.profiling_mode = False
         self.__save_dir: None | str = None
         self._visualizer_prefix: None | str = None
         self.cache_transforms = None
@@ -141,25 +136,19 @@ class ModelExecutor(ModelExecutorBase):
             return copy.deepcopy(self._model_with_loss)
         return copy.copy(self._model_with_loss)
 
-    def has_amp(self) -> bool:
-        return self.has_hook_obj("AMP")
-
-    def set_amp(self, enabled: bool = True) -> None:
-        if enabled and not self.has_amp():
-            self.append_hook(AMP(), "AMP")
-        if enabled:
-            self.enable_hook("AMP")
-            get_logger().debug("use AMP")
-        else:
-            self.disable_hook("AMP")
-
     def _prepare_execution(self, **kwargs):
         self._data.clear()
-        if self.profiling_mode:
-            get_logger().warning("use profiling mode")
-            self.enable_hook(hook_name="profiler")
-        else:
-            self.disable_hook(hook_name="profiler")
+        if self.__hook_config:
+            for k, v in kwargs.items():
+                if not hasattr(self.__hook_config, k):
+                    continue
+                setattr(self.__hook_config, k, v)
+            self.__hook_config.append_hooks(self)
+        if self.__save_dir is not None:
+            self.set_save_dir(self.__save_dir)
+
+        if self._visualizer_prefix is not None:
+            self.set_visualizer_prefix(self._visualizer_prefix)
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
 
     @property
@@ -196,8 +185,7 @@ class ModelExecutor(ModelExecutorBase):
     def _wait_stream(self):
         if self.__cuda_stream is not None:
             self.__cuda_stream.synchronize()
-            if self.debugging_mode:
-                assert self.__cuda_stream.query()
+            assert self.__cuda_stream.query()
 
     def set_dataset_collection(self, dc: DatasetCollection) -> None:
         self._wait_stream()
@@ -296,7 +284,7 @@ class ModelExecutor(ModelExecutorBase):
 
     def _execute_epoch(self, epoch: int, need_backward: bool = False) -> None:
         self.exec_hooks(
-            ModelExecutorHookPoint.BEFORE_EPOCH,
+            hook_point=ModelExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
         )
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
@@ -323,6 +311,7 @@ class ModelExecutor(ModelExecutorBase):
 
             self.exec_hooks(
                 ModelExecutorHookPoint.BEFORE_BATCH,
+                epoch=epoch,
                 **batch,
             )
             kwargs = {
