@@ -72,6 +72,7 @@ class Trainer(ModelExecutor):
                 self.dataset_collection,
                 phase=phase,
                 batch_size=self._get_batch_size(),
+                hook_config=self._hook_config,
             )
         if inferencer is None:
             raise RuntimeError(

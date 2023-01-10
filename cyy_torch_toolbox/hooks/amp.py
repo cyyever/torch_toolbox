@@ -13,7 +13,7 @@ class AMP(Hook):
 
     def _before_execute(self, model_executor, **kwargs):
         if model_executor.phase == MachineLearningPhase.Training:
-            get_logger().warning("use AMP")
+            get_logger().debug("use AMP")
         else:
             self.disable()
 
