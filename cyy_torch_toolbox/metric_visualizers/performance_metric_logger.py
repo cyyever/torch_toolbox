@@ -14,49 +14,28 @@ class PerformanceMetricLogger(MetricVisualizer):
             phase_str = "test"
         performance_metric = model_executor.performance_metric
 
-        metric_str = ""
-        metrics = ("loss", "accuracy", "class_accuracy")
-        if model_executor.dataset_collection.dataset_type == DatasetType.Text:
-            metrics = metrics + ("perplexity",)
-        for k in metrics:
-            value = performance_metric.get_epoch_metric(epoch, k)
-            if value is None:
-                continue
+        epoch_metrics = performance_metric.get_epoch_metrics(epoch)
+        if not epoch_metrics:
+            return
+        metric_str: str = ""
+        for k, value in epoch_metrics.items():
             if isinstance(value, torch.Tensor):
                 value = value.item()
             if "accuracy" in k:
                 metric_str = metric_str + "{}:{:.2%}, ".format(k, value)
+            elif k == "duration":
+                metric_str = metric_str + "in {:.3%} seconds, ".format(value)
+            elif k == "data_waiting_time":
+                metric_str = metric_str + "data loader uses {:.3%} seconds, ".format(
+                    value
+                )
             else:
-                metric_str = metric_str + "{}:{:e}, ".format(k, value)
+                metric_str = metric_str + f"{k}:{value}, "
         metric_str = metric_str[:-2]
         get_logger().info(
-            "%sepoch: %s, %s %s, in %.3f seconds",
+            "%sepoch: %s, %s %s",
             self.prefix + " " if self.prefix else "",
             epoch,
             phase_str,
             metric_str,
-            performance_metric.get_epoch_metric(epoch, "duration"),
         )
-
-        if model_executor.phase == MachineLearningPhase.Training:
-            grad_norm = performance_metric.get_grad_norm(epoch)
-            if grad_norm is not None:
-                get_logger().info(
-                    "%sepoch: %s, grad norm is %s",
-                    self.prefix + " " if self.prefix else "",
-                    epoch,
-                    grad_norm,
-                )
-
-        data_waiting_time = performance_metric.get_epoch_metric(
-            epoch, "data_waiting_time"
-        )
-
-        if data_waiting_time is not None:
-            get_logger().info(
-                "%sepoch: %s, %s use time %s to wait data",
-                self.prefix + " " if self.prefix else "",
-                epoch,
-                phase_str,
-                data_waiting_time,
-            )

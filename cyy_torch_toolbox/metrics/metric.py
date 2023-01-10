@@ -10,7 +10,7 @@ class Metric(Hook):
     def _before_execute(self, **__):
         self.__epoch_metrics.clear()
 
-    def get_epoch_metric(self, epoch, name=None):
+    def get_epoch_metric(self, epoch: int, name=None):
         epoch_data = self.__epoch_metrics.get(epoch, None)
         if epoch_data is None:
             return None
@@ -18,8 +18,18 @@ class Metric(Hook):
             return epoch_data
         return epoch_data.get(name, None)
 
-    def set_epoch_metric(self, epoch, name, data):
-        self._set_epoch_metric(epoch, name, data)
+    def get_epoch_metrics(self, epoch: int) -> dict | None:
+        epoch_metrics = self.get_epoch_metric(epoch=epoch)
+        if epoch_metrics is None:
+            epoch_metrics = {}
+        for sub_hook in self._sub_hooks:
+            if hasattr(sub_hook, "get_epoch_metric"):
+                epoch_metric = sub_hook.get_epoch_metric(epoch=epoch)
+                if epoch_metric:
+                    epoch_metrics |= epoch_metric
+        if epoch_metrics:
+            return epoch_metrics
+        return None
 
     def _set_epoch_metric(self, epoch, name, data):
         if epoch not in self.__epoch_metrics:
