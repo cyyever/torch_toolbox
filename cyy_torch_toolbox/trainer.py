@@ -6,9 +6,8 @@ from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.classification_inferencer import \
     ClassificationInferencer
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
+from cyy_torch_toolbox.hook_config import HookConfig
 from cyy_torch_toolbox.hooks.keep_model import KeepModelHook
-from cyy_torch_toolbox.hooks.learning_rate_hook import LearningRateHook
-from cyy_torch_toolbox.hooks.trainer_debugger import TrainerDebugger
 from cyy_torch_toolbox.hyper_parameter import HyperParameter
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.metric_visualizers.batch_loss_logger import \
@@ -17,8 +16,7 @@ from cyy_torch_toolbox.ml_type import (MachineLearningPhase,
                                        ModelExecutorHookPoint, ModelType,
                                        StopExecutingException)
 from cyy_torch_toolbox.model_executor import ModelExecutor
-from cyy_torch_toolbox.model_with_loss import (ModelWithLoss,
-                                               ParallelModelWithLoss)
+from cyy_torch_toolbox.model_with_loss import ModelWithLoss
 
 
 class Trainer(ModelExecutor):
@@ -27,15 +25,16 @@ class Trainer(ModelExecutor):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         hyper_parameter: HyperParameter,
+        hook_config: HookConfig | None = None,
     ):
         super().__init__(
             model_with_loss,
             dataset_collection,
             MachineLearningPhase.Training,
+            hook_config=hook_config,
         )
         self.__hyper_parameter = hyper_parameter
         self.__inferencers: dict = {}
-        self.append_hook(LearningRateHook(), "learning_rate_hook")
         self.append_hook(BatchLossLogger(), "batch_loss_logger")
         self.append_hook(KeepModelHook(), "keep_model_hook")
 
@@ -80,8 +79,6 @@ class Trainer(ModelExecutor):
             )
         inferencer.cache_transforms = self.cache_transforms
         inferencer.set_device(self.device)
-        if self.has_amp():
-            inferencer.set_amp()
         if self.save_dir is not None:
             inferencer.set_save_dir(self.save_dir)
         if self._visualizer_prefix is not None:
@@ -119,15 +116,15 @@ class Trainer(ModelExecutor):
 
     def offload_from_memory(self):
         super().offload_from_memory()
-        self.get_hook("keep_model_hook").offload_from_memory()
+        if self.has_hook_obj("keep_model_hook"):
+            self.get_hook("keep_model_hook").offload_from_memory()
 
     def _prepare_execution(
         self,
-        use_DDP: bool = False,
+        batch_loss_log_times: None | int = None,
         save_best_model: bool = False,
         save_epoch_model: bool = False,
         save_last_model: bool = False,
-        batch_loss_log_times: None | int = None,
         **kwargs: dict
     ) -> None:
         keep_model_hook = self.get_hook("keep_model_hook")
@@ -135,30 +132,19 @@ class Trainer(ModelExecutor):
         keep_model_hook.save_epoch_model = save_epoch_model
         keep_model_hook.save_last_model = save_last_model
         self.__inferencers.clear()
-        if self.debugging_mode:
-            get_logger().warning("train in debugging mode")
-            if not self.has_hook_obj("debugger"):
-                self.append_hook(TrainerDebugger(), "debugger")
-            else:
-                self.enable_hook(hook_name="debugger")
-        else:
-            if self.has_hook_obj("debugger"):
-                self.disable_hook(hook_name="debugger")
         if batch_loss_log_times is not None:
             self.get_hook("batch_loss_logger").log_times = batch_loss_log_times
-        if use_DDP:
-            self._model_with_loss = ParallelModelWithLoss.create(self._model_with_loss)
         super()._prepare_execution(**kwargs)
 
     def train(self, **kwargs):
-        with (
-            torch.cuda.device(self.device)
-            if self.cuda_stream is not None
-            else contextlib.nullcontext(),
-            torch.cuda.stream(self.cuda_stream),
-        ):
-            self._prepare_execution(**kwargs)
-            try:
+        try:
+            with (
+                torch.cuda.device(self.device)
+                if self.cuda_stream is not None
+                else contextlib.nullcontext(),
+                torch.cuda.stream(self.cuda_stream),
+            ):
+                self._prepare_execution(**kwargs)
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
                     self._execute_epoch(epoch=epoch)
 
@@ -198,10 +184,10 @@ class Trainer(ModelExecutor):
                             lr_scheduler.step(training_loss)
                         case _:
                             lr_scheduler.step()
-            except StopExecutingException:
-                get_logger().warning("stop training")
-            finally:
-                self._wait_stream()
+        except StopExecutingException:
+            get_logger().warning("stop training")
+        finally:
+            self._wait_stream()
         self.exec_hooks(
             ModelExecutorHookPoint.AFTER_EXECUTE,
             epoch=self.hyper_parameter.epoch,

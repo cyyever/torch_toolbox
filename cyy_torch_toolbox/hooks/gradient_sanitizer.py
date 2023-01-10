@@ -1,8 +1,11 @@
 from cyy_torch_toolbox.hook import Hook
+from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
 class GradientSanitizer(Hook):
     def _before_batch(self, model_executor, batch_index, **kwargs):
+        if model_executor.phase != MachineLearningPhase.Training:
+            return
         if batch_index % 100 != 0:
             return
         # check parameters can be updated
