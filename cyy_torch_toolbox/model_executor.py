@@ -22,6 +22,8 @@ from cyy_torch_toolbox.metric_visualizers.metric_visualizer import \
     MetricVisualizer
 from cyy_torch_toolbox.metric_visualizers.performance_metric_logger import \
     PerformanceMetricLogger
+from cyy_torch_toolbox.metric_visualizers.performance_metric_recorder import \
+    PerformanceMetricRecorder
 from cyy_torch_toolbox.metrics.performance_metric import PerformanceMetric
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        ModelExecutorHookPoint)
@@ -50,6 +52,7 @@ class ModelExecutor(ModelExecutorBase):
             PerformanceMetric(self._model_with_loss.model_type), "performance_metric"
         )
         self.append_hook(PerformanceMetricLogger(), "performance_metric_logger")
+        self.append_hook(PerformanceMetricRecorder(), "performance_metric_recorder")
         # self.append_hook(MetricTensorBoard(), "tensor_board_visualizer")
         self.debugging_mode = False
         self.profiling_mode = False

@@ -29,25 +29,9 @@ class PerformanceMetric(Metric):
     def _after_epoch(self, epoch, **kwargs):
         self.__last_epoch = epoch
         self._set_epoch_metric(epoch, "duration", time.time() - self.__epoch_time_point)
-        loss_metric: LossMetric = self.__loss_metric.get_epoch_metric(epoch)
-        for k, v in loss_metric.items():
-            assert not math.isnan(v)
-            self._set_epoch_metric(epoch, k, v)
-        if self.__accuracy_metric is not None:
-            self._set_epoch_metric(
-                epoch, "accuracy", self.__accuracy_metric.get_accuracy(epoch)
-            )
 
     def get_loss(self, epoch):
-        return self.get_epoch_metric(epoch, "loss")
-
-    def get_duration(self, epoch):
-        return self.get_epoch_metric(epoch, "duration")
-
-    def get_grad_norm(self, epoch):
-        if self.__grad_metric is None:
-            return None
-        return self.__grad_metric.get_epoch_metric(epoch, name="grad_norm")
+        return self.__loss_metric.get_epoch_metric(epoch, "loss")
 
     def get_accuracy(self, epoch):
         if self.__accuracy_metric is None:
