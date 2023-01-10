@@ -1,6 +1,6 @@
 import torch
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
+from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 from .metric_visualizer import MetricVisualizer
 
@@ -23,6 +23,8 @@ class PerformanceMetricLogger(MetricVisualizer):
                 value = value.item()
             if "accuracy" in k:
                 metric_str = metric_str + "{}:{:.2%}, ".format(k, value)
+            elif "loss" in k:
+                metric_str = metric_str + "{}:{:.5}, ".format(k, value)
             elif k == "duration":
                 metric_str = metric_str + "in {:.3} seconds, ".format(value)
             elif k == "data_waiting_time":
