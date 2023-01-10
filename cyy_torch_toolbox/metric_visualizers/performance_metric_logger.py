@@ -12,7 +12,7 @@ class PerformanceMetricLogger(MetricVisualizer):
             phase_str = "validation"
         elif model_executor.phase == MachineLearningPhase.Test:
             phase_str = "test"
-        performance_metric = model_executor.get_hook("performance_metric")
+        performance_metric = model_executor.performance_metric
 
         metric_str = ""
         metrics = ("loss", "accuracy", "class_accuracy")
