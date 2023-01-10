@@ -155,13 +155,6 @@ class ModelExecutor(ModelExecutorBase):
 
     def _prepare_execution(self, **kwargs):
         self._data.clear()
-        for name in dir(self):
-            if isinstance(getattr(type(self), name, None), property):
-                continue
-            attr = getattr(self, name)
-            if hasattr(attr, "_is_cyy_torch_toolbox_metric"):
-                attr.clear_metric()
-
         if self.profiling_mode:
             get_logger().warning("use profiling mode")
             self.enable_hook(hook_name="profiler")

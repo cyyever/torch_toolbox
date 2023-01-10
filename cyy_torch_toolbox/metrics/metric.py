@@ -1,16 +1,17 @@
+from typing import Any
+
 from cyy_torch_toolbox.hook import Hook
 
 
 class Metric(Hook):
-    def __init__(self):
-        super().__init__()
-        self.__epoch_metrics: dict = dict()
-        self._is_cyy_torch_toolbox_metric = True
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.__epoch_metrics: dict = {}
 
     def _before_execute(self, **__):
-        self.__epoch_metrics.clear()
+        self.clear_metric()
 
-    def get_epoch_metric(self, epoch: int, name=None):
+    def get_epoch_metric(self, epoch: int, name: str | None = None) -> Any:
         epoch_data = self.__epoch_metrics.get(epoch, None)
         if epoch_data is None:
             return None
@@ -37,8 +38,7 @@ class Metric(Hook):
         self.__epoch_metrics[epoch][name] = data
 
     def clear_metric(self):
-        for name in dir(self):
-            attr = getattr(self, name)
-            if hasattr(attr, "_is_cyy_torch_toolbox_metric"):
-                attr.clear_metric()
+        for sub_hook in self._sub_hooks:
+            if hasattr(sub_hook, "clear_metric"):
+                sub_hook.clear_metric()
         self.__epoch_metrics.clear()
