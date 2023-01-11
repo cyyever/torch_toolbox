@@ -57,8 +57,8 @@ class Trainer(ModelExecutor):
             return None
         return keep_model_hook.best_model[0]
 
-    def get_cached_inferencer(self, phase) -> Inferencer:
-        return self.__inferencers[phase]
+    def get_cached_inferencer(self, phase) -> Inferencer | None:
+        return self.__inferencers.get(phase, None)
 
     def get_inferencer(
         self, phase: MachineLearningPhase, copy_model: bool = False
@@ -137,7 +137,7 @@ class Trainer(ModelExecutor):
             self.get_hook("batch_loss_logger").log_times = batch_loss_log_times
         super()._prepare_execution(**kwargs)
 
-    def train(self, **kwargs):
+    def train(self, run_validation=True, **kwargs):
         try:
             with (
                 torch.cuda.device(self.device)
@@ -149,21 +149,24 @@ class Trainer(ModelExecutor):
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
                     self._execute_epoch(epoch=epoch)
 
-                    for phase in (
-                        MachineLearningPhase.Validation,
-                        MachineLearningPhase.Test,
-                    ):
-                        if (
-                            phase not in self.__inferencers
-                            and self.dataset_collection.has_dataset(phase=phase)
+                    if run_validation:
+                        for phase in (
+                            MachineLearningPhase.Validation,
+                            MachineLearningPhase.Test,
                         ):
-                            inferencer = self.get_inferencer(phase)
-                            inferencer.disable_hook("logger")
-                            self.__inferencers[phase] = inferencer
-                        inferencer = self.__inferencers.get(phase, None)
-                        if inferencer is not None:
-                            inferencer.model.load_state_dict(self.model.state_dict())
-                            inferencer.inference(epoch=epoch, use_grad=False)
+                            if (
+                                phase not in self.__inferencers
+                                and self.dataset_collection.has_dataset(phase=phase)
+                            ):
+                                inferencer = self.get_inferencer(phase)
+                                inferencer.disable_hook("logger")
+                                self.__inferencers[phase] = inferencer
+                            inferencer = self.__inferencers.get(phase, None)
+                            if inferencer is not None:
+                                inferencer.model.load_state_dict(
+                                    self.model.state_dict()
+                                )
+                                inferencer.inference(epoch=epoch, use_grad=False)
 
                     self.exec_hooks(
                         ModelExecutorHookPoint.AFTER_VALIDATION,
