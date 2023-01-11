@@ -135,6 +135,8 @@ class Transforms:
         else:
             other_info = {}
         batch_size = len(batch)
+        if targets.device != inputs.device:
+            targets = tensor_to(targets, device=inputs.device)
         assert "batch_size" not in other_info
         return {
             "batch_size": batch_size,
