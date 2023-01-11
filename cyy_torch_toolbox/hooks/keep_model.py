@@ -35,26 +35,27 @@ class KeepModelHook(Hook):
             )
             trainer.save_model(model_path)
 
-        acc = trainer.get_cached_inferencer(
-            MachineLearningPhase.Validation
-        ).performance_metric.get_epoch_metric(epoch, "accuracy")
-        if self.save_best_model and (
-            self.best_model is None or acc > self.best_model[1]
-        ):
-            self.__best_model.set_data(
-                (
-                    trainer.copy_model_with_loss().model.to(
-                        get_cpu_device(), non_blocking=True
-                    ),
-                    acc,
+        if self.save_best_model:
+            acc = trainer.get_cached_inferencer(
+                MachineLearningPhase.Validation
+            ).performance_metric.get_epoch_metric(epoch, "accuracy")
+            if self.best_model is None or acc > self.best_model[1]:
+                self.__best_model.set_data(
+                    (
+                        trainer.copy_model_with_loss().model.to(
+                            get_cpu_device(), non_blocking=True
+                        ),
+                        acc,
+                    )
                 )
-            )
 
-            assert trainer.save_dir is not None
-            self.__best_model.set_data_path(
-                os.path.join(self.__get_model_dir(trainer.save_dir), "best_model.pk")
-            )
-            self.__best_model.save()
+                assert trainer.save_dir is not None
+                self.__best_model.set_data_path(
+                    os.path.join(
+                        self.__get_model_dir(trainer.save_dir), "best_model.pk"
+                    )
+                )
+                self.__best_model.save()
 
     def _after_execute(self, model_executor, **kwargs):
         trainer = model_executor
