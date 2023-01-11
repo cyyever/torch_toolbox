@@ -1,6 +1,5 @@
 import copy
 import functools
-# import json
 import os
 import sys
 
@@ -19,7 +18,6 @@ from cyy_torch_toolbox.ml_type import DatasetType, ModelType
 from cyy_torch_toolbox.model_with_loss import (ModelWithLoss,
                                                TextModelWithLoss,
                                                VisionModelWithLoss)
-# CheckPointedModelWithLoss,
 from cyy_torch_toolbox.models.huggingface_models import huggingface_models
 
 __model_info: dict = {}
@@ -157,8 +155,6 @@ def get_model(
                 loss_fun=loss_fun_name,
                 model_type=model_type,
             )
-            # if use_checkpointing:
-            #     model_with_loss = CheckPointedModelWithLoss(model_with_loss)
             if repo is not None:
                 # we need the model path to pickle models
                 hub_dir = torch.hub.get_dir()
