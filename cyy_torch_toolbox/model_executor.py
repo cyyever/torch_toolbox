@@ -35,7 +35,7 @@ class ModelExecutor(ModelExecutorBase):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         phase: MachineLearningPhase,
-        hook_config: HookConfig | None = None,
+        hook_config: HookConfig,
     ) -> None:
         super().__init__()
         self._model_with_loss = model_with_loss
@@ -47,7 +47,10 @@ class ModelExecutor(ModelExecutorBase):
         self.__cuda_stream = None
         self.append_hook(ModelExecutorLogger(), "logger")
         self.append_hook(
-            PerformanceMetric(self._model_with_loss.model_type), "performance_metric"
+            PerformanceMetric(
+                model_type=self._model_with_loss.model_type, profile=hook_config.profile
+            ),
+            "performance_metric",
         )
         self.append_hook(PerformanceMetricLogger(), "performance_metric_logger")
         # self.append_hook(MetricTensorBoard(), "tensor_board_visualizer")

@@ -1,17 +1,17 @@
-import math
 import os
 import time
 
 from cyy_torch_toolbox.ml_type import ModelType
 
 from .acc_metric import AccuracyMetric
+from .dataloader_profiler import DataloaderProfiler
 from .grad_metric import GradMetric
 from .loss_metric import LossMetric
 from .metric import Metric
 
 
 class PerformanceMetric(Metric):
-    def __init__(self, model_type, **kwargs):
+    def __init__(self, model_type, profile: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.__loss_metric = LossMetric()
         self.__accuracy_metric = None
@@ -19,9 +19,10 @@ class PerformanceMetric(Metric):
             self.__accuracy_metric = AccuracyMetric()
         self.__epoch_time_point: float = time.time()
         self.__last_epoch = None
-        self.__grad_metric = None
         if os.getenv("use_grad_norm") is not None:
             self.__grad_metric = GradMetric()
+        if profile:
+            self.__dataloader_profiler = DataloaderProfiler()
 
     def _before_epoch(self, **kwargs):
         self.__epoch_time_point = time.time()
