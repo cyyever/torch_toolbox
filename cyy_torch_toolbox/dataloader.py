@@ -152,7 +152,7 @@ def get_dataloader(
     match cache_transforms:
         case "cpu" | True:
             dc.cache_transforms(phase=phase)
-        case "cuda":
+        case "gpu" | "cuda":
             data_in_cpu = False
             dc.cache_transforms(phase=phase, device=device)
 
@@ -189,27 +189,26 @@ def get_dataloader(
         )
     transforms = dc.get_transforms(phase=phase)
     collate_fn = transforms.collate_batch
-    persistent_workers = True
-    pin_memory = data_in_cpu and "cuda" in str(device).lower()
-    pin_memory_device = ""
+    kwargs: dict = {}
+    pin_memory = data_in_cpu
     if pin_memory:
-        pin_memory_device = str(device)
-    if not dc.transforms_cached(phase=phase) or "USE_PROCESS_DATALOADER" in os.environ:
-        num_workers = 2
-        prefetch_factor = 1
+        kwargs["pin_memory_device"] = str(device)
+    use_process: bool = "USE_THREAD_DATALOADER" not in os.environ
+    if use_process:
+        kwargs["prefetch_factor"] = 1
+        kwargs["num_workers"] = 2
+        kwargs["multiprocessing_context"] = torch.multiprocessing.get_context("spawn")
+        kwargs["persistent_workers"] = True
     else:
         get_logger().debug("use threads")
-        num_workers = 0
-        persistent_workers = False
-        prefetch_factor = None
+        kwargs["num_workers"] = 0
+        kwargs["prefetch_factor"] = None
+        kwargs["persistent_workers"] = False
     return torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,
         shuffle=(phase == MachineLearningPhase.Training),
-        num_workers=num_workers,
-        persistent_workers=persistent_workers,
-        prefetch_factor=prefetch_factor,
         pin_memory=pin_memory,
-        pin_memory_device=pin_memory_device,
         collate_fn=collate_fn,
+        **kwargs,
     )
