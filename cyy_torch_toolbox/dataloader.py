@@ -148,10 +148,12 @@ def get_dataloader(
     cache_transforms=None,
     use_dali=True,
 ):
+    data_in_cpu: bool = True
     match cache_transforms:
         case "cpu" | True:
             dc.cache_transforms(phase=phase)
         case "cuda":
+            data_in_cpu = False
             dc.cache_transforms(phase=phase, device=device)
 
     dataset = dc.get_dataset(phase)
@@ -188,7 +190,7 @@ def get_dataloader(
     transforms = dc.get_transforms(phase=phase)
     collate_fn = transforms.collate_batch
     persistent_workers = True
-    pin_memory = "cuda" in str(device).lower()
+    pin_memory = data_in_cpu and "cuda" in str(device).lower()
     pin_memory_device = ""
     if pin_memory:
         pin_memory_device = str(device)

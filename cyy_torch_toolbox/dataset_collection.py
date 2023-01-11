@@ -120,7 +120,7 @@ class DatasetCollection:
                 continue
             self.__transforms[phase].append(key, transform)
 
-    def transforms_cached(self, phase):
+    def transforms_cached(self, phase: MachineLearningPhase) -> bool:
         return phase in self.__old_transforms
 
     def cache_transforms(self, phase: MachineLearningPhase, device=None) -> None:
