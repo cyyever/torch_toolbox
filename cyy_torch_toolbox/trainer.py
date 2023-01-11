@@ -175,9 +175,7 @@ class Trainer(ModelExecutor):
                         continue
                     match lr_scheduler:
                         case torch.optim.lr_scheduler.ReduceLROnPlateau():
-                            training_loss = self.get_hook(
-                                "performance_metric"
-                            ).get_loss(epoch)
+                            training_loss = self.performance_metric.get_loss(epoch)
                             get_logger().debug(
                                 "call ReduceLROnPlateau for training loss %s",
                                 training_loss,
