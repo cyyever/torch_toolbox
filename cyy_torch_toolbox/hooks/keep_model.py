@@ -35,9 +35,9 @@ class KeepModelHook(Hook):
             )
             trainer.save_model(model_path)
 
-        acc = trainer.get_inferencer_performance_metric(
+        acc = trainer.get_cached_inferencer(
             MachineLearningPhase.Validation
-        ).get_epoch_metric(epoch, "accuracy")
+        ).performance_metric.get_epoch_metric(epoch, "accuracy")
         if self.save_best_model and (
             self.best_model is None or acc > self.best_model[1]
         ):

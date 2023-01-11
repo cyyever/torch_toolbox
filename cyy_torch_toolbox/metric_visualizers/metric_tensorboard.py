@@ -1,4 +1,5 @@
 import datetime
+import os
 import threading
 import warnings
 
@@ -13,70 +14,48 @@ from .metric_visualizer import MetricVisualizer
 
 class MetricTensorBoard(MetricVisualizer):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs, stripable=True)
+        super().__init__(**kwargs)
         self.__writer = None
-        self.__log_dir = None
-        self.__enable: bool = False
 
-    def set_log_dir(self, log_dir: str):
-        self.__log_dir = log_dir
-
-    def enable(self):
-        self.__enable = True
-
-    def disable(self):
-        self.__enable = False
-
-    @property
-    def enabled(self) -> bool:
-        return self.__enable
-
-    def close(self):
+    def close(self) -> None:
         if self.__writer is not None:
             self.__writer.close()
             self.__writer = None
 
-    def set_session_name_by_model_executor(self, model_executor):
-        self.set_session_name(
-            "training_"
-            + str(model_executor.model.__class__.__name__)
-            + "_"
-            + str(threading.get_native_id())
-            + "_{date:%Y-%m-%d_%H_%M_%S}".format(date=datetime.datetime.now())
-        )
-
-    def set_session_name(self, name: str):
-        super().set_session_name(name)
+    def set_prefix(self, prefix: str) -> None:
+        super().set_prefix(prefix)
         self.close()
 
     @property
-    def writer(self):
-        if not self.__enable:
-            return None
+    def writer(self) -> SummaryWriter:
         if self.__writer is None:
-            assert self.session_name
-            self.__writer = SummaryWriter(self.__log_dir + "/" + self.session_name)
+            self.__writer = SummaryWriter(
+                log_dir=os.path.join(self._data_dir, self.prefix)
+            )
         return self.__writer
 
-    def _before_execute(self, **kwargs):
-        model_executor = kwargs["model_executor"]
-        if self.session_name is None:
-            self.set_session_name_by_model_executor(model_executor)
+    def _before_execute(self, model_executor, **kwargs):
+        if self.prefix is None:
+            self.set_prefix(
+                "training_"
+                + str(model_executor.model.__class__.__name__)
+                + "_"
+                + str(threading.get_native_id())
+                + "_{date:%Y-%m-%d_%H_%M_%S}".format(date=datetime.datetime.now())
+            )
 
-    def get_tag_name(self, title: str):
-        return self.session_name + "/" + title
+    def get_tag_name(self, title: str) -> str:
+        return self.prefix + "/" + title
 
     def __del__(self):
         self.close()
 
     def _after_validation(self, model_executor, epoch, **kwargs):
-        if not self.__enable:
-            return
         trainer = model_executor
 
-        if not trainer.has_data("cur_learning_rates"):
+        if "cur_learning_rates" not in trainer._data:
             return
-        learning_rates = trainer.get_data("cur_learning_rates")
+        learning_rates = trainer._data["cur_learning_rates"]
         assert len(learning_rates) == 1
         self.writer.add_scalar(
             self.get_tag_name("learning rate"), learning_rates[0], epoch
@@ -87,13 +66,14 @@ class MetricTensorBoard(MetricVisualizer):
                 momentum = group["momentum"]
                 self.writer.add_scalar(self.get_tag_name("momentum"), momentum, epoch)
 
-        validation_metric = trainer.get_inferencer_performance_metric(
+        validation_metric = trainer.get_cached_inferencer(
             MachineLearningPhase.Validation
-        )
+        ).get_hook("performance_metric")
+        performance_metric = trainer.get_hook("performance_metric")
         self.writer.add_scalars(
             self.get_tag_name("training & validation loss"),
             {
-                "training loss": trainer.performance_metric.get_loss(epoch),
+                "training loss": performance_metric.get_loss(epoch),
                 "validation loss": validation_metric.get_loss(epoch),
             },
             epoch,
@@ -102,7 +82,7 @@ class MetricTensorBoard(MetricVisualizer):
         self.writer.add_scalars(
             self.get_tag_name("training & validation accuracy"),
             {
-                "training accuracy": trainer.performance_metric.get_accuracy(epoch),
+                "training accuracy": performance_metric.get_accuracy(epoch),
                 "validation accuracy": validation_metric.get_accuracy(epoch),
             },
             epoch,
@@ -122,8 +102,8 @@ class MetricTensorBoard(MetricVisualizer):
         #                 },
         #                 epoch,
         #             )
-        test_metric = trainer.get_inferencer_performance_metric(
-            MachineLearningPhase.Test
+        test_metric = trainer.get_cached_inferencer(MachineLearningPhase.Test).get_hook(
+            "performance_metric"
         )
         self.writer.add_scalar(
             self.get_tag_name("test loss"),
