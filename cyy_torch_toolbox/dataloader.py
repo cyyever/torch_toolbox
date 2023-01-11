@@ -190,14 +190,17 @@ def get_dataloader(
     transforms = dc.get_transforms(phase=phase)
     collate_fn = transforms.collate_batch
     kwargs: dict = {}
-    pin_memory = data_in_cpu
+    pin_memory = False
     if pin_memory:
         kwargs["pin_memory_device"] = str(device)
     use_process: bool = "USE_THREAD_DATALOADER" not in os.environ
     if use_process:
-        kwargs["prefetch_factor"] = 1
-        kwargs["num_workers"] = 2
-        kwargs["multiprocessing_context"] = torch.multiprocessing.get_context("spawn")
+        kwargs["prefetch_factor"] = 2
+        kwargs["num_workers"] = 1
+        if not data_in_cpu:
+            kwargs["multiprocessing_context"] = torch.multiprocessing.get_context(
+                "spawn"
+            )
         kwargs["persistent_workers"] = True
     else:
         get_logger().debug("use threads")
