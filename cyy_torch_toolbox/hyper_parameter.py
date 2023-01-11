@@ -1,7 +1,7 @@
 import copy
 import functools
 from enum import IntEnum, auto
-from typing import Callable, Optional, Union
+from typing import Callable
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -12,7 +12,7 @@ from cyy_torch_toolbox.data_structure.torch_thread_task_queue import \
     TorchThreadTaskQueue
 
 
-def determin_learning_rate(task, **kwargs):
+def determine_learning_rate(task, **kwargs):
     tmp_trainer, device = task
     tmp_trainer.set_device(device)
     tmp_trainer.disable_stripable_hooks()
@@ -35,7 +35,7 @@ class HyperParameter:
         self,
         epoch: int,
         batch_size: int,
-        learning_rate: Union[float, HyperParameterAction],
+        learning_rate: float | HyperParameterAction,
         weight_decay: float,
     ):
         self.__epoch = epoch
@@ -43,8 +43,8 @@ class HyperParameter:
         self.__learning_rate = learning_rate
         self.__weight_decay = weight_decay
         self.__momentum = 0.9
-        self.__lr_scheduler_factory: Optional[Callable] = None
-        self.__optimizer_factory: Optional[Callable] = None
+        self.__lr_scheduler_factory: None | Callable = None
+        self.__optimizer_factory: None | Callable = None
 
     # def __getstate__(self):
     #     # capture what is normally pickled
@@ -68,7 +68,7 @@ class HyperParameter:
 
     def get_learning_rate(self, trainer):
         if isinstance(self.__learning_rate, HyperParameterAction):
-            task_queue = TorchThreadTaskQueue(worker_fun=determin_learning_rate)
+            task_queue = TorchThreadTaskQueue(worker_fun=determine_learning_rate)
             device = trainer.device
             trainer.offload_from_gpu()
             task_queue.add_task((copy.deepcopy(trainer), device))
@@ -77,9 +77,7 @@ class HyperParameter:
             task_queue.stop()
         return self.__learning_rate
 
-    def set_learning_rate(
-        self, learning_rate: Union[float, HyperParameterAction]
-    ) -> None:
+    def set_learning_rate(self, learning_rate: float | HyperParameterAction) -> None:
         self.__learning_rate = learning_rate
 
     @property
@@ -225,7 +223,7 @@ class HyperParameter:
 
 def get_recommended_hyper_parameter(
     dataset_name: str, model_name: str
-) -> Optional[HyperParameter]:
+) -> None | HyperParameter:
     """
     Given dataset and model, return a set of recommended hyper parameters
     """
