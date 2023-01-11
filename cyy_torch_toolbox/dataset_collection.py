@@ -44,7 +44,6 @@ class DatasetCollection:
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
-        self.__old_transforms: dict[MachineLearningPhase, Transforms] = {}
 
     @property
     def dataset_type(self) -> None | DatasetType:
@@ -80,8 +79,6 @@ class DatasetCollection:
         return self.get_dataset(MachineLearningPhase.Training)
 
     def get_transforms(self, phase, original: bool = False) -> Transforms:
-        if original and phase in self.__old_transforms:
-            return self.__old_transforms[phase]
         return self.__transforms[phase]
 
     def get_original_dataset(
@@ -119,23 +116,6 @@ class DatasetCollection:
             if phases is not None and phase not in phases:
                 continue
             self.__transforms[phase].append(key, transform)
-
-    def transforms_cached(self, phase: MachineLearningPhase) -> bool:
-        return phase in self.__old_transforms
-
-    def cache_transforms(self, phase: MachineLearningPhase, device=None) -> None:
-        if self.transforms_cached(phase=phase):
-            return
-        assert self.has_dataset(phase=phase)
-        dataset = self.get_dataset(phase=phase)
-        transforms = self.get_transforms(phase=phase)
-        transformed_dataset, new_transforms = transforms.cache_transforms(
-            dataset, device
-        )
-        self._datasets[phase] = DictDataset(transformed_dataset)
-        self.__old_transforms[phase] = self.__transforms[phase]
-        self.__transforms[phase] = new_transforms
-        get_logger().debug("new training transforms are %s", new_transforms)
 
     @property
     def name(self) -> str | None:

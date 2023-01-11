@@ -15,7 +15,6 @@ try:
 except ModuleNotFoundError:
     has_dali = False
 
-
 from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
@@ -148,22 +147,26 @@ def get_dataloader(
     cache_transforms=None,
     use_dali=True,
 ):
+    dataset = dc.get_dataset(phase=phase)
+    transforms = dc.get_transforms(phase=phase)
     data_in_cpu: bool = True
     match cache_transforms:
         case "cpu" | True:
-            dc.cache_transforms(phase=phase)
+            dataset, transforms = transforms.cache_transforms(dataset=dataset)
         case "gpu" | "cuda":
             data_in_cpu = False
-            dc.cache_transforms(phase=phase, device=device)
+            dataset, transforms = transforms.cache_transforms(
+                dataset=dataset, device=device
+            )
 
-    dataset = dc.get_dataset(phase)
-    original_dataset = dc.get_original_dataset(phase)
     # We use DALI for ImageFolder only
     if (
         has_dali
         and use_dali
         and model_type == ModelType.Classification
-        and isinstance(original_dataset, torchvision.datasets.folder.ImageFolder)
+        and isinstance(
+            dc.get_original_dataset(phase), torchvision.datasets.folder.ImageFolder
+        )
     ):
         get_logger().info("use DALI")
         device_id = -1
@@ -187,12 +190,8 @@ def get_dataloader(
             last_batch_policy=LastBatchPolicy.PARTIAL,
             last_batch_padded=True,
         )
-    transforms = dc.get_transforms(phase=phase)
     collate_fn = transforms.collate_batch
     kwargs: dict = {}
-    pin_memory = False
-    if pin_memory:
-        kwargs["pin_memory_device"] = str(device)
     use_process: bool = "USE_THREAD_DATALOADER" not in os.environ
     if use_process:
         kwargs["prefetch_factor"] = 2
@@ -211,7 +210,7 @@ def get_dataloader(
         dataset,
         batch_size=batch_size,
         shuffle=(phase == MachineLearningPhase.Training),
-        pin_memory=pin_memory,
+        pin_memory=False,
         collate_fn=collate_fn,
         **kwargs,
     )
