@@ -35,11 +35,7 @@ class ModelExecutorLogger(Hook):
         for phase in MachineLearningPhase:
             if model_executor.dataset_collection.has_dataset(phase):
                 get_logger().info(
-                    "%s dataset len %s",
-                    phase,
-                    get_dataset_size(
-                        model_executor.dataset_collection.get_dataset(phase=phase)
-                    ),
+                    "%s dataset len %s", phase, model_executor.dataset_size
                 )
         # if os.getenv("draw_torch_model") is not None:
         #     model_executor._model_with_loss.trace_input = True

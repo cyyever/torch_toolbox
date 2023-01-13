@@ -23,7 +23,7 @@ class DatasetUtil:
         self._name: str | None = name
         self.__transforms: Transforms | None = transforms
 
-    def __len__(self):
+    def __len__(self) -> int:
         if self.__len is None:
             self.__len = get_dataset_size(self.dataset)
         return self.__len

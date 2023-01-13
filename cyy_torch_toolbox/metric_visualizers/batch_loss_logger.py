@@ -14,7 +14,7 @@ class BatchLossLogger(MetricVisualizer):
         if self.log_times == 0:
             return
         model_executor = kwargs.get("model_executor")
-        interval = model_executor.dataset_size // (self.log_times * batch_size)
+        interval = model_executor._data["dataset_size"] // (self.log_times * batch_size)
         if interval == 0 or batch_index % interval == 0:
             get_logger().info(
                 "%sepoch: %s, batch: %s, learning rate: %e, batch loss: %e",
