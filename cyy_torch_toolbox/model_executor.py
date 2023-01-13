@@ -8,7 +8,6 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataloader import get_dataloader
-from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.dataset_util import DatasetUtil
 from cyy_torch_toolbox.device import get_device
@@ -97,8 +96,8 @@ class ModelExecutor(ModelExecutorBase):
         self.dataset_collection.transform_dataset(self.phase, transformer)
 
     @property
-    def dataset_size(self):
-        return get_dataset_size(self.dataset)
+    def dataset_size(self) -> int:
+        return len(self.dataset_util)
 
     def _get_batch_size(self) -> int:
         raise NotImplementedError()
@@ -152,6 +151,7 @@ class ModelExecutor(ModelExecutorBase):
 
         if self._visualizer_prefix is not None:
             self.set_visualizer_prefix(self._visualizer_prefix)
+        self._data["dataset_size"] = self.dataset_size
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
 
     @property
@@ -336,11 +336,11 @@ class ModelExecutor(ModelExecutorBase):
 
             if result["is_averaged_loss"]:
                 normalized_batch_loss = (
-                    result["loss"] * batch["batch_size"] / self.dataset_size
+                    result["loss"] * batch["batch_size"] / self._data["dataset_size"]
                 )
             else:
                 assert False
-                normalized_batch_loss = result["loss"] / self.dataset_size
+                normalized_batch_loss = result["loss"] / self._data["dataset_size"]
             result["normalized_batch_loss"] = normalized_batch_loss
             batch["cpu_inputs"] = result["cpu_inputs"]
             batch["inputs"] = result["inputs"]

@@ -11,9 +11,7 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_kwarg_names
 from cyy_naive_lib.storage import get_cached_data
 
-from cyy_torch_toolbox.dataset import (DictDataset,
-                                       convert_iterable_dataset_to_map,
-                                       sub_dataset)
+from cyy_torch_toolbox.dataset import sub_dataset
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transform.transforms import (Transforms,
                                                             replace_target)
@@ -35,11 +33,11 @@ class DatasetCollection:
         name: str | None = None,
     ):
         self.__name: str | None = name
-        self._datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
-        self._datasets[MachineLearningPhase.Training] = training_dataset
-        self._datasets[MachineLearningPhase.Validation] = validation_dataset
+        self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
+        self.__datasets[MachineLearningPhase.Training] = training_dataset
+        self.__datasets[MachineLearningPhase.Validation] = validation_dataset
         if test_dataset is not None:
-            self._datasets[MachineLearningPhase.Test] = test_dataset
+            self.__datasets[MachineLearningPhase.Test] = test_dataset
         self.__dataset_type: DatasetType | None = dataset_type
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
@@ -54,7 +52,7 @@ class DatasetCollection:
     ) -> None:
         dataset = self.get_dataset(phase)
         dataset_util = self.get_dataset_util(phase)
-        self._datasets[phase] = transformer(dataset, dataset_util, phase)
+        self.__datasets[phase] = transformer(dataset, dataset_util, phase)
 
     def foreach_dataset(self):
         for phase in MachineLearningPhase:
@@ -66,14 +64,17 @@ class DatasetCollection:
             self.transform_dataset(phase, transformer)
 
     def has_dataset(self, phase: MachineLearningPhase) -> bool:
-        return phase in self._datasets
+        return phase in self.__datasets
 
     def remove_dataset(self, phase: MachineLearningPhase) -> None:
         get_logger().debug("remove dataset %s", phase)
-        self._datasets.pop(phase, None)
+        self.__datasets.pop(phase, None)
 
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
-        return self._datasets[phase]
+        return self.__datasets[phase]
+
+    def get_datasets(self) -> list:
+        return list(self.__datasets.values())
 
     def get_training_dataset(self) -> torch.utils.data.Dataset:
         return self.get_dataset(MachineLearningPhase.Training)
@@ -187,7 +188,6 @@ class DatasetCollection:
                     if processed_dataset_kwargs is None:
                         break
                     dataset = dataset_constructor(**processed_dataset_kwargs)
-                    dataset = convert_iterable_dataset_to_map(dataset)
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
                     elif phase == MachineLearningPhase.Validation:
@@ -300,8 +300,8 @@ class DatasetCollection:
         )
         if datasets is None:
             datasets = dataset_util.split_by_indices(split_index_lists)
-        self._datasets[MachineLearningPhase.Validation] = datasets[0]
-        self._datasets[MachineLearningPhase.Test] = datasets[1]
+        self.__datasets[MachineLearningPhase.Validation] = datasets[0]
+        self.__datasets[MachineLearningPhase.Test] = datasets[1]
 
     def get_cached_data(self, file: str, computation_fun: Callable) -> dict:
         with DatasetCollection.lock:
