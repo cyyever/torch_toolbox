@@ -3,6 +3,7 @@ nvidia-ml-py
 hydra-core
 omegaconf
 torchtext
+torchdata
 torchvision
 transformers
 datasets
