@@ -3,7 +3,7 @@ import functools
 from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.dataset import (convert_iterable_dataset_to_map,
+from cyy_torch_toolbox.dataset import (convert_dataset_to_map_dp,
                                        get_dataset_size)
 from cyy_torch_toolbox.ml_type import TransformType
 from cyy_torch_toolbox.tensor import tensor_to
@@ -156,7 +156,7 @@ class Transforms:
         else:
             get_logger().warning("cache dataset to cpu")
         transformed_dataset = {}
-        dataset = convert_iterable_dataset_to_map(dataset)
+        dataset = convert_dataset_to_map_dp(dataset)
         for k in range(get_dataset_size(dataset)):
             item = self.extract_data(dataset[k])
             item["input"] = self.transform_input(item["input"], apply_random=False)
