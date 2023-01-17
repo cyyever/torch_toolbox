@@ -1,7 +1,7 @@
 import functools
 import os
 import random
-from typing import Any, Iterable
+from typing import Any, Generator, Iterable
 
 import PIL
 import torch
@@ -28,21 +28,37 @@ class DatasetUtil:
             self.__len = get_dataset_size(self.dataset)
         return self.__len
 
-    def get_sample(self, index: int) -> Any:
+    def get_samples(self, indices=None) -> Generator:
+        if indices is not None:
+            indices = set(indices)
         if isinstance(self.dataset, torch.utils.data.IterableDataset):
             if hasattr(self.dataset, "reset"):
                 self.dataset.reset()
             iterator = iter(self.dataset)
-            for _ in range(index):
-                next(iterator)
-            sample = next(iterator)
+            idx = 0
+            for sample in iterator:
+                if indices is None or idx in indices:
+                    if self.__transforms is not None:
+                        sample = self.__transforms.extract_data(sample)
+                    yield idx, sample
+                    if indices is not None:
+                        indices.remove(idx)
+                idx += 1
             if hasattr(self.dataset, "reset"):
                 self.dataset.reset()
-        else:
-            sample = self.dataset[index]
-        if self.__transforms is not None:
-            sample = self.__transforms.extract_data(sample)
-        return sample
+            return
+        if indices is None:
+            indices = list(range(len(self)))
+        for idx in indices:
+            sample = self.dataset[idx]
+            if self.__transforms is not None:
+                sample = self.__transforms.extract_data(sample)
+            yield idx, sample
+
+    def get_sample(self, index: int) -> Any:
+        for _, sample in self.get_samples(indices=[index]):
+            return sample
+        return None
 
     @classmethod
     def __decode_target(cls, target) -> set:
@@ -70,30 +86,21 @@ class DatasetUtil:
             )
         return sample_input
 
-    def get_sample_labels(self, index: int) -> set:
-        if isinstance(self.dataset, torch.utils.data.Subset):
-            dataset = self.dataset.dataset
-            new_index = self.dataset.indices[index]
-        else:
-            dataset = self.dataset
-            new_index = index
-        if hasattr(dataset, "targets") and len(dataset.targets) >= len(self):
-            target = dataset.targets[new_index]
-        else:
-            target = self.get_sample(index)["target"]
-        if self.__transforms is not None:
-            target = self.__transforms.transform_target(target)
-        return DatasetUtil.__decode_target(target)
+    def get_batch_labels(self, indices=None) -> Generator:
+        for idx, sample in self.get_samples(indices):
+            target = sample["target"]
+            if self.__transforms is not None:
+                target = self.__transforms.transform_target(target)
+            yield idx, DatasetUtil.__decode_target(target)
 
     def get_sample_label(self, index):
-        labels = self.get_sample_labels(index)
-        assert len(labels) == 1
-        return next(iter(labels))
+        for _, labels in self.get_batch_labels(indices=[index]):
+            assert len(labels) == 1
+            return next(iter(labels))
+        return None
 
     def get_labels(self) -> set:
-        return set().union(
-            *tuple(self.get_sample_labels(index=i) for i in range(len(self)))
-        )
+        return set().union(*tuple(set(labels) for _, labels in self.get_batch_labels()))
 
     def get_label_names(self) -> dict:
         if hasattr(self.dataset, "classes"):
@@ -121,9 +128,7 @@ class DatasetSplitter(DatasetUtil):
     def sample_label_dict(self) -> dict[int, list]:
         if self.__sample_label_dict is not None:
             return self.__sample_label_dict
-        self.__sample_label_dict = {}
-        for index in range(len(self)):
-            self.__sample_label_dict[index] = list(self.get_sample_labels(index))
+        self.__sample_label_dict = dict(self.get_batch_labels())
         return self.__sample_label_dict
 
     @property
