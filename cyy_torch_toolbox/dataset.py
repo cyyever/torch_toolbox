@@ -1,4 +1,4 @@
-from typing import Callable, Generator, Iterable
+from typing import Any, Generator, Iterable
 
 import torch
 import torchdata
@@ -17,28 +17,17 @@ def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:
     raise RuntimeError("not reachable")
 
 
-class DatasetMapper:
-    def __init__(
-        self, dataset: torch.utils.data.MapDataPipe, mappers: Iterable[Callable]
-    ):
-        self.__dataset = dataset
-        self.__mappers = list(mappers)
-
-    @property
-    def dataset(self):
-        return self.__dataset
+class KeyPipe(torch.utils.data.MapDataPipe):
+    def __init__(self, dp: torch.utils.data.MapDataPipe):
+        super().__init__()
+        self.__dp = dp
 
     def __getitem__(self, index):
-        item = self.__dataset.__getitem__(index)
-        for mapper in self.__mappers:
-            item = mapper(index, item)
-        return item
+        item = self.__dp.__getitem__(index)
+        return (index, item)
 
-    def add_mapper(self, mapper: Callable) -> None:
-        self.__mappers.append(mapper)
-
-    def __len__(self):
-        return len(self.__dataset)
+    def __getattr__(self, attr):
+        return getattr(self.__dp, attr)
 
 
 class DictDataset(torch.utils.data.MapDataPipe):
@@ -60,19 +49,24 @@ def convert_item_to_data(item):
     return {"data": item}
 
 
+def add_index_to_map_item(item):
+    key, value = item[0], item[1]
+    return convert_item_to_data(value) | {"index": key}
+
+
 def dataset_with_indices(
     dataset: torch.utils.data.Dataset,
 ) -> torch.utils.data.MapDataPipe:
     if isinstance(dataset, torch.utils.data.IterableDataset):
         return IterableWrapper(dataset).map(convert_item_to_data).add_index()
-    return torchdata.datapipes.map.Mapper(dataset, add_index_to_item)
+    return torchdata.datapipes.map.Mapper(KeyPipe(dataset), add_index_to_map_item)
 
 
 def get_iterable_item_key_and_value(item: Any) -> tuple:
     return item["index"], item
 
 
-def convert_iterable_dataset_to_map(
+def convert_dataset_to_map_dp(
     dataset: torch.utils.data.IterableDataset,
 ) -> torch.utils.data.Dataset:
     dp = dataset_with_indices(dataset)
@@ -89,14 +83,10 @@ def sub_dataset(
     r"""
     Subset of a dataset at specified indices in order.
     """
-    indices = sorted(set(indices))
-    dataset = convert_iterable_dataset_to_map(dataset)
     assert indices
-    match dataset:
-        case DictDataset():
-            return DictDataset(items=dict(enumerate([dataset[idx] for idx in indices])))
-        case _:
-            return torch.utils.data.Subset(dataset, indices)
+    indices = list(sorted(set(indices)))
+    dataset = convert_dataset_to_map_dp(dataset)
+    return torch.utils.data.Subset(dataset, indices)
 
 
 def sample_dataset(
@@ -105,12 +95,12 @@ def sample_dataset(
     return sub_dataset(dataset, [index])
 
 
-def add_index_to_item(index, item):
-    return {"data": item, "index": index}
+# def add_index_to_item(index, item):
+#     return {"data": item, "index": index}
 
 
 def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
-    dataset = convert_iterable_dataset_to_map(dataset)
+    dataset = convert_dataset_to_map_dp(dataset)
     return (
         torch.utils.data.Subset(dataset, [index])
         for index in range(get_dataset_size(dataset))
