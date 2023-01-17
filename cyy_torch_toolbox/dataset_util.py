@@ -1,7 +1,7 @@
 import functools
 import os
 import random
-from typing import Iterable
+from typing import Any, Iterable
 
 import PIL
 import torch
@@ -16,10 +16,10 @@ class DatasetUtil:
         self,
         dataset: torch.utils.data.Dataset,
         transforms: Transforms | None = None,
-        name=None,
+        name: None | str = None,
     ):
         self.dataset: torch.utils.data.Dataset = dataset
-        self.__len = None
+        self.__len: None | int = None
         self._name: str | None = name
         self.__transforms: Transforms | None = transforms
 
@@ -28,7 +28,7 @@ class DatasetUtil:
             self.__len = get_dataset_size(self.dataset)
         return self.__len
 
-    def get_sample(self, index: int):
+    def get_sample(self, index: int) -> Any:
         if isinstance(self.dataset, torch.utils.data.IterableDataset):
             if hasattr(self.dataset, "reset"):
                 self.dataset.reset()
@@ -60,7 +60,7 @@ class DatasetUtil:
                     return set(int(s) for s in target)
         raise RuntimeError("can't extract labels from target: " + str(target))
 
-    def _get_sample_input(self, index: int, apply_transform: bool = True):
+    def _get_sample_input(self, index: int, apply_transform: bool = True) -> Any:
         sample = self.get_sample(index)
         sample_input = sample["input"]
         if apply_transform:
