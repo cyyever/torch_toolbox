@@ -7,14 +7,13 @@ from torchdata.datapipes.iter import IterableWrapper
 
 
 def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:
-    try:
-        return len(dataset)
-    except BaseException:
+    if isinstance(dataset, torch.utils.data.IterableDataset):
         cnt: int = 0
         for _ in dataset:
             cnt += 1
         return cnt
-    raise RuntimeError("not reachable")
+    _ = next(iter(dataset))
+    return len(dataset)
 
 
 class KeyPipe(torch.utils.data.MapDataPipe):
@@ -28,21 +27,6 @@ class KeyPipe(torch.utils.data.MapDataPipe):
 
     def __getattr__(self, attr):
         return getattr(self.__dp, attr)
-
-
-class DictDataset(torch.utils.data.MapDataPipe):
-    def __init__(self, items: dict):
-        super().__init__()
-        assert items
-        self.__items = items
-
-    def __getitem__(self, index):
-        if index not in self.__items:
-            raise StopIteration()
-        return self.__items[index]
-
-    def __len__(self):
-        return len(self.__items)
 
 
 def convert_item_to_data(item):
@@ -63,7 +47,7 @@ def dataset_with_indices(
 
 
 def get_iterable_item_key_and_value(item: Any) -> tuple:
-    return item["index"], item
+    return item["index"], item["data"]
 
 
 def convert_dataset_to_map_dp(

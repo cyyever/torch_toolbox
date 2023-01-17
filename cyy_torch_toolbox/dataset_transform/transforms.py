@@ -157,7 +157,8 @@ class Transforms:
             get_logger().warning("cache dataset to cpu")
         transformed_dataset = {}
         dataset = convert_dataset_to_map_dp(dataset)
-        for k in range(get_dataset_size(dataset)):
+        dataset_size: int = get_dataset_size(dataset)
+        for k in range(dataset_size):
             item = self.extract_data(dataset[k])
             item["input"] = self.transform_input(item["input"], apply_random=False)
             item["target"] = self.transform_target(item["target"], index=k)
