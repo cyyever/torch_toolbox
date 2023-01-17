@@ -25,8 +25,8 @@ class KeyPipe(torch.utils.data.MapDataPipe):
         item = self.__dp.__getitem__(index)
         return (index, item)
 
-    def __getattr__(self, attr):
-        return getattr(self.__dp, attr)
+    def __len__(self) -> int:
+        return len(self.__dp)
 
 
 def convert_item_to_data(item):
@@ -77,10 +77,6 @@ def sample_dataset(
     dataset: torch.utils.data.Dataset, index: int
 ) -> torch.utils.data.Dataset:
     return sub_dataset(dataset, [index])
-
-
-# def add_index_to_item(index, item):
-#     return {"data": item, "index": index}
 
 
 def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
