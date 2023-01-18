@@ -11,7 +11,7 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_kwarg_names
 from cyy_naive_lib.storage import get_cached_data
 
-from cyy_torch_toolbox.dataset import dataset_with_indices, sub_dataset
+from cyy_torch_toolbox.dataset import dataset_with_indices, subset_dp
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transform.transforms import (Transforms,
                                                             replace_target)
@@ -473,7 +473,7 @@ class DatasetCollectionConfig:
             with open(self.training_dataset_indices_path, "r", encoding="utf-8") as f:
                 subset_indices = json.load(f)
         if subset_indices is not None:
-            training_dataset = sub_dataset(training_dataset, subset_indices)
+            training_dataset = subset_dp(training_dataset, subset_indices)
             dc.transform_dataset(
                 phase=MachineLearningPhase.Training,
                 transformer=lambda _, __: training_dataset,

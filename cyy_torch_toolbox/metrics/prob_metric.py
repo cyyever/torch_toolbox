@@ -1,19 +1,14 @@
 import torch
 import torch.nn as nn
-from cyy_torch_toolbox.hooks.add_index_to_dataset import AddIndexToDataset
 
 from .metric import Metric
 
 
-class ProbabilityMetric(Metric, AddIndexToDataset):
+class ProbabilityMetric(Metric):
     def get_prob(self, epoch):
         return self.get_epoch_metric(epoch, "prob")
 
-    def _before_execute(self, **kwargs):
-        Metric._before_execute(self, **kwargs)
-        AddIndexToDataset._before_execute(self, **kwargs)
-
-    def _after_batch(self, model_executor, epoch, result, sample_indices, **kwargs):
+    def _after_forward(self, model_executor, epoch, result, sample_indices, **kwargs):
         output = result["classification_output"]
         last_layer = list(model_executor.model.modules())[-1]
         epoch_prob = self.get_prob(epoch)
@@ -34,6 +29,3 @@ class ProbabilityMetric(Metric, AddIndexToDataset):
                 probs[max_prob_index].data.item(),
             )
         self._set_epoch_metric(epoch, "prob", epoch_prob)
-
-    def _after_execute(self, **kwargs):
-        AddIndexToDataset._after_execute(self, **kwargs)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from cyy_torch_toolbox.dataset import sub_dataset
+from cyy_torch_toolbox.dataset import subset_dp
 from cyy_torch_toolbox.dataset_collection import (
     ClassificationDatasetCollection, create_dataset_collection)
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
@@ -19,7 +19,7 @@ def test_dataset():
     )
     assert next(mnist.generate_raw_data(MachineLearningPhase.Training))
     assert mnist.get_dataset_util().channel == 1
-    assert len(sub_dataset(mnist_training, [1])) == 1
+    assert len(subset_dp(mnist_training, [1])) == 1
     cifar10 = create_dataset_collection(ClassificationDatasetCollection, "CIFAR10")
     assert cifar10.get_dataset_util().channel == 3
     assert cifar10.get_dataset_util().get_label_number() == 10
@@ -41,7 +41,7 @@ def test_dataset_labels():
 
 
 def test_hugging_face_dataset():
-    return 
+    return
     dc = create_dataset_collection(
         ClassificationDatasetCollection,
         "multi_nli",

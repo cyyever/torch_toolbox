@@ -7,7 +7,7 @@ import PIL
 import torch
 import torchvision
 
-from .dataset import get_dataset_size, select_item, sub_dataset
+from .dataset import get_dataset_size, select_item, subset_dp
 from .dataset_transform.transforms import Transforms
 
 
@@ -141,7 +141,7 @@ class DatasetSplitter(DatasetUtil):
         return self.__split(parts, iid=True)
 
     def split_by_indices(self, indices_list: list) -> list:
-        return [sub_dataset(self.dataset, indices) for indices in indices_list]
+        return [subset_dp(self.dataset, indices) for indices in indices_list]
 
     def __get_split_indices(self, parts: list, iid: bool = True) -> list[list]:
         assert parts
