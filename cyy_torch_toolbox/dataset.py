@@ -76,7 +76,7 @@ def select_item(dataset, indices=None) -> Generator:
 
 def subset_dp(dataset, indices: None | list = None) -> torch.utils.data.MapDataPipe:
     return torchdata.datapipes.map.SequenceWrapper(
-        dict(select_item(dataset, indices)), deepcopy=False
+        list(dict(select_item(dataset, indices)).values()), deepcopy=False
     )
 
 
