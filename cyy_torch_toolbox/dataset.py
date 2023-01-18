@@ -29,25 +29,53 @@ class KeyPipe(torch.utils.data.MapDataPipe):
         return len(self.__dp)
 
 
-def convert_item_to_data(item):
+def convert_item_to_dict(item):
     return {"data": item}
 
 
 def add_index_to_map_item(item):
     key, value = item[0], item[1]
-    return convert_item_to_data(value) | {"index": key}
+    return convert_item_to_dict(value) | {"index": key}
 
 
 def dataset_with_indices(
     dataset: torch.utils.data.Dataset,
 ) -> torch.utils.data.MapDataPipe:
     if isinstance(dataset, torch.utils.data.IterableDataset):
-        return IterableWrapper(dataset).map(convert_item_to_data).add_index()
+        return IterableWrapper(dataset).map(convert_item_to_dict).add_index()
     return torchdata.datapipes.map.Mapper(KeyPipe(dataset), add_index_to_map_item)
 
 
 def get_iterable_item_key_and_value(item: Any) -> tuple:
     return item["index"], item["data"]
+
+
+def select_item(dataset, indices=None) -> Generator:
+    if indices is not None:
+        indices = set(indices)
+    match dataset:
+        case torch.utils.data.IterableDataset():
+            if hasattr(dataset, "reset"):
+                dataset.reset()
+            iterator = iter(dataset)
+            idx = 0
+            for item in iterator:
+                if indices is None or idx in indices:
+                    yield idx, item
+                    if indices is not None:
+                        indices.remove(idx)
+                idx += 1
+            if hasattr(dataset, "reset"):
+                dataset.reset()
+        case _:
+            if indices is None:
+                indices = list(range(get_dataset_size(dataset)))
+            for idx in indices:
+                yield idx, dataset[idx]
+
+
+def subset_dp(dataset, indices: None | list = None) -> torch.utils.data.MapDataPipe:
+    return torchdata.datapipes.map.SequenceWrapper(dict(select_item(dataset, indices)))
 
 
 def convert_dataset_to_map_dp(

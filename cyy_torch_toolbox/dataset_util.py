@@ -7,7 +7,7 @@ import PIL
 import torch
 import torchvision
 
-from .dataset import get_dataset_size, sub_dataset
+from .dataset import get_dataset_size, select_item, sub_dataset
 from .dataset_transform.transforms import Transforms
 
 
@@ -29,31 +29,12 @@ class DatasetUtil:
         return self.__len
 
     def get_samples(self, indices=None) -> Generator:
-        if indices is not None:
-            indices = set(indices)
-        if isinstance(self.dataset, torch.utils.data.IterableDataset):
-            if hasattr(self.dataset, "reset"):
-                self.dataset.reset()
-            iterator = iter(self.dataset)
-            idx = 0
-            for sample in iterator:
-                if indices is None or idx in indices:
-                    if self.__transforms is not None:
-                        sample = self.__transforms.extract_data(sample)
-                    yield idx, sample
-                    if indices is not None:
-                        indices.remove(idx)
-                idx += 1
-            if hasattr(self.dataset, "reset"):
-                self.dataset.reset()
-            return
-        if indices is None:
-            indices = list(range(len(self)))
-        for idx in indices:
-            sample = self.dataset[idx]
-            if self.__transforms is not None:
+        if self.__transforms is not None:
+            for idx, sample in select_item(self.dataset, indices):
                 sample = self.__transforms.extract_data(sample)
-            yield idx, sample
+                yield idx, sample
+        else:
+            return select_item(self.dataset, indices)
 
     def get_sample(self, index: int) -> Any:
         for _, sample in self.get_samples(indices=[index]):
