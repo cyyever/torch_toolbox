@@ -75,7 +75,9 @@ def select_item(dataset, indices=None) -> Generator:
 
 
 def subset_dp(dataset, indices: None | list = None) -> torch.utils.data.MapDataPipe:
-    return torchdata.datapipes.map.SequenceWrapper(dict(select_item(dataset, indices)))
+    return torchdata.datapipes.map.SequenceWrapper(
+        dict(select_item(dataset, indices)), deepcopy=False
+    )
 
 
 def convert_dataset_to_map_dp(
@@ -89,27 +91,27 @@ def convert_dataset_to_map_dp(
     return dp
 
 
-def sub_dataset(
-    dataset: torch.utils.data.Dataset, indices: Iterable
-) -> torch.utils.data.Dataset:
-    r"""
-    Subset of a dataset at specified indices in order.
-    """
-    assert indices
-    indices = list(sorted(set(indices)))
-    dataset = convert_dataset_to_map_dp(dataset)
-    return torch.utils.data.Subset(dataset, indices)
+# def sub_dataset(
+#     dataset: torch.utils.data.Dataset, indices: Iterable
+# ) -> torch.utils.data.Dataset:
+#     r"""
+#     Subset of a dataset at specified indices in order.
+#     """
+#     assert indices
+#     indices = list(sorted(set(indices)))
+#     dataset = convert_dataset_to_map_dp(dataset)
+#     return torch.utils.data.Subset(dataset, indices)
 
 
-def sample_dataset(
-    dataset: torch.utils.data.Dataset, index: int
-) -> torch.utils.data.Dataset:
-    return sub_dataset(dataset, [index])
+# def sample_dataset(
+#     dataset: torch.utils.data.Dataset, index: int
+# ) -> torch.utils.data.Dataset:
+#     return sub_dataset(dataset, [index])
 
 
-def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
-    dataset = convert_dataset_to_map_dp(dataset)
-    return (
-        torch.utils.data.Subset(dataset, [index])
-        for index in range(get_dataset_size(dataset))
-    )
+# def split_dataset(dataset: torchvision.datasets.VisionDataset) -> Generator:
+#     dataset = convert_dataset_to_map_dp(dataset)
+#     return (
+#         torch.utils.data.Subset(dataset, [index])
+#         for index in range(get_dataset_size(dataset))
+#     )
