@@ -3,8 +3,7 @@ import functools
 from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.dataset import (convert_dataset_to_map_dp,
-                                       get_dataset_size, select_item)
+from cyy_torch_toolbox.dataset import select_item
 from cyy_torch_toolbox.ml_type import TransformType
 from cyy_torch_toolbox.tensor import tensor_to
 from torch.utils.data._utils.collate import default_collate
