@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.dataset import (convert_dataset_to_map_dp,
-                                       get_dataset_size)
+                                       get_dataset_size, select_item)
 from cyy_torch_toolbox.ml_type import TransformType
 from cyy_torch_toolbox.tensor import tensor_to
 from torch.utils.data._utils.collate import default_collate
@@ -156,10 +156,8 @@ class Transforms:
         else:
             get_logger().warning("cache dataset to cpu")
         transformed_dataset = {}
-        dataset = convert_dataset_to_map_dp(dataset)
-        dataset_size: int = get_dataset_size(dataset)
-        for k in range(dataset_size):
-            item = self.extract_data(dataset[k])
+        for k, item in select_item(dataset):
+            item = self.extract_data(item)
             item["input"] = self.transform_input(item["input"], apply_random=False)
             item["target"] = self.transform_target(item["target"], index=k)
             if device is not None:
