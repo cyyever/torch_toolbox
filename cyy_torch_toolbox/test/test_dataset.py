@@ -22,7 +22,7 @@ def test_dataset():
     assert len(subset_dp(mnist_training, [1])) == 1
     cifar10 = create_dataset_collection(ClassificationDatasetCollection, "CIFAR10")
     assert cifar10.get_dataset_util().channel == 3
-    assert cifar10.get_dataset_util().get_label_number() == 10
+    assert len(cifar10.get_dataset_util().get_labels()) == 10
     assert abs(
         len(cifar10.get_dataset(MachineLearningPhase.Test))
         - len(cifar10.get_dataset(MachineLearningPhase.Validation))

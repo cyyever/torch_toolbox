@@ -1,7 +1,7 @@
 import functools
 import os
 import random
-from typing import Any, Generator, Iterable
+from typing import Any, Generator
 
 import PIL
 import torch
@@ -102,8 +102,8 @@ class DatasetUtil:
 
 
 class DatasetSplitter(DatasetUtil):
-    __sample_label_dict = None
-    __label_sample_dict = None
+    __sample_label_dict: None | dict = None
+    __label_sample_dict: None | dict = None
 
     @property
     def sample_label_dict(self) -> dict[int, list]:
@@ -125,12 +125,6 @@ class DatasetSplitter(DatasetUtil):
                     self.__label_sample_dict[label].append(index)
         return self.__label_sample_dict
 
-    def get_label_number(self) -> int:
-        return len(self.get_labels())
-
-    def get_sample_text(self, index: int) -> str:
-        return self.dataset[index][0]
-
     def iid_split_indices(self, parts: list) -> list:
         return self.__get_split_indices(parts, iid=True)
 
@@ -138,7 +132,7 @@ class DatasetSplitter(DatasetUtil):
         return self.__get_split_indices(parts, iid=False)
 
     def iid_split(self, parts: list) -> list:
-        return self.__split(parts, iid=True)
+        return self.split_by_indices(self.iid_split_indices(parts))
 
     def split_by_indices(self, indices_list: list) -> list:
         return [subset_dp(self.dataset, indices) for indices in indices_list]
@@ -176,19 +170,8 @@ class DatasetSplitter(DatasetUtil):
                 a += b
         return sub_index_list
 
-    def __split(self, parts: list, iid: bool = True) -> list:
-        assert parts
-        if len(parts) == 1:
-            return [self.dataset]
-        sub_dataset_indices_list = self.__get_split_indices(parts, iid)
-        return self.split_by_indices(sub_dataset_indices_list)
-
-    def sample(self, percentage: float) -> Iterable:
-        sample_size = int(len(self) * percentage)
-        return random.sample(range(len(self)), k=sample_size)
-
     def sample_by_labels(self, percents: list[float]) -> dict:
-        sample_indices = {}
+        sample_indices: dict = {}
         for idx, label in enumerate(sorted(self.label_sample_dict.keys())):
             v = self.label_sample_dict[label]
             sample_size = int(len(v) * percents[idx])
