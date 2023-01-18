@@ -78,8 +78,8 @@ def subset_dp(dataset, indices: None | list = None) -> torch.utils.data.MapDataP
     )
 
 
-def get_iterable_item_key_and_value(item: Any) -> tuple:
-    return item["index"], item["data"]
+# def get_iterable_item_key_and_value(item: Any) -> tuple:
+#     return item["index"], item["data"]
 
 
 # def convert_dataset_to_map_dp(
