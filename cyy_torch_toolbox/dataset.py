@@ -82,12 +82,12 @@ def get_iterable_item_key_and_value(item: Any) -> tuple:
     return item["index"], item["data"]
 
 
-def convert_dataset_to_map_dp(
-    dataset: torch.utils.data.IterableDataset,
-) -> torch.utils.data.Dataset:
-    dp = dataset_with_indices(dataset)
-    if isinstance(dp, torch.utils.data.IterableDataset):
-        return torchdata.datapipes.map.IterToMapConverter(
-            dp, get_iterable_item_key_and_value
-        )
-    return dp
+# def convert_dataset_to_map_dp(
+#     dataset: torch.utils.data.IterableDataset,
+# ) -> torch.utils.data.Dataset:
+#     dp = dataset_with_indices(dataset)
+#     if isinstance(dp, torch.utils.data.IterableDataset):
+#         return torchdata.datapipes.map.IterToMapConverter(
+#             dp, get_iterable_item_key_and_value
+#         )
+#     return dp
