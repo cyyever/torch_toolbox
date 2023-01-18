@@ -11,7 +11,7 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_kwarg_names
 from cyy_naive_lib.storage import get_cached_data
 
-from cyy_torch_toolbox.dataset import sub_dataset
+from cyy_torch_toolbox.dataset import dataset_with_indices, sub_dataset
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transform.transforms import (Transforms,
                                                             replace_target)
@@ -188,6 +188,7 @@ class DatasetCollection:
                     if processed_dataset_kwargs is None:
                         break
                     dataset = dataset_constructor(**processed_dataset_kwargs)
+                    dataset = dataset_with_indices(dataset)
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
                     elif phase == MachineLearningPhase.Validation:
