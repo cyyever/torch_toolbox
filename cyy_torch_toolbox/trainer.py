@@ -6,7 +6,6 @@ from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.classification_inferencer import \
     ClassificationInferencer
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.hook_config import HookConfig
 from cyy_torch_toolbox.hooks.keep_model import KeepModelHook
 from cyy_torch_toolbox.hyper_parameter import HyperParameter
 from cyy_torch_toolbox.inferencer import Inferencer
@@ -25,13 +24,10 @@ class Trainer(ModelExecutor):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         hyper_parameter: HyperParameter,
-        hook_config: HookConfig | None = None,
+        **kwargs
     ):
         super().__init__(
-            model_with_loss,
-            dataset_collection,
-            MachineLearningPhase.Training,
-            hook_config=hook_config,
+            model_with_loss, dataset_collection, MachineLearningPhase.Training, **kwargs
         )
         self.__hyper_parameter = hyper_parameter
         self.__inferencers: dict = {}
