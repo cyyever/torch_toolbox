@@ -1,7 +1,7 @@
 import copy
 import functools
 from enum import IntEnum, auto
-from typing import Callable
+from typing import Any, Callable
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -179,7 +179,7 @@ class HyperParameter:
         return ["ReduceLROnPlateau", "OneCycleLR", "CosineAnnealingLR", "MultiStepLR"]
 
     @classmethod
-    def get_optimizer_factory(cls, name: str):
+    def get_optimizer_factory(cls, name: str) -> Any:
         optimizer_class = cls.__get_optimizer_classes().get(name, None)
         if optimizer_class is None:
             raise RuntimeError(
@@ -188,7 +188,7 @@ class HyperParameter:
             )
         return optimizer_class
 
-    def get_optimizer(self, trainer):
+    def get_optimizer(self, trainer) -> Any:
         assert self.__optimizer_factory is not None
         foreach = not torch.backends.mps.is_available()
         kwargs: dict = {
@@ -207,7 +207,7 @@ class HyperParameter:
             filter_fun=lambda _, v: issubclass(v, torch.optim.Optimizer),
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = (
             "epoch:"
             + str(self.epoch)

@@ -27,19 +27,15 @@ class Trainer(ModelExecutor):
         **kwargs
     ):
         super().__init__(
-            model_with_loss, dataset_collection, MachineLearningPhase.Training, **kwargs
+            model_with_loss=model_with_loss,
+            dataset_collection=dataset_collection,
+            phase=MachineLearningPhase.Training,
+            hyper_parameter=hyper_parameter,
+            **kwargs
         )
-        self.__hyper_parameter = hyper_parameter
         self.__inferencers: dict = {}
         self.append_hook(BatchLossLogger(), "batch_loss_logger")
         self.append_hook(KeepModelHook(), "keep_model_hook")
-
-    @property
-    def hyper_parameter(self):
-        return self.__hyper_parameter
-
-    def _get_batch_size(self) -> int:
-        return self.hyper_parameter.batch_size
 
     def set_device(self, device) -> None:
         super().set_device(device)
@@ -67,7 +63,7 @@ class Trainer(ModelExecutor):
                 model_with_loss,
                 self.dataset_collection,
                 phase=phase,
-                batch_size=self._get_batch_size(),
+                hyper_parameter=self.hyper_parameter,
                 hook_config=self._hook_config,
             )
         if inferencer is None:
