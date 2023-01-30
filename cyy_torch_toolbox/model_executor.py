@@ -34,12 +34,14 @@ class ModelExecutor(ModelExecutorBase):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         phase: MachineLearningPhase,
-        hook_config: HookConfig,
+        hyper_parameter: HyperParameter,
+        hook_config: HookConfig | None = None,
     ) -> None:
         super().__init__()
         self._model_with_loss = model_with_loss
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase = phase
+        self.__hyper_parameter = hyper_parameter
         self._hook_config = hook_config
         self.__device = None
         self.__dataloader = None
@@ -47,7 +49,8 @@ class ModelExecutor(ModelExecutorBase):
         self.append_hook(ModelExecutorLogger(), "logger")
         self.append_hook(
             PerformanceMetric(
-                model_type=self._model_with_loss.model_type, profile=hook_config.profile
+                model_type=self._model_with_loss.model_type,
+                profile=hook_config.profile if hook_config is not None else False,
             ),
             "performance_metric",
         )
@@ -56,6 +59,13 @@ class ModelExecutor(ModelExecutorBase):
         self.__save_dir: None | str = None
         self._visualizer_prefix: None | str = None
         self.cache_transforms = None
+
+    @property
+    def hyper_parameter(self):
+        return self.__hyper_parameter
+
+    def _get_batch_size(self) -> int:
+        return self.hyper_parameter.batch_size
 
     @property
     def performance_metric(self):
@@ -98,9 +108,6 @@ class ModelExecutor(ModelExecutorBase):
     @property
     def dataset_size(self) -> int:
         return len(self.dataset_util)
-
-    def _get_batch_size(self) -> int:
-        raise NotImplementedError()
 
     @property
     def dataloader(self):
@@ -210,13 +217,16 @@ class ModelExecutor(ModelExecutorBase):
     def save_model(self, model_path):
         torch.save(self.model.state_dict(), model_path)
 
-    def get_batch_size(self, batch):
-        match batch:
-            case tuple():
-                return self.get_batch_size(batch[1])
-            case torch.Tensor():
-                return batch.shape[0]
-        raise RuntimeError("invalid batch:" + str(batch))
+    # def get_batch_size(self, batch):
+    #     match batch:
+    #         case tuple():
+    #             return self.get_batch_size(batch[1])
+    #         case torch.Tensor():
+    #             return batch.shape[0]
+    #     raise RuntimeError("invalid batch:" + str(batch))
+
+    def _get_batch_size(self) -> int:
+        return self.hyper_parameter.batch_size
 
     def offload_from_gpu(self):
         self._wait_stream()

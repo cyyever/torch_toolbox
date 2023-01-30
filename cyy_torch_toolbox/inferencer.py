@@ -7,12 +7,12 @@ from cyy_torch_toolbox.model_executor import ModelExecutor
 
 
 class Inferencer(ModelExecutor):
-    def __init__(self, *args, batch_size=8, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__batch_size = batch_size
+    # def __init__(self, *args, batch_size=8, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     self.__batch_size = batch_size
 
-    def _get_batch_size(self) -> int:
-        return self.__batch_size
+    # def _get_batch_size(self) -> int:
+    #     return self.__batch_size
 
     def inference(self, use_grad: bool = False, epoch: int = 1, **kwargs: dict) -> bool:
         error_return: bool = False
