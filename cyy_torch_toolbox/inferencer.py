@@ -21,7 +21,7 @@ class Inferencer(ModelExecutor):
                 torch.cuda.stream(self.cuda_stream),
             ):
                 self.model.zero_grad(set_to_none=True)
-                self._execute_epoch(epoch=1, need_backward=use_grad)
+                self._execute_epoch(epoch=1, need_backward=use_grad, in_training=False)
             self.exec_hooks(ModelExecutorHookPoint.AFTER_EXECUTE)
         except StopExecutingException:
             get_logger().warning("stop inference")

@@ -292,13 +292,14 @@ class ModelExecutor(ModelExecutorBase):
     def get_lr_scheduler(self):
         return None
 
-    def _execute_epoch(self, epoch: int, need_backward: bool = False) -> None:
+    def _execute_epoch(
+        self, epoch: int, in_training: bool, need_backward: bool = False
+    ) -> None:
         self.exec_hooks(
             hook_point=ModelExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
         )
         self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
-        in_training = self.phase == MachineLearningPhase.Training
         for batch_index, batch in enumerate(self.dataloader):
             self.exec_hooks(
                 ModelExecutorHookPoint.AFTER_FETCH_BATCH,
