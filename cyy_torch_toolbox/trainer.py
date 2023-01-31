@@ -55,9 +55,9 @@ class Trainer(ModelExecutor):
     def get_inferencer(
         self, phase: MachineLearningPhase, copy_model: bool = False
     ) -> Inferencer:
-        model_with_loss = self.copy_model_with_loss(deepcopy=copy_model)
+        model_with_loss: ModelWithLoss = self.copy_model_with_loss(deepcopy=copy_model)
 
-        inferencer = None
+        inferencer: Inferencer | None = None
         if model_with_loss.model_type == ModelType.Classification:
             inferencer = ClassificationInferencer(
                 model_with_loss,
@@ -83,7 +83,7 @@ class Trainer(ModelExecutor):
             self._data["optimizer"] = self.hyper_parameter.get_optimizer(self)
         return self._data["optimizer"]
 
-    def remove_optimizer(self):
+    def remove_optimizer(self) -> None:
         self._data.pop("optimizer", None)
         self.remove_lr_scheduler()
 
@@ -92,10 +92,10 @@ class Trainer(ModelExecutor):
             self._data["lr_scheduler"] = self.hyper_parameter.get_lr_scheduler(self)
         return self._data["lr_scheduler"]
 
-    def remove_lr_scheduler(self):
+    def remove_lr_scheduler(self) -> None:
         self._data.pop("lr_scheduler", None)
 
-    def load_model(self, model_path):
+    def load_model(self, model_path) -> None:
         super().load_model(model_path)
         self.remove_optimizer()
 
@@ -103,11 +103,11 @@ class Trainer(ModelExecutor):
         self.model_util.load_parameter_dict(parameter_dict)
         self.remove_optimizer()
 
-    def offload_from_gpu(self):
+    def offload_from_gpu(self) -> None:
         self.__inferencers.clear()
         super().offload_from_gpu()
 
-    def offload_from_memory(self):
+    def offload_from_memory(self) -> None:
         super().offload_from_memory()
         if self.has_hook_obj("keep_model_hook"):
             self.get_hook("keep_model_hook").offload_from_memory()
@@ -129,7 +129,7 @@ class Trainer(ModelExecutor):
             self.get_hook("batch_loss_logger").log_times = batch_loss_log_times
         super()._prepare_execution(**kwargs)
 
-    def train(self, run_validation=True, **kwargs):
+    def train(self, run_validation=True, **kwargs) -> None:
         try:
             with (
                 torch.cuda.device(self.device)

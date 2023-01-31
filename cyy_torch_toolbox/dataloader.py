@@ -140,11 +140,11 @@ if has_dali:
 
 def get_dataloader(
     dc: DatasetCollection,
-    model_type: ModelType,
     phase: MachineLearningPhase,
     batch_size: int,
     device=None,
     cache_transforms=None,
+    model_type: ModelType | None = None,
     use_dali=True,
 ):
     dataset = dc.get_dataset(phase=phase)
