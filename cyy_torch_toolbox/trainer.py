@@ -139,7 +139,7 @@ class Trainer(ModelExecutor):
             ):
                 self._prepare_execution(**kwargs)
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
-                    self._execute_epoch(epoch=epoch)
+                    self._execute_epoch(epoch=epoch, in_training=True)
 
                     if run_validation:
                         for phase in (
