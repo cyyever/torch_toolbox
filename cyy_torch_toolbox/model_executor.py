@@ -114,10 +114,10 @@ class ModelExecutor(ModelExecutorBase):
         if self.__dataloader is None:
             self.__dataloader = get_dataloader(
                 dc=self.dataset_collection,
-                model_type=self._model_with_loss.model_type,
                 phase=self.__phase,
                 batch_size=self._get_batch_size(),
                 device=self.device,
+                model_type=self._model_with_loss.model_type,
                 cache_transforms=self.cache_transforms,
             )
         return self.__dataloader
@@ -139,7 +139,7 @@ class ModelExecutor(ModelExecutorBase):
     def model(self) -> torch.nn.Module:
         return self.model_with_loss.model
 
-    def copy_model_with_loss(self, deepcopy=True):
+    def copy_model_with_loss(self, deepcopy=True) -> ModelWithLoss:
         self._wait_stream()
         if deepcopy:
             return copy.deepcopy(self._model_with_loss)
@@ -225,9 +225,6 @@ class ModelExecutor(ModelExecutorBase):
     #             return batch.shape[0]
     #     raise RuntimeError("invalid batch:" + str(batch))
 
-    def _get_batch_size(self) -> int:
-        return self.hyper_parameter.batch_size
-
     def offload_from_gpu(self):
         self._wait_stream()
         self._model_with_loss.offload_from_gpu()
@@ -290,10 +287,10 @@ class ModelExecutor(ModelExecutorBase):
         return inputs, batch_dim, input_features
 
     def get_optimizer(self):
-        raise NotImplementedError()
+        return None
 
     def get_lr_scheduler(self):
-        raise NotImplementedError()
+        return None
 
     def _execute_epoch(self, epoch: int, need_backward: bool = False) -> None:
         self.exec_hooks(

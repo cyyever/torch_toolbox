@@ -27,15 +27,16 @@ class DatasetCollection:
     def __init__(
         self,
         training_dataset: torch.utils.data.Dataset,
-        validation_dataset: torch.utils.data.Dataset,
-        test_dataset: torch.utils.data.Dataset,
+        validation_dataset: torch.utils.data.Dataset | None = None,
+        test_dataset: torch.utils.data.Dataset | None = None,
         dataset_type: DatasetType | None = None,
         name: str | None = None,
     ):
         self.__name: str | None = name
         self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
         self.__datasets[MachineLearningPhase.Training] = training_dataset
-        self.__datasets[MachineLearningPhase.Validation] = validation_dataset
+        if validation_dataset is not None:
+            self.__datasets[MachineLearningPhase.Validation] = validation_dataset
         if test_dataset is not None:
             self.__datasets[MachineLearningPhase.Test] = test_dataset
         self.__dataset_type: DatasetType | None = dataset_type
@@ -170,7 +171,7 @@ class DatasetCollection:
         dataset_type: DatasetType,
         dataset_constructor,
         dataset_kwargs: dict | None = None,
-    ) -> tuple:
+    ) -> dict:
         constructor_kwargs = get_kwarg_names(dataset_constructor)
         dataset_kwargs_fun = cls.__prepare_dataset_kwargs(
             name, constructor_kwargs, dataset_kwargs
@@ -210,7 +211,13 @@ class DatasetCollection:
         if validation_dataset is None:
             validation_dataset = test_dataset
             test_dataset = None
-        return (training_dataset, validation_dataset, test_dataset, dataset_type, name)
+        return {
+            "training_dataset": training_dataset,
+            "validation_dataset": validation_dataset,
+            "test_dataset": test_dataset,
+            "dataset_type": dataset_type,
+            "name": name,
+        }
 
     def is_classification_dataset(self) -> bool:
         first_target = self.get_dataset_util(
@@ -313,7 +320,7 @@ class DatasetCollection:
 class ClassificationDatasetCollection(DatasetCollection):
     @classmethod
     def create(cls, model_config=None, dataset_kwargs=None, **kwargs):
-        dc: ClassificationDatasetCollection = cls(*DatasetCollection.create(**kwargs))
+        dc: ClassificationDatasetCollection = cls(**DatasetCollection.create(**kwargs))
         add_transforms(dc, dataset_kwargs, model_config)
         if not dc.has_dataset(MachineLearningPhase.Test):
             dc._split_validation()
