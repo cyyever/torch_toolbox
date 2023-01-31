@@ -34,9 +34,9 @@ class HyperParameter:
     def __init__(
         self,
         epoch: int,
-        batch_size: int,
-        learning_rate: float | HyperParameterAction,
-        weight_decay: float,
+        batch_size: int = 8,
+        learning_rate: float | HyperParameterAction = HyperParameterAction.FIND_LR,
+        weight_decay: float = 0,
     ):
         self.__epoch = epoch
         self.__batch_size = batch_size
