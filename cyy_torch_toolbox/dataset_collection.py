@@ -34,11 +34,17 @@ class DatasetCollection:
     ):
         self.__name: str | None = name
         self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
-        self.__datasets[MachineLearningPhase.Training] = training_dataset
+        self.__datasets[MachineLearningPhase.Training] = dataset_with_indices(
+            training_dataset
+        )
         if validation_dataset is not None:
-            self.__datasets[MachineLearningPhase.Validation] = validation_dataset
+            self.__datasets[MachineLearningPhase.Validation] = dataset_with_indices(
+                validation_dataset
+            )
         if test_dataset is not None:
-            self.__datasets[MachineLearningPhase.Test] = test_dataset
+            self.__datasets[MachineLearningPhase.Test] = dataset_with_indices(
+                test_dataset
+            )
         self.__dataset_type: DatasetType | None = dataset_type
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
@@ -56,12 +62,11 @@ class DatasetCollection:
         self.__datasets[phase] = transformer(dataset, dataset_util, phase)
 
     def foreach_dataset(self):
-        for phase in MachineLearningPhase:
-            if self.has_dataset(phase=phase):
-                yield self.get_dataset(phase=phase)
+        for phase in self.__datasets:
+            yield self.get_dataset(phase=phase)
 
     def transform_all_datasets(self, transformer: Callable) -> None:
-        for phase in MachineLearningPhase:
+        for phase in self.__datasets:
             self.transform_dataset(phase, transformer)
 
     def has_dataset(self, phase: MachineLearningPhase) -> bool:
@@ -80,7 +85,7 @@ class DatasetCollection:
     def get_training_dataset(self) -> torch.utils.data.Dataset:
         return self.get_dataset(MachineLearningPhase.Training)
 
-    def get_transforms(self, phase, original: bool = False) -> Transforms:
+    def get_transforms(self, phase: MachineLearningPhase) -> Transforms:
         return self.__transforms[phase]
 
     def get_original_dataset(
@@ -123,25 +128,24 @@ class DatasetCollection:
     def name(self) -> str | None:
         return self.__name
 
-    def transform_text(self, phase, text):
+    def transform_text(self, phase: MachineLearningPhase, text: str) -> str:
         return self.get_transforms(phase).transform_text(text)
 
     __dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
     lock = threading.RLock()
 
     @classmethod
-    def get_dataset_root_dir(cls):
+    def get_dataset_root_dir(cls) -> str:
         with cls.lock:
             return os.getenv("pytorch_dataset_root_dir", cls.__dataset_root_dir)
 
     @classmethod
-    def set_dataset_root_dir(cls, root_dir: str):
+    def set_dataset_root_dir(cls, root_dir: str) -> None:
         with cls.lock:
             cls.__dataset_root_dir = root_dir
 
     @classmethod
-    def __get_dataset_dir(cls, name: str | None):
-        assert name is not None
+    def __get_dataset_dir(cls, name: str) -> str:
         dataset_dir = os.path.join(cls.get_dataset_root_dir(), name)
         if not os.path.isdir(dataset_dir):
             os.makedirs(dataset_dir, exist_ok=True)
@@ -169,7 +173,7 @@ class DatasetCollection:
         cls,
         name: str,
         dataset_type: DatasetType,
-        dataset_constructor,
+        dataset_constructor: Callable,
         dataset_kwargs: dict | None = None,
     ) -> dict:
         constructor_kwargs = get_kwarg_names(dataset_constructor)
@@ -189,7 +193,6 @@ class DatasetCollection:
                     if processed_dataset_kwargs is None:
                         break
                     dataset = dataset_constructor(**processed_dataset_kwargs)
-                    dataset = dataset_with_indices(dataset)
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
                     elif phase == MachineLearningPhase.Validation:
