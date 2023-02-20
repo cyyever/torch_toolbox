@@ -20,12 +20,14 @@ class HookConfig:
 
     def append_hooks(self, model_executor) -> None:
         if model_executor.phase == MachineLearningPhase.Training:
-            model_executor.enable_or_disable_hook("AMP", self.use_amp, AMP())
+            if torch.cuda.torch.cuda.is_available():
+                model_executor.enable_or_disable_hook("AMP", self.use_amp, AMP())
         model_executor.enable_or_disable_hook("debugger", self.debug, Debugger())
         model_executor.enable_or_disable_hook("profiler", self.profile, Profiler())
-        model_executor.enable_or_disable_hook(
-            "cudnn", self.benchmark_cudnn, CUDNNHook()
-        )
+        if torch.cuda.torch.cuda.is_available():
+            model_executor.enable_or_disable_hook(
+                "cudnn", self.benchmark_cudnn, CUDNNHook()
+            )
         model_executor.enable_or_disable_hook(
             "performance_metric_recorder",
             self.save_performance_metric,
