@@ -2,7 +2,7 @@ import copy
 import json
 import os
 import threading
-from typing import Callable
+from typing import Any, Callable
 
 import torch
 import torchvision
@@ -175,7 +175,8 @@ class DatasetCollection:
         dataset_type: DatasetType,
         dataset_constructor: Callable,
         dataset_kwargs: dict | None = None,
-    ) -> dict:
+        model_config=None,
+    ) -> Any:
         constructor_kwargs = get_kwarg_names(dataset_constructor)
         dataset_kwargs_fun = cls.__prepare_dataset_kwargs(
             name, constructor_kwargs, dataset_kwargs
@@ -214,19 +215,28 @@ class DatasetCollection:
         if validation_dataset is None:
             validation_dataset = test_dataset
             test_dataset = None
-        return {
-            "training_dataset": training_dataset,
-            "validation_dataset": validation_dataset,
-            "test_dataset": test_dataset,
-            "dataset_type": dataset_type,
-            "name": name,
-        }
+
+        dc = DatasetCollection(
+            training_dataset=training_dataset,
+            validation_dataset=validation_dataset,
+            test_dataset=test_dataset,
+            dataset_type=dataset_type,
+            name=name,
+        )
+        add_transforms(dc, dataset_kwargs, model_config)
+        if not dc.has_dataset(MachineLearningPhase.Test):
+            dc._split_validation()
+        return dc
 
     def is_classification_dataset(self) -> bool:
-        first_target = self.get_dataset_util(
-            phase=MachineLearningPhase.Training
-        ).get_sample_label(0)
-        match first_target:
+        labels = next(
+            self.get_dataset_util(phase=MachineLearningPhase.Training).get_batch_labels(
+                indices=[0]
+            )
+        )[1]
+        if len(labels) != 1:
+            return False
+        match next(iter(labels)):
             case int():
                 return True
         return False
@@ -238,8 +248,7 @@ class DatasetCollection:
         constructor_kwargs: set,
         dataset_kwargs: dict | None = None,
     ) -> Callable:
-        if not dataset_kwargs:
-            dataset_kwargs = {}
+        if dataset_kwargs is None:
             new_dataset_kwargs = {}
         else:
             new_dataset_kwargs = copy.deepcopy(dataset_kwargs)
@@ -295,7 +304,9 @@ class DatasetCollection:
         return get_dataset_kwargs_per_phase
 
     def _split_validation(self) -> None:
-        assert not self.has_dataset(phase=MachineLearningPhase.Test)
+        assert not self.has_dataset(
+            phase=MachineLearningPhase.Test
+        ) and self.has_dataset(phase=MachineLearningPhase.Validation)
         get_logger().debug("split validation dataset for %s", self.name)
         datasets = None
         dataset_util = self.get_dataset_util(phase=MachineLearningPhase.Validation)
@@ -314,7 +325,7 @@ class DatasetCollection:
         self.__datasets[MachineLearningPhase.Validation] = datasets[0]
         self.__datasets[MachineLearningPhase.Test] = datasets[1]
 
-    def get_cached_data(self, file: str, computation_fun: Callable) -> dict:
+    def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
         with DatasetCollection.lock:
             cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
             return get_cached_data(os.path.join(cache_dir, file), computation_fun)
@@ -322,11 +333,10 @@ class DatasetCollection:
 
 class ClassificationDatasetCollection(DatasetCollection):
     @classmethod
-    def create(cls, model_config=None, dataset_kwargs=None, **kwargs):
-        dc: ClassificationDatasetCollection = cls(**DatasetCollection.create(**kwargs))
-        add_transforms(dc, dataset_kwargs, model_config)
-        if not dc.has_dataset(MachineLearningPhase.Test):
-            dc._split_validation()
+    def create(cls, **kwargs):
+        dc: ClassificationDatasetCollection = DatasetCollection.create(**kwargs)
+        dc.__class__ = ClassificationDatasetCollection
+        assert isinstance(dc, ClassificationDatasetCollection)
         return dc
 
     def get_labels(self, use_cache: bool = True) -> set:
@@ -369,16 +379,10 @@ class ClassificationDatasetCollection(DatasetCollection):
         raise NotImplementedError()
 
     def generate_raw_data(self, phase: MachineLearningPhase):
-        if self.dataset_type == DatasetType.Vision:
-            dataset_util = self.get_dataset_util(phase)
-            return (
-                (
-                    dataset_util.get_sample_image(i),
-                    dataset_util.get_sample_label(i),
-                )
-                for i in range(len(dataset_util))
-            )
-        raise NotImplementedError()
+        dataset_util = self.get_dataset_util(phase)
+        return (
+            self.get_raw_data(phase=phase, index=i) for i in range(len(dataset_util))
+        )
 
     @classmethod
     def get_label(cls, label_name, label_names):
@@ -447,7 +451,7 @@ class DatasetCollectionConfig:
             raise RuntimeError("dataset_name is None")
 
         dc = create_dataset_collection(
-            ClassificationDatasetCollection,
+            cls=ClassificationDatasetCollection,
             name=self.dataset_name,
             dataset_kwargs=self.dataset_kwargs,
             model_config=model_config,
@@ -460,7 +464,7 @@ class DatasetCollectionConfig:
         self.__transform_training_dataset(dc=dc, save_dir=save_dir)
         return dc
 
-    def __transform_training_dataset(self, dc, save_dir=None):
+    def __transform_training_dataset(self, dc, save_dir=None) -> None:
         subset_indices = None
         dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
         training_dataset = dc.get_dataset(phase=MachineLearningPhase.Training)

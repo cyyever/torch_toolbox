@@ -5,6 +5,7 @@ from typing import Any, Generator
 
 import PIL
 import torch
+import torch.utils
 import torchvision
 
 from .dataset import get_dataset_size, select_item, subset_dp
@@ -17,7 +18,7 @@ class DatasetUtil:
         dataset: torch.utils.data.Dataset,
         transforms: Transforms | None = None,
         name: None | str = None,
-    ):
+    ) -> None:
         self.dataset: torch.utils.data.Dataset = dataset
         self.__len: None | int = None
         self._name: str | None = name
@@ -29,12 +30,11 @@ class DatasetUtil:
         return self.__len
 
     def get_samples(self, indices=None) -> Generator:
-        if self.__transforms is not None:
-            for idx, sample in select_item(self.dataset, indices):
-                sample = self.__transforms.extract_data(sample)
-                yield idx, sample
-        else:
+        if self.__transforms is None:
             return select_item(self.dataset, indices)
+        for idx, sample in select_item(self.dataset, indices):
+            sample = self.__transforms.extract_data(sample)
+            yield idx, sample
 
     def get_sample(self, index: int) -> Any:
         for _, sample in self.get_samples(indices=[index]):
