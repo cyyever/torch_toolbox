@@ -27,7 +27,7 @@ def get_model_info() -> dict:
     github_repos = [
         "pytorch/vision:main",
         "cyyever/torch_models:main",
-        "rwightman/pytorch-image-models:master",
+        "huggingface/pytorch-image-models:main",
     ]
 
     if not __model_info:
