@@ -333,8 +333,8 @@ class DatasetCollection:
 
 class ClassificationDatasetCollection(DatasetCollection):
     @classmethod
-    def create(cls, **kwargs):
-        dc: ClassificationDatasetCollection = DatasetCollection.create(**kwargs)
+    def create(cls, *args, **kwargs):
+        dc: ClassificationDatasetCollection = DatasetCollection.create(*args, **kwargs)
         dc.__class__ = ClassificationDatasetCollection
         assert isinstance(dc, ClassificationDatasetCollection)
         return dc
