@@ -3,23 +3,16 @@ from typing import Any
 
 import torch
 
-try:
-    import torchtext
+import torchtext
+has_torchtext = True
 
-    has_torchtext = True
-except ModuleNotFoundError:
-    has_torchtext = False
+import transformers
 
-try:
-    import transformers
+from .tokenizer import SpacyTokenizer
+from .tokenizer_factory import (get_hugging_face_tokenizer,
+                                get_spacy_tokenizer)
 
-    from .tokenizer import SpacyTokenizer
-    from .tokenizer_factory import (get_hugging_face_tokenizer,
-                                    get_spacy_tokenizer)
-
-    has_transformers = True
-except ModuleNotFoundError:
-    has_transformers = False
+has_transformers = True
 
 import torchvision
 from cyy_torch_toolbox.dataset_util import VisionDatasetUtil
