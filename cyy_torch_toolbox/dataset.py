@@ -1,4 +1,4 @@
-from typing import Any, Generator
+from typing import Generator
 
 import torch
 import torchdata
@@ -40,11 +40,9 @@ def dataset_with_indices(
     dataset: torch.utils.data.Dataset,
 ) -> torch.utils.data.MapDataPipe:
     if isinstance(dataset, torch.utils.data.IterableDataset):
-        return (
-            torchdata.datapipes.iter.IterableWrapper(dataset)
-            .map(__convert_item_to_dict)
-            .add_index()
-        )
+        dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
+    if isinstance(dataset, torchdata.datapipes.iter.IterDataPipe):
+        return dataset.enumerate()
     return torchdata.datapipes.map.Mapper(KeyPipe(dataset), __add_index_to_map_item)
 
 
@@ -76,18 +74,3 @@ def subset_dp(dataset, indices: None | list = None) -> torch.utils.data.MapDataP
     return torchdata.datapipes.map.SequenceWrapper(
         list(dict(select_item(dataset, indices)).values()), deepcopy=False
     )
-
-
-# def get_iterable_item_key_and_value(item: Any) -> tuple:
-#     return item["index"], item["data"]
-
-
-# def convert_dataset_to_map_dp(
-#     dataset: torch.utils.data.IterableDataset,
-# ) -> torch.utils.data.Dataset:
-#     dp = dataset_with_indices(dataset)
-#     if isinstance(dp, torch.utils.data.IterableDataset):
-#         return torchdata.datapipes.map.IterToMapConverter(
-#             dp, get_iterable_item_key_and_value
-#         )
-#     return dp
