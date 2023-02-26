@@ -9,10 +9,16 @@ from cyy_torch_toolbox.tensor import tensor_to
 from torch.utils.data._utils.collate import default_collate
 
 
-def default_data_extraction(data: Any) -> dict:
+def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
+    if extract_index:
+        match data:
+            case {"data": real_data, "index": index} | [index, real_data]:
+                return default_data_extraction(real_data, extract_index=False) | {
+                    "index": index
+                }
+            case _:
+                raise NotImplementedError()
     match data:
-        case {"data": real_data, "index": index}:
-            return default_data_extraction(real_data) | {"index": index}
         case [sample_input, target]:
             return {"input": sample_input, "target": target}
         case _:
