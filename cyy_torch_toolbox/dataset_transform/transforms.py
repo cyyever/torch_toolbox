@@ -16,6 +16,8 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
                 return default_data_extraction(real_data, extract_index=False) | {
                     "index": index
                 }
+            case {"input": sample_input, "target": target, "index": index}:
+                return data
             case _:
                 raise NotImplementedError()
     match data:
