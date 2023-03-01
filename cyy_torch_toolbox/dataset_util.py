@@ -83,9 +83,16 @@ class DatasetUtil:
     def get_labels(self) -> set:
         return set().union(*tuple(set(labels) for _, labels in self.get_batch_labels()))
 
+    def get_original_dataset(self) -> torch.utils.data.Dataset:
+        dataset = self.dataset
+        if hasattr(dataset, "dataset"):
+            dataset = dataset.dataset
+        return dataset
+
     def get_label_names(self) -> dict:
-        if hasattr(self.dataset, "classes"):
-            classes = getattr(self.dataset, "classes")
+        original_dataset = self.get_original_dataset()
+        if hasattr(original_dataset, "classes"):
+            classes = getattr(original_dataset, "classes")
             if classes and isinstance(classes[0], str):
                 return dict(enumerate(classes))
 
@@ -98,7 +105,7 @@ class DatasetUtil:
         label_names = functools.reduce(get_label_name, range(len(self)), set())
         if label_names:
             return dict(enumerate(sorted(label_names)))
-        raise RuntimeError("not label names detected")
+        raise RuntimeError("no label names detected")
 
 
 class DatasetSplitter(DatasetUtil):
