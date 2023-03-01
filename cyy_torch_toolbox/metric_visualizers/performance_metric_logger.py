@@ -34,10 +34,19 @@ class PerformanceMetricLogger(MetricVisualizer):
             else:
                 metric_str = metric_str + f"{k}:{value}, "
         metric_str = metric_str[:-2]
-        get_logger().info(
-            "%sepoch: %s, %s %s",
-            self.prefix + " " if self.prefix else "",
-            epoch,
-            phase_str,
-            metric_str,
-        )
+        if model_executor.phase == MachineLearningPhase.Training:
+            get_logger().info(
+                "%sepoch: %s, %s %s",
+                self.prefix + " " if self.prefix else "",
+                epoch,
+                phase_str,
+                metric_str,
+            )
+        else:
+            assert epoch == 1
+            get_logger().info(
+                "%s %s %s",
+                self.prefix,
+                phase_str,
+                metric_str,
+            )
