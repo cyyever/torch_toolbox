@@ -139,6 +139,9 @@ class ModelExecutor(ModelExecutorBase):
     def model(self) -> torch.nn.Module:
         return self.model_with_loss.model
 
+    def replace_model(self, fun: Callable):
+        self._model_with_loss = self.model_with_loss.replace_model(fun(self.model))
+
     def copy_model_with_loss(self, deepcopy=True) -> ModelWithLoss:
         self._wait_stream()
         if deepcopy:
