@@ -159,9 +159,9 @@ class Transforms:
 
     def cache_transforms(self, dataset, device=None) -> tuple[dict, Any]:
         if device is not None:
-            get_logger().warning("cache dataset to device %s", device)
+            get_logger().warning("cache dataset to device memory: %s", device)
         else:
-            get_logger().warning("cache dataset to cpu")
+            get_logger().warning("cache dataset to main memory")
         transformed_dataset = {}
         for k, item in select_item(dataset):
             item = self.extract_data(item)
