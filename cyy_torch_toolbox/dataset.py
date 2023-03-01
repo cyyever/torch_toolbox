@@ -39,11 +39,18 @@ def __add_index_to_map_item(item) -> dict:
 def dataset_with_indices(
     dataset: torch.utils.data.Dataset,
 ) -> torch.utils.data.MapDataPipe:
+    old_dataset = dataset
     if isinstance(dataset, torch.utils.data.IterableDataset):
         dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
     if isinstance(dataset, torchdata.datapipes.iter.IterDataPipe):
-        return dataset.enumerate()
-    return torchdata.datapipes.map.Mapper(KeyPipe(dataset), __add_index_to_map_item)
+        dataset = dataset.enumerate()
+    else:
+        dataset = torchdata.datapipes.map.Mapper(
+            KeyPipe(dataset), __add_index_to_map_item
+        )
+    assert not hasattr(dataset, "dataset")
+    setattr(dataset, "dataset", old_dataset)
+    return dataset
 
 
 def select_item(dataset, indices=None) -> Generator:
