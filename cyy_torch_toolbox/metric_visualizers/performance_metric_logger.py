@@ -46,7 +46,7 @@ class PerformanceMetricLogger(MetricVisualizer):
             assert epoch == 1
             get_logger().info(
                 "%s%s %s",
-                self.prefix,
+                self.prefix + " " if self.prefix else "",
                 phase_str,
                 metric_str,
             )

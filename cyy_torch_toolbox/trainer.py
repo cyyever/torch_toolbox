@@ -124,9 +124,11 @@ class Trainer(ModelExecutor):
         keep_model_hook.save_best_model = save_best_model
         keep_model_hook.save_epoch_model = save_epoch_model
         keep_model_hook.save_last_model = save_last_model
-        self.__inferencers.clear()
         if batch_loss_log_times is not None:
             self.get_hook("batch_loss_logger").log_times = batch_loss_log_times
+        if self._visualizer_prefix is not None and self.__inferencers:
+            for inferencer in self.__inferencers.values():
+                inferencer.set_visualizer_prefix(self._visualizer_prefix)
         super()._prepare_execution(**kwargs)
 
     def train(self, run_validation=True, **kwargs) -> None:
