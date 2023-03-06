@@ -3,29 +3,16 @@ import os
 
 import torch
 import torch.multiprocessing
-from cyy_naive_lib.data_structure.task_queue import TaskQueue
-from cyy_naive_lib.time_counter import TimeCounter
+from cyy_naive_lib.data_structure.task_queue import BatchPolicy, TaskQueue
 from cyy_torch_toolbox.device import get_cuda_device_memory_info, get_devices
 
 
-class CUDABatchPolicy:
-    def __init__(self):
-        self.__processing_times = {}
-        self.__time_counter = TimeCounter()
-
-    def start_batch(self, **kwargs):
-        self.__time_counter.reset_start_time()
-
-    def end_batch(self, batch_size, **kwargs):
-        self.__processing_times[batch_size] = (
-            self.__time_counter.elapsed_milliseconds() / batch_size
-        )
-
+class CUDABatchPolicy(BatchPolicy):
     def adjust_batch_size(self, batch_size, **kwargs):
         if (
-            batch_size + 1 not in self.__processing_times
-            or self.__processing_times[batch_size + 1]
-            < self.__processing_times[batch_size]
+            batch_size + 1 not in self._processing_times
+            or self._processing_times[batch_size + 1]
+            < self._processing_times[batch_size]
         ):
             memory_info = get_cuda_device_memory_info(consider_cache=True)
             current_device_idx = torch.cuda.current_device()
