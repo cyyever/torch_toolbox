@@ -2,6 +2,7 @@
 from typing import Callable
 
 import torch.multiprocessing
+from cyy_naive_lib.system_info import get_operating_system
 from cyy_torch_toolbox.data_structure.torch_task_queue import TorchTaskQueue
 from cyy_torch_toolbox.device import get_cpu_device
 from cyy_torch_toolbox.tensor import (assemble_tensors, disassemble_tensor,
@@ -29,7 +30,8 @@ class TorchProcessTaskQueue(TorchTaskQueue):
 
     def get_ctx(self):
         if TorchProcessTaskQueue.ctx is None:
-            TorchProcessTaskQueue.ctx = torch.multiprocessing.get_context("spawn")
+            method = "spawn" if get_operating_system() != "freebsd" else "fork"
+            TorchProcessTaskQueue.ctx = torch.multiprocessing.get_context(method)
         return TorchProcessTaskQueue.ctx
 
     def get_manager(self):
