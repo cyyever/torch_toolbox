@@ -5,8 +5,7 @@ import torch
 import torch.multiprocessing
 from cyy_naive_lib.data_structure.task_queue import TaskQueue
 from cyy_naive_lib.time_counter import TimeCounter
-from cyy_torch_toolbox.device import (CUDADeviceGreedyAllocator,
-                                      get_cuda_device_memory_info, get_devices)
+from cyy_torch_toolbox.device import get_cuda_device_memory_info, get_devices
 
 
 class CUDABatchPolicy:
@@ -41,15 +40,8 @@ class CUDABatchPolicy:
 
 
 class TorchTaskQueue(TaskQueue):
-    def __init__(
-        self, max_needed_cuda_bytes=None, worker_num: int | None = None, **kwargs
-    ):
-        if max_needed_cuda_bytes is not None and torch.cuda.is_available():
-            self._devices = CUDADeviceGreedyAllocator().get_devices(
-                max_needed_cuda_bytes
-            )
-        else:
-            self._devices = get_devices()
+    def __init__(self, worker_num: int | None = None, **kwargs):
+        self._devices: list = get_devices()
         if worker_num is None:
             if torch.cuda.is_available():
                 worker_num = len(self._devices)
