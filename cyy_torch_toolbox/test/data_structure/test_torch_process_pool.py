@@ -24,5 +24,5 @@ def train(worker_id):
 def test_process_pool():
     pool = TorchProcessPool()
     for worker_id in range(2):
-        pool.exec(train, worker_id)
+        pool.submit(train, worker_id)
     pool.shutdown()
