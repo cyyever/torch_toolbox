@@ -12,4 +12,4 @@ def test_model():
         # ("IMDB", "simplelstm"),
     ]:
         dc = create_dataset_collection(ClassificationDatasetCollection, dataset_name)
-        get_model(model_name, dc, pretrained=False)
+        get_model(model_name, dc, {"pretrained": False})

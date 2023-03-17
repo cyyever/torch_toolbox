@@ -96,7 +96,7 @@ def get_model_info() -> dict:
 
 
 def get_model(
-    name: str, dataset_collection: DatasetCollection, **model_kwargs
+    name: str, dataset_collection: DatasetCollection, model_kwargs: dict = {}
 ) -> ModelWithLoss:
     model_info = get_model_info()
 
@@ -197,12 +197,12 @@ class ModelConfig:
         self.model_kwargs: dict = {}
 
     def get_model(self, dc: DatasetCollection) -> ModelWithLoss:
-        assert not (self.pretrained and self.model_path is not None)
+        assert not (self.pretrained and self.model_path)
         model_kwargs = copy.deepcopy(self.model_kwargs)
         model_kwargs["pretrained"] = self.pretrained
         get_logger().info("use model %s", self.model_name)
         word_vector_name = model_kwargs.pop("word_vector_name", None)
-        model_with_loss = get_model(self.model_name, dc, **model_kwargs)
+        model_with_loss = get_model(self.model_name, dc, model_kwargs)
         if self.model_path is not None:
             model_with_loss.model.load_state_dict(torch.load(self.model_path))
         if word_vector_name is not None:
