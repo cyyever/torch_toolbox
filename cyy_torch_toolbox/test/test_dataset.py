@@ -40,6 +40,13 @@ def test_dataset_labels():
         assert dc.get_labels()
 
 
+def test_torch_geometric_dataset():
+    dc = create_dataset_collection(
+        ClassificationDatasetCollection,
+        "KarateClub",
+    )
+
+
 def test_hugging_face_dataset():
     return
     dc = create_dataset_collection(

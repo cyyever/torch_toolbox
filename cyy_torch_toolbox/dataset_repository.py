@@ -13,6 +13,12 @@ except BaseException:
     has_torchtext = False
 
 try:
+    import torch_geometric
+
+    has_torch_geometric = True
+except BaseException:
+    has_torch_geometric = False
+try:
     import torchaudio
 
     has_torchaudio = True
@@ -55,6 +61,9 @@ def get_dataset_constructors(
     if dataset_type is None or dataset_type == DatasetType.Audio:
         if has_torchaudio:
             repositories += [torchaudio.datasets, local_audio_datasets]
+    if dataset_type is None or dataset_type == DatasetType.Graph:
+        if has_torch_geometric:
+            repositories += [torch_geometric.datasets]
     dataset_constructors = {}
     for repository in repositories:
         if hasattr(repository, "DATASETS"):
