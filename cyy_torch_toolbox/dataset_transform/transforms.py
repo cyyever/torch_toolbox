@@ -28,7 +28,7 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
 
 
 def __get_int_target(
-    reversed_label_names, label_name: str, index: int | None = None
+    reversed_label_names: dict, label_name: str, *args: list, **kwargs: dict
 ) -> int:
     return reversed_label_names[label_name]
 
@@ -46,7 +46,7 @@ def __replace_target(label_map, target, index):
     return target
 
 
-def replace_target(label_map: dict):
+def replace_target(label_map: dict) -> Callable:
     return functools.partial(__replace_target, label_map)
 
 
@@ -93,7 +93,7 @@ class Transforms:
             data = f(data)
         return data
 
-    def transform_input(self, sample_input, apply_random: bool = True):
+    def transform_input(self, sample_input: Any, apply_random: bool = True) -> Any:
         for f in self.get_input_transforms_in_order(include_random=apply_random):
             sample_input = f(sample_input)
         return sample_input
@@ -106,12 +106,12 @@ class Transforms:
             inputs = f(inputs)
         return inputs
 
-    def transform_target(self, target, index=None):
+    def transform_target(self, target: Any, index=None) -> Any:
         for f in self.get(TransformType.Target):
             target = f(target, index)
         return target
 
-    def transform_targets(self, targets: list):
+    def transform_targets(self, targets: Any) -> Any:
         batch_transforms = self.get(TransformType.TargetBatch)
         if not batch_transforms:
             batch_transforms.append(default_collate)
@@ -119,10 +119,10 @@ class Transforms:
             targets = f(targets)
         return targets.reshape(-1)
 
-    def collate_batch(self, batch) -> dict:
+    def collate_batch(self, batch: Any) -> dict:
         inputs = []
         targets = []
-        other_info = []
+        other_info: list | dict = []
         for data in batch:
             data = copy.copy(self.extract_data(data))
             sample_input = self.transform_input(data.pop("input"))
@@ -157,7 +157,7 @@ class Transforms:
             "targets": targets,
         } | other_info
 
-    def cache_transforms(self, dataset, device=None) -> tuple[dict, Any]:
+    def cache_transforms(self, dataset: Any, device=Any | None) -> tuple[dict, Any]:
         if device is not None:
             get_logger().warning("cache dataset to device memory: %s", device)
         else:
@@ -195,8 +195,9 @@ class Transforms:
             TransformType.InputBatch,
             TransformType.Target,
         ):
-            if k in self.__transforms and self.__transforms[k]:
+            transforms = self.__transforms.get(k, [])
+            if transforms:
                 desc.append(str(k) + "=>")
-                for t in self.__transforms[k]:
+                for t in transforms:
                     desc.append(str(t))
         return "\n".join(desc)
