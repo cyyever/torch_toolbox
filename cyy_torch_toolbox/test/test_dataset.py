@@ -3,6 +3,8 @@
 from cyy_torch_toolbox.dataset import subset_dp
 from cyy_torch_toolbox.dataset_collection import (
     ClassificationDatasetCollection, create_dataset_collection)
+from cyy_torch_toolbox.dataset_repository import (has_hugging_face,
+                                                  has_torch_geometric)
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
@@ -41,6 +43,8 @@ def test_dataset_labels():
 
 
 def test_torch_geometric_dataset():
+    if not has_torch_geometric:
+        return
     dc = create_dataset_collection(
         ClassificationDatasetCollection,
         "KarateClub",
@@ -48,6 +52,8 @@ def test_torch_geometric_dataset():
 
 
 def test_hugging_face_dataset():
+    if not has_hugging_face:
+        return
     return
     dc = create_dataset_collection(
         ClassificationDatasetCollection,
