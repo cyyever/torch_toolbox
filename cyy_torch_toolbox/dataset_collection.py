@@ -156,7 +156,7 @@ class DatasetCollection:
         return dataset_dir
 
     @classmethod
-    def __get_dataset_cache_dir(
+    def _get_dataset_cache_dir(
         cls,
         name: str,
         phase: MachineLearningPhase | None = None,
@@ -327,7 +327,7 @@ class DatasetCollection:
 
     def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
         with DatasetCollection.lock:
-            cache_dir = DatasetCollection.__get_dataset_cache_dir(self.name)
+            cache_dir = DatasetCollection._get_dataset_cache_dir(self.name)
             return get_cached_data(os.path.join(cache_dir, file), computation_fun)
 
 
@@ -412,8 +412,9 @@ def create_dataset_collection(
         for dataset_type in DatasetType:
             dataset_constructor = get_dataset_constructors(
                 dataset_type,
-                cache_dir=os.path.join(
-                    DatasetCollection.get_dataset_root_dir(), ".cache"
+                cache_path=os.path.join(
+                    DatasetCollection._get_dataset_cache_dir("dataset_constructors"),
+                    "dataset_constructors",
                 ),
             )
             if name in dataset_constructor:

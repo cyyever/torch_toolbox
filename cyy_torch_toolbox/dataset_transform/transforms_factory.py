@@ -2,29 +2,23 @@ import functools
 from typing import Any
 
 import torch
-
-try:
-    import torchtext
-
-    has_torchtext = True
-except BaseException:
-    has_torchtext = False
-
+from cyy_torch_toolbox.dependency import (has_hugging_face, has_torchtext,
+                                          has_torchvision)
 
 if has_torchtext:
+    import torchtext
+
     from .tokenizer import SpacyTokenizer
     from .tokenizer_factory import get_spacy_tokenizer
 
-try:
-    import transformers
+if has_hugging_face:
+    import transformers as hugging_face_transformers
 
     from .tokenizer_factory import get_hugging_face_tokenizer
 
-    has_transformers = True
-except BaseException:
-    has_transformers = False
+if has_torchvision:
+    import torchvision
 
-import torchvision
 from cyy_torch_toolbox.dataset_util import VisionDatasetUtil
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
@@ -189,7 +183,7 @@ def add_transforms(dc, dataset_kwargs=None, model_config=None):
                     ),
                     key=TransformType.InputBatch,
                 )
-            case transformers.PreTrainedTokenizerBase():
+            case hugging_face_transformers.PreTrainedTokenizerBase():
                 assert max_len is not None
                 dc.append_transform(
                     functools.partial(

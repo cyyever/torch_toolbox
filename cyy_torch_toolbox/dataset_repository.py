@@ -1,8 +1,7 @@
 import functools
-import os
 
 import torch
-from cyy_naive_lib.storage import get_cached_data
+from cyy_naive_lib.storage import persistent_cache
 
 from cyy_torch_toolbox.dependency import (has_hugging_face, has_medmnist,
                                           has_torch_geometric, has_torchaudio,
@@ -32,8 +31,9 @@ from cyy_naive_lib.reflection import get_class_attrs
 from cyy_torch_toolbox.ml_type import DatasetType
 
 
+@persistent_cache(cache_time=3600 * 30)
 def get_dataset_constructors(
-    dataset_type: DatasetType | None = None, cache_dir: str | None = None
+    cache_path: str, dataset_type: DatasetType | None = None
 ) -> dict:
     repositories = []
     if dataset_type is None or dataset_type == DatasetType.Vision:
@@ -69,22 +69,9 @@ def get_dataset_constructors(
             )
     if has_hugging_face and (dataset_type is None or dataset_type == DatasetType.Text):
         dataset_names = set(a.lower() for a in dataset_constructors.keys())
-
-        def data_fun():
-            return set(
-                datasets.list_datasets(
-                    with_community_datasets=False, with_details=False
-                )
-            )
-
-        if cache_dir is not None:
-            os.makedirs(cache_dir, exist_ok=True)
-            huggingface_datasets = get_cached_data(
-                os.path.join(cache_dir, "huggingface_datasets"), data_fun
-            )
-        else:
-            huggingface_datasets = data_fun()
-        for name in huggingface_datasets:
+        for name in datasets.list_datasets(
+            with_community_datasets=False, with_details=False
+        ):
             if name.lower() not in dataset_names:
                 dataset_constructors[name] = functools.partial(
                     datasets.load_dataset, name
