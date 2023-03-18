@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import torch
 from cyy_torch_toolbox.default_config import DefaultConfig
+from cyy_torch_toolbox.dependency import has_torchtext, has_torchvision
 from cyy_torch_toolbox.device import CUDADeviceGreedyAllocator
 from cyy_torch_toolbox.ml_type import (ModelExecutorHookPoint,
                                        StopExecutingException)
@@ -11,6 +12,8 @@ def stop_training(*args, **kwargs):
 
 
 def test_vision_training():
+    if not has_torchvision:
+        return
     config = DefaultConfig(dataset_name="MNIST", model_name="LeNet5")
     config.hyper_parameter_config.epoch = 1
     config.hyper_parameter_config.learning_rate = 0.01
@@ -23,6 +26,8 @@ def test_vision_training():
 
 
 def test_text_training():
+    if not has_torchtext:
+        return
     if torch.cuda.is_available():
         device = CUDADeviceGreedyAllocator().get_device(
             max_needed_bytes=9 * 1024 * 1024 * 1024
