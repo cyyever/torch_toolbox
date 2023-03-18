@@ -111,7 +111,7 @@ def tensor_to(data, non_blocking=False, check_slowdown=False, **kwargs):
             if (
                 str(data.device) == "cpu"
                 and device is not None
-                and device != data.device
+                and str(device) != str(data.device)
             ):
                 if not data.is_pinned():
                     raise RuntimeError("tensor is not pinned")
