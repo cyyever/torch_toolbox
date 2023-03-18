@@ -2,50 +2,33 @@ import functools
 import os
 
 import torch
-import torchvision
 from cyy_naive_lib.storage import get_cached_data
 
-try:
+from cyy_torch_toolbox.dependency import (has_hugging_face, has_medmnist,
+                                          has_torch_geometric, has_torchaudio,
+                                          has_torchtext, has_torchvision)
+
+if has_torchvision:
+    import torchvision
+
+    import cyy_torch_toolbox.dataset_wrapper.vision as local_vision_datasets
+
+if has_torchtext:
     import torchtext
 
-    has_torchtext = True
-except BaseException:
-    has_torchtext = False
-
-try:
+if has_torch_geometric:
     import torch_geometric
-
-    has_torch_geometric = True
-except BaseException:
-    has_torch_geometric = False
-try:
+if has_torchaudio:
     import torchaudio
 
-    has_torchaudio = True
-except BaseException:
-    has_torchaudio = False
-
-if has_torchaudio:
     import cyy_torch_toolbox.dataset_wrapper.audio as local_audio_datasets
-
-try:
+if has_medmnist:
     import medmnist
-
-    has_medmnist = True
-except BaseException:
-    has_medmnist = False
-
-try:
+if has_hugging_face:
     import datasets
-
-    has_hugging_face = True
-except BaseException:
-    has_hugging_face = False
-
 
 from cyy_naive_lib.reflection import get_class_attrs
 
-import cyy_torch_toolbox.dataset_wrapper.vision as local_vision_datasets
 from cyy_torch_toolbox.ml_type import DatasetType
 
 
@@ -54,7 +37,8 @@ def get_dataset_constructors(
 ) -> dict:
     repositories = []
     if dataset_type is None or dataset_type == DatasetType.Vision:
-        repositories += [torchvision.datasets, local_vision_datasets]
+        if has_torchvision:
+            repositories += [torchvision.datasets, local_vision_datasets]
     if dataset_type is None or dataset_type == DatasetType.Text:
         if has_torchtext:
             repositories += [torchtext.datasets]
