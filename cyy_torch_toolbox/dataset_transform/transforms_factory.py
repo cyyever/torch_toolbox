@@ -3,16 +3,26 @@ from typing import Any
 
 import torch
 
-import torchtext
-has_torchtext = True
+try:
+    import torchtext
 
-import transformers
+    has_torchtext = True
+except BaseException:
+    has_torchtext = False
 
-from .tokenizer import SpacyTokenizer
-from .tokenizer_factory import (get_hugging_face_tokenizer,
-                                get_spacy_tokenizer)
 
-has_transformers = True
+if has_torchtext:
+    from .tokenizer import SpacyTokenizer
+    from .tokenizer_factory import get_spacy_tokenizer
+
+try:
+    import transformers
+
+    from .tokenizer_factory import get_hugging_face_tokenizer
+
+    has_transformers = True
+except BaseException:
+    has_transformers = False
 
 import torchvision
 from cyy_torch_toolbox.dataset_util import VisionDatasetUtil
