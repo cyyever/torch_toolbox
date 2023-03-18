@@ -131,18 +131,18 @@ class DatasetCollection:
     def transform_text(self, phase: MachineLearningPhase, text: str) -> str:
         return self.get_transforms(phase).transform_text(text)
 
-    __dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
+    _dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
     lock = threading.RLock()
 
     @classmethod
     def get_dataset_root_dir(cls) -> str:
         with cls.lock:
-            return os.getenv("pytorch_dataset_root_dir", cls.__dataset_root_dir)
+            return os.getenv("pytorch_dataset_root_dir", cls._dataset_root_dir)
 
     @classmethod
     def set_dataset_root_dir(cls, root_dir: str) -> None:
         with cls.lock:
-            cls.__dataset_root_dir = root_dir
+            cls._dataset_root_dir = root_dir
 
     @classmethod
     def __get_dataset_dir(cls, name: str) -> str:
@@ -408,32 +408,26 @@ def create_dataset_collection(
     cls, name: str, dataset_kwargs: dict | None = None, model_config=None
 ):
     with cls.lock:
-        all_dataset_constructors = set()
-        for dataset_type in DatasetType:
-            dataset_constructor = get_dataset_constructors(
-                dataset_type,
-                cache_path=os.path.join(
-                    DatasetCollection._get_dataset_cache_dir("dataset_constructors"),
-                    "dataset_constructors",
-                ),
+        all_dataset_constructors = get_dataset_constructors(
+            cache_path=os.path.join(
+                DatasetCollection._dataset_root_dir,
+                ".cache",
+                "dataset_constructors",
             )
-            if name in dataset_constructor:
+        )
+        dataset_names = set()
+        for dataset_type, dataset_constructors in all_dataset_constructors.items():
+            if name in dataset_constructors:
                 return cls.create(
                     name=name,
                     dataset_type=dataset_type,
-                    dataset_constructor=dataset_constructor[name],
+                    dataset_constructor=dataset_constructors[name],
                     dataset_kwargs=dataset_kwargs,
                     model_config=model_config,
                 )
-            if name.lower() in {k.lower() for k in dataset_constructor.keys()}:
-                get_logger().warning(
-                    "there is a similar name in dataset type %s", str(dataset_type)
-                )
+            dataset_names |= set(dataset_constructors.keys())
 
-            all_dataset_constructors |= dataset_constructor.keys()
-        get_logger().error(
-            "supported datasets are %s", sorted(all_dataset_constructors)
-        )
+        get_logger().error("supported datasets are %s", sorted(dataset_names))
         raise NotImplementedError(name)
 
 
