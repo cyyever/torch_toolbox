@@ -5,7 +5,6 @@ import threading
 from typing import Any, Callable
 
 import torch
-import torchvision
 from cyy_naive_lib.fs.ssd import is_ssd
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_kwarg_names
@@ -22,6 +21,9 @@ from cyy_torch_toolbox.dataset_util import (DatasetUtil, TextDatasetUtil,
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
 
+from cyy_torch_toolbox.dependency import has_torchvision
+if has_torchvision:
+    import torchvision
 
 class DatasetCollection:
     def __init__(

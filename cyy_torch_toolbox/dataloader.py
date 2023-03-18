@@ -2,24 +2,23 @@ import copy
 import os
 
 import torch
-import torchvision
 from cyy_naive_lib.log import get_logger
 
-try:
+from cyy_torch_toolbox.dependency import has_dali, has_torchvision
+
+if has_dali:
     import nvidia.dali
     from nvidia.dali.pipeline import pipeline_def
     from nvidia.dali.plugin.pytorch import (DALIClassificationIterator,
                                             LastBatchPolicy)
-
-    has_dali = True
-except ModuleNotFoundError:
-    has_dali = False
+if has_torchvision:
+    import torchvision
 
 from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 
-if has_dali:
+if has_dali and has_torchvision:
 
     @pipeline_def
     def create_dali_pipeline(

@@ -40,3 +40,10 @@ try:
     has_hugging_face = True
 except BaseException:
     has_hugging_face = False
+
+try:
+    import nvidia.dali
+
+    has_dali = True
+except ModuleNotFoundError:
+    has_dali = False
