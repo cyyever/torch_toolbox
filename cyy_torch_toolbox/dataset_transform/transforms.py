@@ -157,7 +157,9 @@ class Transforms:
             "targets": targets,
         } | other_info
 
-    def cache_transforms(self, dataset: Any, device=Any | None) -> tuple[dict, Any]:
+    def cache_transforms(
+        self, dataset: Any, device: Any | None = None
+    ) -> tuple[dict, Any]:
         if device is not None:
             get_logger().warning("cache dataset to device memory: %s", device)
         else:
