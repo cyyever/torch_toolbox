@@ -4,7 +4,7 @@ import os
 import uuid
 from dataclasses import dataclass
 
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import get_logger, set_level
 from omegaconf import OmegaConf
 
 from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
@@ -74,11 +74,14 @@ class DefaultConfig:
         return conf_container
 
     def get_save_dir(self):
+        model_name = self.model_config.model_name
+        if model_name is None:
+            model_name = "custom_model"
         if self.save_dir is None:
             self.save_dir = os.path.join(
                 "session",
                 self.dc_config.dataset_name,
-                self.model_config.model_name,
+                model_name,
                 "{date:%Y-%m-%d_%H_%M_%S}".format(date=datetime.datetime.now()),
                 str(uuid.uuid4()),
             )
@@ -92,17 +95,15 @@ class DefaultConfig:
             model_config=self.model_config,
         )
 
-    def create_trainer(self, dc: DatasetCollection | None = None) -> Trainer:
-        if dc is None:
-            dc = self.create_dataset_collection()
-        model_with_loss = self.model_config.get_model(dc)
-        return self.create_trainer_by_model(model_with_loss, dc)
-
-    def create_trainer_by_model(
-        self, model_with_loss: ModelWithLoss, dc: DatasetCollection | None = None
+    def create_trainer(
+        self,
+        dc: DatasetCollection | None = None,
+        model_with_loss: ModelWithLoss | None = None,
     ) -> Trainer:
         if dc is None:
             dc = self.create_dataset_collection()
+        if model_with_loss is None:
+            model_with_loss = self.model_config.get_model(dc)
         if hasattr(dc, "adapt_to_model"):
             dc.adapt_to_model(
                 model_with_loss.get_underlying_model(), self.model_config.model_kwargs
@@ -125,7 +126,7 @@ class DefaultConfig:
 
     def apply_global_config(self):
         if self.log_level is not None:
-            get_logger().setLevel(self.log_level)
+            set_level(self.log_level)
         self.__set_reproducible_env()
 
     def __set_reproducible_env(self):
