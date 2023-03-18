@@ -6,10 +6,13 @@ from typing import Any, Generator
 import PIL
 import torch
 import torch.utils
-import torchvision
 
-from .dataset import get_dataset_size, select_item, subset_dp
-from .dataset_transform.transforms import Transforms
+from cyy_torch_toolbox.dataset import get_dataset_size, select_item, subset_dp
+from cyy_torch_toolbox.dataset_transform.transforms import Transforms
+from cyy_torch_toolbox.dependency import has_torchvision
+
+if has_torchvision:
+    import torchvision
 
 
 class DatasetUtil:
@@ -249,7 +252,7 @@ class VisionDatasetUtil(DatasetSplitter):
                 torchvision.utils.save_image(sample_input, path)
 
     @torch.no_grad()
-    def get_sample_image(self, index: int) -> PIL.Image:
+    def get_sample_image(self, index: int) -> Any:
         tensor = self._get_sample_input(index, apply_transform=False)
         if isinstance(tensor, PIL.Image.Image):
             return tensor
