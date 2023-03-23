@@ -4,13 +4,20 @@ from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.dataset import select_item
+from cyy_torch_toolbox.dependency import has_torch_geometric
 from cyy_torch_toolbox.ml_type import TransformType
 from cyy_torch_toolbox.tensor import tensor_to
 from torch.utils.data._utils.collate import default_collate
 
+if has_torch_geometric:
+    import torch_geometric
+    import torch_geometric.data
+
 
 def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
     if extract_index:
+        print(data["data"])
+        print(type(data["data"]))
         match data:
             case {"data": real_data, "index": index} | [index, real_data]:
                 return default_data_extraction(real_data, extract_index=False) | {
@@ -19,7 +26,11 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
             case {"input": sample_input, "target": target, "index": index}:
                 return data
             case _:
-                raise NotImplementedError()
+                raise NotImplementedError(data)
+    if has_torch_geometric:
+        match data:
+            case torch_geometric.data.Data():
+                return {"x": data.x, "y": data.y, "edge_index": data.edge_index}
     match data:
         case [sample_input, target]:
             return {"input": sample_input, "target": target}
