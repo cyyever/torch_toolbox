@@ -3,22 +3,20 @@ import functools
 from typing import Callable
 
 import torch
-import torch.nn as nn
-
-try:
-    import transformers
-
-    has_hugging_face = True
-except ModuleNotFoundError:
-    has_hugging_face = False
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_kwarg_names
+from torch import nn
 from torch.nn.parallel import DistributedDataParallel as DDP
+
+from cyy_torch_toolbox.dependency import has_hugging_face
+
+if has_hugging_face:
+    import transformers
 
 from cyy_torch_toolbox.device import get_devices
 from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
-from cyy_torch_toolbox.model_transform.checkpointed_model import \
-    get_checkpointed_model
+# from cyy_torch_toolbox.model_transform.checkpointed_model import \
+#     get_checkpointed_model
 from cyy_torch_toolbox.model_util import ModelUtil
 from cyy_torch_toolbox.tensor import tensor_to
 
@@ -157,6 +155,8 @@ class ModelWithLoss:
                 return fun(real_inputs)
             case tuple():
                 return fun(*real_inputs)
+            case dict():
+                return fun(**real_inputs)
             case _:
                 raise NotImplementedError(type(real_inputs))
 
@@ -168,19 +168,14 @@ class ModelWithLoss:
         )
 
     def to(self, device, non_blocking=False):
-        try:
-            param = next(self.model.parameters())
+        for param in self.model.parameters():
             if param.device != device:
                 self.model.to(device=device, non_blocking=non_blocking)
-                return
-        except StopIteration:
-            try:
-                buffer = next(self.model.buffers())
-                if buffer.device != device:
-                    self.model.to(device=device, non_blocking=non_blocking)
-                    return
-            except StopIteration:
-                pass
+            break
+        for buffer in self.model.buffers():
+            if buffer.device != device:
+                self.model.to(device=device, non_blocking=non_blocking)
+            return
 
     def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
         layers = [
@@ -245,25 +240,25 @@ class ModelWithLoss:
                 )
 
 
-class CheckPointedModelWithLoss:
-    def __init__(self, model_with_loss: ModelWithLoss):
-        self.__model_with_loss = model_with_loss.replace_model(
-            get_checkpointed_model(model_with_loss.model)
-        )
+# class CheckPointedModelWithLoss:
+#     def __init__(self, model_with_loss: ModelWithLoss):
+#         self.__model_with_loss = model_with_loss.replace_model(
+#             get_checkpointed_model(model_with_loss.model)
+#         )
 
-    def __getattr__(self, attr):
-        return getattr(self.__model_with_loss, attr)
+#     def __getattr__(self, attr):
+#         return getattr(self.__model_with_loss, attr)
 
-    def __call__(self, **kwargs) -> dict:
-        phase = kwargs["phase"]
-        if phase == MachineLearningPhase.Training:
-            input_features = kwargs.get("input_features", None)
-            if input_features is not None:
-                input_features.requires_grad_()
-            inputs = kwargs.get("inputs", None)
-            if inputs is not None:
-                inputs.requires_grad_()
-        return self.__model_with_loss.__call__(**kwargs)
+#     def __call__(self, **kwargs) -> dict:
+#         phase = kwargs["phase"]
+#         if phase == MachineLearningPhase.Training:
+#             input_features = kwargs.get("input_features", None)
+#             if input_features is not None:
+#                 input_features.requires_grad_()
+#             inputs = kwargs.get("inputs", None)
+#             if inputs is not None:
+#                 inputs.requires_grad_()
+#         return self.__model_with_loss.__call__(**kwargs)
 
 
 class VisionModelWithLoss(ModelWithLoss):
