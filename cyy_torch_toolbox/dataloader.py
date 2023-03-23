@@ -1,24 +1,24 @@
 import copy
 import os
+from typing import Any
 
 import torch
 from cyy_naive_lib.log import get_logger
 
+from cyy_torch_toolbox.dataset import get_dataset_size
+from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.dependency import has_dali, has_torchvision
+from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 
-if has_dali:
+if has_torchvision:
+    import torchvision
+
+
+if has_dali and has_torchvision:
     import nvidia.dali
     from nvidia.dali.pipeline import pipeline_def
     from nvidia.dali.plugin.pytorch import (DALIClassificationIterator,
                                             LastBatchPolicy)
-if has_torchvision:
-    import torchvision
-
-from cyy_torch_toolbox.dataset import get_dataset_size
-from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
-
-if has_dali and has_torchvision:
 
     @pipeline_def
     def create_dali_pipeline(
@@ -142,10 +142,10 @@ def get_dataloader(
     phase: MachineLearningPhase,
     batch_size: int,
     device=None,
-    cache_transforms=None,
+    cache_transforms: str | None = None,
     model_type: ModelType | None = None,
-    use_dali=True,
-):
+    use_dali: bool = True,
+) -> Any:
     dataset = dc.get_dataset(phase=phase)
     transforms = dc.get_transforms(phase=phase)
     data_in_cpu: bool = True
@@ -161,6 +161,7 @@ def get_dataloader(
     # We use DALI for ImageFolder only
     if (
         has_dali
+        and has_torchvision
         and use_dali
         and model_type == ModelType.Classification
         and isinstance(
