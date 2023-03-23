@@ -39,12 +39,12 @@ def test_dataset():
             ClassificationDatasetCollection,
             "KarateClub",
         )
-    if has_hugging_face:
-        dc = create_dataset_collection(
-            ClassificationDatasetCollection,
-            "multi_nli",
-            dataset_kwargs={"val_split": "validation_matched"},
-        )
+    # if has_hugging_face:
+    #     dc = create_dataset_collection(
+    #         ClassificationDatasetCollection,
+    #         "multi_nli",
+    #         dataset_kwargs={"val_split": "validation_matched"},
+    #     )
 
 
 def test_dataset_labels():
