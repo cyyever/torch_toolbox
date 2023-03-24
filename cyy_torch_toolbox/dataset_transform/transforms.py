@@ -15,6 +15,10 @@ if has_torch_geometric:
 
 
 def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
+    if has_torch_geometric:
+        match data:
+            case torch_geometric.data.Data():
+                return {"x": data.x, "y": data.y, "edge_index": data.edge_index}
     if extract_index:
         match data:
             case {"data": real_data, "index": index} | [index, real_data]:
@@ -23,12 +27,10 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
                 }
             case {"input": sample_input, "target": target, "index": index}:
                 return data
+            case {"target": target}:
+                return data
             case _:
                 raise NotImplementedError(data)
-    if has_torch_geometric:
-        match data:
-            case torch_geometric.data.Data():
-                return {"x": data.x, "y": data.y, "edge_index": data.edge_index}
     match data:
         case [sample_input, target]:
             return {"input": sample_input, "target": target}
