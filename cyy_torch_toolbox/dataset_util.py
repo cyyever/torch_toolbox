@@ -273,3 +273,7 @@ class TextDatasetUtil(DatasetSplitter):
     @torch.no_grad()
     def get_sample_text(self, index: int) -> str:
         return self._get_sample_input(index, apply_transform=False)
+
+
+class GraphDatasetUtil(DatasetSplitter):
+    pass

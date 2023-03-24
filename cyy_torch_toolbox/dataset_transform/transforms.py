@@ -16,8 +16,6 @@ if has_torch_geometric:
 
 def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
     if extract_index:
-        print(data["data"])
-        print(type(data["data"]))
         match data:
             case {"data": real_data, "index": index} | [index, real_data]:
                 return default_data_extraction(real_data, extract_index=False) | {

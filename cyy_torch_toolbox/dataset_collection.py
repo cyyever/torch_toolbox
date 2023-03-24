@@ -16,14 +16,18 @@ from cyy_torch_toolbox.dataset_transform.transforms import (Transforms,
                                                             replace_target)
 from cyy_torch_toolbox.dataset_transform.transforms_factory import \
     add_transforms
-from cyy_torch_toolbox.dataset_util import (DatasetUtil, TextDatasetUtil,
-                                            VisionDatasetUtil)
+from cyy_torch_toolbox.dataset_util import (DatasetUtil, GraphDatasetUtil,
+                                            TextDatasetUtil, VisionDatasetUtil)
+from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
 
-from cyy_torch_toolbox.dependency import has_torchvision
+if has_torch_geometric:
+    import torch_geometric
+    import torch_geometric.data.dataset
 if has_torchvision:
     import torchvision
+
 
 class DatasetCollection:
     def __init__(
@@ -106,6 +110,8 @@ class DatasetCollection:
                 class_name = VisionDatasetUtil
             case DatasetType.Text:
                 class_name = TextDatasetUtil
+            case DatasetType.Graph:
+                class_name = GraphDatasetUtil
             case _:
                 class_name = DatasetUtil
         return class_name(
@@ -212,8 +218,9 @@ class DatasetCollection:
                     if "Unknown split" in str(e):
                         break
                     raise e
+            if isinstance(dataset, torch_geometric.data.dataset.Dataset):
+                break
 
-        assert not (validation_dataset is None and test_dataset is None)
         if validation_dataset is None:
             validation_dataset = test_dataset
             test_dataset = None
@@ -226,6 +233,8 @@ class DatasetCollection:
             name=name,
         )
         add_transforms(dc, dataset_kwargs, model_config)
+        if not dc.has_dataset(MachineLearningPhase.Validation):
+            dc._split_training()
         if not dc.has_dataset(MachineLearningPhase.Test):
             dc._split_validation()
         return dc
@@ -304,6 +313,31 @@ class DatasetCollection:
             return new_dataset_kwargs
 
         return get_dataset_kwargs_per_phase
+
+    def _split_training(self) -> None:
+        assert (
+            not self.has_dataset(phase=MachineLearningPhase.Test)
+            and not self.has_dataset(phase=MachineLearningPhase.Validation)
+            and self.has_dataset(phase=MachineLearningPhase.Training)
+        )
+        get_logger().debug("split training dataset for %s", self.name)
+        datasets = None
+        dataset_util = self.get_dataset_util(phase=MachineLearningPhase.Training)
+
+        def computation_fun():
+            nonlocal datasets
+            sub_dataset_indices_list = dataset_util.iid_split_indices([8, 1, 1])
+            datasets = dataset_util.split_by_indices(sub_dataset_indices_list)
+            return sub_dataset_indices_list
+
+        split_index_lists = self.get_cached_data(
+            file="training_split_index_lists.pk", computation_fun=computation_fun
+        )
+        if datasets is None:
+            datasets = dataset_util.split_by_indices(split_index_lists)
+        self.__datasets[MachineLearningPhase.Training] = datasets[0]
+        self.__datasets[MachineLearningPhase.Validation] = datasets[1]
+        self.__datasets[MachineLearningPhase.Test] = datasets[2]
 
     def _split_validation(self) -> None:
         assert not self.has_dataset(
