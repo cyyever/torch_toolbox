@@ -1,5 +1,11 @@
 from typing import Generator
 
+from cyy_torch_toolbox.dependency import has_torch_geometric
+
+if has_torch_geometric:
+    import torch_geometric
+    import torch_geometric.data.dataset
+
 import torch
 import torchdata
 
@@ -40,6 +46,12 @@ def dataset_with_indices(
     dataset: torch.utils.data.Dataset,
 ) -> torch.utils.data.MapDataPipe:
     old_dataset = dataset
+    if has_torch_geometric:
+        if isinstance(
+            dataset,
+            torch_geometric.data.dataset.Dataset | torch_geometric.data.dataset.Data,
+        ):
+            return dataset
     if isinstance(dataset, torch.utils.data.IterableDataset):
         dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
     if isinstance(dataset, torchdata.datapipes.iter.IterDataPipe):
@@ -56,6 +68,7 @@ def dataset_with_indices(
 def select_item(dataset, indices=None) -> Generator:
     if indices is not None:
         indices = set(indices)
+
     match dataset:
         case torch.utils.data.IterableDataset():
             if hasattr(dataset, "reset"):

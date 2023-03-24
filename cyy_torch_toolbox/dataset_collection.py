@@ -219,6 +219,8 @@ class DatasetCollection:
                         break
                     raise e
             if isinstance(dataset, torch_geometric.data.dataset.Dataset):
+                assert len(dataset) == 1
+                dataset = dataset[0]
                 break
 
         if validation_dataset is None:
