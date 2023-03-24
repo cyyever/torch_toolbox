@@ -68,6 +68,14 @@ def dataset_with_indices(
 def select_item(dataset, indices=None) -> Generator:
     if indices is not None:
         indices = set(indices)
+    if has_torch_geometric:
+        match dataset:
+            case torch_geometric.data.dataset.Data():
+                for idx, mask in enumerate(dataset.train_mask.tolist()):
+                    if not mask:
+                        continue
+                    if indices is None or idx in indices:
+                        yield idx, {"target": dataset.y[idx], "index": idx}
 
     match dataset:
         case torch.utils.data.IterableDataset():

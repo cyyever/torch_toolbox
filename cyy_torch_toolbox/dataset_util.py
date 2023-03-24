@@ -72,6 +72,7 @@ class DatasetUtil:
 
     def get_batch_labels(self, indices=None) -> Generator:
         for idx, sample in self.get_samples(indices):
+            print("idx and sample", idx, sample)
             target = sample["target"]
             if self.__transforms is not None:
                 target = self.__transforms.transform_target(target)
