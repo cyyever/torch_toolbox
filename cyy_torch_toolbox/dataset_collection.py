@@ -262,9 +262,8 @@ class DatasetCollection:
         dataset_kwargs: dict | None = None,
     ) -> Callable:
         if dataset_kwargs is None:
-            new_dataset_kwargs = {}
-        else:
-            new_dataset_kwargs = copy.deepcopy(dataset_kwargs)
+            dataset_kwargs = {}
+        new_dataset_kwargs = copy.deepcopy(dataset_kwargs)
         if "root" not in new_dataset_kwargs:
             new_dataset_kwargs["root"] = cls.__get_dataset_dir(name)
         if "download" not in new_dataset_kwargs:

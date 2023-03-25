@@ -76,6 +76,7 @@ def select_item(dataset, indices=None) -> Generator:
                         continue
                     if indices is None or idx in indices:
                         yield idx, {"target": dataset.y[idx], "index": idx}
+                return
 
     match dataset:
         case torch.utils.data.IterableDataset():
