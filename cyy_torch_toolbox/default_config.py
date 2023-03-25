@@ -4,6 +4,7 @@ import os
 import uuid
 from dataclasses import dataclass
 
+import torch
 from cyy_naive_lib.log import get_logger, set_level
 from omegaconf import OmegaConf
 
@@ -13,7 +14,7 @@ from cyy_torch_toolbox.hook_config import HookConfig
 from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
-from cyy_torch_toolbox.model_factory import ModelConfig
+from cyy_torch_toolbox.model_factory import ModelConfig, get_model_with_loss
 from cyy_torch_toolbox.model_with_loss import ModelWithLoss
 from cyy_torch_toolbox.reproducible_env import global_reproducible_env
 from cyy_torch_toolbox.trainer import Trainer
@@ -99,9 +100,14 @@ class DefaultConfig:
         self,
         dc: DatasetCollection | None = None,
         model_with_loss: ModelWithLoss | None = None,
+        model: None | torch.nn.Module = None,
     ) -> Trainer:
+        assert not (model and model_with_loss)
         if dc is None:
             dc = self.create_dataset_collection()
+        if model is not None:
+            model_with_loss = get_model_with_loss(model, dc)
+
         if model_with_loss is None:
             model_with_loss = self.model_config.get_model(dc)
         if hasattr(dc, "adapt_to_model"):
