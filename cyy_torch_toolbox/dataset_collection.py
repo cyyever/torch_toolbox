@@ -221,12 +221,11 @@ class DatasetCollection:
                     if "Unknown split" in str(e):
                         break
                     raise e
-            if isinstance(dataset, torch_geometric.data.dataset.Dataset):
-                break
 
         if validation_dataset is None:
             validation_dataset = test_dataset
             test_dataset = None
+        print(training_dataset, validation_dataset, test_dataset)
 
         dc = DatasetCollection(
             training_dataset=training_dataset,
@@ -303,6 +302,9 @@ class DatasetCollection:
                     new_dataset_kwargs["subset"] = "validation"
                 else:
                     new_dataset_kwargs["subset"] = "testing"
+            else:
+                if phase != MachineLearningPhase.Training:
+                    return None
             discarded_dataset_kwargs = set()
             for k in new_dataset_kwargs:
                 if k not in constructor_kwargs:
