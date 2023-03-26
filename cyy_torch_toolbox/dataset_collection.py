@@ -225,7 +225,6 @@ class DatasetCollection:
         if validation_dataset is None:
             validation_dataset = test_dataset
             test_dataset = None
-        print(training_dataset, validation_dataset, test_dataset)
 
         dc = DatasetCollection(
             training_dataset=training_dataset,
@@ -328,9 +327,9 @@ class DatasetCollection:
         if self.dataset_type == DatasetType.Graph:
             training_dataset = self.get_dataset(phase=MachineLearningPhase.Training)
             if (
-                hasattr(training_dataset, "train_mask")
-                and hasattr(training_dataset, "val_mask")
-                and hasattr(training_dataset, "test_mask")
+                hasattr(training_dataset[0], "train_mask")
+                and hasattr(training_dataset[0], "val_mask")
+                and hasattr(training_dataset[0], "test_mask")
             ):
                 self.__datasets[MachineLearningPhase.Validation] = training_dataset
                 self.__datasets[MachineLearningPhase.Test] = training_dataset
