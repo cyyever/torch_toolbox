@@ -277,7 +277,7 @@ class DatasetCollection:
                 if phase == MachineLearningPhase.Validation:
                     return None
                 new_dataset_kwargs["train"] = phase == MachineLearningPhase.Training
-            elif "split" in constructor_kwargs:
+            elif "split" in constructor_kwargs and dataset_type != DatasetType.Graph:
                 if phase == MachineLearningPhase.Training:
                     new_dataset_kwargs["split"] = new_dataset_kwargs.get(
                         "train_split", "train"
@@ -325,6 +325,18 @@ class DatasetCollection:
             and self.has_dataset(phase=MachineLearningPhase.Training)
         )
         get_logger().debug("split training dataset for %s", self.name)
+        if self.dataset_type == DatasetType.Graph:
+            training_dataset = self.get_dataset(phase=MachineLearningPhase.Training)
+            if (
+                hasattr(training_dataset, "train_mask")
+                and hasattr(training_dataset, "val_mask")
+                and hasattr(training_dataset, "test_mask")
+            ):
+                self.__datasets[MachineLearningPhase.Validation] = training_dataset
+                self.__datasets[MachineLearningPhase.Test] = training_dataset
+                return
+
+        raise NotImplementedError()
         datasets = None
         dataset_util = self.get_dataset_util(phase=MachineLearningPhase.Training)
 
