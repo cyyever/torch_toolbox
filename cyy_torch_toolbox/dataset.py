@@ -51,7 +51,7 @@ def dataset_with_indices(
             dataset,
             torch_geometric.data.dataset.Dataset | torch_geometric.data.dataset.Data,
         ):
-            return dataset
+            return [dataset]
     if isinstance(dataset, torch.utils.data.IterableDataset):
         dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
     if isinstance(dataset, torchdata.datapipes.iter.IterDataPipe):
