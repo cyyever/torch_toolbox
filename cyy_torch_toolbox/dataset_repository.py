@@ -45,7 +45,7 @@ def get_dataset_constructors(cache_path: str) -> dict:
         repositories[DatasetType.Audio] = [torchaudio.datasets, local_audio_datasets]
     if has_torch_geometric:
         repositories[DatasetType.Graph] = [torch_geometric.datasets]
-    dataset_constructors = {}
+    dataset_constructors: dict = {}
     for dataset_type, repositorys in repositories.items():
         dataset_constructors[dataset_type] = {}
         for repository in repositorys:
@@ -60,6 +60,15 @@ def get_dataset_constructors(cache_path: str) -> dict:
                 repository,
                 filter_fun=lambda k, v: issubclass(v, torch.utils.data.Dataset),
             )
+    if has_torch_geometric:
+        graph_dataset_constructors = dataset_constructors[DatasetType.Graph]
+        if "Planetoid" in graph_dataset_constructors:
+            for repository in ["Cora", "CiteSeer", "PubMed"]:
+                graph_dataset_constructors[repository] = functools.partial(
+                    graph_dataset_constructors["Planetoid"],
+                    name=repository,
+                )
+
     if has_medmnist:
         INFO = medmnist.info.INFO
         for name, item in INFO.items():
