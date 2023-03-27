@@ -1,21 +1,15 @@
 import copy
-import os
 from typing import Any
 
-import torch
 from cyy_naive_lib.log import get_logger
-
 from cyy_torch_toolbox.dataset import get_dataset_size
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.dependency import has_dali, has_torchvision
 from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 
-if has_torchvision:
-    import torchvision
-
-
 if has_dali and has_torchvision:
     import nvidia.dali
+    import torchvision
     from nvidia.dali.pipeline import pipeline_def
     from nvidia.dali.plugin.pytorch import (DALIClassificationIterator,
                                             LastBatchPolicy)
@@ -136,81 +130,38 @@ if has_dali and has_torchvision:
             labels = labels.gpu()
         return images, labels
 
-
-def get_dataloader(
-    dc: DatasetCollection,
-    phase: MachineLearningPhase,
-    batch_size: int,
-    device=None,
-    cache_transforms: str | None = None,
-    model_type: ModelType | None = None,
-    use_dali: bool = True,
-) -> Any:
-    dataset = dc.get_dataset(phase=phase)
-    transforms = dc.get_transforms(phase=phase)
-    data_in_cpu: bool = True
-    match cache_transforms:
-        case "cpu" | True:
-            dataset, transforms = transforms.cache_transforms(dataset=dataset)
-        case "gpu" | "cuda":
-            data_in_cpu = False
-            dataset, transforms = transforms.cache_transforms(
-                dataset=dataset, device=device
-            )
-
-    # We use DALI for ImageFolder only
-    if (
-        has_dali
-        and has_torchvision
-        and use_dali
-        and model_type == ModelType.Classification
-        and isinstance(
-            dc.get_original_dataset(phase), torchvision.datasets.folder.ImageFolder
-        )
-    ):
-        get_logger().info("use DALI")
-        device_id = -1
-        if device is not None:
-            device_id = device.index
-        pipeline = create_dali_pipeline(
-            batch_size=batch_size,
-            num_threads=2,
-            py_start_method="spawn",
-            device_id=device_id,
-            dc=dc,
-            phase=phase,
-            device=device,
-        )
-        pipeline.build()
-        return DALIClassificationIterator(
-            pipeline,
-            size=get_dataset_size(dataset),
-            auto_reset=True,
-            dynamic_shape=True,
-            last_batch_policy=LastBatchPolicy.PARTIAL,
-            last_batch_padded=True,
-        )
-    collate_fn = transforms.collate_batch
-    kwargs: dict = {}
-    use_process: bool = "USE_THREAD_DATALOADER" not in os.environ
-    if use_process:
-        kwargs["prefetch_factor"] = 2
-        kwargs["num_workers"] = 1
-        if not data_in_cpu:
-            kwargs["multiprocessing_context"] = torch.multiprocessing.get_context(
-                "spawn"
-            )
-        kwargs["persistent_workers"] = True
-    else:
-        get_logger().debug("use threads")
-        kwargs["num_workers"] = 0
-        kwargs["prefetch_factor"] = None
-        kwargs["persistent_workers"] = False
-    return torch.utils.data.DataLoader(
+    def get_dali_dataloader(
         dataset,
-        batch_size=batch_size,
-        shuffle=(phase == MachineLearningPhase.Training),
-        pin_memory=False,
-        collate_fn=collate_fn,
-        **kwargs,
-    )
+        dc: DatasetCollection,
+        phase: MachineLearningPhase,
+        batch_size: int,
+        device=None,
+        model_type: ModelType | None = None,
+    ) -> Any:
+        # We use DALI for ImageFolder only
+        if model_type == ModelType.Classification and isinstance(
+            dc.get_original_dataset(phase), torchvision.datasets.folder.ImageFolder
+        ):
+            get_logger().info("use DALI")
+            device_id = -1
+            if device is not None:
+                device_id = device.index
+            pipeline = create_dali_pipeline(
+                batch_size=batch_size,
+                num_threads=2,
+                py_start_method="spawn",
+                device_id=device_id,
+                dc=dc,
+                phase=phase,
+                device=device,
+            )
+            pipeline.build()
+            return DALIClassificationIterator(
+                pipeline,
+                size=get_dataset_size(dataset),
+                auto_reset=True,
+                dynamic_shape=True,
+                last_batch_policy=LastBatchPolicy.PARTIAL,
+                last_batch_padded=True,
+            )
+        return None
