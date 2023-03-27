@@ -20,5 +20,3 @@ class Debugger(Hook):
     def _after_execute(self, **kwargs):
         torch.autograd.set_detect_anomaly(False)
         torch.set_anomaly_enabled(False)
-        if torch.cuda.is_available():
-            torch.cuda.set_sync_debug_mode(0)
