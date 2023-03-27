@@ -49,7 +49,7 @@ def dataset_with_indices(
     if has_torch_geometric:
         if isinstance(
             dataset,
-            torch_geometric.data.dataset.Dataset | torch_geometric.data.dataset.Data,
+            torch_geometric.data.dataset.Dataset | torch_geometric.data.Data,
         ):
             return [dataset]
     if isinstance(dataset, torch.utils.data.IterableDataset):
@@ -70,7 +70,7 @@ def select_item(dataset, indices=None) -> Generator:
         indices = set(indices)
     if has_torch_geometric:
         match dataset:
-            case torch_geometric.data.dataset.Data():
+            case torch_geometric.data.Data():
                 for idx, mask in enumerate(dataset.train_mask.tolist()):
                     if not mask:
                         continue
