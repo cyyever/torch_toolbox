@@ -254,7 +254,10 @@ def get_recommended_hyper_parameter(
         )
     else:
         hyper_parameter = HyperParameter(
-            epoch=350, batch_size=64, learning_rate=0.1, weight_decay=1
+            epoch=350,
+            batch_size=64,
+            learning_rate=HyperParameterAction.FIND_LR,
+            weight_decay=0,
         )
     hyper_parameter.set_lr_scheduler_factory(
         HyperParameter.get_lr_scheduler_factory("ReduceLROnPlateau", dataset_name)
