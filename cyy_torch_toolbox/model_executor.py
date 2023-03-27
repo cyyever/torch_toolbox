@@ -7,7 +7,7 @@ from typing import Callable
 import torch
 from cyy_naive_lib.log import get_logger
 
-from cyy_torch_toolbox.dataloader import get_dataloader
+from cyy_torch_toolbox.dataloader.dataloader import get_dataloader
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.dataset_util import DatasetUtil
 from cyy_torch_toolbox.device import get_device
@@ -139,10 +139,10 @@ class ModelExecutor(ModelExecutorBase):
     def model(self) -> torch.nn.Module:
         return self.model_with_loss.model
 
-    def replace_model(self, fun: Callable):
+    def replace_model(self, fun: Callable) -> None:
         self._model_with_loss = self.model_with_loss.replace_model(fun(self.model))
 
-    def copy_model_with_loss(self, deepcopy=True) -> ModelWithLoss:
+    def copy_model_with_loss(self, deepcopy: bool = True) -> ModelWithLoss:
         self._wait_stream()
         if deepcopy:
             return copy.deepcopy(self._model_with_loss)
