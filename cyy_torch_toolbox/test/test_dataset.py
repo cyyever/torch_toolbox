@@ -37,7 +37,7 @@ def test_dataset():
     if has_torch_geometric:
         dc = create_dataset_collection(
             ClassificationDatasetCollection,
-            "KarateClub",
+            "Cora",
         )
     # if has_hugging_face:
     #     dc = create_dataset_collection(

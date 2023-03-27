@@ -32,16 +32,17 @@ def get_dataloader(
             dataset, transforms = transforms.cache_transforms(
                 dataset=dataset, device=device
             )
-    dataloader = get_dali_dataloader(
-        dataset=dataset,
-        dc=dc,
-        phase=phase,
-        batch_size=batch_size,
-        device=device,
-        model_type=model_type,
-    )
-    if dataloader is not None:
-        return dataloader
+    if has_dali and has_torchvision:
+        dataloader = get_dali_dataloader(
+            dataset=dataset,
+            dc=dc,
+            phase=phase,
+            batch_size=batch_size,
+            device=device,
+            model_type=model_type,
+        )
+        if dataloader is not None:
+            return dataloader
 
     collate_fn = transforms.collate_batch
     kwargs: dict = {}
