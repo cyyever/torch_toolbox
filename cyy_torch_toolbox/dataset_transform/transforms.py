@@ -18,10 +18,14 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
     if has_torch_geometric:
         match data:
             case torch_geometric.data.Data():
-                return {
+                res = {
                     "input": {"x": data.x, "edge_index": data.edge_index},
                     "target": data.y,
                 }
+                for mask in ["train_mask", "val_mask", "test_mask"]:
+                    if hasattr(data, mask):
+                        res[mask] = getattr(data, mask)
+                return res
     if extract_index:
         match data:
             case {"data": real_data, "index": index} | [index, real_data]:

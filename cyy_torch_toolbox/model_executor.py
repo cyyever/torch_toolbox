@@ -330,9 +330,7 @@ class ModelExecutor(ModelExecutorBase):
                 epoch=epoch,
                 **batch,
             )
-            kwargs = {
-                "inputs": batch["inputs"],
-                "targets": batch["targets"],
+            kwargs = batch | {
                 "phase": self.phase,
                 "device": self.device,
                 "need_backward": need_backward,

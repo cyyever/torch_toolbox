@@ -16,7 +16,8 @@ from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.ml_type import DatasetType, ModelType
-from cyy_torch_toolbox.model_with_loss import (ModelWithLoss,
+from cyy_torch_toolbox.model_with_loss import (GraphModelWithLoss,
+                                               ModelWithLoss,
                                                TextModelWithLoss,
                                                VisionModelWithLoss)
 from cyy_torch_toolbox.models.huggingface_models import huggingface_models
@@ -183,6 +184,8 @@ def get_model_with_loss(
         model_with_loss_fun = VisionModelWithLoss
     elif dataset_collection.dataset_type == DatasetType.Text:
         model_with_loss_fun = TextModelWithLoss
+    elif dataset_collection.dataset_type == DatasetType.Graph:
+        model_with_loss_fun = GraphModelWithLoss
     loss_fun_name = model_kwargs.get("loss_fun_name", None)
     model_type = ModelType.Classification
     model_with_loss = model_with_loss_fun(

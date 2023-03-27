@@ -90,6 +90,7 @@ class ModelWithLoss:
         non_blocking: bool = False,
         input_features=None,
         need_backward: bool = False,
+        **kwargs,
     ) -> dict:
         if phase is not None:
             self.__set_model_mode(
@@ -117,9 +118,10 @@ class ModelWithLoss:
         if input_features is None and self.need_input_features:
             input_features = self.get_input_feature(inputs)
             assert input_features is not None
-        output = self._foward_model(
-            inputs=inputs, input_features=input_features, targets=targets
+        output = self._forward_model(
+            inputs=inputs, input_features=input_features, targets=targets, **kwargs
         )
+
         match output:
             case torch.Tensor():
                 match self.loss_fun:
@@ -141,8 +143,8 @@ class ModelWithLoss:
             "is_averaged_loss": is_averaged_loss,
         }
 
-    def _foward_model(
-        self, inputs, targets, input_features=None
+    def _forward_model(
+        self, inputs, input_features=None, **kwargs
     ) -> dict | torch.Tensor:
         fun: Callable = self.model
         if hasattr(self.model, "forward_input_feature") and input_features is not None:
@@ -298,8 +300,8 @@ class TextModelWithLoss(ModelWithLoss):
             raise NotImplementedError(self.model)
         return None
 
-    def _foward_model(
-        self, inputs, targets, input_features=None
+    def _forward_model(
+        self, inputs, targets, input_features=None, **kwargs
     ) -> dict | torch.Tensor:
 
         if hasattr(self.model, "forward"):
@@ -321,9 +323,30 @@ class TextModelWithLoss(ModelWithLoss):
                 "loss": output["loss"],
                 "classification_output": output["logits"],
             }
-        return super()._foward_model(
-            inputs=inputs, targets=targets, input_features=input_features
+        return super()._forward_model(
+            inputs=inputs, targets=targets, input_features=input_features, **kwargs
         )
+
+
+class GraphModelWithLoss(ModelWithLoss):
+    def __call__(self, targets, phase, **kwargs) -> dict:
+        mask = None
+        match phase:
+            case MachineLearningPhase.Training:
+                mask = kwargs["train_mask"]
+            case MachineLearningPhase.Validation:
+                mask = kwargs["val_mask"]
+            case MachineLearningPhase.Test:
+                mask = kwargs["test_mask"]
+            case _:
+                raise NotImplementedError()
+        assert mask.shape[0] == 1
+        mask = mask[0]
+        return super().__call__(targets=targets[mask], phase=phase, mask=mask, **kwargs)
+
+    def _forward_model(self, mask, **kwargs) -> dict | torch.Tensor:
+        output = super()._forward_model(**kwargs)
+        return output[mask]
 
 
 class ParallelModelWithLoss(ModelWithLoss):
