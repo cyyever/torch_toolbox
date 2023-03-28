@@ -1,3 +1,4 @@
+import copy
 import functools
 import os
 import random
@@ -10,6 +11,7 @@ import torch.utils
 from cyy_torch_toolbox.dataset import get_dataset_size, select_item, subset_dp
 from cyy_torch_toolbox.dataset_transform.transforms import Transforms
 from cyy_torch_toolbox.dependency import has_torchvision
+from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 if has_torchvision:
     import torchvision
@@ -19,13 +21,15 @@ class DatasetUtil:
     def __init__(
         self,
         dataset: torch.utils.data.Dataset,
-        transforms: Transforms | None = None,
         name: None | str = None,
+        transforms: Transforms | None = None,
+        phase: MachineLearningPhase | None = None,
     ) -> None:
         self.dataset: torch.utils.data.Dataset = dataset
         self.__len: None | int = None
         self._name: str | None = name
         self.__transforms: Transforms | None = transforms
+        self._phase = phase
 
     def __len__(self) -> int:
         if self.__len is None:
@@ -33,11 +37,16 @@ class DatasetUtil:
         return self.__len
 
     def get_samples(self, indices=None) -> Generator:
+        print("mask is", self.get_mask())
+        items = select_item(dataset=self.dataset, indices=indices, mask=self.get_mask())
         if self.__transforms is None:
-            return select_item(self.dataset, indices)
-        for idx, sample in select_item(self.dataset, indices):
+            return items
+        for idx, sample in items:
             sample = self.__transforms.extract_data(sample)
             yield idx, sample
+
+    def get_mask(self):
+        return None
 
     def get_sample(self, index: int) -> Any:
         for _, sample in self.get_samples(indices=[index]):
@@ -144,8 +153,11 @@ class DatasetSplitter(DatasetUtil):
     def iid_split(self, parts: list) -> list:
         return self.split_by_indices(self.iid_split_indices(parts))
 
+    def get_subset(self, indices):
+        return subset_dp(self.dataset, indices)
+
     def split_by_indices(self, indices_list: list) -> list:
-        return [subset_dp(self.dataset, indices) for indices in indices_list]
+        return [self.get_subset(indices) for indices in indices_list]
 
     def __get_split_indices(self, parts: list, iid: bool = True) -> list[list]:
         assert parts
@@ -276,4 +288,32 @@ class TextDatasetUtil(DatasetSplitter):
 
 
 class GraphDatasetUtil(DatasetSplitter):
-    pass
+    def get_mask(self):
+        mask = None
+        match self._phase:
+            case MachineLearningPhase.Training:
+                mask = self.dataset.train_mask
+            case MachineLearningPhase.Validation:
+                mask = self.dataset.val_mask
+            case MachineLearningPhase.Test:
+                mask = self.dataset.test_mask
+            case _:
+                raise NotImplementedError()
+        return mask
+
+    def get_subset(self, indices):
+        mask = self.get_mask().clone()
+        dataset = copy.copy(self.dataset)
+        mask.fill_(False)
+        for index in indices:
+            mask[index] = True
+        match self._phase:
+            case MachineLearningPhase.Training:
+                dataset.train_mask = mask
+            case MachineLearningPhase.Validation:
+                dataset.val_mask = mask
+            case MachineLearningPhase.Test:
+                dataset.test_mask = mask
+            case _:
+                raise NotImplementedError()
+        return dataset
