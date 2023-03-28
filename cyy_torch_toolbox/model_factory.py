@@ -108,19 +108,20 @@ def get_model(
                     k: dataset_util.channel,
                 }
     if dataset_collection.dataset_type == DatasetType.Text:
-        if "num_embeddings" not in model_kwargs:
-            if dataset_collection.tokenizer is not None:
-                added_kwargs["num_embeddings"] = len(dataset_collection.tokenizer.vocab)
-        else:
-            added_kwargs["num_embeddings"] = model_kwargs["num_embeddings"]
-        if "token_num" not in model_kwargs:
-            added_kwargs["token_num"] = added_kwargs["num_embeddings"]
+        for k in ("num_embeddings", "token_num"):
+            if k not in model_kwargs:
+                if dataset_collection.tokenizer is not None:
+                    added_kwargs[k] = len(dataset_collection.tokenizer.vocab)
+    if dataset_collection.dataset_type == DatasetType.Graph:
+        if "num_features" not in model_kwargs:
+            added_kwargs[
+                "num_features"
+            ] = dataset_collection.get_training_dataset().num_features
 
     model_type = ModelType.Classification
     if "rcnn" in name.lower():
         model_type = ModelType.Detection
-    added_kwargs["num_classes"] = model_kwargs.get("num_classes", None)
-    if added_kwargs["num_classes"] is None:
+    if "num_classes" not in model_kwargs:
         added_kwargs["num_classes"] = len(dataset_collection.get_labels(use_cache=True))
         if model_type == ModelType.Detection:
             added_kwargs["num_classes"] += 1

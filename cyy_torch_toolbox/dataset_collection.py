@@ -23,7 +23,6 @@ from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
 
 if has_torch_geometric:
-    import torch_geometric
     import torch_geometric.data.dataset
 if has_torchvision:
     import torchvision
@@ -39,15 +38,19 @@ class DatasetCollection:
         name: str | None = None,
     ):
         self.__name: str | None = name
+        self.__raw_datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
         self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
+        self.__raw_datasets[MachineLearningPhase.Training] = training_dataset
         self.__datasets[MachineLearningPhase.Training] = dataset_with_indices(
             training_dataset
         )
         if validation_dataset is not None:
+            self.__raw_datasets[MachineLearningPhase.Validation] = validation_dataset
             self.__datasets[MachineLearningPhase.Validation] = dataset_with_indices(
                 validation_dataset
             )
         if test_dataset is not None:
+            self.__raw_datasets[MachineLearningPhase.Test] = test_dataset
             self.__datasets[MachineLearningPhase.Test] = dataset_with_indices(
                 test_dataset
             )
@@ -97,7 +100,7 @@ class DatasetCollection:
     def get_original_dataset(
         self, phase: MachineLearningPhase
     ) -> torch.utils.data.Dataset:
-        dataset = self.get_dataset(phase)
+        dataset = self.__raw_datasets.get(phase)
         if hasattr(dataset, "dataset"):
             dataset = dataset.dataset
         return dataset
@@ -204,7 +207,7 @@ class DatasetCollection:
                     dataset = dataset_constructor(**processed_dataset_kwargs)
                     if isinstance(dataset, torch_geometric.data.dataset.Dataset):
                         assert len(dataset) == 1
-                        dataset = dataset[0]
+                        # dataset = dataset[0]
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
                     elif phase == MachineLearningPhase.Validation:
@@ -241,6 +244,8 @@ class DatasetCollection:
         return dc
 
     def is_classification_dataset(self) -> bool:
+        if self.dataset_type == DatasetType.Graph:
+            return True
         labels = next(
             self.get_dataset_util(phase=MachineLearningPhase.Training).get_batch_labels(
                 indices=[0]
