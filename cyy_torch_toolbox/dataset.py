@@ -47,11 +47,8 @@ def dataset_with_indices(
 ) -> torch.utils.data.MapDataPipe:
     old_dataset = dataset
     if has_torch_geometric:
-        if isinstance(
-            dataset,
-            torch_geometric.data.dataset.Dataset | torch_geometric.data.Data,
-        ):
-            return [dataset]
+        if isinstance(dataset, torch_geometric.data.dataset.Dataset):
+            return dataset
     if isinstance(dataset, torch.utils.data.IterableDataset):
         dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
     if isinstance(dataset, torchdata.datapipes.iter.IterDataPipe):

@@ -20,6 +20,7 @@ setuptools.setup(
         "cyy_torch_toolbox/dataset_transform",
         "cyy_torch_toolbox/metrics",
         "cyy_torch_toolbox/models",
+        "cyy_torch_toolbox/dataloader",
         "cyy_torch_toolbox/hooks",
         "cyy_torch_toolbox/metric_visualizers",
         "cyy_torch_toolbox/data_structure",
