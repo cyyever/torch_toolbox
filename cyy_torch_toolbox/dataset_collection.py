@@ -10,7 +10,7 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_kwarg_names
 from cyy_naive_lib.storage import get_cached_data
 
-from cyy_torch_toolbox.dataset import dataset_with_indices, subset_dp
+from cyy_torch_toolbox.dataset import dataset_with_indices
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
 from cyy_torch_toolbox.dataset_transform.transforms import (Transforms,
                                                             replace_target)
@@ -121,6 +121,7 @@ class DatasetCollection:
             dataset=self.get_dataset(phase),
             transforms=self.__transforms[phase],
             name=self.name,
+            phase=phase,
         )
 
     def clear_transform(self, key, phases=None):
@@ -330,34 +331,24 @@ class DatasetCollection:
         )
         get_logger().debug("split training dataset for %s", self.name)
         if self.dataset_type == DatasetType.Graph:
+            raw_training_dataset = self.__raw_datasets.get(
+                MachineLearningPhase.Training
+            )
             training_dataset = self.get_dataset(phase=MachineLearningPhase.Training)
             if (
-                hasattr(training_dataset[0], "train_mask")
-                and hasattr(training_dataset[0], "val_mask")
-                and hasattr(training_dataset[0], "test_mask")
+                hasattr(raw_training_dataset[0], "train_mask")
+                and hasattr(raw_training_dataset[0], "val_mask")
+                and hasattr(raw_training_dataset[0], "test_mask")
             ):
+                self.__raw_datasets[
+                    MachineLearningPhase.Validation
+                ] = raw_training_dataset
                 self.__datasets[MachineLearningPhase.Validation] = training_dataset
+                self.__raw_datasets[MachineLearningPhase.Test] = raw_training_dataset
                 self.__datasets[MachineLearningPhase.Test] = training_dataset
                 return
 
         raise NotImplementedError()
-        datasets = None
-        dataset_util = self.get_dataset_util(phase=MachineLearningPhase.Training)
-
-        def computation_fun():
-            nonlocal datasets
-            sub_dataset_indices_list = dataset_util.iid_split_indices([8, 1, 1])
-            datasets = dataset_util.split_by_indices(sub_dataset_indices_list)
-            return sub_dataset_indices_list
-
-        split_index_lists = self.get_cached_data(
-            file="training_split_index_lists.pk", computation_fun=computation_fun
-        )
-        if datasets is None:
-            datasets = dataset_util.split_by_indices(split_index_lists)
-        self.__datasets[MachineLearningPhase.Training] = datasets[0]
-        self.__datasets[MachineLearningPhase.Validation] = datasets[1]
-        self.__datasets[MachineLearningPhase.Test] = datasets[2]
 
     def _split_validation(self) -> None:
         assert not self.has_dataset(
@@ -514,7 +505,6 @@ class DatasetCollectionConfig:
     def __transform_training_dataset(self, dc, save_dir=None) -> None:
         subset_indices = None
         dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
-        training_dataset = dc.get_dataset(phase=MachineLearningPhase.Training)
         if self.training_dataset_percentage is not None:
             subset_dict = dataset_util.iid_sample(self.training_dataset_percentage)
             subset_indices = sum(subset_dict.values(), [])
@@ -534,10 +524,11 @@ class DatasetCollectionConfig:
             with open(self.training_dataset_indices_path, "r", encoding="utf-8") as f:
                 subset_indices = json.load(f)
         if subset_indices is not None:
-            training_dataset = subset_dp(training_dataset, subset_indices)
             dc.transform_dataset(
                 phase=MachineLearningPhase.Training,
-                transformer=lambda _, __: training_dataset,
+                transformer=lambda _, dataset_util, __: dataset_util.get_subset(
+                    subset_indices
+                ),
             )
         dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
         label_map = None
