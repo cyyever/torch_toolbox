@@ -464,15 +464,11 @@ def create_dataset_collection(
     cls, name: str, dataset_kwargs: dict | None = None, model_config=None
 ):
     with cls.lock:
-        all_dataset_constructors = get_dataset_constructors(
-            cache_path=os.path.join(
-                DatasetCollection._dataset_root_dir,
-                ".cache",
-                "dataset_constructors",
+        for dataset_type in DatasetType:
+            dataset_constructors = get_dataset_constructors(
+                dataset_type=dataset_type,
             )
-        )
-        dataset_names = set()
-        for dataset_type, dataset_constructors in all_dataset_constructors.items():
+            dataset_names = set()
             if name in dataset_constructors:
                 return cls.create(
                     name=name,
