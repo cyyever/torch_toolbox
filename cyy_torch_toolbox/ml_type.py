@@ -15,8 +15,8 @@ class ModelType(IntEnum):
 class DatasetType(IntEnum):
     Vision = auto()
     Text = auto()
-    Audio = auto()
     Graph = auto()
+    Audio = auto()
 
 
 class TransformType(IntEnum):
