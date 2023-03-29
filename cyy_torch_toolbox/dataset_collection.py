@@ -70,6 +70,12 @@ class DatasetCollection:
         dataset_util = self.get_dataset_util(phase)
         self.__datasets[phase] = transformer(dataset, dataset_util, phase)
 
+    def set_subset(self, phase: MachineLearningPhase, indices):
+        self.transform_dataset(
+            phase=phase,
+            transformer=lambda _, dataset_util, __: dataset_util.get_subset(indices),
+        )
+
     def foreach_dataset(self):
         for phase in self.__datasets:
             yield self.get_dataset(phase=phase)
@@ -524,12 +530,7 @@ class DatasetCollectionConfig:
             with open(self.training_dataset_indices_path, "r", encoding="utf-8") as f:
                 subset_indices = json.load(f)
         if subset_indices is not None:
-            dc.transform_dataset(
-                phase=MachineLearningPhase.Training,
-                transformer=lambda _, dataset_util, __: dataset_util.get_subset(
-                    subset_indices
-                ),
-            )
+            dc.set_subset(phase=MachineLearningPhase.Training, indices=subset_indices)
         dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
         label_map = None
         if self.training_dataset_label_noise_percentage:

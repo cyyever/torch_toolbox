@@ -7,14 +7,17 @@ from typing import Any, Generator
 import PIL
 import torch
 import torch.utils
+from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset import get_dataset_size, select_item, subset_dp
 from cyy_torch_toolbox.dataset_transform.transforms import Transforms
-from cyy_torch_toolbox.dependency import has_torchvision
+from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 if has_torchvision:
     import torchvision
+if has_torch_geometric:
+    import torch_geometric.data
 
 
 class DatasetUtil:
@@ -37,7 +40,6 @@ class DatasetUtil:
         return self.__len
 
     def get_samples(self, indices=None) -> Generator:
-        print("mask is", self.get_mask())
         items = select_item(dataset=self.dataset, indices=indices, mask=self.get_mask())
         if self.__transforms is None:
             return items
@@ -292,28 +294,34 @@ class GraphDatasetUtil(DatasetSplitter):
         mask = None
         match self._phase:
             case MachineLearningPhase.Training:
-                mask = self.dataset.train_mask
+                mask = self.dataset[0].train_mask
             case MachineLearningPhase.Validation:
-                mask = self.dataset.val_mask
+                mask = self.dataset[0].val_mask
             case MachineLearningPhase.Test:
-                mask = self.dataset.test_mask
+                mask = self.dataset[0].test_mask
             case _:
                 raise NotImplementedError()
         return mask
 
     def get_subset(self, indices):
-        mask = self.get_mask().clone()
-        dataset = copy.copy(self.dataset)
+        mask = copy.deepcopy(self.get_mask())
+        dataset = copy.deepcopy(self.dataset)
         mask.fill_(False)
         for index in indices:
             mask[index] = True
+        data_dict = dataset[0].to_dict()
         match self._phase:
             case MachineLearningPhase.Training:
-                dataset.train_mask = mask
+                get_logger().error("aaaa mask is %s", mask)
+                assert "train_mask" in data_dict
+                data_dict["train_mask"] = mask
             case MachineLearningPhase.Validation:
-                dataset.val_mask = mask
+                assert "val_mask" in data_dict
+                data_dict["val_mask"] = mask
             case MachineLearningPhase.Test:
-                dataset.test_mask = mask
+                assert "test_mask" in data_dict
+                data_dict["test_mask"] = mask
             case _:
                 raise NotImplementedError()
+        dataset = [torch_geometric.data.Data.from_dict(data_dict)]
         return dataset
