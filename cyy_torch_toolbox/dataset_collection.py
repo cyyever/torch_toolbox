@@ -361,20 +361,15 @@ class DatasetCollection:
             phase=MachineLearningPhase.Test
         ) and self.has_dataset(phase=MachineLearningPhase.Validation)
         get_logger().debug("split validation dataset for %s", self.name)
-        datasets = None
         dataset_util = self.get_dataset_util(phase=MachineLearningPhase.Validation)
 
         def computation_fun():
-            nonlocal datasets
-            sub_dataset_indices_list = dataset_util.iid_split_indices([1, 1])
-            datasets = dataset_util.split_by_indices(sub_dataset_indices_list)
-            return sub_dataset_indices_list
+            return dataset_util.iid_split_indices([1, 1])
 
         split_index_lists = self.get_cached_data(
             file="split_index_lists.pk", computation_fun=computation_fun
         )
-        if datasets is None:
-            datasets = dataset_util.split_by_indices(split_index_lists)
+        datasets = dataset_util.split_by_indices(split_index_lists)
         self.__datasets[MachineLearningPhase.Validation] = datasets[0]
         self.__datasets[MachineLearningPhase.Test] = datasets[1]
 
