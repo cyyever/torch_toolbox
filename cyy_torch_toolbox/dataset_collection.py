@@ -214,7 +214,6 @@ class DatasetCollection:
                     dataset = dataset_constructor(**processed_dataset_kwargs)
                     if isinstance(dataset, torch_geometric.data.dataset.Dataset):
                         assert len(dataset) == 1
-                        # dataset = dataset[0]
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
                     elif phase == MachineLearningPhase.Validation:
