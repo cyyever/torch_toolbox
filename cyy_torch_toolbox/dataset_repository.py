@@ -79,9 +79,7 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
                 medmnist_cls, target_transform=lambda x: x[0]
             )
     if has_hugging_face and dataset_type == DatasetType.Text:
-        dataset_names = set(
-            a.lower() for a in dataset_constructors[DatasetType.Text].keys()
-        )
+        dataset_names = set(a.lower() for a in dataset_constructors.keys())
         for name in datasets.list_datasets(
             with_community_datasets=False, with_details=False
         ):
