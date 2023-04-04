@@ -99,22 +99,22 @@ def get_model(
 ) -> torch.nn.Module:
     model_info = get_model_info()
 
-    added_kwargs: dict = {}
+    final_model_kwargs: dict = {}
     if dataset_collection.dataset_type == DatasetType.Vision:
         dataset_util = dataset_collection.get_dataset_util()
         for k in ("input_channels", "channels"):
             if k not in model_kwargs:
-                added_kwargs |= {
+                final_model_kwargs |= {
                     k: dataset_util.channel,
                 }
     if dataset_collection.dataset_type == DatasetType.Text:
         for k in ("num_embeddings", "token_num"):
             if k not in model_kwargs:
                 if dataset_collection.tokenizer is not None:
-                    added_kwargs[k] = len(dataset_collection.tokenizer.vocab)
+                    final_model_kwargs[k] = len(dataset_collection.tokenizer.vocab)
     if dataset_collection.dataset_type == DatasetType.Graph:
         if "num_features" not in model_kwargs:
-            added_kwargs[
+            final_model_kwargs[
                 "num_features"
             ] = dataset_collection.get_training_dataset().num_features
 
@@ -122,10 +122,13 @@ def get_model(
     if "rcnn" in name.lower():
         model_type = ModelType.Detection
     if "num_classes" not in model_kwargs:
-        added_kwargs["num_classes"] = len(dataset_collection.get_labels(use_cache=True))
+        final_model_kwargs["num_classes"] = len(
+            dataset_collection.get_labels(use_cache=True)
+        )
         if model_type == ModelType.Detection:
-            added_kwargs["num_classes"] += 1
-    added_kwargs["num_labels"] = added_kwargs["num_classes"]
+            final_model_kwargs["num_classes"] += 1
+    final_model_kwargs["num_labels"] = final_model_kwargs["num_classes"]
+    final_model_kwargs |= model_kwargs
     # use_checkpointing = model_kwargs.pop("use_checkpointing", False)
     while True:
         try:
@@ -138,8 +141,8 @@ def get_model(
                     + str(model_info.keys())
                 )
             get_logger().info("use model %s", model_name)
-            model = model_constructor(**(added_kwargs | model_kwargs))
-            get_logger().warning("use model arguments %s", model_kwargs | added_kwargs)
+            model = model_constructor(**final_model_kwargs)
+            get_logger().warning("use model arguments %s", final_model_kwargs)
             if repo is not None:
                 # we need the model path to pickle models
                 hub_dir = torch.hub.get_dir()
@@ -160,16 +163,16 @@ def get_model(
             return model
         except TypeError as e:
             retry = False
-            for k in copy.copy(added_kwargs):
+            for k in copy.copy(final_model_kwargs):
                 if k in str(e):
                     get_logger().debug("%s so remove %s", e, k)
-                    added_kwargs.pop(k)
+                    final_model_kwargs.pop(k)
                     retry = True
                     break
-            if not retry:
-                if "pretrained" in str(e) and not model_kwargs["pretrained"]:
-                    model_kwargs.pop("pretrained")
-                    retry = True
+            # if not retry:
+            #     if "pretrained" in str(e) and not model_kwargs["pretrained"]:
+            #         model_kwargs.pop("pretrained")
+            #         retry = True
             if not retry:
                 raise e
 
