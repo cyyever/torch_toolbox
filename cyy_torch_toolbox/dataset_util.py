@@ -312,7 +312,6 @@ class GraphDatasetUtil(DatasetSplitter):
         data_dict = dataset[0].to_dict()
         match self._phase:
             case MachineLearningPhase.Training:
-                get_logger().error("aaaa mask is %s", mask)
                 assert "train_mask" in data_dict
                 data_dict["train_mask"] = mask
             case MachineLearningPhase.Validation:
