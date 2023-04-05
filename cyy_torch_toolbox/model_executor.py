@@ -1,6 +1,5 @@
 import copy
 import os
-import pickle
 import shutil
 from typing import Callable
 
@@ -237,33 +236,6 @@ class ModelExecutor(ModelExecutorBase):
         #     del self.__dataloader
         #     self.__dataloader = None
         torch.cuda.empty_cache()
-
-    def offload_from_memory(self):
-        assert self.save_dir is not None
-        self.offload_from_gpu()
-        if self._model_with_loss is not None:
-            with open(os.path.join(self.save_dir, "model_and_loss.pk"), "wb") as file:
-                pickle.dump(
-                    self.model_with_loss,
-                    file,
-                )
-                self._model_with_loss = None
-        if self.__dataset_collection is not None:
-            with open(os.path.join(self.save_dir, "dc.pk"), "wb") as file:
-                pickle.dump(
-                    self.__dataset_collection,
-                    file,
-                )
-                self.__dataset_collection = None
-
-    def load_to_memory(self):
-        assert self.save_dir is not None
-        if self._model_with_loss is None:
-            with open(os.path.join(self.save_dir, "model_and_loss.pk"), "rb") as file:
-                self._model_with_loss = pickle.load(file)
-        if self.__dataset_collection is None:
-            with open(os.path.join(self.save_dir, "dc.pk"), "rb") as file:
-                self.__dataset_collection = pickle.load(file)
 
     def split_batch_input(self, inputs, targets, input_features=None):
         batch_dim = 0

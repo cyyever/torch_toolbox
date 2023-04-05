@@ -21,8 +21,6 @@ class KeepModelHook(Hook):
         os.makedirs(model_dir, exist_ok=True)
         return model_dir
 
-    def offload_from_memory(self):
-        self.__best_model.save()
 
     def _before_execute(self, **kwargs):
         self.__best_model = DataStorage(data=None)

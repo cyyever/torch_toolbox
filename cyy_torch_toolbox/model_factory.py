@@ -205,7 +205,9 @@ def get_model_with_loss(
         from cyy_torch_toolbox.word_vector import PretrainedWordVector
 
         PretrainedWordVector(word_vector_name).load_to_model(
-            model_with_loss=model_with_loss, tokenizer=dataset_collection.tokenizer
+            model_with_loss=model_with_loss,
+            tokenizer=dataset_collection.tokenizer,
+            freeze=model_kwargs.get("freeze_word_vector", False),
         )
     return model_with_loss
 

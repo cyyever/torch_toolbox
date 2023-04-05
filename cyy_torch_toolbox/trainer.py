@@ -103,14 +103,12 @@ class Trainer(ModelExecutor):
         self.model_util.load_parameter_dict(parameter_dict)
         self.remove_optimizer()
 
+    def reset(self) -> None:
+        self.__inferencers.clear()
+
     def offload_from_gpu(self) -> None:
         self.__inferencers.clear()
         super().offload_from_gpu()
-
-    def offload_from_memory(self) -> None:
-        super().offload_from_memory()
-        if self.has_hook_obj("keep_model_hook"):
-            self.get_hook("keep_model_hook").offload_from_memory()
 
     def _prepare_execution(
         self,
