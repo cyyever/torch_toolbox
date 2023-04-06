@@ -107,7 +107,9 @@ class Trainer(ModelExecutor):
         self.__inferencers.clear()
 
     def offload_from_gpu(self) -> None:
-        self.__inferencers.clear()
+        if self.__inferencers:
+            for inferencer in self.__inferencers:
+                inferencer.offload_from_gpu()
         super().offload_from_gpu()
 
     def _prepare_execution(
