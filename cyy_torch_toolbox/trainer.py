@@ -24,8 +24,8 @@ class Trainer(ModelExecutor):
         model_with_loss: ModelWithLoss,
         dataset_collection: DatasetCollection,
         hyper_parameter: HyperParameter,
-        **kwargs
-    ):
+        **kwargs: dict
+    ) -> None:
         super().__init__(
             model_with_loss=model_with_loss,
             dataset_collection=dataset_collection,
