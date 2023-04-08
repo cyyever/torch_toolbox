@@ -4,7 +4,6 @@ from cyy_torch_toolbox.dependency import has_torch_geometric
 
 if has_torch_geometric:
     import torch_geometric
-    import torch_geometric.data.dataset
 
 import torch
 import torchdata
@@ -78,7 +77,7 @@ def select_item(dataset, indices=None, mask=None) -> Generator:
                     if not flag:
                         continue
                     if indices is None or idx in indices:
-                        yield idx, {"target": dataset.y[idx], "index": idx}
+                        yield idx, {"target": dataset.data.y[idx], "index": idx}
                 return
 
     match dataset:
