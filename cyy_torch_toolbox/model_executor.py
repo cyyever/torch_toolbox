@@ -196,6 +196,9 @@ class ModelExecutor(ModelExecutorBase):
             self.__cuda_stream.wait_stream(torch.cuda.current_stream())
         return self.__cuda_stream
 
+    def wait_stream(self):
+        self._wait_stream()
+
     def _wait_stream(self):
         if self.__cuda_stream is not None:
             self.__cuda_stream.synchronize()
