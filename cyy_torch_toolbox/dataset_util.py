@@ -292,6 +292,7 @@ class TextDatasetUtil(DatasetSplitter):
 class GraphDatasetUtil(DatasetSplitter):
     def get_mask(self):
         mask = None
+        assert len(self.dataset) == 1
         match self._phase:
             case MachineLearningPhase.Training:
                 mask = self.dataset[0].train_mask
