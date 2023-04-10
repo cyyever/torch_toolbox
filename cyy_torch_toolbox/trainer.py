@@ -103,9 +103,6 @@ class Trainer(ModelExecutor):
         self.model_util.load_parameter_dict(parameter_dict)
         self.remove_optimizer()
 
-    def reset(self) -> None:
-        self.__inferencers.clear()
-
     def offload_from_gpu(self) -> None:
         if self.__inferencers:
             for inferencer in self.__inferencers.values():
