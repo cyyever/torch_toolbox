@@ -21,8 +21,10 @@ class KeepModelHook(Hook):
         os.makedirs(model_dir, exist_ok=True)
         return model_dir
 
-
     def _before_execute(self, **kwargs):
+        self.clear()
+
+    def clear(self):
         self.__best_model = DataStorage(data=None)
 
     def _after_validation(self, model_executor, epoch, **kwargs):
