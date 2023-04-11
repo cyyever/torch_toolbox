@@ -6,12 +6,12 @@ import sys
 import torch
 import torch.nn
 
-try:
-    import transformers
+from cyy_torch_toolbox.dependency import has_hugging_face
 
-    has_hugging_face = True
-except BaseException:
-    has_hugging_face = False
+if has_hugging_face:
+    import transformers
+    from cyy_torch_toolbox.models.huggingface_models import huggingface_models
+
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
@@ -20,7 +20,6 @@ from cyy_torch_toolbox.model_with_loss import (GraphModelWithLoss,
                                                ModelWithLoss,
                                                TextModelWithLoss,
                                                VisionModelWithLoss)
-from cyy_torch_toolbox.models.huggingface_models import huggingface_models
 
 __model_info: dict = {}
 
@@ -28,11 +27,11 @@ __model_info: dict = {}
 def get_model_info() -> dict:
     if __model_info:
         return __model_info
-    github_repos = [
-        "pytorch/vision:main",
-        "cyyever/torch_models:main",
-        "huggingface/pytorch-image-models:main",
-    ]
+    github_repos = ["pytorch/vision:main", "cyyever/torch_models:main"]
+    if has_hugging_face:
+        github_repos += [
+            "huggingface/pytorch-image-models:main",
+        ]
 
     for repo in github_repos:
         try:

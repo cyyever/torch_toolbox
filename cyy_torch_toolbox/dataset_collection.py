@@ -212,7 +212,9 @@ class DatasetCollection:
                     if processed_dataset_kwargs is None:
                         break
                     dataset = dataset_constructor(**processed_dataset_kwargs)
-                    if isinstance(dataset, torch_geometric.data.dataset.Dataset):
+                    if has_torch_geometric and isinstance(
+                        dataset, torch_geometric.data.dataset.Dataset
+                    ):
                         assert len(dataset) == 1
                     if phase == MachineLearningPhase.Training:
                         training_dataset = dataset
