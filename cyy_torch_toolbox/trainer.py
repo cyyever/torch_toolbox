@@ -163,6 +163,8 @@ class Trainer(ModelExecutor):
                         ModelExecutorHookPoint.AFTER_VALIDATION,
                         epoch=epoch,
                     )
+                    if self._data["_all_steps_skipped_in_epoch"]:
+                        continue
                     # adjust learning rate
                     lr_scheduler = self.get_lr_scheduler()
                     if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
