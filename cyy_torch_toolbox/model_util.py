@@ -85,7 +85,7 @@ class ModelUtil:
 
     def clear_parameters(self) -> None:
         def clear(module) -> None:
-            module._parameters = {k: None for k, v in module._parameters.items()}
+            module._parameters = {k: None for k in module._parameters}
 
         for _, module in self.get_modules():
             clear(module)
