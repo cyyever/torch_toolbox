@@ -267,7 +267,7 @@ class ModelExecutor(ModelExecutorBase):
     def _execute_epoch(
         self, epoch: int, in_training: bool, need_backward: bool = False
     ) -> None:
-        self._data["_all_steps_skipped_in_epoch"] = True
+        self._data["_optimizer_skipped_in_epoch"] = True
         self.exec_hooks(
             hook_point=ModelExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
@@ -354,7 +354,7 @@ class ModelExecutor(ModelExecutorBase):
                 else:
                     optimizer.step()
                 if not step_skipped:
-                    self._data["_all_steps_skipped_in_epoch"] = False
+                    self._data["_optimizer_skipped_in_epoch"] = False
                     lr_scheduler = self.get_lr_scheduler()
                     if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                         get_logger().debug("adjust lr after batch")
