@@ -359,9 +359,7 @@ class DatasetCollection:
         def computation_fun():
             return dataset_util.iid_split_indices([8, 1, 1])
 
-        split_index_lists = self.get_cached_data(
-            file="split_index_lists.pk", computation_fun=computation_fun
-        )
+        split_index_lists = computation_fun()
         datasets = dataset_util.split_by_indices(split_index_lists)
         self.__datasets[MachineLearningPhase.Training] = datasets[0]
         self.__datasets[MachineLearningPhase.Validation] = datasets[1]

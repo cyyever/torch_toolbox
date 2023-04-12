@@ -333,13 +333,15 @@ class GraphModelWithLoss(ModelWithLoss):
         mask = None
         match phase:
             case MachineLearningPhase.Training:
-                mask = kwargs["train_mask"]
+                mask = kwargs.get("train_mask", None)
             case MachineLearningPhase.Validation:
-                mask = kwargs["val_mask"]
+                mask = kwargs.get("val_mask", None)
             case MachineLearningPhase.Test:
-                mask = kwargs["test_mask"]
+                mask = kwargs.get("test_mask", None)
             case _:
                 raise NotImplementedError()
+        if mask is None:
+            mask=kwargs.pop("mask")
         assert mask.shape[0] == 1
         mask = mask[0]
         return super().__call__(targets=targets[mask], phase=phase, mask=mask, **kwargs)

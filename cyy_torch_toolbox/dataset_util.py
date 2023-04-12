@@ -311,14 +311,10 @@ class GraphDatasetUtil(DatasetSplitter):
         for index in indices:
             mask[index] = True
         data_dict = dataset[0].to_dict()
-        match self._phase:
-            case MachineLearningPhase.Training:
-                data_dict["train_mask"] = mask
-            case MachineLearningPhase.Validation:
-                data_dict["val_mask"] = mask
-            case MachineLearningPhase.Test:
-                data_dict["test_mask"] = mask
-            case _:
-                raise NotImplementedError()
+        data_dict.pop("train_mask", None)
+        data_dict.pop("val_mask", None)
+        data_dict.pop("test_mask", None)
+        data_dict["mask"] = mask
         dataset = [torch_geometric.data.Data.from_dict(data_dict)]
+        print("new dataset", len(indices))
         return dataset
