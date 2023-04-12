@@ -337,24 +337,19 @@ class DatasetCollection:
             and self.has_dataset(phase=MachineLearningPhase.Training)
         )
         get_logger().debug("split training dataset for %s", self.name)
-        if self.dataset_type == DatasetType.Graph:
+        dataset_util = self.get_dataset_util(phase=MachineLearningPhase.Training)
+        datasets = dataset_util.decompose()
+        if datasets is not None:
             raw_training_dataset = self.__raw_datasets.get(
                 MachineLearningPhase.Training
             )
-            training_dataset = self.get_dataset(phase=MachineLearningPhase.Training)
-            if (
-                hasattr(raw_training_dataset[0], "train_mask")
-                and hasattr(raw_training_dataset[0], "val_mask")
-                and hasattr(raw_training_dataset[0], "test_mask")
+            for phase in (
+                MachineLearningPhase.Validation,
+                MachineLearningPhase.Test,
             ):
-                for phase in (
-                    MachineLearningPhase.Validation,
-                    MachineLearningPhase.Test,
-                ):
-                    self.__raw_datasets[phase] = raw_training_dataset
-                    self.__datasets[phase] = training_dataset
-                return
-        dataset_util = self.get_dataset_util(phase=MachineLearningPhase.Training)
+                self.__raw_datasets[phase] = raw_training_dataset
+            self.__datasets = datasets
+            return
 
         def computation_fun():
             return dataset_util.iid_split_indices([8, 1, 1])

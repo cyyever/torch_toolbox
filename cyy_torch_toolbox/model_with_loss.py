@@ -330,18 +330,7 @@ class TextModelWithLoss(ModelWithLoss):
 
 class GraphModelWithLoss(ModelWithLoss):
     def __call__(self, targets, phase, **kwargs) -> dict:
-        mask = None
-        match phase:
-            case MachineLearningPhase.Training:
-                mask = kwargs.get("train_mask", None)
-            case MachineLearningPhase.Validation:
-                mask = kwargs.get("val_mask", None)
-            case MachineLearningPhase.Test:
-                mask = kwargs.get("test_mask", None)
-            case _:
-                raise NotImplementedError()
-        if mask is None:
-            mask=kwargs.pop("mask")
+        mask = kwargs.pop("mask")
         assert mask.shape[0] == 1
         mask = mask[0]
         return super().__call__(targets=targets[mask], phase=phase, mask=mask, **kwargs)
