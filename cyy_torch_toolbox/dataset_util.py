@@ -7,7 +7,6 @@ from typing import Any, Generator
 import PIL
 import torch
 import torch.utils
-from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset import get_dataset_size, select_item, subset_dp
 from cyy_torch_toolbox.dataset_transform.transforms import Transforms
@@ -291,17 +290,18 @@ class TextDatasetUtil(DatasetSplitter):
 
 class GraphDatasetUtil(DatasetSplitter):
     def get_mask(self):
-        mask = None
         assert len(self.dataset) == 1
-        match self._phase:
-            case MachineLearningPhase.Training:
-                mask = self.dataset[0].train_mask
-            case MachineLearningPhase.Validation:
-                mask = self.dataset[0].val_mask
-            case MachineLearningPhase.Test:
-                mask = self.dataset[0].test_mask
-            case _:
-                raise NotImplementedError()
+        if hasattr(self.dataset[0], "train_mask"):
+            match self._phase:
+                case MachineLearningPhase.Training:
+                    return self.dataset[0].train_mask
+                case MachineLearningPhase.Validation:
+                    return self.dataset[0].val_mask
+                case MachineLearningPhase.Test:
+                    return self.dataset[0].test_mask
+                case _:
+                    raise NotImplementedError()
+        mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
         return mask
 
     def get_subset(self, indices):
@@ -313,13 +313,10 @@ class GraphDatasetUtil(DatasetSplitter):
         data_dict = dataset[0].to_dict()
         match self._phase:
             case MachineLearningPhase.Training:
-                assert "train_mask" in data_dict
                 data_dict["train_mask"] = mask
             case MachineLearningPhase.Validation:
-                assert "val_mask" in data_dict
                 data_dict["val_mask"] = mask
             case MachineLearningPhase.Test:
-                assert "test_mask" in data_dict
                 data_dict["test_mask"] = mask
             case _:
                 raise NotImplementedError()
