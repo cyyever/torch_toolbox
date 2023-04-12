@@ -22,9 +22,9 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
                     "input": {"x": data.x, "edge_index": data.edge_index},
                     "target": data.y,
                 }
-                for mask in ["train_mask", "val_mask", "test_mask", "mask"]:
-                    if hasattr(data, mask):
-                        res[mask] = getattr(data, mask)
+                for attr_name in ["mask"]:
+                    if hasattr(data, attr_name):
+                        res[attr_name] = getattr(data, attr_name)
                 return res
     if extract_index:
         match data:

@@ -38,6 +38,9 @@ class DatasetUtil:
             self.__len = get_dataset_size(self.dataset)
         return self.__len
 
+    def decompose(self) -> None | dict:
+        return None
+
     def get_samples(self, indices=None) -> Generator:
         items = select_item(dataset=self.dataset, indices=indices, mask=self.get_mask())
         if self.__transforms is None:
@@ -291,16 +294,8 @@ class TextDatasetUtil(DatasetSplitter):
 class GraphDatasetUtil(DatasetSplitter):
     def get_mask(self):
         assert len(self.dataset) == 1
-        if hasattr(self.dataset[0], "train_mask"):
-            match self._phase:
-                case MachineLearningPhase.Training:
-                    return self.dataset[0].train_mask
-                case MachineLearningPhase.Validation:
-                    return self.dataset[0].val_mask
-                case MachineLearningPhase.Test:
-                    return self.dataset[0].test_mask
-                case _:
-                    raise NotImplementedError()
+        if hasattr(self.dataset[0], "mask"):
+            return self.dataset[0].mask
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
         return mask
 
@@ -311,10 +306,28 @@ class GraphDatasetUtil(DatasetSplitter):
         for index in indices:
             mask[index] = True
         data_dict = dataset[0].to_dict()
-        data_dict.pop("train_mask", None)
-        data_dict.pop("val_mask", None)
-        data_dict.pop("test_mask", None)
         data_dict["mask"] = mask
         dataset = [torch_geometric.data.Data.from_dict(data_dict)]
-        print("new dataset", len(indices))
         return dataset
+
+    def decompose(self) -> None | dict:
+        mapping = {
+            MachineLearningPhase.Training: "train_mask",
+            MachineLearningPhase.Validation: "val_mask",
+            MachineLearningPhase.Test: "test_mask",
+        }
+        if not all(
+            hasattr(self.dataset[0], mask_name) for mask_name in mapping.values()
+        ):
+            return None
+        datasets: dict = {}
+        for phase in MachineLearningPhase:
+            datasets[phase] = []
+        for graph in self.dataset:
+            for phase in MachineLearningPhase:
+                graph_dict = graph.to_dict()
+                graph_dict["mask"] = graph_dict[mapping[phase]]
+                for mask_name in mapping.values():
+                    graph_dict.pop(mask_name)
+                datasets[phase].append(torch_geometric.data.Data.from_dict(graph_dict))
+        return datasets
