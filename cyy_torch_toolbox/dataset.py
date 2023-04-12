@@ -66,18 +66,25 @@ def select_item(dataset, indices=None, mask=None) -> Generator:
         indices = set(indices)
     if has_torch_geometric:
         match dataset:
-            case torch_geometric.data.Dataset():
+            case torch_geometric.data.Dataset() | list():
                 if mask is None:
                     idx = 0
                     for data in dataset:
                         yield idx, data
                         idx += 1
                     return
-                for idx, flag in enumerate(mask.tolist()):
-                    if not flag:
-                        continue
-                    if indices is None or idx in indices:
-                        yield idx, {"target": dataset.data.y[idx], "index": idx}
+                if isinstance(dataset, torch_geometric.data.Dataset):
+                    for idx, flag in enumerate(mask.tolist()):
+                        if not flag:
+                            continue
+                        if indices is None or idx in indices:
+                            yield idx, {"target": dataset.data.y[idx], "index": idx}
+                else:
+                    for idx, flag in enumerate(mask.tolist()):
+                        if not flag:
+                            continue
+                        if indices is None or idx in indices:
+                            yield idx, {"target": dataset[0]["y"][idx], "index": idx}
                 return
 
     match dataset:
