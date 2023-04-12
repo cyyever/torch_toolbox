@@ -267,7 +267,7 @@ class ModelExecutor(ModelExecutorBase):
     def _execute_epoch(
         self, epoch: int, in_training: bool, need_backward: bool = False
     ) -> None:
-        self._data["_optimizer_skipped_in_epoch"] = True
+        step_lr_after_epoch: bool = False
         self.exec_hooks(
             hook_point=ModelExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
@@ -354,11 +354,13 @@ class ModelExecutor(ModelExecutorBase):
                 else:
                     optimizer.step()
                 if not step_skipped:
-                    self._data["_optimizer_skipped_in_epoch"] = False
                     lr_scheduler = self.get_lr_scheduler()
                     if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                         get_logger().debug("adjust lr after batch")
                         lr_scheduler.step()
+                        step_lr_after_epoch = False
+                    else:
+                        step_lr_after_epoch = True
 
                 self.exec_hooks(
                     ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
@@ -371,6 +373,18 @@ class ModelExecutor(ModelExecutorBase):
                 ModelExecutorHookPoint.BEFORE_FETCH_BATCH,
                 batch_index=batch_index + 1,
             )
+        if in_training and step_lr_after_epoch:
+            lr_scheduler = self.get_lr_scheduler()
+            match lr_scheduler:
+                case torch.optim.lr_scheduler.ReduceLROnPlateau():
+                    training_loss = self.performance_metric.get_loss(epoch)
+                    get_logger().debug(
+                        "call ReduceLROnPlateau for training loss %s",
+                        training_loss,
+                    )
+                    lr_scheduler.step(training_loss)
+                case _:
+                    lr_scheduler.step()
 
         self.exec_hooks(
             ModelExecutorHookPoint.AFTER_EPOCH,
