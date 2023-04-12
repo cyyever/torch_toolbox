@@ -15,7 +15,8 @@ if has_hugging_face:
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.ml_type import DatasetType, ModelType
+from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
+                                       ModelType)
 from cyy_torch_toolbox.model_with_loss import (GraphModelWithLoss,
                                                ModelWithLoss,
                                                TextModelWithLoss,
@@ -120,7 +121,9 @@ def get_model(
             if "num_features" not in model_kwargs:
                 final_model_kwargs[
                     "num_features"
-                ] = dataset_collection.get_training_dataset().num_features
+                ] = dataset_collection.get_original_dataset(
+                    phase=MachineLearningPhase.Training
+                ).num_features
 
     model_type = ModelType.Classification
     if "rcnn" in name.lower():
