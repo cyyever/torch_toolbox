@@ -347,15 +347,25 @@ class DatasetCollection:
                 and hasattr(raw_training_dataset[0], "val_mask")
                 and hasattr(raw_training_dataset[0], "test_mask")
             ):
-                self.__raw_datasets[
-                    MachineLearningPhase.Validation
-                ] = raw_training_dataset
-                self.__datasets[MachineLearningPhase.Validation] = training_dataset
-                self.__raw_datasets[MachineLearningPhase.Test] = raw_training_dataset
-                self.__datasets[MachineLearningPhase.Test] = training_dataset
+                for phase in (
+                    MachineLearningPhase.Validation,
+                    MachineLearningPhase.Test,
+                ):
+                    self.__raw_datasets[phase] = raw_training_dataset
+                    self.__datasets[phase] = training_dataset
                 return
+        dataset_util = self.get_dataset_util(phase=MachineLearningPhase.Training)
 
-        raise NotImplementedError()
+        def computation_fun():
+            return dataset_util.iid_split_indices([8, 1, 1])
+
+        split_index_lists = self.get_cached_data(
+            file="split_index_lists.pk", computation_fun=computation_fun
+        )
+        datasets = dataset_util.split_by_indices(split_index_lists)
+        self.__datasets[MachineLearningPhase.Training] = datasets[0]
+        self.__datasets[MachineLearningPhase.Validation] = datasets[1]
+        self.__datasets[MachineLearningPhase.Test] = datasets[2]
 
     def _split_validation(self) -> None:
         assert not self.has_dataset(
