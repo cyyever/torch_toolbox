@@ -46,8 +46,7 @@ class AMP(Hook):
             loss.backward()
 
     def _optimizer_step(self, model_executor, **kwargs):
-        if not self._enabled:
-            return
+        assert self._enabled
         optimizer = model_executor.get_optimizer()
         if self.__scaler is None:
             optimizer.step()

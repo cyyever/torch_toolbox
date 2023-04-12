@@ -159,26 +159,10 @@ class Trainer(ModelExecutor):
                                 )
                                 inferencer.inference(epoch=epoch, use_grad=False)
 
-                    self.exec_hooks(
-                        ModelExecutorHookPoint.AFTER_VALIDATION,
-                        epoch=epoch,
-                    )
-                    if self._data["_optimizer_skipped_in_epoch"]:
-                        continue
-                    # adjust learning rate
-                    lr_scheduler = self.get_lr_scheduler()
-                    if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                        continue
-                    match lr_scheduler:
-                        case torch.optim.lr_scheduler.ReduceLROnPlateau():
-                            training_loss = self.performance_metric.get_loss(epoch)
-                            get_logger().debug(
-                                "call ReduceLROnPlateau for training loss %s",
-                                training_loss,
+                            self.exec_hooks(
+                                ModelExecutorHookPoint.AFTER_VALIDATION,
+                                epoch=epoch,
                             )
-                            lr_scheduler.step(training_loss)
-                        case _:
-                            lr_scheduler.step()
         except StopExecutingException:
             get_logger().warning("stop training")
         finally:
