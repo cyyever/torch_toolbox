@@ -313,6 +313,7 @@ class ModelExecutor(ModelExecutorBase):
             else:
                 result = self._model_with_loss(**kwargs)
 
+            get_logger().debug("use dataset size %s", self._data["dataset_size"])
             if result["is_averaged_loss"]:
                 normalized_batch_loss = (
                     result["loss"] * batch["batch_size"] / self._data["dataset_size"]

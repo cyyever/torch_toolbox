@@ -3,20 +3,25 @@ from typing import Generator
 from cyy_torch_toolbox.dependency import has_torch_geometric
 
 if has_torch_geometric:
-    import torch_geometric
+    import torch_geometric.data
 
 import torch
 import torchdata
 
 
 def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:
-    if isinstance(dataset, torch.utils.data.IterableDataset):
-        cnt: int = 0
-        for _ in dataset:
-            cnt += 1
-        return cnt
-    _ = next(iter(dataset))
-    return len(dataset)
+    if has_torch_geometric:
+        match dataset:
+            case [torch_geometric.data.Data()]:
+                graph = dataset[0]
+                return graph["mask"].sum()
+    match dataset:
+        case torch.utils.data.IterableDataset():
+            cnt: int = 0
+            for _ in dataset:
+                cnt += 1
+            return cnt
+    raise NotImplementedError(dataset)
 
 
 class KeyPipe(torch.utils.data.MapDataPipe):
