@@ -315,6 +315,7 @@ class ModelExecutor(ModelExecutorBase):
 
             get_logger().debug("use dataset size %s", self._data["dataset_size"])
             if result["is_averaged_loss"]:
+                assert self._data["dataset_size"] > 1
                 normalized_batch_loss = (
                     result["loss"] * batch["batch_size"] / self._data["dataset_size"]
                 )
