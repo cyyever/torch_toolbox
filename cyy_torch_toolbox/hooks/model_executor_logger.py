@@ -13,7 +13,12 @@ class ModelExecutorLogger(Hook):
     def _before_execute(self, **kwargs):
         model_executor = kwargs["model_executor"]
         model_util = model_executor.model_util
-        get_logger().info("dataset is %s", model_executor.dataset)
+        get_logger().info(
+            "dataset is %s",
+            model_executor.dataset_collection.get_original_dataset(
+                MachineLearningPhase.Training
+            ),
+        )
         get_logger().info("model type is %s", model_executor.model.__class__)
         get_logger().debug("model is %s", model_executor.model)
         get_logger().debug("loss function is %s", model_executor.loss_fun)

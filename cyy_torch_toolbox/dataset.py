@@ -21,6 +21,8 @@ def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:
             for _ in dataset:
                 cnt += 1
             return cnt
+        case torchdata.datapipes.map.MapDataPipe():
+            return len(dataset)
     raise NotImplementedError(dataset)
 
 
