@@ -17,6 +17,7 @@ if has_torchvision:
     import torchvision
 if has_torch_geometric:
     import torch_geometric.data
+    import torch_geometric.utils
 
 
 class DatasetUtil:
@@ -299,7 +300,19 @@ class GraphDatasetUtil(DatasetSplitter):
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
         return mask
 
-    def get_subset(self, indices):
+    def get_neighbors(self, edge_index, node_indices: list) -> dict:
+        node_indices = set(node_indices)
+        edge_index = torch_geometric.utils.sort_edge_index(edge_index)
+        res: dict = {}
+        for i in range(edge_index.shape(2)):
+            source = edge_index[0][i].item()
+            if source in node_indices:
+                if source not in res:
+                    res[source] = []
+                res[source].append(edge_index[1][i].item())
+        return res
+
+    def get_subset(self, indices: list):
         mask = copy.deepcopy(self.get_mask())
         dataset = copy.deepcopy(self.dataset)
         mask.fill_(False)
