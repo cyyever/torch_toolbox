@@ -300,11 +300,26 @@ class GraphDatasetUtil(DatasetSplitter):
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
         return mask
 
-    def get_neighbors(self, edge_index, node_indices: list) -> dict:
+    def get_boundary(self, node_indices: list) -> dict:
+        assert len(self.dataset) == 1
         node_indices = set(node_indices)
-        edge_index = torch_geometric.utils.sort_edge_index(edge_index)
+        edge_index = torch_geometric.utils.sort_edge_index(self.dataset[0].edge_index)
         res: dict = {}
-        for i in range(edge_index.shape(2)):
+        for i in range(edge_index.shape[1]):
+            source = edge_index[0][i].item()
+            target = edge_index[1][i].item()
+            if source in node_indices and target not in node_indices:
+                if source not in res:
+                    res[source] = []
+                res[source].append(target)
+        return res
+
+    def get_neighbors(self, node_indices: list) -> dict:
+        assert len(self.dataset) == 1
+        node_indices = set(node_indices)
+        edge_index = torch_geometric.utils.sort_edge_index(self.dataset[0].edge_index)
+        res: dict = {}
+        for i in range(edge_index.shape[1]):
             source = edge_index[0][i].item()
             if source in node_indices:
                 if source not in res:
