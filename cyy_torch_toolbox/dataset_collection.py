@@ -2,7 +2,7 @@ import copy
 import json
 import os
 import threading
-from typing import Any, Callable
+from typing import Any, Callable, Generator
 
 import torch
 from cyy_naive_lib.fs.ssd import is_ssd
@@ -16,7 +16,7 @@ from cyy_torch_toolbox.dataset_transform.transforms import (Transforms,
                                                             replace_target)
 from cyy_torch_toolbox.dataset_transform.transforms_factory import \
     add_transforms
-from cyy_torch_toolbox.dataset_util import (DatasetUtil, GraphDatasetUtil,
+from cyy_torch_toolbox.dataset_util import (DatasetSplitter, GraphDatasetUtil,
                                             TextDatasetUtil, VisionDatasetUtil)
 from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
@@ -70,15 +70,21 @@ class DatasetCollection:
         dataset_util = self.get_dataset_util(phase)
         self.__datasets[phase] = transformer(dataset, dataset_util, phase)
 
-    def set_subset(self, phase: MachineLearningPhase, indices):
+    def set_subset(self, phase: MachineLearningPhase, indices: set) -> None:
         self.transform_dataset(
             phase=phase,
-            transformer=lambda _, dataset_util, __: dataset_util.get_subset(indices),
+            transformer=lambda dataset, dataset_util, phase: dataset_util.get_subset(
+                indices
+            ),
         )
 
-    def foreach_dataset(self):
-        for phase in self.__datasets:
-            yield self.get_dataset(phase=phase)
+    def foreach_raw_dataset(self) -> Generator:
+        for dataset in self.__raw_datasets.values():
+            yield dataset
+
+    def foreach_dataset(self) -> Generator:
+        for dataset in self.__datasets.values():
+            yield dataset
 
     def transform_all_datasets(self, transformer: Callable) -> None:
         for phase in self.__datasets:
@@ -94,11 +100,8 @@ class DatasetCollection:
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
         return self.__datasets[phase]
 
-    def get_datasets(self) -> list:
-        return list(self.__datasets.values())
-
-    def get_training_dataset(self) -> torch.utils.data.Dataset:
-        return self.get_dataset(MachineLearningPhase.Training)
+    # def get_training_dataset(self) -> torch.utils.data.Dataset:
+    #     return self.get_dataset(MachineLearningPhase.Training)
 
     def get_transforms(self, phase: MachineLearningPhase) -> Transforms:
         return self.__transforms[phase]
@@ -113,7 +116,7 @@ class DatasetCollection:
 
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
-    ) -> DatasetUtil:
+    ) -> DatasetSplitter:
         match self.dataset_type:
             case DatasetType.Vision:
                 class_name = VisionDatasetUtil
@@ -122,7 +125,7 @@ class DatasetCollection:
             case DatasetType.Graph:
                 class_name = GraphDatasetUtil
             case _:
-                class_name = DatasetUtil
+                class_name = DatasetSplitter
         return class_name(
             dataset=self.get_dataset(phase),
             transforms=self.__transforms[phase],
@@ -145,9 +148,6 @@ class DatasetCollection:
     @property
     def name(self) -> str | None:
         return self.__name
-
-    def transform_text(self, phase: MachineLearningPhase, text: str) -> str:
-        return self.get_transforms(phase).transform_text(text)
 
     _dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
     lock = threading.RLock()
@@ -332,33 +332,29 @@ class DatasetCollection:
 
     def _split_training(self) -> None:
         assert (
-            not self.has_dataset(phase=MachineLearningPhase.Test)
+            self.has_dataset(phase=MachineLearningPhase.Training)
+            and not self.has_dataset(phase=MachineLearningPhase.Test)
             and not self.has_dataset(phase=MachineLearningPhase.Validation)
-            and self.has_dataset(phase=MachineLearningPhase.Training)
         )
         get_logger().debug("split training dataset for %s", self.name)
         dataset_util = self.get_dataset_util(phase=MachineLearningPhase.Training)
         datasets = dataset_util.decompose()
-        if datasets is not None:
-            raw_training_dataset = self.__raw_datasets.get(
-                MachineLearningPhase.Training
-            )
-            for phase in (
-                MachineLearningPhase.Validation,
-                MachineLearningPhase.Test,
-            ):
-                self.__raw_datasets[phase] = raw_training_dataset
-            self.__datasets = datasets
-            return
+        if datasets is None:
 
-        def computation_fun():
-            return dataset_util.iid_split_indices([8, 1, 1])
+            def computation_fun():
+                return dataset_util.iid_split_indices([8, 1, 1])
 
-        split_index_lists = computation_fun()
-        datasets = dataset_util.split_by_indices(split_index_lists)
-        self.__datasets[MachineLearningPhase.Training] = datasets[0]
-        self.__datasets[MachineLearningPhase.Validation] = datasets[1]
-        self.__datasets[MachineLearningPhase.Test] = datasets[2]
+            split_index_lists = computation_fun()
+            datasets = dataset_util.split_by_indices(split_index_lists)
+            datasets = dict(zip(MachineLearningPhase, datasets))
+        raw_training_dataset = self.__raw_datasets.get(MachineLearningPhase.Training)
+        for phase in (
+            MachineLearningPhase.Validation,
+            MachineLearningPhase.Test,
+        ):
+            self.__raw_datasets[phase] = raw_training_dataset
+        self.__datasets = datasets
+        return
 
     def _split_validation(self) -> None:
         assert not self.has_dataset(
@@ -373,6 +369,12 @@ class DatasetCollection:
         datasets = dataset_util.split_by_indices(computation_fun())
         self.__datasets[MachineLearningPhase.Validation] = datasets[0]
         self.__datasets[MachineLearningPhase.Test] = datasets[1]
+        raw_dataset = self.__raw_datasets.get(MachineLearningPhase.Validation)
+        for phase in (
+            MachineLearningPhase.Validation,
+            MachineLearningPhase.Test,
+        ):
+            self.__raw_datasets[phase] = raw_dataset
 
     def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
         with DatasetCollection.lock:

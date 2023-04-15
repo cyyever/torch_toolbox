@@ -40,7 +40,7 @@ def multi_nli_data_extraction(data: Any) -> dict:
 
 
 def get_mean_and_std(dc):
-    dataset = torch.utils.data.ConcatDataset(dc.get_datasets())
+    dataset = torch.utils.data.ConcatDataset(list(dc.foreach_raw_dataset()))
     transforms = Transforms()
     transforms.append(
         key=TransformType.Input, transform=torchvision.transforms.ToTensor()
