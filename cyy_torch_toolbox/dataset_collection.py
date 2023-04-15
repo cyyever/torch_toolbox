@@ -459,11 +459,11 @@ def create_dataset_collection(
     cls, name: str, dataset_kwargs: dict | None = None, model_config=None
 ):
     with cls.lock:
+        dataset_names = set()
         for dataset_type in DatasetType:
             dataset_constructors = get_dataset_constructors(
                 dataset_type=dataset_type,
             )
-            dataset_names = set()
             if name in dataset_constructors:
                 return cls.create(
                     name=name,
