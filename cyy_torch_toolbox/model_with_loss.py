@@ -329,15 +329,20 @@ class TextModelWithLoss(ModelWithLoss):
 
 
 class GraphModelWithLoss(ModelWithLoss):
-    def __call__(self, targets, phase, **kwargs) -> dict:
-        mask = kwargs.pop("mask")
-        assert mask.shape[0] == 1
-        mask = mask[0]
-        return super().__call__(targets=targets[mask], phase=phase, mask=mask, **kwargs)
+    def __call__(self, targets, **kwargs) -> dict:
+        mask = kwargs.get("mask", None)
+        if mask is not None:
+            assert mask.shape[0] == 1
+            mask = mask[0]
+            kwargs["mask"] = mask
+            kwargs["targets"] = targets[mask]
+        return super().__call__(**kwargs)
 
     def _forward_model(self, mask, **kwargs) -> dict | torch.Tensor:
         output = super()._forward_model(**kwargs)
-        return output[mask]
+        if mask is not None:
+            return output[mask]
+        return output
 
 
 class ParallelModelWithLoss(ModelWithLoss):

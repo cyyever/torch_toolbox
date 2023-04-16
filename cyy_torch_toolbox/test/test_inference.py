@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 from cyy_torch_toolbox.default_config import DefaultConfig
+from cyy_torch_toolbox.dependency import (has_torchtext,
+                                          has_torchvision)
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
-from cyy_torch_toolbox.dependency import has_torchvision,has_torchtext
 
 
 def test_inference():
