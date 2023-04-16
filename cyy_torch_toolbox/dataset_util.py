@@ -190,7 +190,7 @@ class DatasetSplitter(DatasetUtil):
         sub_index_list: list[list] = []
         for _ in parts:
             sub_index_list.append([])
-        for k, v in self.label_sample_dict.items():
+        for v in self.label_sample_dict.values():
             random.shuffle(v)
             part_index_list = split_index_impl(v)
             for a, b in zip(sub_index_list, part_index_list):
@@ -297,7 +297,7 @@ class GraphDatasetUtil(DatasetSplitter):
         assert len(self.dataset) == 1
         if hasattr(self.dataset[0], "mask"):
             return self.dataset[0].mask
-        mask = torch.zeros((self.dataset[0].x.shape[0],), dtype=torch.bool)
+        mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
         return mask
 
     def get_boundary(self, node_indices: list) -> dict:
@@ -314,20 +314,27 @@ class GraphDatasetUtil(DatasetSplitter):
                 res[source].append(target)
         return res
 
-    def get_neighbors(self, node_indices: list) -> dict:
-        assert len(self.dataset) == 1
+    @classmethod
+    def get_neighbors_from_edges(cls, node_indices: list, edge_index) -> dict:
         node_indices = set(node_indices)
-        edge_index = torch_geometric.utils.sort_edge_index(self.dataset[0].edge_index)
         res: dict = {}
         for i in range(edge_index.shape[1]):
             source = edge_index[0][i].item()
             if source in node_indices:
                 if source not in res:
-                    res[source] = []
-                res[source].append(edge_index[1][i].item())
+                    res[source] = set()
+                res[source].add(edge_index[1][i].item())
         return res
 
+    def get_neighbors(self, node_indices: list) -> dict:
+        assert len(self.dataset) == 1
+        edge_index = torch_geometric.utils.sort_edge_index(self.dataset[0].edge_index)
+        return GraphDatasetUtil.get_neighbors_from_edges(
+            node_indices=node_indices, edge_index=edge_index
+        )
+
     def get_subset(self, indices: list):
+        assert indices
         mask = copy.deepcopy(self.get_mask())
         dataset = copy.deepcopy(self.dataset)
         mask.fill_(False)
