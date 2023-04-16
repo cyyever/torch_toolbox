@@ -297,7 +297,7 @@ class GraphDatasetUtil(DatasetSplitter):
         assert len(self.dataset) == 1
         if hasattr(self.dataset[0], "mask"):
             return self.dataset[0].mask
-        mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
+        mask = torch.zeros((self.dataset[0].x.shape[0],), dtype=torch.bool)
         return mask
 
     def get_boundary(self, node_indices: list) -> dict:
