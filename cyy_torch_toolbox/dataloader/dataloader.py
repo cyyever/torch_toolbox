@@ -5,7 +5,8 @@ import torch
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.dependency import has_dali, has_torchvision
-from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
+from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
+                                       ModelType)
 
 if has_dali and has_torchvision:
     from cyy_torch_toolbox.dataloader.dali_dataloader import \
@@ -32,7 +33,7 @@ def get_dataloader(
             dataset, transforms = transforms.cache_transforms(
                 dataset=dataset, device=device
             )
-    if has_dali and has_torchvision:
+    if has_dali and has_torchvision and dc.dataset_type == DatasetType.Vision:
         dataloader = get_dali_dataloader(
             dataset=dataset,
             dc=dc,
