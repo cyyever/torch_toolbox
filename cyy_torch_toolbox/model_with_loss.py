@@ -8,11 +8,15 @@ from cyy_naive_lib.reflection import get_kwarg_names
 from torch import nn
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-from cyy_torch_toolbox.dependency import has_hugging_face
+from cyy_torch_toolbox.dependency import has_hugging_face, has_torch_geometric
+
+if has_torch_geometric:
+    import torch_geometric.utils
 
 if has_hugging_face:
     import transformers
 
+from cyy_torch_toolbox.dataset_util import GraphDatasetUtil
 from cyy_torch_toolbox.device import get_devices
 from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 # from cyy_torch_toolbox.model_transform.checkpointed_model import \
@@ -329,20 +333,75 @@ class TextModelWithLoss(ModelWithLoss):
 
 
 class GraphModelWithLoss(ModelWithLoss):
-    def __call__(self, targets, **kwargs) -> dict:
-        mask = kwargs.get("mask", None)
-        if mask is not None:
-            assert mask.shape[0] == 1
-            mask = mask[0]
-            kwargs["mask"] = mask
-            kwargs["targets"] = targets[mask]
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.node_and_neighbour_index_map = {}
+        self.node_index_map = {}
+        self.edge_index_map = {}
+        self.node_and_neighbour_index_reverse_map = {}
+
+    def __call__(self, **kwargs) -> dict:
+        inputs = kwargs["inputs"]
+        inputs["x"] = inputs["x"][0]
+        inputs["edge_index"] = inputs["edge_index"][0]
+        mask = kwargs.pop("mask", None)
+        if mask is None:
+            return super().__call__(**kwargs)
+        phase = kwargs["phase"]
+        mask = mask.view(-1)
+        if phase not in self.node_index_map:
+            edge_index = inputs["edge_index"]
+            node_indices = set(torch_geometric.utils.mask_to_index(mask).tolist())
+            self.node_index_map[phase] = node_indices
+            node_and_neighbours = GraphDatasetUtil.get_neighbors_from_edges(
+                node_indices=node_indices, edge_index=edge_index
+            )
+            tmp = set(node_and_neighbours.keys())
+            for value in node_and_neighbours.values():
+                tmp |= value
+            node_and_neighbours = tmp
+            self.node_and_neighbour_index_reverse_map[phase] = dict(
+                enumerate(sorted(node_and_neighbours))
+            )
+            self.node_and_neighbour_index_map[phase] = {
+                v: k
+                for k, v in self.node_and_neighbour_index_reverse_map[phase].items()
+            }
+            new_source_list = []
+            new_target_list = []
+            for i in range(edge_index.shape[1]):
+                source = edge_index[0][i].item()
+                target = edge_index[1][i].item()
+                if source in node_indices or target in node_indices:
+                    new_source_list.append(
+                        self.node_and_neighbour_index_map[phase][source]
+                    )
+                    new_target_list.append(
+                        self.node_and_neighbour_index_map[phase][target]
+                    )
+            edge_index = torch.tensor(
+                data=[new_source_list, new_target_list], dtype=edge_index.dtype
+            )
+            self.edge_index_map[phase] = edge_index
+        else:
+            node_indices = self.node_index_map[phase]
+            node_and_neighbours = set(self.node_and_neighbour_index_map[phase].keys())
+            edge_index = self.edge_index_map[phase]
+        inputs["edge_index"] = edge_index
+        kwargs["targets"] = kwargs["targets"][mask]
+        new_mask = torch.zeros_like(mask)
+        for idx in node_and_neighbours:
+            new_mask[idx] = True
+        inputs["x"] = inputs["x"][new_mask]
+        new_mask = torch.zeros((len(node_and_neighbours),), dtype=torch.bool)
+        for idx in node_indices:
+            new_mask[self.node_and_neighbour_index_map[phase][idx]] = True
+        kwargs["mask"] = new_mask
         return super().__call__(**kwargs)
 
     def _forward_model(self, mask, **kwargs) -> dict | torch.Tensor:
         output = super()._forward_model(**kwargs)
-        if mask is not None:
-            return output[mask]
-        return output
+        return output[mask]
 
 
 class ParallelModelWithLoss(ModelWithLoss):
