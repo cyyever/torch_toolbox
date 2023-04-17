@@ -314,10 +314,9 @@ class GraphDatasetUtil(DatasetSplitter):
         return res
 
     @classmethod
-    def foreach_edge(cls, edge_index: torch.Tensor) -> dict:
-        edge_index = torch_geometric.utils.sort_edge_index(edge_index).tolist()
-        for i in range(len(edge_index[0])):
-            yield edge_index[0][i], edge_index[1][i]
+    def foreach_edge(cls, edge_index: torch.Tensor) -> list:
+        edge_index = torch_geometric.utils.sort_edge_index(edge_index)
+        return edge_index.transpose(0, 1).tolist()
 
     @classmethod
     def get_neighbors_from_edges(
