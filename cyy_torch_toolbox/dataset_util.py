@@ -300,20 +300,20 @@ class GraphDatasetUtil(DatasetSplitter):
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
         return mask
 
-    def get_boundary(self, node_indices: list) -> dict:
-        assert len(self.dataset) == 1
-        node_indices = set(node_indices)
-        res = {}
-        for a, b in self.foreach_edge(self.dataset[0].edge_index):
-            if a in node_indices and b not in node_indices:
-                if a not in res:
-                    res[a] = []
-                res[a].append(b)
-            elif b in node_indices and a not in node_indices:
-                if b not in res:
-                    res[b] = []
-                res[b].append(a)
-        return res
+    # def get_boundary(self, node_indices: list) -> dict:
+    #     assert len(self.dataset) == 1
+    #     node_indices = set(node_indices)
+    #     res = {}
+    #     for a, b in self.foreach_edge(self.dataset[0].edge_index):
+    #         if a in node_indices and b not in node_indices:
+    #             if a not in res:
+    #                 res[a] = []
+    #             res[a].append(b)
+    #         elif b in node_indices and a not in node_indices:
+    #             if b not in res:
+    #                 res[b] = []
+    #             res[b].append(a)
+    #     return res
 
     @classmethod
     def foreach_edge(cls, edge_index: torch.Tensor) -> list:
@@ -321,23 +321,42 @@ class GraphDatasetUtil(DatasetSplitter):
         return edge_index.transpose(0, 1).tolist()
 
     @classmethod
-    def get_neighbors_from_edges(
-        cls, node_indices: list, edge_index: torch.Tensor
-    ) -> dict:
-        node_indices = set(node_indices)
-        res: dict = {node_idx: set() for node_idx in node_indices}
-        for source, target in cls.foreach_edge(edge_index):
-            if source in node_indices:
-                res[source].add(target)
-            if target in node_indices:
-                res[target].add(source)
+    def edge_to_dict(cls, edge_index: torch.Tensor) -> dict:
+        res = {}
+        for a, b in cls.foreach_edge(edge_index):
+            if a not in res:
+                res[a] = set()
+            res[a].add(b)
+            if b not in res:
+                res[b] = set()
+            res[b].add(a)
         return res
 
-    def get_neighbors(self, node_indices: list) -> dict:
+    @classmethod
+    def get_neighbors_from_edges(
+        cls, node_indices: list, edge_index: torch.Tensor, hop
+    ) -> dict:
+        res: dict = {}
+        node_indices = set(node_indices)
+        edge_dict = cls.edge_to_dict(edge_index)
+        assert hop > 0
+        for node_idx in node_indices:
+            unchecked_nodes = set([node_idx])
+            neighbors = unchecked_nodes
+            for _ in range(hop):
+                new_neighbors = set()
+                for node in unchecked_nodes:
+                    new_neighbors = new_neighbors | edge_dict[node]
+                unchecked_nodes = new_neighbors - neighbors
+                neighbors |= new_neighbors
+            res[node_idx] = neighbors
+        return res
+
+    def get_neighbors(self, node_indices: list, hop) -> dict:
         assert len(self.dataset) == 1
         edge_index = torch_geometric.utils.sort_edge_index(self.dataset[0].edge_index)
         return GraphDatasetUtil.get_neighbors_from_edges(
-            node_indices=node_indices, edge_index=edge_index
+            node_indices=node_indices, edge_index=edge_index, hop=hop
         )
 
     def get_subset(self, indices: list):
