@@ -300,20 +300,14 @@ class GraphDatasetUtil(DatasetSplitter):
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
         return mask
 
-    # def get_boundary(self, node_indices: list) -> dict:
-    #     assert len(self.dataset) == 1
-    #     node_indices = set(node_indices)
-    #     res = {}
-    #     for a, b in self.foreach_edge(self.dataset[0].edge_index):
-    #         if a in node_indices and b not in node_indices:
-    #             if a not in res:
-    #                 res[a] = []
-    #             res[a].append(b)
-    #         elif b in node_indices and a not in node_indices:
-    #             if b not in res:
-    #                 res[b] = []
-    #             res[b].append(a)
-    #     return res
+    def get_boundary(self, node_indices: list) -> dict:
+        assert len(self.dataset) == 1
+        node_indices = set(node_indices)
+        res = {}
+        edge_dict = self.edge_to_dict(self.dataset[0].edge_index)
+        for node_idx in node_indices:
+            res[node_idx] = edge_dict.get(node_idx, set()) - node_indices
+        return res
 
     @classmethod
     def foreach_edge(cls, edge_index: torch.Tensor) -> list:
