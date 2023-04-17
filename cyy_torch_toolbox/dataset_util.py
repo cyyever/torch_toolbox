@@ -303,14 +303,16 @@ class GraphDatasetUtil(DatasetSplitter):
     def get_boundary(self, node_indices: list) -> dict:
         assert len(self.dataset) == 1
         node_indices = set(node_indices)
-        res: dict = {}
-        for source, target in self.foreach_edge(self.dataset[0].edge_index):
-            if (source in node_indices and target not in node_indices) or (
-                target in node_indices and source not in node_indices
-            ):
-                if source not in res:
-                    res[source] = []
-                res[source].append(target)
+        res = {}
+        for a, b in self.foreach_edge(self.dataset[0].edge_index):
+            if a in node_indices and b not in node_indices:
+                if a not in res:
+                    res[a] = []
+                res[a].append(b)
+            elif b in node_indices and a not in node_indices:
+                if b not in res:
+                    res[b] = []
+                res[b].append(a)
         return res
 
     @classmethod
@@ -323,12 +325,12 @@ class GraphDatasetUtil(DatasetSplitter):
         cls, node_indices: list, edge_index: torch.Tensor
     ) -> dict:
         node_indices = set(node_indices)
-        res: dict = {}
+        res: dict = {node_idx: set() for node_idx in node_indices}
         for source, target in cls.foreach_edge(edge_index):
             if source in node_indices:
-                if source not in res:
-                    res[source] = set()
                 res[source].add(target)
+            if target in node_indices:
+                res[target].add(source)
         return res
 
     def get_neighbors(self, node_indices: list) -> dict:

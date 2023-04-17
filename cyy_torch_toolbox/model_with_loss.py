@@ -359,11 +359,9 @@ class GraphModelWithLoss(ModelWithLoss):
             for value in node_and_neighbours.values():
                 tmp |= value
             node_and_neighbours = tmp
-            node_and_neighbour_index_reverse_map = dict(
-                enumerate(sorted(node_and_neighbours))
-            )
             node_and_neighbour_index_map = {
-                v: k for k, v in node_and_neighbour_index_reverse_map.items()
+                node_index: idx
+                for idx, node_index in enumerate(sorted(node_and_neighbours))
             }
             self.node_and_neighbour_index_map[phase] = node_and_neighbour_index_map
             new_source_list = []
