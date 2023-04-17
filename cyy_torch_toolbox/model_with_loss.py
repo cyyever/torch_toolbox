@@ -338,7 +338,6 @@ class GraphModelWithLoss(ModelWithLoss):
         self.node_and_neighbour_index_map = {}
         self.node_index_map = {}
         self.edge_index_map = {}
-        self.node_and_neighbour_index_reverse_map = {}
 
     def __call__(self, **kwargs) -> dict:
         inputs = kwargs["inputs"]
@@ -360,32 +359,27 @@ class GraphModelWithLoss(ModelWithLoss):
             for value in node_and_neighbours.values():
                 tmp |= value
             node_and_neighbours = tmp
-            self.node_and_neighbour_index_reverse_map[phase] = dict(
+            node_and_neighbour_index_reverse_map = dict(
                 enumerate(sorted(node_and_neighbours))
             )
-            self.node_and_neighbour_index_map[phase] = {
-                v: k
-                for k, v in self.node_and_neighbour_index_reverse_map[phase].items()
+            node_and_neighbour_index_map = {
+                v: k for k, v in node_and_neighbour_index_reverse_map.items()
             }
+            self.node_and_neighbour_index_map[phase] = node_and_neighbour_index_map
             new_source_list = []
             new_target_list = []
-            for i in range(edge_index.shape[1]):
-                source = edge_index[0][i].item()
-                target = edge_index[1][i].item()
+            for source, target in GraphDatasetUtil.foreach_edge(edge_index):
                 if source in node_indices or target in node_indices:
-                    new_source_list.append(
-                        self.node_and_neighbour_index_map[phase][source]
-                    )
-                    new_target_list.append(
-                        self.node_and_neighbour_index_map[phase][target]
-                    )
+                    new_source_list.append(node_and_neighbour_index_map[source])
+                    new_target_list.append(node_and_neighbour_index_map[target])
             edge_index = torch.tensor(
                 data=[new_source_list, new_target_list], dtype=edge_index.dtype
             )
             self.edge_index_map[phase] = edge_index
         else:
             node_indices = self.node_index_map[phase]
-            node_and_neighbours = set(self.node_and_neighbour_index_map[phase].keys())
+            node_and_neighbour_index_map = self.node_and_neighbour_index_map[phase]
+            node_and_neighbours = set(node_and_neighbour_index_map.keys())
             edge_index = self.edge_index_map[phase]
         inputs["edge_index"] = edge_index
         kwargs["targets"] = kwargs["targets"][mask]
@@ -395,7 +389,7 @@ class GraphModelWithLoss(ModelWithLoss):
         inputs["x"] = inputs["x"][new_mask]
         new_mask = torch.zeros((len(node_and_neighbours),), dtype=torch.bool)
         for idx in node_indices:
-            new_mask[self.node_and_neighbour_index_map[phase][idx]] = True
+            new_mask[node_and_neighbour_index_map[idx]] = True
         kwargs["mask"] = new_mask
         return super().__call__(**kwargs)
 
