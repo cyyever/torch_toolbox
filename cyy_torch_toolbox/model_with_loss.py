@@ -11,6 +11,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from cyy_torch_toolbox.dependency import has_hugging_face, has_torch_geometric
 
 if has_torch_geometric:
+    import torch_geometric.nn
     import torch_geometric.utils
 
 if has_hugging_face:
@@ -338,6 +339,13 @@ class GraphModelWithLoss(ModelWithLoss):
         self.node_and_neighbour_index_map = {}
         self.node_index_map = {}
         self.edge_index_map = {}
+        self.neighbour_hop = sum(
+            [
+                1
+                for _, module in self.model_util.get_modules()
+                if isinstance(module, torch_geometric.nn.MessagePassing)
+            ]
+        )
 
     def __call__(self, **kwargs) -> dict:
         inputs = kwargs["inputs"]
@@ -353,7 +361,7 @@ class GraphModelWithLoss(ModelWithLoss):
             node_indices = set(torch_geometric.utils.mask_to_index(mask).tolist())
             self.node_index_map[phase] = node_indices
             node_and_neighbours = GraphDatasetUtil.get_neighbors_from_edges(
-                node_indices=node_indices, edge_index=edge_index
+                node_indices=node_indices, edge_index=edge_index, hop=self.neighbour_hop
             )
             tmp = set(node_and_neighbours.keys())
             for value in node_and_neighbours.values():
@@ -382,9 +390,12 @@ class GraphModelWithLoss(ModelWithLoss):
         inputs["edge_index"] = edge_index
         kwargs["targets"] = kwargs["targets"][mask]
         new_mask = torch.zeros_like(mask)
+        print("node num,", len(node_indices), len(node_and_neighbours))
         for idx in node_and_neighbours:
             new_mask[idx] = True
+        print("before x shape", inputs["x"].shape)
         inputs["x"] = inputs["x"][new_mask]
+        print("after x shape", inputs["x"].shape)
         new_mask = torch.zeros((len(node_and_neighbours),), dtype=torch.bool)
         for idx in node_indices:
             new_mask[node_and_neighbour_index_map[idx]] = True
