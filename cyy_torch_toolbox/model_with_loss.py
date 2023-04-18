@@ -390,12 +390,9 @@ class GraphModelWithLoss(ModelWithLoss):
         inputs["edge_index"] = edge_index
         kwargs["targets"] = kwargs["targets"][mask]
         new_mask = torch.zeros_like(mask)
-        print("node num,", len(node_indices), len(node_and_neighbours))
         for idx in node_and_neighbours:
             new_mask[idx] = True
-        print("before x shape", inputs["x"].shape)
         inputs["x"] = inputs["x"][new_mask]
-        print("after x shape", inputs["x"].shape)
         new_mask = torch.zeros((len(node_and_neighbours),), dtype=torch.bool)
         for idx in node_indices:
             new_mask[node_and_neighbour_index_map[idx]] = True
