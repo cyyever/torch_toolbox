@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Generator
 
 from cyy_torch_toolbox.dependency import has_torch_geometric
@@ -68,7 +69,11 @@ def dataset_with_indices(
     return dataset
 
 
-def select_item(dataset, indices=None, mask=None) -> Generator:
+def select_item(
+    dataset: torch.utils.data.Dataset,
+    indices: None | Sequence = None,
+    mask: None | torch.Tensor = None,
+) -> Generator:
     if indices is not None:
         indices = set(indices)
     if has_torch_geometric:
@@ -115,7 +120,9 @@ def select_item(dataset, indices=None, mask=None) -> Generator:
                 yield idx, dataset[idx]
 
 
-def subset_dp(dataset, indices: None | list = None) -> torch.utils.data.MapDataPipe:
+def subset_dp(
+    dataset: torch.utils.data.Dataset, indices: None | Sequence = None
+) -> torch.utils.data.MapDataPipe:
     return torchdata.datapipes.map.SequenceWrapper(
         list(dict(select_item(dataset, indices)).values()), deepcopy=False
     )
