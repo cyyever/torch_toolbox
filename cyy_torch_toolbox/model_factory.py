@@ -7,6 +7,8 @@ import torch
 import torch.nn
 
 from cyy_torch_toolbox.dependency import has_hugging_face
+from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
+                                       ModelType)
 
 if has_hugging_face:
     import transformers
@@ -15,12 +17,8 @@ if has_hugging_face:
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
-                                       ModelType)
-from cyy_torch_toolbox.model_with_loss import (GraphModelWithLoss,
-                                               ModelWithLoss,
-                                               TextModelWithLoss,
-                                               VisionModelWithLoss)
+from cyy_torch_toolbox.model_with_loss import (ModelWithLoss,
+                                               get_model_with_loss)
 
 __model_info: dict = {}
 
@@ -182,41 +180,6 @@ def get_model(
             #         retry = True
             if not retry:
                 raise e
-
-
-def get_model_with_loss(
-    model: torch.nn.Module,
-    dataset_collection: DatasetCollection,
-    model_type: None | ModelType = None,
-    model_kwargs: dict = {},
-) -> ModelWithLoss:
-    model_with_loss_fun = ModelWithLoss
-    if dataset_collection.dataset_type == DatasetType.Vision:
-        model_with_loss_fun = VisionModelWithLoss
-    elif dataset_collection.dataset_type == DatasetType.Text:
-        model_with_loss_fun = TextModelWithLoss
-    elif dataset_collection.dataset_type == DatasetType.Graph:
-        model_with_loss_fun = GraphModelWithLoss
-    loss_fun_name = model_kwargs.get("loss_fun_name", None)
-    model_type = ModelType.Classification
-    model_with_loss = model_with_loss_fun(
-        model=model,
-        loss_fun=loss_fun_name,
-        model_type=model_type,
-    )
-    model_path = model_kwargs.get("model_path", None)
-    if model_path is not None:
-        model_with_loss.model.load_state_dict(torch.load(model_path))
-    word_vector_name = model_kwargs.get("word_vector_name", None)
-    if word_vector_name is not None:
-        from cyy_torch_toolbox.word_vector import PretrainedWordVector
-
-        PretrainedWordVector(word_vector_name).load_to_model(
-            model_with_loss=model_with_loss,
-            tokenizer=dataset_collection.tokenizer,
-            freeze=model_kwargs.get("freeze_word_vector", False),
-        )
-    return model_with_loss
 
 
 class ModelConfig:
