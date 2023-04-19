@@ -2,6 +2,7 @@ import copy
 import functools
 import os
 import random
+from collections.abc import Sequence
 from typing import Any, Generator
 
 import PIL
@@ -328,7 +329,7 @@ class GraphDatasetUtil(DatasetSplitter):
 
     @classmethod
     def get_neighbors_from_edges(
-        cls, node_indices: list | set, edge_index: torch.Tensor, hop
+        cls, node_indices: Sequence, edge_index: torch.Tensor, hop
     ) -> dict:
         res: dict = {}
         node_indices = set(node_indices)
