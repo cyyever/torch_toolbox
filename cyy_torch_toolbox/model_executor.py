@@ -37,7 +37,7 @@ class ModelExecutor(ModelExecutorBase):
         hook_config: HookConfig | None = None,
     ) -> None:
         super().__init__()
-        self._model_with_loss = model_with_loss
+        self._model_with_loss: ModelWithLoss = model_with_loss
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
@@ -226,7 +226,7 @@ class ModelExecutor(ModelExecutorBase):
 
     def offload_from_gpu(self):
         self._wait_stream()
-        self._model_with_loss.offload_from_gpu()
+        self._model_with_loss.offload_from_memory()
         # if self.__dataloader is not None:
         #     del self.__dataloader
         #     self.__dataloader = None
