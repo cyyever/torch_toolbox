@@ -188,14 +188,13 @@ class DatasetSplitter(DatasetUtil):
             random.shuffle(index_list)
             return split_index_impl(index_list)
 
-        sub_index_list: list[list] = []
-        for _ in parts:
-            sub_index_list.append([])
+        sub_index_list: list[list] = [[]] * len(parts)
         for v in self.label_sample_dict.values():
+            v = copy.deepcopy(v)
             random.shuffle(v)
             part_index_list = split_index_impl(v)
-            for a, b in zip(sub_index_list, part_index_list):
-                a += b
+            for i, part_index in enumerate(part_index_list):
+                sub_index_list[i] = sub_index_list[i] + part_index
         return sub_index_list
 
     def sample_by_labels(self, percents: list[float]) -> dict:
