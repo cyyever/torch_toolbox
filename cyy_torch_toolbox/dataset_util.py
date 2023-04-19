@@ -328,7 +328,7 @@ class GraphDatasetUtil(DatasetSplitter):
 
     @classmethod
     def get_neighbors_from_edges(
-        cls, node_indices: list, edge_index: torch.Tensor, hop
+        cls, node_indices: list | set, edge_index: torch.Tensor, hop
     ) -> dict:
         res: dict = {}
         node_indices = set(node_indices)
