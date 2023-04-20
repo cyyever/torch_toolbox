@@ -12,7 +12,7 @@ class CUDAMemoryProfiler(Hook):
         self.__hooks = []
         self.__used_memory = None
 
-    def _before_batch(self, model_executor, batch_index, **kwargs):
+    def _before_batch(self, model_executor, batch_index, **kwargs) -> None:
         assert not self.__hooks
         self.__used_memory = None
         if batch_index != 2:

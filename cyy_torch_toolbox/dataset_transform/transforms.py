@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.dataset import select_item
-from cyy_torch_toolbox.dependency import has_torch_geometric
+from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
 from cyy_torch_toolbox.ml_type import TransformType
 from cyy_torch_toolbox.tensor import tensor_to
 from torch.utils.data._utils.collate import default_collate
@@ -221,3 +221,15 @@ class Transforms:
                 for t in transforms:
                     desc.append(str(t))
         return "\n".join(desc)
+
+
+def multi_nli_data_extraction(data: Any) -> dict:
+    match data:
+        case {"premise": premise, "hypothesis": hypothesis, "label": label, **kwargs}:
+            item = {"input": [premise, hypothesis], "target": label}
+            if "index" in kwargs:
+                item["index"] = kwargs["index"]
+            return item
+        case _:
+            return multi_nli_data_extraction(default_data_extraction(data))
+    raise NotImplementedError()
