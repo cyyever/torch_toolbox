@@ -1,7 +1,7 @@
 import functools
-from typing import Any
 
 import torch
+from cyy_torch_toolbox.dataset_util import VisionDatasetUtil
 from cyy_torch_toolbox.dependency import (has_hugging_face, has_torchtext,
                                           has_torchvision)
 
@@ -19,24 +19,11 @@ if has_hugging_face:
 if has_torchvision:
     import torchvision
 
-from cyy_torch_toolbox.dataset_util import VisionDatasetUtil
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
 
-from .transforms import (Transforms, default_data_extraction,
+from .transforms import (Transforms, multi_nli_data_extraction,
                          str_target_to_int, swap_input_and_target)
-
-
-def multi_nli_data_extraction(data: Any) -> dict:
-    match data:
-        case {"premise": premise, "hypothesis": hypothesis, "label": label, **kw}:
-            item = {"input": [premise, hypothesis], "target": label}
-            if "index" in kw:
-                item["index"] = kw["index"]
-            return item
-        case _:
-            return multi_nli_data_extraction(default_data_extraction(data))
-    raise NotImplementedError()
 
 
 def get_mean_and_std(dc):
@@ -62,8 +49,8 @@ def create_multi_nli_text(sample_input, cls_token, sep_token):
     return cls_token + " " + premise + " " + sep_token + " " + hypothesis
 
 
-def replace_str(str, old, new):
-    return str.replace(old, new)
+def replace_str(string, old, new):
+    return string.replace(old, new)
 
 
 def minus_one(target, index):
