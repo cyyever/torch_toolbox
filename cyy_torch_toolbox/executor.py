@@ -1,7 +1,7 @@
 import copy
 import os
 import shutil
-from typing import Callable
+from typing import Any, Callable
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -10,8 +10,9 @@ from cyy_torch_toolbox.dataloader.dataloader import get_dataloader
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.dataset_util import DatasetUtil
 from cyy_torch_toolbox.device import get_device
+from cyy_torch_toolbox.hook import HookCollection
 from cyy_torch_toolbox.hook_config import HookConfig
-from cyy_torch_toolbox.hooks.model_executor_logger import ModelExecutorLogger
+from cyy_torch_toolbox.hooks.executor_logger import ExecutorLogger
 from cyy_torch_toolbox.hyper_parameter import HyperParameter
 # from cyy_torch_toolbox.metric_visualizers.metric_tensorboard import \
 #     MetricTensorBoard
@@ -20,32 +21,32 @@ from cyy_torch_toolbox.metric_visualizers.metric_visualizer import \
 from cyy_torch_toolbox.metric_visualizers.performance_metric_logger import \
     PerformanceMetricLogger
 from cyy_torch_toolbox.metrics.performance_metric import PerformanceMetric
-from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
-                                       ModelExecutorHookPoint)
-from cyy_torch_toolbox.model_executor_base import ModelExecutorBase
+from cyy_torch_toolbox.ml_type import (DatasetType, ExecutorHookPoint,
+                                       MachineLearningPhase)
 from cyy_torch_toolbox.model_util import ModelUtil
-from cyy_torch_toolbox.model_with_loss import ModelWithLoss
+from cyy_torch_toolbox.model_with_loss import ModelEvaluator
 
 
-class ModelExecutor(ModelExecutorBase):
+class Executor(HookCollection):
     def __init__(
         self,
-        model_with_loss: ModelWithLoss,
+        model_with_loss: ModelEvaluator,
         dataset_collection: DatasetCollection,
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
         hook_config: HookConfig | None = None,
     ) -> None:
         super().__init__()
-        self._model_with_loss: ModelWithLoss = model_with_loss
+        self._data: dict = {}
+        self._model_with_loss: ModelEvaluator = model_with_loss
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
         self._hook_config = hook_config
-        self.__device = None
+        self.__device: None | torch.device = None
         self.__dataloader = None
         self.__cuda_stream = None
-        self.append_hook(ModelExecutorLogger(), "logger")
+        self.append_hook(ExecutorLogger(), "logger")
         self.append_hook(
             PerformanceMetric(
                 model_type=self._model_with_loss.model_type,
@@ -73,6 +74,9 @@ class ModelExecutor(ModelExecutorBase):
     @property
     def phase(self):
         return self.__phase
+
+    def exec_hooks(self, *args: list, **kwargs: dict) -> None:
+        super().exec_hooks(*args, model_executor=self, **kwargs)
 
     def set_save_dir(self, save_dir: str) -> None:
         self.__save_dir = save_dir
@@ -122,13 +126,18 @@ class ModelExecutor(ModelExecutorBase):
         return self.__dataloader
 
     @property
-    def model_with_loss(self) -> ModelWithLoss:
+    def model_with_loss(self) -> ModelEvaluator:
+        self._wait_stream()
+        return self._model_with_loss
+
+    @property
+    def model_evaluator(self) -> ModelEvaluator:
         self._wait_stream()
         return self._model_with_loss
 
     @property
     def model_util(self) -> ModelUtil:
-        return self.model_with_loss.model_util
+        return self.model_evaluator.model_util
 
     @property
     def loss_fun(self):
@@ -136,12 +145,12 @@ class ModelExecutor(ModelExecutorBase):
 
     @property
     def model(self) -> torch.nn.Module:
-        return self.model_with_loss.model
+        return self.model_evaluator.model
 
     def replace_model(self, fun: Callable) -> None:
-        self._model_with_loss = self.model_with_loss.replace_model(fun(self.model))
+        self._model_with_loss = self.model_evaluator.replace_model(fun(self.model))
 
-    def copy_model_with_loss(self, deepcopy: bool = True) -> ModelWithLoss:
+    def copy_model_with_loss(self, deepcopy: bool = True) -> ModelEvaluator:
         self._wait_stream()
         if deepcopy:
             return copy.deepcopy(self._model_with_loss)
@@ -161,19 +170,19 @@ class ModelExecutor(ModelExecutorBase):
         if self._visualizer_prefix is not None:
             self.set_visualizer_prefix(self._visualizer_prefix)
         self._data["dataset_size"] = self.dataset_size
-        self.exec_hooks(ModelExecutorHookPoint.BEFORE_EXECUTE)
+        self.exec_hooks(ExecutorHookPoint.BEFORE_EXECUTE)
 
     @property
     def dataset_collection(self) -> DatasetCollection:
         return self.__dataset_collection
 
     @property
-    def device(self):
+    def device(self) -> torch.device:
         if self.__device is None:
             self.set_device(get_device())
         return self.__device
 
-    def set_device(self, device):
+    def set_device(self, device: torch.device) -> None:
         if self.__device == device:
             return
         self._wait_stream()
@@ -185,8 +194,8 @@ class ModelExecutor(ModelExecutorBase):
     def __getstate__(self):
         # capture what is normally pickled
         state = self.__dict__.copy()
-        state["_ModelExecutor__cuda_stream"] = None
-        state["_ModelExecutor__dataloader"] = None
+        state["_Executor__cuda_stream"] = None
+        state["_Executor__dataloader"] = None
         return state
 
     @property
@@ -210,7 +219,7 @@ class ModelExecutor(ModelExecutorBase):
         if self.save_dir is not None:
             shutil.rmtree(os.path.join(self.save_dir, "dc.pk"), ignore_errors=True)
 
-    def set_model_with_loss(self, model_with_loss: ModelWithLoss) -> None:
+    def set_model_with_loss(self, model_with_loss: ModelEvaluator) -> None:
         self._wait_stream()
         self._model_with_loss = model_with_loss
         if self.save_dir is not None:
@@ -258,24 +267,24 @@ class ModelExecutor(ModelExecutorBase):
                 input_features = input_features.permute(batch_dim, 0, 2)
         return inputs, batch_dim, input_features
 
-    def get_optimizer(self):
-        return None
+    def get_optimizer(self) -> Any:
+        raise NotImplementedError()
 
-    def get_lr_scheduler(self):
-        return None
+    def get_lr_scheduler(self) -> Any:
+        raise NotImplementedError()
 
     def _execute_epoch(
         self, epoch: int, in_training: bool, need_backward: bool = False
     ) -> None:
         step_lr_after_epoch: bool = False
         self.exec_hooks(
-            hook_point=ModelExecutorHookPoint.BEFORE_EPOCH,
+            hook_point=ExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
         )
-        self.exec_hooks(ModelExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
+        self.exec_hooks(ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
         for batch_index, batch in enumerate(self.dataloader):
             self.exec_hooks(
-                ModelExecutorHookPoint.AFTER_FETCH_BATCH,
+                ExecutorHookPoint.AFTER_FETCH_BATCH,
                 batch_index=batch_index,
             )
             batch["batch_index"] = batch_index
@@ -294,7 +303,7 @@ class ModelExecutor(ModelExecutorBase):
                 optimizer.zero_grad(set_to_none=True)
 
             self.exec_hooks(
-                ModelExecutorHookPoint.BEFORE_BATCH,
+                ExecutorHookPoint.BEFORE_BATCH,
                 epoch=epoch,
                 **batch,
             )
@@ -304,9 +313,9 @@ class ModelExecutor(ModelExecutorBase):
                 "need_backward": need_backward,
                 "non_blocking": True,
             }
-            if self.has_hook(ModelExecutorHookPoint.MODEL_FORWARD):
+            if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
                 self.exec_hooks(
-                    ModelExecutorHookPoint.MODEL_FORWARD,
+                    ExecutorHookPoint.MODEL_FORWARD,
                     model_kwargs=kwargs,
                 )
                 result = self._data.pop("forward_result")
@@ -328,7 +337,7 @@ class ModelExecutor(ModelExecutorBase):
             batch["targets"] = result["targets"]
             batch["input_features"] = result["input_features"]
             self.exec_hooks(
-                ModelExecutorHookPoint.AFTER_FORWARD,
+                ExecutorHookPoint.AFTER_FORWARD,
                 epoch=epoch,
                 **batch,
             )
@@ -336,22 +345,22 @@ class ModelExecutor(ModelExecutorBase):
             if need_backward:
                 loss = self._get_backward_loss(result=result)
                 assert loss is not None
-                if self.has_hook(ModelExecutorHookPoint.MODEL_BACKWARD):
-                    self.exec_hooks(ModelExecutorHookPoint.MODEL_BACKWARD, loss=loss)
+                if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):
+                    self.exec_hooks(ExecutorHookPoint.MODEL_BACKWARD, loss=loss)
                 else:
                     loss.backward()
 
             self.exec_hooks(
-                ModelExecutorHookPoint.AFTER_BATCH,
+                ExecutorHookPoint.AFTER_BATCH,
                 epoch=epoch,
                 result=result,
                 **batch,
             )
             if in_training:
                 step_skipped: bool = False
-                if self.has_hook(ModelExecutorHookPoint.OPTIMIZER_STEP):
+                if self.has_hook(ExecutorHookPoint.OPTIMIZER_STEP):
                     self._data["step_skipped"] = False
-                    self.exec_hooks(ModelExecutorHookPoint.OPTIMIZER_STEP)
+                    self.exec_hooks(ExecutorHookPoint.OPTIMIZER_STEP)
                     step_skipped = self._data["step_skipped"]
                 else:
                     optimizer.step()
@@ -365,14 +374,14 @@ class ModelExecutor(ModelExecutorBase):
                         step_lr_after_epoch = True
 
                 self.exec_hooks(
-                    ModelExecutorHookPoint.AFTER_OPTIMIZER_STEP,
+                    ExecutorHookPoint.AFTER_OPTIMIZER_STEP,
                     epoch=epoch,
                     step_skipped=step_skipped,
                     **batch,
                 )
 
             self.exec_hooks(
-                ModelExecutorHookPoint.BEFORE_FETCH_BATCH,
+                ExecutorHookPoint.BEFORE_FETCH_BATCH,
                 batch_index=batch_index + 1,
             )
         if in_training and step_lr_after_epoch:
@@ -389,7 +398,7 @@ class ModelExecutor(ModelExecutorBase):
                     lr_scheduler.step()
 
         self.exec_hooks(
-            ModelExecutorHookPoint.AFTER_EPOCH,
+            ExecutorHookPoint.AFTER_EPOCH,
             epoch=epoch,
         )
 

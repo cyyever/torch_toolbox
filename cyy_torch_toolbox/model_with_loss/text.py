@@ -3,13 +3,14 @@ import copy
 import torch
 from cyy_naive_lib.reflection import get_kwarg_names
 from cyy_torch_toolbox.dependency import has_hugging_face
-from cyy_torch_toolbox.model_with_loss import ModelWithLoss
+
+from .base import ModelEvaluator
 
 if has_hugging_face:
     import transformers
 
 
-class TextModelWithLoss(ModelWithLoss):
+class TextModelWithLoss(ModelEvaluator):
     @property
     def __is_hugging_face_model(self) -> bool:
         return has_hugging_face and isinstance(
@@ -37,7 +38,6 @@ class TextModelWithLoss(ModelWithLoss):
     def _forward_model(
         self, inputs, targets, input_features=None, **kwargs
     ) -> dict | torch.Tensor:
-
         if hasattr(self.model, "forward"):
             kwarg_names = get_kwarg_names(self.model.forward)
         else:
@@ -60,3 +60,7 @@ class TextModelWithLoss(ModelWithLoss):
         return super()._forward_model(
             inputs=inputs, targets=targets, input_features=input_features, **kwargs
         )
+
+
+class TextModelEvaluator(TextModelWithLoss):
+    pass

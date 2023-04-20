@@ -17,7 +17,7 @@ if has_hugging_face:
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.model_with_loss import (ModelWithLoss,
+from cyy_torch_toolbox.model_with_loss import (ModelEvaluator,
                                                get_model_with_loss)
 
 __model_info: dict = {}
@@ -189,7 +189,7 @@ class ModelConfig:
         self.pretrained: bool = False
         self.model_kwargs: dict = {}
 
-    def get_model(self, dc: DatasetCollection) -> ModelWithLoss:
+    def get_model(self, dc: DatasetCollection) -> ModelEvaluator:
         assert not (self.pretrained and self.model_path)
         model_kwargs = copy.deepcopy(self.model_kwargs)
         if "pretrained" not in model_kwargs:
