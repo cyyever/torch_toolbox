@@ -1,7 +1,7 @@
 import copy
 from typing import Callable, Dict, Generator, List
 
-from cyy_torch_toolbox.ml_type import ModelExecutorHookPoint
+from cyy_torch_toolbox.ml_type import ExecutorHookPoint
 
 
 class Hook:
@@ -33,7 +33,7 @@ class Hook:
         for _, name, __ in self.yield_hooks():
             yield name
 
-    def __get_hook(self, hook_point: ModelExecutorHookPoint) -> tuple | None:
+    def __get_hook(self, hook_point: ExecutorHookPoint) -> tuple | None:
         if not self._enabled:
             return None
         method_name = "_" + str(hook_point).split(".")[-1].lower()
@@ -47,7 +47,7 @@ class Hook:
             for hook in c.yield_hooks():
                 yield hook
 
-        for hook_point in ModelExecutorHookPoint:
+        for hook_point in ExecutorHookPoint:
             res = self.__get_hook(hook_point)
             if res is not None:
                 yield res
@@ -55,12 +55,12 @@ class Hook:
 
 class HookCollection:
     def __init__(self):
-        self.__hooks: Dict[ModelExecutorHookPoint, List[Dict[str, Callable]]] = {}
+        self.__hooks: Dict[ExecutorHookPoint, List[Dict[str, Callable]]] = {}
         self.__stripable_hooks: set = set()
         self.__disabled_hooks: set = set()
         self.__hook_objs: dict = {}
 
-    def exec_hooks(self, hook_point: ModelExecutorHookPoint, **kwargs: dict) -> None:
+    def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: dict) -> None:
         for hook in copy.copy(self.__hooks.get(hook_point, [])):
             for name, fun in copy.copy(hook).items():
                 if name not in self.__disabled_hooks:
@@ -68,7 +68,7 @@ class HookCollection:
 
     def has_hook(
         self,
-        hook_point: ModelExecutorHookPoint,
+        hook_point: ExecutorHookPoint,
     ) -> bool:
         return hook_point in self.__hooks
 
@@ -83,7 +83,7 @@ class HookCollection:
 
     def append_named_hook(
         self,
-        hook_point: ModelExecutorHookPoint,
+        hook_point: ExecutorHookPoint,
         name: str,
         fun: Callable,
         stripable: bool = False,
@@ -92,7 +92,7 @@ class HookCollection:
 
     def prepend_named_hook(
         self,
-        hook_point: ModelExecutorHookPoint,
+        hook_point: ExecutorHookPoint,
         name: str,
         fun: Callable,
         stripable: bool = False,
@@ -102,7 +102,7 @@ class HookCollection:
     def __insert_hook(
         self,
         pos: int,
-        hook_point: ModelExecutorHookPoint,
+        hook_point: ExecutorHookPoint,
         name: str,
         fun: Callable,
         stripable: bool = False,
@@ -180,7 +180,7 @@ class HookCollection:
             self.remove_named_hook(name, hook_point)
 
     def remove_named_hook(
-        self, name: str, hook_point: ModelExecutorHookPoint | None = None
+        self, name: str, hook_point: ExecutorHookPoint | None = None
     ) -> None:
         for cur_hook_point, hooks in self.__hooks.items():
             if hook_point is not None and cur_hook_point != hook_point:

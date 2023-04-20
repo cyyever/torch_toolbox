@@ -6,10 +6,11 @@ if has_torch_geometric:
     import torch_geometric.utils
 
 from cyy_torch_toolbox.dataset_util import GraphDatasetUtil
-from cyy_torch_toolbox.model_with_loss import ModelWithLoss
+
+from .base import ModelEvaluator
 
 
-class GraphModelWithLoss(ModelWithLoss):
+class GraphModelWithLoss(ModelEvaluator):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.node_and_neighbour_index_map = {}
@@ -76,3 +77,7 @@ class GraphModelWithLoss(ModelWithLoss):
     def _forward_model(self, mask, **kwargs) -> dict | torch.Tensor:
         output = super()._forward_model(**kwargs)
         return output[mask]
+
+
+class GraphModelEvaluator(GraphModelWithLoss):
+    pass

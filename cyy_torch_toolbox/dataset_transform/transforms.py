@@ -43,6 +43,7 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
             return {"input": sample_input, "target": target}
         case _:
             return data
+    raise NotImplementedError()
 
 
 def __get_int_target(

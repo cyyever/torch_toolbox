@@ -33,11 +33,11 @@ def get_cuda_device_memory_info(consider_cache: bool = False) -> dict:
     return result
 
 
-def get_cpu_device():
+def get_cpu_device() -> torch.device:
     return torch.device("cpu")
 
 
-def get_cuda_devices():
+def get_cuda_devices() -> list[torch.device]:
     device_count = torch.cuda.device_count()
     assert device_count > 0
     return [
@@ -45,7 +45,7 @@ def get_cuda_devices():
     ]
 
 
-def get_devices():
+def get_devices() -> list[torch.device]:
     if torch.cuda.is_available():
         return get_cuda_devices()
     if torch.backends.mps.is_available():
@@ -91,7 +91,7 @@ class CUDADeviceGreedyAllocator:
         return devices[0]
 
 
-def get_device(max_needed_bytes=None, use_cuda_only=False):
+def get_device(max_needed_bytes=None, use_cuda_only: bool = False) -> torch.device:
     if torch.cuda.is_available():
         device = CUDADeviceGreedyAllocator().get_device(
             max_needed_bytes=max_needed_bytes
