@@ -118,7 +118,10 @@ class DefaultConfig:
             self.dc_config.dataset_name, self.model_config.model_name
         )
         trainer = Trainer(
-            model_with_loss, dc, hyper_parameter, hook_config=self.hook_config
+            model_with_loss=model_with_loss,
+            dataset_collection=dc,
+            hyper_parameter=hyper_parameter,
+            hook_config=self.hook_config,
         )
         trainer.set_save_dir(self.get_save_dir())
         trainer.cache_transforms = self.cache_transforms
