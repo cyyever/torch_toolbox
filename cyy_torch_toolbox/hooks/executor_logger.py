@@ -19,9 +19,6 @@ class ExecutorLogger(Hook):
                 MachineLearningPhase.Training
             ),
         )
-        get_logger().info(
-            "dataset size is %s", get_dataset_size(model_executor.dataset)
-        )
         get_logger().info("model type is %s", model_executor.model.__class__)
         get_logger().debug("model is %s", model_executor.model)
         get_logger().debug("loss function is %s", model_executor.loss_fun)
