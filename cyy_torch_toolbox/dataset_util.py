@@ -43,7 +43,7 @@ class DatasetUtil:
     def decompose(self) -> None | dict:
         return None
 
-    def get_samples(self, indices=None) -> Generator:
+    def get_samples(self, indices: Sequence | None = None) -> Generator:
         items = select_item(dataset=self.dataset, indices=indices, mask=self.get_mask())
         if self.__transforms is None:
             return items
