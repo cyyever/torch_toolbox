@@ -28,16 +28,18 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
                 return res
     if extract_index:
         match data:
-            case {"data": real_data, "index": index} | [index, real_data]:
+            case {"data": real_data, "index": index}:
+                # | [index, real_data]:
+                # print("real_data is", real_data)
                 return default_data_extraction(real_data, extract_index=False) | {
                     "index": index
                 }
             case {"input": sample_input, "target": target, "index": index}:
                 return data
-            case {"target": target}:
-                return data
+            # case {"target": target}:
+            #     return data
             case _:
-                raise NotImplementedError(data)
+                return default_data_extraction(data, extract_index=False)
     match data:
         case [sample_input, target]:
             return {"input": sample_input, "target": target}

@@ -268,10 +268,10 @@ class Executor(HookCollection):
         return inputs, batch_dim, input_features
 
     def get_optimizer(self) -> Any:
-        raise NotImplementedError()
+        return None
 
     def get_lr_scheduler(self) -> Any:
-        raise NotImplementedError()
+        return None
 
     def _execute_epoch(
         self, epoch: int, in_training: bool, need_backward: bool = False
