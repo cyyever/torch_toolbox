@@ -3,12 +3,11 @@ import contextlib
 import torch
 from cyy_naive_lib.log import get_logger
 
-from cyy_torch_toolbox.ml_type import (ModelExecutorHookPoint,
-                                       StopExecutingException)
-from cyy_torch_toolbox.model_executor import ModelExecutor
+from cyy_torch_toolbox.executor import Executor
+from cyy_torch_toolbox.ml_type import ExecutorHookPoint, StopExecutingException
 
 
-class Inferencer(ModelExecutor):
+class Inferencer(Executor):
     def inference(self, use_grad: bool = False, **kwargs: dict) -> bool:
         error_return: bool = False
         try:
@@ -22,7 +21,7 @@ class Inferencer(ModelExecutor):
             ):
                 self.model.zero_grad(set_to_none=True)
                 self._execute_epoch(epoch=1, need_backward=use_grad, in_training=False)
-            self.exec_hooks(ModelExecutorHookPoint.AFTER_EXECUTE)
+            self.exec_hooks(ExecutorHookPoint.AFTER_EXECUTE)
         except StopExecutingException:
             get_logger().warning("stop inference")
             error_return = True

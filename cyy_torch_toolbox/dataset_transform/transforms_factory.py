@@ -27,7 +27,7 @@ from .transforms import (Transforms, multi_nli_data_extraction,
 
 
 def get_mean_and_std(dc):
-    dataset = torch.utils.data.ConcatDataset(list(dc.foreach_raw_dataset()))
+    dataset = torch.utils.data.ConcatDataset(list(dc.foreach_dataset()))
     transforms = Transforms()
     transforms.append(
         key=TransformType.Input, transform=torchvision.transforms.ToTensor()

@@ -17,6 +17,8 @@ def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:
                 graph = dataset[0]
                 return graph["mask"].sum()
     match dataset:
+        case torch.utils.data.dataset.ConcatDataset():
+            return sum(get_dataset_size(d) for d in dataset.datasets)
         case torch.utils.data.IterableDataset():
             cnt: int = 0
             for _ in dataset:
@@ -56,14 +58,15 @@ def dataset_with_indices(
     if has_torch_geometric:
         if isinstance(dataset, torch_geometric.data.dataset.Dataset):
             return dataset
-    if isinstance(dataset, torch.utils.data.IterableDataset):
-        dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
-    if isinstance(dataset, torchdata.datapipes.iter.IterDataPipe):
-        dataset = dataset.enumerate()
-    else:
-        dataset = torchdata.datapipes.map.Mapper(
-            KeyPipe(dataset), __add_index_to_map_item
-        )
+    match dataset:
+        case torch.utils.data.IterableDataset():
+            dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
+        case torchdata.datapipes.iter.IterDataPipe():
+            dataset = dataset.enumerate()
+        case _:
+            dataset = torchdata.datapipes.map.Mapper(
+                KeyPipe(dataset), __add_index_to_map_item
+            )
     assert not hasattr(dataset, "dataset")
     setattr(dataset, "dataset", old_dataset)
     return dataset

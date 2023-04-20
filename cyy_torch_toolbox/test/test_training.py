@@ -3,8 +3,7 @@ import torch
 from cyy_torch_toolbox.default_config import DefaultConfig
 from cyy_torch_toolbox.dependency import has_torchtext, has_torchvision
 from cyy_torch_toolbox.device import CUDADeviceGreedyAllocator
-from cyy_torch_toolbox.ml_type import (ModelExecutorHookPoint,
-                                       StopExecutingException)
+from cyy_torch_toolbox.ml_type import ExecutorHookPoint, StopExecutingException
 
 
 def stop_training(*args, **kwargs):
@@ -19,7 +18,7 @@ def test_vision_training():
     config.hyper_parameter_config.learning_rate = 0.01
     trainer = config.create_trainer()
     trainer.append_named_hook(
-        ModelExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
+        ExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
     )
     # trainer.model_with_loss.compile_model()
     trainer.train()
@@ -40,6 +39,6 @@ def test_text_training():
     trainer = config.create_trainer()
     # trainer.model_with_loss.compile_model()
     trainer.append_named_hook(
-        ModelExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
+        ExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
     )
     trainer.train()

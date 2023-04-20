@@ -15,7 +15,7 @@ from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 from cyy_torch_toolbox.model_factory import ModelConfig, get_model_with_loss
-from cyy_torch_toolbox.model_with_loss import ModelWithLoss
+from cyy_torch_toolbox.model_with_loss import ModelEvaluator
 from cyy_torch_toolbox.reproducible_env import global_reproducible_env
 from cyy_torch_toolbox.trainer import Trainer
 
@@ -99,7 +99,7 @@ class DefaultConfig:
     def create_trainer(
         self,
         dc: DatasetCollection | None = None,
-        model_with_loss: ModelWithLoss | None = None,
+        model_with_loss: ModelEvaluator | None = None,
         model: None | torch.nn.Module = None,
     ) -> Trainer:
         assert not (model and model_with_loss)
@@ -118,7 +118,10 @@ class DefaultConfig:
             self.dc_config.dataset_name, self.model_config.model_name
         )
         trainer = Trainer(
-            model_with_loss, dc, hyper_parameter, hook_config=self.hook_config
+            model_with_loss=model_with_loss,
+            dataset_collection=dc,
+            hyper_parameter=hyper_parameter,
+            hook_config=self.hook_config,
         )
         trainer.set_save_dir(self.get_save_dir())
         trainer.cache_transforms = self.cache_transforms

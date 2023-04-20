@@ -29,7 +29,7 @@ class TransformType(IntEnum):
     TargetBatch = auto()
 
 
-class ModelExecutorHookPoint(IntEnum):
+class ExecutorHookPoint(IntEnum):
     BEFORE_EXECUTE = auto()
     AFTER_EXECUTE = auto()
     BEFORE_EPOCH = auto()

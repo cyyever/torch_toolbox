@@ -5,9 +5,6 @@ from cyy_torch_toolbox.metrics.prob_metric import ProbabilityMetric
 
 
 class ClassificationInferencer(Inferencer):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def inference(self, **kwargs) -> bool:
         sample_prob = kwargs.get("sample_prob", False)
         if sample_prob:
