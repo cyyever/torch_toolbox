@@ -3,15 +3,15 @@ from typing import Callable
 
 import torch
 from cyy_naive_lib.log import get_logger
-from torch import nn
-from torch.nn.parallel import DistributedDataParallel as DDP
-
-from cyy_torch_toolbox.device import get_devices
+# from cyy_torch_toolbox.device import get_devices
 from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
 # from cyy_torch_toolbox.model_transform.checkpointed_model import \
 #     get_checkpointed_model
 from cyy_torch_toolbox.model_util import ModelUtil
 from cyy_torch_toolbox.tensor import tensor_to
+from torch import nn
+
+# from torch.nn.parallel import DistributedDataParallel as DDP
 
 
 class ModelWithLoss:
@@ -231,6 +231,10 @@ class ModelWithLoss:
                 )
 
 
+class ModelEvaluator(ModelWithLoss):
+    pass
+
+
 # class CheckPointedModelWithLoss:
 #     def __init__(self, model_with_loss: ModelWithLoss):
 #         self.__model_with_loss = model_with_loss.replace_model(
@@ -252,7 +256,7 @@ class ModelWithLoss:
 #         return self.__model_with_loss.__call__(**kwargs)
 
 
-class VisionModelWithLoss(ModelWithLoss):
+class VisionModelEvaluator(ModelEvaluator):
     pass
     # def __call__(self, inputs, **kwargs):
     #     inputs = tensor_to(inputs, non_blocking=True, memory_format=torch.channels_last)

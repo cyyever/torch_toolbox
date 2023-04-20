@@ -5,33 +5,24 @@ from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.classification_inferencer import \
     ClassificationInferencer
-from cyy_torch_toolbox.dataset_collection import DatasetCollection
+from cyy_torch_toolbox.executor import Executor
 from cyy_torch_toolbox.hooks.keep_model import KeepModelHook
-from cyy_torch_toolbox.hyper_parameter import HyperParameter
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.metric_visualizers.batch_loss_logger import \
     BatchLossLogger
-from cyy_torch_toolbox.ml_type import (MachineLearningPhase,
-                                       ModelExecutorHookPoint, ModelType,
-                                       StopExecutingException)
-from cyy_torch_toolbox.model_executor import ModelExecutor
-from cyy_torch_toolbox.model_with_loss import ModelWithLoss
+from cyy_torch_toolbox.ml_type import (ExecutorHookPoint, MachineLearningPhase,
+                                       ModelType, StopExecutingException)
+from cyy_torch_toolbox.model_with_loss import ModelEvaluator
 
 
-class Trainer(ModelExecutor):
+class Trainer(Executor):
     def __init__(
         self,
-        model_with_loss: ModelWithLoss,
-        dataset_collection: DatasetCollection,
-        hyper_parameter: HyperParameter,
-        **kwargs: dict
+        **kwargs: dict,
     ) -> None:
         super().__init__(
-            model_with_loss=model_with_loss,
-            dataset_collection=dataset_collection,
             phase=MachineLearningPhase.Training,
-            hyper_parameter=hyper_parameter,
-            **kwargs
+            **kwargs,
         )
         self.__inferencers: dict = {}
         self.append_hook(BatchLossLogger(), "batch_loss_logger")
@@ -55,7 +46,7 @@ class Trainer(ModelExecutor):
     def get_inferencer(
         self, phase: MachineLearningPhase, copy_model: bool = False
     ) -> Inferencer:
-        model_with_loss: ModelWithLoss = self.copy_model_with_loss(deepcopy=copy_model)
+        model_with_loss: ModelEvaluator = self.copy_model_with_loss(deepcopy=copy_model)
 
         inferencer: Inferencer | None = None
         if model_with_loss.model_type == ModelType.Classification:
@@ -115,7 +106,7 @@ class Trainer(ModelExecutor):
         save_best_model: bool = False,
         save_epoch_model: bool = False,
         save_last_model: bool = False,
-        **kwargs: dict
+        **kwargs: dict,
     ) -> None:
         keep_model_hook = self.get_hook("keep_model_hook")
         keep_model_hook.save_best_model = save_best_model
@@ -160,7 +151,7 @@ class Trainer(ModelExecutor):
                                 inferencer.inference(epoch=epoch, use_grad=False)
 
                             self.exec_hooks(
-                                ModelExecutorHookPoint.AFTER_VALIDATION,
+                                ExecutorHookPoint.AFTER_VALIDATION,
                                 epoch=epoch,
                             )
         except StopExecutingException:
@@ -168,7 +159,7 @@ class Trainer(ModelExecutor):
         finally:
             self._wait_stream()
         self.exec_hooks(
-            ModelExecutorHookPoint.AFTER_EXECUTE,
+            ExecutorHookPoint.AFTER_EXECUTE,
             epoch=self.hyper_parameter.epoch,
         )
 

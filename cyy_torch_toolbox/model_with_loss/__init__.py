@@ -11,9 +11,9 @@ if module_dir not in sys.path:
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.ml_type import DatasetType, ModelType
 
-from .base import ModelWithLoss, VisionModelWithLoss
-from .graph import GraphModelWithLoss
-from .text import TextModelWithLoss
+from .base import ModelEvaluator, VisionModelEvaluator
+from .graph import GraphModelEvaluator
+from .text import TextModelEvaluator
 
 
 def get_model_with_loss(
@@ -21,14 +21,14 @@ def get_model_with_loss(
     dataset_collection: DatasetCollection,
     model_type: None | ModelType = None,
     model_kwargs: dict | None = None,
-) -> ModelWithLoss:
-    model_with_loss_fun = ModelWithLoss
+) -> ModelEvaluator:
+    model_with_loss_fun = ModelEvaluator
     if dataset_collection.dataset_type == DatasetType.Vision:
-        model_with_loss_fun = VisionModelWithLoss
+        model_with_loss_fun = VisionModelEvaluator
     elif dataset_collection.dataset_type == DatasetType.Text:
-        model_with_loss_fun = TextModelWithLoss
+        model_with_loss_fun = TextModelEvaluator
     elif dataset_collection.dataset_type == DatasetType.Graph:
-        model_with_loss_fun = GraphModelWithLoss
+        model_with_loss_fun = GraphModelEvaluator
     if model_kwargs is None:
         model_kwargs = {}
     loss_fun_name = model_kwargs.get("loss_fun_name", None)
