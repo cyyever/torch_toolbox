@@ -11,8 +11,9 @@ from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        ModelType)
 
 if has_hugging_face:
-    import transformers
-    from cyy_torch_toolbox.models.huggingface_models import huggingface_models
+    from cyy_torch_toolbox.models.huggingface_models import (
+        get_hugging_face_model_constructors,
+    )
 
 from cyy_naive_lib.log import get_logger
 
@@ -62,37 +63,7 @@ def _get_model_info() -> dict:
                     get_logger().debug("ignore model_name %s", model_name)
 
     if has_hugging_face:
-        for model_name in huggingface_models:
-            full_model_name = "sequence_classification_" + model_name
-
-            def create_model(model_name, pretrained, **model_kwargs):
-                pretrained_model = (
-                    transformers.AutoModelForSequenceClassification.from_pretrained(
-                        model_name, **model_kwargs
-                    )
-                )
-                if pretrained:
-                    return pretrained_model
-                get_logger().warning("use huggingface without pretrained parameters")
-                old_embedding = pretrained_model.get_input_embeddings()
-                config = transformers.AutoConfig.from_pretrained(
-                    model_name, **model_kwargs
-                )
-                model = transformers.AutoModelForSequenceClassification.from_config(
-                    config
-                )
-                model.set_input_embeddings(old_embedding)
-                return model
-
-            if full_model_name.lower() not in __model_info[DatasetType.Text]:
-                __model_info[DatasetType.Text][full_model_name.lower()] = (
-                    full_model_name,
-                    functools.partial(
-                        create_model,
-                        model_name,
-                    ),
-                    None,
-                )
+        __model_info[DatasetType.Text] |= get_hugging_face_model_constructors()
     return __model_info
 
 
@@ -137,13 +108,14 @@ def get_model(
     # use_checkpointing = model_kwargs.pop("use_checkpointing", False)
     while True:
         try:
-            model_name, model_constructor, repo = model_info.get(
-                dataset_collection.dataset_type, {}
-            ).get(name.lower(), (None, None, None))
+            model_constructors = model_info.get(dataset_collection.dataset_type, {})
+            model_name, model_constructor, repo = model_constructors.get(
+                name.lower(), (None, None, None)
+            )
             if model_constructor is None:
                 raise NotImplementedError(
                     f"unsupported model {name}, supported models are "
-                    + str(model_info.keys())
+                    + str(model_constructors.keys())
                 )
             get_logger().info("use model %s", model_name)
             model = model_constructor(**final_model_kwargs)
