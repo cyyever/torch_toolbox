@@ -2,12 +2,12 @@ import os
 import pickle
 
 import torch
-import torch.nn as nn
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.source_code.tarball_source import TarballSource
+from torch import nn
 
 from cyy_torch_toolbox.dataset_transform.tokenizer import SpacyTokenizer
-from cyy_torch_toolbox.model_with_loss import ModelWithLoss
+from cyy_torch_toolbox.model_with_loss import ModelEvaluator
 
 
 class PretrainedWordVector:
@@ -18,22 +18,22 @@ class PretrainedWordVector:
 
     def __init__(self, name: str):
         self.__name = name
-        if name not in PretrainedWordVector.__word_vector_cache:
-            PretrainedWordVector.__word_vector_cache[name] = self.__download()
 
     @property
     def word_vector_dict(self):
+        if self.__name not in PretrainedWordVector.__word_vector_cache:
+            PretrainedWordVector.__word_vector_cache[self.__name] = self.__download()
         return PretrainedWordVector.__word_vector_cache[self.__name]
 
     def load_to_model(
-        self, model_with_loss: ModelWithLoss, tokenizer, freeze: bool = False
+        self, model_with_loss: ModelEvaluator, tokenizer, freeze_embedding: bool = False
     ) -> None:
         assert isinstance(tokenizer, SpacyTokenizer)
         itos = tokenizer.vocab.get_itos()
 
-        def __load_embedding(_, layer, *__):
+        def __load_embedding(name, module, module_util):
             unknown_token_cnt = 0
-            embeddings = layer.weight.tolist()
+            embeddings = module.weight.tolist()
             for idx, token in enumerate(itos):
                 word_vector = self.word_vector_dict.get(token, None)
                 if word_vector is None:
@@ -43,11 +43,11 @@ class PretrainedWordVector:
                 else:
                     tokenizer.unusual_words.add(token)
                     unknown_token_cnt += 1
-            assert list(layer.weight.shape) == [
+            assert list(module.weight.shape) == [
                 len(itos),
                 len(next(iter(self.word_vector_dict.values()))),
             ], "Shape of weight does not match num_embeddings and embedding_dim"
-            layer.weight = nn.Parameter(torch.tensor(embeddings))
+            module.weight = nn.Parameter(torch.tensor(embeddings))
             if unknown_token_cnt != 0:
                 get_logger().info(
                     "there are %s unrecognized tokens in word vectors for a total of %s",
@@ -59,7 +59,7 @@ class PretrainedWordVector:
         model_with_loss.model_util.change_modules(
             f=__load_embedding, module_type=nn.Embedding
         )
-        if freeze:
+        if freeze_embedding:
             model_with_loss.model_util.freeze_modules(module_type=nn.Embedding)
 
     @classmethod
