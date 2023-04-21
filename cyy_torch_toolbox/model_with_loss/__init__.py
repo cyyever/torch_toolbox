@@ -48,6 +48,6 @@ def get_model_with_loss(
         PretrainedWordVector(word_vector_name).load_to_model(
             model_with_loss=model_with_loss,
             tokenizer=dataset_collection.tokenizer,
-            freeze=model_kwargs.get("freeze_word_vector", False),
+            freeze_embedding=model_kwargs.get("freeze_word_vector", False),
         )
     return model_with_loss
