@@ -9,11 +9,17 @@ module_dir = os.path.realpath(
 if module_dir not in sys.path:
     sys.path.append(module_dir)
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
+from cyy_torch_toolbox.dependency import has_hugging_face
 from cyy_torch_toolbox.ml_type import DatasetType, ModelType
 
 from .base import ModelEvaluator, VisionModelEvaluator
 from .graph import GraphModelEvaluator
 from .text import TextModelEvaluator
+
+if has_hugging_face:
+    import transformers
+
+    from .hugging_face import HuggingFaceModelEvaluator
 
 
 def get_model_with_loss(
@@ -26,7 +32,12 @@ def get_model_with_loss(
     if dataset_collection.dataset_type == DatasetType.Vision:
         model_with_loss_fun = VisionModelEvaluator
     elif dataset_collection.dataset_type == DatasetType.Text:
-        model_with_loss_fun = TextModelEvaluator
+        if has_hugging_face and isinstance(
+            model, transformers.modeling_utils.PreTrainedModel
+        ):
+            model_with_loss_fun = HuggingFaceModelEvaluator
+        else:
+            model_with_loss_fun = TextModelEvaluator
     elif dataset_collection.dataset_type == DatasetType.Graph:
         model_with_loss_fun = GraphModelEvaluator
     if model_kwargs is None:
