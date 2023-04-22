@@ -14,8 +14,9 @@ from cyy_torch_toolbox.hook_config import HookConfig
 from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
-from cyy_torch_toolbox.model_factory import ModelConfig, get_model_with_loss
-from cyy_torch_toolbox.model_with_loss import ModelEvaluator
+from cyy_torch_toolbox.model_factory import ModelConfig
+from cyy_torch_toolbox.model_with_loss import (ModelEvaluator,
+                                               get_model_evaluator)
 from cyy_torch_toolbox.reproducible_env import global_reproducible_env
 from cyy_torch_toolbox.trainer import Trainer
 
@@ -99,26 +100,26 @@ class DefaultConfig:
     def create_trainer(
         self,
         dc: DatasetCollection | None = None,
-        model_with_loss: ModelEvaluator | None = None,
+        model_evaluator: ModelEvaluator | None = None,
         model: None | torch.nn.Module = None,
     ) -> Trainer:
-        assert not (model and model_with_loss)
+        assert not (model and model_evaluator)
         if dc is None:
             dc = self.create_dataset_collection()
         if model is not None:
-            model_with_loss = get_model_with_loss(model, dc)
+            model_evaluator = get_model_evaluator(model, dc)
 
-        if model_with_loss is None:
-            model_with_loss = self.model_config.get_model(dc)
+        if model_evaluator is None:
+            model_evaluator = self.model_config.get_model(dc)
         if hasattr(dc, "adapt_to_model"):
             dc.adapt_to_model(
-                model_with_loss.get_underlying_model(), self.model_config.model_kwargs
+                model_evaluator.get_underlying_model(), self.model_config.model_kwargs
             )
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
             self.dc_config.dataset_name, self.model_config.model_name
         )
         trainer = Trainer(
-            model_with_loss=model_with_loss,
+            model_evaluator=model_evaluator,
             dataset_collection=dc,
             hyper_parameter=hyper_parameter,
             hook_config=self.hook_config,

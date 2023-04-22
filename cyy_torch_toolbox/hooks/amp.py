@@ -28,7 +28,7 @@ class AMP(Hook):
         if self.__ctx is None or device_type != self.__ctx.device:
             self.__ctx = torch.autocast(device_type=device_type)
         with self.__ctx:
-            result = model_executor._model_with_loss(**model_kwargs)
+            result = model_executor.running_model_evaluator(**model_kwargs)
             model_executor._data["forward_result"] = result
 
     def _model_backward(self, loss, **kwargs):

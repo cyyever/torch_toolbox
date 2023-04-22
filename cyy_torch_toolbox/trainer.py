@@ -1,4 +1,5 @@
 import contextlib
+import copy
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -44,14 +45,16 @@ class Trainer(Executor):
         return self.__inferencers.get(phase, None)
 
     def get_inferencer(
-        self, phase: MachineLearningPhase, copy_model: bool = False
+        self, phase: MachineLearningPhase, deepcopy_model: bool = False
     ) -> Inferencer:
-        model_with_loss: ModelEvaluator = self.copy_model_with_loss(deepcopy=copy_model)
-
+        if deepcopy_model:
+            model_evaluator: ModelEvaluator = copy.deepcopy(self.model_evaluator)
+        else:
+            model_evaluator: ModelEvaluator = copy.copy(self.model_evaluator)
         inferencer: Inferencer | None = None
-        if model_with_loss.model_type == ModelType.Classification:
+        if model_evaluator.model_type == ModelType.Classification:
             inferencer = ClassificationInferencer(
-                model_with_loss,
+                model_evaluator,
                 self.dataset_collection,
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
@@ -59,7 +62,7 @@ class Trainer(Executor):
             )
         if inferencer is None:
             raise RuntimeError(
-                "Unsupported model type:" + str(model_with_loss.model_type)
+                "Unsupported model type:" + str(model_evaluator.model_type)
             )
         inferencer.cache_transforms = self.cache_transforms
         inferencer.set_device(self.device)
@@ -140,7 +143,9 @@ class Trainer(Executor):
                                 phase not in self.__inferencers
                                 and self.dataset_collection.has_dataset(phase=phase)
                             ):
-                                inferencer = self.get_inferencer(phase)
+                                inferencer = self.get_inferencer(
+                                    phase=phase, deepcopy_model=False
+                                )
                                 inferencer.disable_hook("logger")
                                 self.__inferencers[phase] = inferencer
                             inferencer = self.__inferencers.get(phase, None)
