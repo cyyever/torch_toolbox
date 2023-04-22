@@ -19,7 +19,7 @@ from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
 from cyy_torch_toolbox.model_with_loss import (ModelEvaluator,
-                                               get_model_with_loss)
+                                               get_model_evaluator)
 
 __model_info: dict = {}
 
@@ -172,6 +172,6 @@ class ModelConfig:
         model = get_model(
             name=self.model_name, dataset_collection=dc, model_kwargs=model_kwargs
         )
-        return get_model_with_loss(
+        return get_model_evaluator(
             model=model, dataset_collection=dc, model_kwargs=model_kwargs
         )

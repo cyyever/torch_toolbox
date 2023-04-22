@@ -1,3 +1,4 @@
+import copy
 import os
 
 from cyy_naive_lib.storage import DataStorage
@@ -42,7 +43,7 @@ class KeepModelHook(Hook):
             if self.best_model is None or acc > self.best_model[1]:
                 self.__best_model.set_data(
                     (
-                        trainer.copy_model_with_loss().model.to(
+                        copy.deepcopy(trainer.model_evaluator.model).to(
                             get_cpu_device(), non_blocking=True
                         ),
                         acc,

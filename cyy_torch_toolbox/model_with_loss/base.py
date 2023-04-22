@@ -14,7 +14,7 @@ from torch import nn
 # from torch.nn.parallel import DistributedDataParallel as DDP
 
 
-class ModelWithLoss:
+class ModelEvaluator:
     """
     Combine a model with a loss function.
     """
@@ -152,7 +152,7 @@ class ModelWithLoss:
                 raise NotImplementedError(type(real_inputs))
 
     def replace_model(self, model):
-        return ModelWithLoss(
+        return ModelEvaluator(
             model=model,
             loss_fun=self.loss_fun,
             model_type=self.model_type,
@@ -231,18 +231,14 @@ class ModelWithLoss:
                 )
 
 
-class ModelEvaluator(ModelWithLoss):
-    pass
-
-
 # class CheckPointedModelWithLoss:
-#     def __init__(self, model_with_loss: ModelWithLoss):
-#         self.__model_with_loss = model_with_loss.replace_model(
-#             get_checkpointed_model(model_with_loss.model)
+#     def __init__(self, model_evaluator:ModelEvaluator):
+#         self.__model_evaluator = model_evaluator.replace_model(
+#             get_checkpointed_model(model_evaluator.model)
 #         )
 
 #     def __getattr__(self, attr):
-#         return getattr(self.__model_with_loss, attr)
+#         return getattr(self.__model_evaluator, attr)
 
 #     def __call__(self, **kwargs) -> dict:
 #         phase = kwargs["phase"]
@@ -253,7 +249,7 @@ class ModelEvaluator(ModelWithLoss):
 #             inputs = kwargs.get("inputs", None)
 #             if inputs is not None:
 #                 inputs.requires_grad_()
-#         return self.__model_with_loss.__call__(**kwargs)
+#         return self.__model_evaluator.__call__(**kwargs)
 
 
 class VisionModelEvaluator(ModelEvaluator):
@@ -267,7 +263,7 @@ class VisionModelEvaluator(ModelEvaluator):
     #     super().to(device=device, non_blocking=non_blocking)
 
 
-# class ParallelModelWithLoss(ModelWithLoss):
+# class ParallelModelWithLoss(ModelEvaluator):
 #     def __init__(self, *args, **kwargs):
 #         super().__init__(*args, **kwargs)
 #         assert torch.cuda.is_available()
@@ -282,9 +278,9 @@ class VisionModelEvaluator(ModelEvaluator):
 #         self._model = DDP(self._original_model)
 
 #     @classmethod
-#     def create(cls, model_with_loss: ModelWithLoss):
+#     def create(cls, model_evaluator:ModelEvaluator):
 #         return cls(
-#             model=model_with_loss.model,
-#             loss_fun=model_with_loss.loss_fun,
-#             model_type=model_with_loss.model_type,
+#             model=model_evaluator.model,
+#             loss_fun=model_evaluator.loss_fun,
+#             model_type=model_evaluator.model_type,
 #         )
