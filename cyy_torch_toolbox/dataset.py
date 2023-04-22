@@ -61,6 +61,7 @@ def dataset_with_indices(
     match dataset:
         case torch.utils.data.IterableDataset():
             dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
+    match dataset:
         case torchdata.datapipes.iter.IterDataPipe():
             dataset = dataset.enumerate()
         case _:
