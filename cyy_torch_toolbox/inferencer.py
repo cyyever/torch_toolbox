@@ -9,7 +9,7 @@ from cyy_torch_toolbox.ml_type import ExecutorHookPoint, StopExecutingException
 
 class Inferencer(Executor):
     def inference(self, use_grad: bool = False, **kwargs: dict) -> bool:
-        error_return: bool = False
+        has_failure: bool = False
         try:
             self._prepare_execution(**kwargs)
             with (
@@ -24,10 +24,10 @@ class Inferencer(Executor):
             self.exec_hooks(ExecutorHookPoint.AFTER_EXECUTE)
         except StopExecutingException:
             get_logger().warning("stop inference")
-            error_return = True
+            has_failure = True
         finally:
             self._wait_stream()
-        return not error_return
+        return not has_failure
 
     def _get_backward_loss(self, result):
         return result["normalized_batch_loss"]
