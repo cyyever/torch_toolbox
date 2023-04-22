@@ -37,7 +37,7 @@ class Executor(HookCollection):
     ) -> None:
         super().__init__()
         self._data: dict = {}
-        self._model_evaluator: ModelEvaluator = model_evaluator
+        self.__model_evaluator: ModelEvaluator = model_evaluator
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase = phase
         self.__hyper_parameter = hyper_parameter
@@ -48,7 +48,7 @@ class Executor(HookCollection):
         self.append_hook(ExecutorLogger(), "logger")
         self.append_hook(
             PerformanceMetric(
-                model_type=self._model_evaluator.model_type,
+                model_type=self.__model_evaluator.model_type,
                 profile=hook_config.profile if hook_config is not None else False,
             ),
             "performance_metric",
@@ -119,19 +119,19 @@ class Executor(HookCollection):
                 phase=self.__phase,
                 batch_size=self._get_batch_size(),
                 device=self.device,
-                model_type=self._model_evaluator.model_type,
+                model_type=self.__model_evaluator.model_type,
                 cache_transforms=self.cache_transforms,
             )
         return self.__dataloader
 
     @property
     def running_model_evaluator(self) -> ModelEvaluator:
-        return self._model_evaluator
+        return self.__model_evaluator
 
     @property
     def model_evaluator(self) -> ModelEvaluator:
         self._wait_stream()
-        return self._model_evaluator
+        return self.__model_evaluator
 
     @property
     def model_util(self) -> ModelUtil:
@@ -139,14 +139,14 @@ class Executor(HookCollection):
 
     @property
     def loss_fun(self):
-        return self._model_evaluator.loss_fun
+        return self.__model_evaluator.loss_fun
 
     @property
     def model(self) -> torch.nn.Module:
         return self.model_evaluator.model
 
     def replace_model(self, fun: Callable) -> None:
-        self._model_evaluator = self.model_evaluator.replace_model(fun(self.model))
+        self.__model_evaluator = self.model_evaluator.replace_model(fun(self.model))
 
     def _prepare_execution(self, **kwargs):
         self._data.clear()
@@ -213,7 +213,7 @@ class Executor(HookCollection):
 
     def set_model_evaluator(self, model_evaluator: ModelEvaluator) -> None:
         self._wait_stream()
-        self._model_evaluator = model_evaluator
+        self.__model_evaluator = model_evaluator
         if self.save_dir is not None:
             shutil.rmtree(
                 os.path.join(self.save_dir, "model_and_loss.pk"), ignore_errors=True
@@ -227,7 +227,7 @@ class Executor(HookCollection):
 
     def offload_from_gpu(self):
         self._wait_stream()
-        self._model_evaluator.offload_from_memory()
+        self.__model_evaluator.offload_from_memory()
         # if self.__dataloader is not None:
         #     del self.__dataloader
         #     self.__dataloader = None
@@ -284,7 +284,7 @@ class Executor(HookCollection):
                 if (
                     self._get_batch_size() != 1
                     and batch["batch_size"] == 1
-                    and self._model_evaluator.model_util.have_module(
+                    and self.__model_evaluator.model_util.have_module(
                         module_type=torch.nn.BatchNorm2d
                     )
                 ):
@@ -312,7 +312,7 @@ class Executor(HookCollection):
                 )
                 result = self._data.pop("forward_result")
             else:
-                result = self._model_evaluator(**kwargs)
+                result = self.__model_evaluator(**kwargs)
 
             get_logger().debug("use dataset size %s", self._data["dataset_size"])
             if result["is_averaged_loss"]:
