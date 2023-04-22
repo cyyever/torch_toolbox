@@ -7,7 +7,7 @@ from cyy_naive_lib.source_code.tarball_source import TarballSource
 from torch import nn
 
 from cyy_torch_toolbox.dataset_transform.tokenizer import SpacyTokenizer
-from cyy_torch_toolbox.model_with_loss import ModelEvaluator
+from cyy_torch_toolbox.model_evaluator import ModelEvaluator
 
 
 class PretrainedWordVector:

@@ -13,7 +13,7 @@ from cyy_torch_toolbox.metric_visualizers.batch_loss_logger import \
     BatchLossLogger
 from cyy_torch_toolbox.ml_type import (ExecutorHookPoint, MachineLearningPhase,
                                        ModelType, StopExecutingException)
-from cyy_torch_toolbox.model_with_loss import ModelEvaluator
+from cyy_torch_toolbox.model_evaluator import ModelEvaluator
 
 
 class Trainer(Executor):

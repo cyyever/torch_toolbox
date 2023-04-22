@@ -14,9 +14,9 @@ from cyy_torch_toolbox.hook_config import HookConfig
 from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
-from cyy_torch_toolbox.model_factory import ModelConfig
-from cyy_torch_toolbox.model_with_loss import (ModelEvaluator,
+from cyy_torch_toolbox.model_evaluator import (ModelEvaluator,
                                                get_model_evaluator)
+from cyy_torch_toolbox.model_factory import ModelConfig
 from cyy_torch_toolbox.reproducible_env import global_reproducible_env
 from cyy_torch_toolbox.trainer import Trainer
 

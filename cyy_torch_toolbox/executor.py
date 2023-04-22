@@ -22,8 +22,8 @@ from cyy_torch_toolbox.metric_visualizers.performance_metric_logger import \
 from cyy_torch_toolbox.metrics.performance_metric import PerformanceMetric
 from cyy_torch_toolbox.ml_type import (DatasetType, ExecutorHookPoint,
                                        MachineLearningPhase)
+from cyy_torch_toolbox.model_evaluator import ModelEvaluator
 from cyy_torch_toolbox.model_util import ModelUtil
-from cyy_torch_toolbox.model_with_loss import ModelEvaluator
 
 
 class Executor(HookCollection):

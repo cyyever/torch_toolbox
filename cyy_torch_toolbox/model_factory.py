@@ -18,7 +18,7 @@ if has_hugging_face:
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.model_with_loss import (ModelEvaluator,
+from cyy_torch_toolbox.model_evaluator import (ModelEvaluator,
                                                get_model_evaluator)
 
 __model_info: dict = {}
