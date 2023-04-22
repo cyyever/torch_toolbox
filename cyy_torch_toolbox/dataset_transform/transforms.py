@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.dataset import select_item
-from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
+from cyy_torch_toolbox.dependency import has_torch_geometric
 from cyy_torch_toolbox.ml_type import TransformType
 from cyy_torch_toolbox.tensor import tensor_to
 from torch.utils.data._utils.collate import default_collate
@@ -28,18 +28,18 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
                 return res
     if extract_index:
         match data:
-            case {"data": real_data, "index": index}:
-                # | [index, real_data]:
-                # print("real_data is", real_data)
+            case {"data": real_data, "index": index} | [index, real_data]:
                 return default_data_extraction(real_data, extract_index=False) | {
                     "index": index
                 }
             case {"input": sample_input, "target": target, "index": index}:
                 return data
+            case _:
+                raise NotImplementedError()
             # case {"target": target}:
             #     return data
-            case _:
-                return default_data_extraction(data, extract_index=False)
+            # case _:
+            #     return default_data_extraction(data, extract_index=False)
     match data:
         case [sample_input, target]:
             return {"input": sample_input, "target": target}
