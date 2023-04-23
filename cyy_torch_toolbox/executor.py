@@ -81,7 +81,6 @@ class Executor(HookCollection):
         self.__save_dir = save_dir
         if save_dir is not None:
             data_dir = os.path.join(save_dir, "visualizer")
-            os.makedirs(data_dir, exist_ok=True)
             for hook in self.get_hooks():
                 if isinstance(hook, MetricVisualizer):
                     hook.set_data_dir(data_dir)

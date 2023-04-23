@@ -87,7 +87,6 @@ class DefaultConfig:
                 "{date:%Y-%m-%d_%H_%M_%S}".format(date=datetime.datetime.now()),
                 str(uuid.uuid4()),
             )
-        os.makedirs(self.save_dir, exist_ok=True)
         return self.save_dir
 
     def create_dataset_collection(self):
