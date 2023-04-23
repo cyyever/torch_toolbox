@@ -15,7 +15,7 @@ class HookConfig:
         self.debug = False
         self.profile = False
         self.use_amp = torch.cuda.is_available()
-        self.save_performance_metric = True
+        self.save_performance_metric = False
         self.benchmark_cudnn: bool = True
 
     def append_hooks(self, model_executor) -> None:
