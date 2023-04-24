@@ -12,11 +12,9 @@ class Debugger(Hook):
 
     def _before_execute(self, **kwargs):
         torch.autograd.set_detect_anomaly(True)
-        torch.set_anomaly_enabled(True)
         if torch.cuda.is_available():
             torch.cuda.set_sync_debug_mode(1)
-        get_logger().warning("model executor in in debugging mode")
+        get_logger().warning("model executor in debugging mode")
 
     def _after_execute(self, **kwargs):
         torch.autograd.set_detect_anomaly(False)
-        torch.set_anomaly_enabled(False)
