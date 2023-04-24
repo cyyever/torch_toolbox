@@ -34,11 +34,11 @@ class MetricTensorBoard(MetricVisualizer):
             )
         return self.__writer
 
-    def _before_execute(self, model_executor, **kwargs):
+    def _before_execute(self, executor, **kwargs):
         if self.prefix is None:
             self.set_prefix(
                 "training_"
-                + str(model_executor.model.__class__.__name__)
+                + str(executor.model.__class__.__name__)
                 + "_"
                 + str(threading.get_native_id())
                 + "_{date:%Y-%m-%d_%H_%M_%S}".format(date=datetime.datetime.now())
@@ -50,8 +50,8 @@ class MetricTensorBoard(MetricVisualizer):
     def __del__(self):
         self.close()
 
-    def _after_validation(self, model_executor, epoch, **kwargs):
-        trainer = model_executor
+    def _after_validation(self, executor, epoch, **kwargs):
+        trainer = executor
 
         if "cur_learning_rates" not in trainer._data:
             return

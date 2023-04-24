@@ -12,12 +12,12 @@ class CUDAMemoryProfiler(Hook):
         self.__hooks = []
         self.__used_memory = None
 
-    def _before_batch(self, model_executor, batch_index, **kwargs) -> None:
+    def _before_batch(self, executor, batch_index, **kwargs) -> None:
         assert not self.__hooks
         self.__used_memory = None
         if batch_index != 2:
             return
-        for module_name, module in model_executor.model.named_modules():
+        for module_name, module in executor.model.named_modules():
             self.__hooks.append(
                 module.register_forward_hook(
                     functools.partial(self.__compute_gpu_memory_assumption, module_name)

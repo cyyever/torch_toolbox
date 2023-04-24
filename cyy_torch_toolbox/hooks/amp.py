@@ -11,13 +11,13 @@ class AMP(Hook):
         self.__ctx = None
         self.__scaler = None
 
-    def _before_execute(self, model_executor, **kwargs):
-        if model_executor.phase == MachineLearningPhase.Training:
+    def _before_execute(self, executor, **kwargs):
+        if executor.phase == MachineLearningPhase.Training:
             get_logger().debug("use AMP")
         else:
             self.disable()
 
-    def _model_forward(self, model_executor, model_kwargs, **kwargs):
+    def _model_forward(self, executor, model_kwargs, **kwargs):
         if not self._enabled:
             return
         device = model_kwargs.get("device", None)
@@ -28,8 +28,8 @@ class AMP(Hook):
         if self.__ctx is None or device_type != self.__ctx.device:
             self.__ctx = torch.autocast(device_type=device_type)
         with self.__ctx:
-            result = model_executor.running_model_evaluator(**model_kwargs)
-            model_executor._data["forward_result"] = result
+            result = executor.running_model_evaluator(**model_kwargs)
+            executor._data["forward_result"] = result
 
     def _model_backward(self, loss, **kwargs):
         if not self._enabled:
@@ -45,9 +45,9 @@ class AMP(Hook):
         else:
             loss.backward()
 
-    def _optimizer_step(self, model_executor, **kwargs):
+    def _optimizer_step(self, executor, **kwargs):
         assert self._enabled
-        optimizer = model_executor.get_optimizer()
+        optimizer = executor.get_optimizer()
         if self.__scaler is None:
             optimizer.step()
             return
@@ -55,7 +55,7 @@ class AMP(Hook):
         if sum(
             self.__scaler._found_inf_per_device(optimizer=optimizer).values()
         ).item():
-            model_executor._data["step_skipped"] = True
+            executor._data["step_skipped"] = True
             get_logger().debug("found inf in AMP")
 
         # Updates the scale for next iteration.

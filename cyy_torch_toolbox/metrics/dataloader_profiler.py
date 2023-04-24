@@ -18,7 +18,7 @@ class DataloaderProfiler(Metric):
     def _after_fetch_batch(self, **kwargs):
         self.__accumulated_time += self.__dataloader_time_counter.elapsed_milliseconds()
 
-    def _after_epoch(self, model_executor, epoch, **kwargs):
+    def _after_epoch(self, executor, epoch, **kwargs):
         self._set_epoch_metric(
             epoch, "data_waiting_time", self.__accumulated_time / 1000
         )

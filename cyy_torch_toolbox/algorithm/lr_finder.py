@@ -19,7 +19,7 @@ class LRFinder(Hook):
         self.suggested_learning_rate = None
 
     def _before_execute(self, **kwargs):
-        trainer = kwargs["model_executor"]
+        trainer = kwargs["executor"]
         trainer.remove_optimizer()
         trainer.remove_lr_scheduler()
         trainer.hyper_parameter.set_epoch(self.epoch)
@@ -30,7 +30,7 @@ class LRFinder(Hook):
         )
 
     def _before_batch(self, **kwargs):
-        trainer = kwargs["model_executor"]
+        trainer = kwargs["executor"]
         learning_rate = self.lr_getter(self.batch_index / (self.total_batch_num - 1))
         self.learning_rates.append(learning_rate)
         optimizer = trainer.get_optimizer()

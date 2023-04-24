@@ -9,11 +9,11 @@ from .metric_visualizer import MetricVisualizer
 
 
 class PerformanceMetricRecorder(MetricVisualizer):
-    def _after_epoch(self, model_executor, epoch, **kwargs):
+    def _after_epoch(self, executor, epoch, **kwargs):
         phase_str = "training"
-        if model_executor.phase == MachineLearningPhase.Validation:
+        if executor.phase == MachineLearningPhase.Validation:
             phase_str = "validation"
-        elif model_executor.phase == MachineLearningPhase.Test:
+        elif executor.phase == MachineLearningPhase.Test:
             phase_str = "test"
         prefix = re.sub(r"[: ,]+$", "", self._prefix)
         prefix = re.sub(r"[: ,]+", "_", prefix)
@@ -26,7 +26,7 @@ class PerformanceMetricRecorder(MetricVisualizer):
         if os.path.isfile(json_filename):
             with open(json_filename, "rt", encoding="utf8") as f:
                 json_record = json.load(f)
-        epoch_metrics = model_executor.performance_metric.get_epoch_metrics(epoch)
+        epoch_metrics = executor.performance_metric.get_epoch_metrics(epoch)
         if not epoch_metrics:
             return
         for k, value in epoch_metrics.items():

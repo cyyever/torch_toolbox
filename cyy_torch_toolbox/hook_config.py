@@ -18,17 +18,15 @@ class HookConfig:
         self.save_performance_metric = False
         self.benchmark_cudnn: bool = True
 
-    def append_hooks(self, model_executor) -> None:
-        if model_executor.phase == MachineLearningPhase.Training:
+    def append_hooks(self, executor) -> None:
+        if executor.phase == MachineLearningPhase.Training:
             if torch.cuda.torch.cuda.is_available():
-                model_executor.enable_or_disable_hook("AMP", self.use_amp, AMP())
-        model_executor.enable_or_disable_hook("debugger", self.debug, Debugger())
-        model_executor.enable_or_disable_hook("profiler", self.profile, Profiler())
+                executor.enable_or_disable_hook("AMP", self.use_amp, AMP())
+        executor.enable_or_disable_hook("debugger", self.debug, Debugger())
+        executor.enable_or_disable_hook("profiler", self.profile, Profiler())
         if torch.cuda.torch.cuda.is_available():
-            model_executor.enable_or_disable_hook(
-                "cudnn", self.benchmark_cudnn, CUDNNHook()
-            )
-        model_executor.enable_or_disable_hook(
+            executor.enable_or_disable_hook("cudnn", self.benchmark_cudnn, CUDNNHook())
+        executor.enable_or_disable_hook(
             "performance_metric_recorder",
             self.save_performance_metric,
             PerformanceMetricRecorder(),

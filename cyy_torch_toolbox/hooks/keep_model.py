@@ -28,8 +28,8 @@ class KeepModelHook(Hook):
     def clear(self):
         self.__best_model = DataStorage(data=None)
 
-    def _after_validation(self, model_executor, epoch, **kwargs):
-        trainer = model_executor
+    def _after_validation(self, executor, epoch, **kwargs):
+        trainer = executor
         if self.save_epoch_model:
             model_path = os.path.join(
                 self.__get_model_dir(trainer.save_dir), f"epoch_{epoch}.pt"
@@ -58,8 +58,8 @@ class KeepModelHook(Hook):
                 )
                 self.__best_model.save()
 
-    def _after_execute(self, model_executor, **kwargs):
-        trainer = model_executor
+    def _after_execute(self, executor, **kwargs):
+        trainer = executor
         if self.save_last_model:
             trainer.save_model(
                 os.path.join(self.__get_model_dir(trainer.save_dir), "last.pt")

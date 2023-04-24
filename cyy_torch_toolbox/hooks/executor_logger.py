@@ -9,44 +9,41 @@ class ExecutorLogger(Hook):
     def __init__(self):
         super().__init__(stripable=True)
 
-    def _before_execute(self, **kwargs):
-        model_executor = kwargs["model_executor"]
-        model_util = model_executor.model_util
+    def _before_execute(self, executor, **kwargs):
+        model_util = executor.model_util
         get_logger().info(
             "dataset type is %s",
-            model_executor.dataset_collection.get_original_dataset(
+            executor.dataset_collection.get_original_dataset(
                 MachineLearningPhase.Training
             ),
         )
-        get_logger().info("model type is %s", model_executor.model.__class__)
-        get_logger().debug("model is %s", model_executor.model)
-        get_logger().debug("loss function is %s", model_executor.loss_fun)
+        get_logger().info("model type is %s", executor.model.__class__)
+        get_logger().debug("model is %s", executor.model)
+        get_logger().debug("loss function is %s", executor.loss_fun)
         get_logger().info(
             "parameter number is %s",
             len(model_util.get_parameter_list()),
         )
-        if hasattr(model_executor, "hyper_parameter"):
-            get_logger().info("hyper_parameter is %s", model_executor.hyper_parameter)
-        optimizer = model_executor.get_optimizer()
+        if hasattr(executor, "hyper_parameter"):
+            get_logger().info("hyper_parameter is %s", executor.hyper_parameter)
+        optimizer = executor.get_optimizer()
         if optimizer is not None:
             get_logger().info("optimizer is %s", optimizer)
-        lr_scheduler = model_executor.get_lr_scheduler()
+        lr_scheduler = executor.get_lr_scheduler()
         if lr_scheduler is not None:
             get_logger().info(
                 "lr_scheduler is %s",
                 type(lr_scheduler),
             )
         for phase in MachineLearningPhase:
-            if model_executor.dataset_collection.has_dataset(phase):
-                get_logger().info(
-                    "%s dataset len %s", phase, model_executor.dataset_size
-                )
+            if executor.dataset_collection.has_dataset(phase):
+                get_logger().info("%s dataset len %s", phase, executor.dataset_size)
         # if os.getenv("draw_torch_model") is not None:
-        #     model_executor._model_with_loss.trace_input = True
+        #     executor._model_with_loss.trace_input = True
 
     # def _after_execute(self, **kwargs):
-    #     model_executor = kwargs["model_executor"]
+    #     executor = kwargs["executor"]
     #     if os.getenv("draw_torch_model") is not None:
-    #         model_executor.visualizer.writer.add_graph(
-    #             model_executor.model, model_executor._model_with_loss.example_input
+    #         executor.visualizer.writer.add_graph(
+    #             executor.model, executor._model_with_loss.example_input
     #         )

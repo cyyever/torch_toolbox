@@ -8,9 +8,9 @@ class ProbabilityMetric(Metric):
     def get_prob(self, epoch):
         return self.get_epoch_metric(epoch, "prob")
 
-    def _after_forward(self, model_executor, epoch, result, sample_indices, **kwargs):
+    def _after_forward(self, executor, epoch, result, sample_indices, **kwargs):
         output = result["classification_output"]
-        last_layer = list(model_executor.model.modules())[-1]
+        last_layer = list(executor.model.modules())[-1]
         epoch_prob = self.get_prob(epoch)
         if epoch_prob is None:
             epoch_prob = {}
