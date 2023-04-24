@@ -34,12 +34,12 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
                 }
             case {"input": sample_input, "target": target, "index": index}:
                 return data
-            case _:
-                raise NotImplementedError()
-            # case {"target": target}:
-            #     return data
-            # case _:
-            #     return default_data_extraction(data, extract_index=False)
+            case {"target": target, "index": index}:
+                return data
+            case dict():
+                if "input" in data and "edge_index" in data["input"]:
+                    return data
+        raise NotImplementedError(data)
     match data:
         case [sample_input, target]:
             return {"input": sample_input, "target": target}
