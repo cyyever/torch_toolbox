@@ -14,7 +14,8 @@ if has_torchtext:
 if has_hugging_face:
     import transformers as hugging_face_transformers
 
-    from .tokenizer_factory import get_hugging_face_tokenizer
+    if has_torchtext:
+        from .tokenizer_factory import get_hugging_face_tokenizer
 
 if has_torchvision:
     import torchvision
