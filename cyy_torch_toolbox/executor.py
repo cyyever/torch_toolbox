@@ -75,7 +75,7 @@ class Executor(HookCollection):
         return self.__phase
 
     def exec_hooks(self, *args: list, **kwargs: dict) -> None:
-        super().exec_hooks(*args, model_executor=self, **kwargs)
+        super().exec_hooks(*args, executor=self, **kwargs)
 
     def set_save_dir(self, save_dir: str) -> None:
         self.__save_dir = save_dir

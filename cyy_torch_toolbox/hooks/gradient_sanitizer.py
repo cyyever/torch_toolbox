@@ -3,13 +3,13 @@ from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
 class GradientSanitizer(Hook):
-    def _before_batch(self, model_executor, batch_index, **kwargs):
-        if model_executor.phase != MachineLearningPhase.Training:
+    def _before_batch(self, executor, batch_index, **kwargs):
+        if executor.phase != MachineLearningPhase.Training:
             return
         if batch_index % 100 != 0:
             return
         # check parameters can be updated
-        trainer = model_executor
+        trainer = executor
         optimizer = trainer.get_optimizer()
         for name, parameter in trainer.model.named_parameters():
             flag = False

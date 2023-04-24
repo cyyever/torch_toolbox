@@ -15,8 +15,8 @@ class ClassAccuracyMetric(Metric):
 
     def _before_epoch(self, **kwargs):
         if not self.__labels:
-            model_executor = kwargs["model_executor"]
-            self.__labels = model_executor.dataset_collection.get_labels()
+            executor = kwargs["executor"]
+            self.__labels = executor.dataset_collection.get_labels()
         for label in self.__labels:
             self.__classification_correct_count_per_label[label] = 0
             self.__classification_count_per_label[label] = 0

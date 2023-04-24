@@ -6,13 +6,13 @@ from .metric_visualizer import MetricVisualizer
 
 
 class PerformanceMetricLogger(MetricVisualizer):
-    def _after_epoch(self, model_executor, epoch, **kwargs):
+    def _after_epoch(self, executor, epoch, **kwargs):
         phase_str = "training"
-        if model_executor.phase == MachineLearningPhase.Validation:
+        if executor.phase == MachineLearningPhase.Validation:
             phase_str = "validation"
-        elif model_executor.phase == MachineLearningPhase.Test:
+        elif executor.phase == MachineLearningPhase.Test:
             phase_str = "test"
-        performance_metric = model_executor.performance_metric
+        performance_metric = executor.performance_metric
 
         epoch_metrics = performance_metric.get_epoch_metrics(epoch)
         if not epoch_metrics:
@@ -34,7 +34,7 @@ class PerformanceMetricLogger(MetricVisualizer):
             else:
                 metric_str = metric_str + f"{k}:{value}, "
         metric_str = metric_str[:-2]
-        if model_executor.phase == MachineLearningPhase.Training:
+        if executor.phase == MachineLearningPhase.Training:
             get_logger().info(
                 "%sepoch: %s, %s %s",
                 self.prefix + " " if self.prefix else "",
