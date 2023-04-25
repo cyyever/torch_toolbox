@@ -11,12 +11,14 @@ if has_torch_geometric:
 
 class GraphModelEvaluator(ModelEvaluator):
     def __init__(self, *args, **kwargs):
+        edge_dict = kwargs.pop("edge_dict")
         super().__init__(*args, **kwargs)
         # self.node_index_map = {}
         self.node_and_neighbour_index_map = {}
         self.edge_index_map = {}
         self.node_and_neighbour_mask = {}
         self.node_mask = {}
+        self.edge_dict = edge_dict
         self.neighbour_hop = sum(
             1
             for _, module in self.model_util.get_modules()
@@ -37,7 +39,7 @@ class GraphModelEvaluator(ModelEvaluator):
             node_indices = set(torch_geometric.utils.mask_to_index(mask).tolist())
             # self.node_index_map[phase] = node_indices
             node_and_neighbours = GraphDatasetUtil.get_neighbors_from_edges(
-                node_indices=node_indices, edge_index=edge_index, hop=self.neighbour_hop
+                node_indices=node_indices,edge_dict=self.edge_dict, hop=self.neighbour_hop
             )
             tmp = set(node_and_neighbours.keys())
             for value in node_and_neighbours.values():

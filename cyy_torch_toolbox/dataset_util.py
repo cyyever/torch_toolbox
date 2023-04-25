@@ -300,15 +300,6 @@ class GraphDatasetUtil(DatasetSplitter):
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
         return mask
 
-    def get_boundary(self, node_indices: list) -> dict:
-        assert len(self.dataset) == 1
-        node_indices = set(node_indices)
-        res = {}
-        edge_dict = self.edge_to_dict(self.dataset[0].edge_index)
-        for node_idx in node_indices:
-            res[node_idx] = edge_dict.get(node_idx, set()) - node_indices
-        return res
-
     @classmethod
     def foreach_edge(cls, edge_index: torch.Tensor) -> list:
         edge_index = torch_geometric.utils.sort_edge_index(edge_index)
@@ -316,7 +307,7 @@ class GraphDatasetUtil(DatasetSplitter):
 
     @classmethod
     def edge_to_dict(cls, edge_index: torch.Tensor) -> dict:
-        res = {}
+        res: dict = {}
         for a, b in cls.foreach_edge(edge_index):
             if a not in res:
                 res[a] = set()
@@ -326,19 +317,38 @@ class GraphDatasetUtil(DatasetSplitter):
             res[b].add(a)
         return res
 
+    def get_edge_dict(self) -> dict:
+        assert len(self.dataset) == 1
+        key: str = "__torch_toolbox_edge_dict"
+        for graph_dict in self.dataset:
+            graph = graph_dict["graph"]
+            if hasattr(graph, key):
+                return getattr(graph, key)
+            edge_dict = GraphDatasetUtil.edge_to_dict(edge_index=graph.edge_index)
+            setattr(graph, key, edge_dict)
+            return edge_dict
+
+    def get_boundary(self, node_indices: list) -> dict:
+        assert len(self.dataset) == 1
+        res = {}
+        edge_dict = self.get_edge_dict()
+        node_indices = set(node_indices)
+        for node_idx in node_indices:
+            res[node_idx] = edge_dict.get(node_idx, set()) - node_indices
+        return res
+
     @classmethod
     def get_neighbors_from_edges(
-        cls, node_indices: Sequence, edge_index: torch.Tensor, hop
+        cls, node_indices: Sequence, edge_dict: dict, hop
     ) -> dict:
         res: dict = {}
         node_indices = set(node_indices)
-        edge_dict = cls.edge_to_dict(edge_index)
         assert hop > 0
         for node_idx in node_indices:
             unchecked_nodes = set([node_idx])
             neighbors = unchecked_nodes
             for _ in range(hop):
-                new_neighbors = set()
+                new_neighbors: set = set()
                 for node in unchecked_nodes:
                     new_neighbors = new_neighbors | edge_dict[node]
                 unchecked_nodes = new_neighbors - neighbors
@@ -346,24 +356,25 @@ class GraphDatasetUtil(DatasetSplitter):
             res[node_idx] = neighbors
         return res
 
-    def get_neighbors(self, node_indices: list, hop) -> dict:
+    def get_neighbors(self, node_indices: Sequence, hop: int) -> dict:
         assert len(self.dataset) == 1
-        edge_index = torch_geometric.utils.sort_edge_index(self.dataset[0].edge_index)
         return GraphDatasetUtil.get_neighbors_from_edges(
-            node_indices=node_indices, edge_index=edge_index, hop=hop
+            node_indices=node_indices, edge_dict=self.get_edge_dict(), hop=hop
         )
 
-    def get_subset(self, indices: list):
+    def get_subset(self, indices: list) -> list:
         assert indices
         mask = copy.deepcopy(self.get_mask())
-        dataset = copy.deepcopy(self.dataset)
+        # dataset = copy.deepcopy(self.dataset)
         mask.fill_(False)
         for index in indices:
             mask[index] = True
-        data_dict = dataset[0].to_dict()
-        data_dict["mask"] = mask
-        dataset = [torch_geometric.data.Data.from_dict(data_dict)]
-        return dataset
+        # setattr(dataset, "__subset_mask", mask)
+        return [{"subset_mask": mask, "graph": self.dataset[0]}]
+        # data_dict = dataset[0].to_dict()
+        # data_dict["mask"] = mask
+        # dataset = [torch_geometric.data.Data.from_dict(data_dict)]
+        # return self.dataset
 
     def decompose(self) -> None | dict:
         mapping = {
@@ -380,9 +391,12 @@ class GraphDatasetUtil(DatasetSplitter):
             datasets[phase] = []
         for graph in self.dataset:
             for phase in MachineLearningPhase:
-                graph_dict = graph.to_dict()
-                graph_dict["mask"] = graph_dict[mapping[phase]]
-                for mask_name in mapping.values():
-                    graph_dict.pop(mask_name)
-                datasets[phase].append(torch_geometric.data.Data.from_dict(graph_dict))
+
+                # graph_dict = graph.to_dict()
+                # graph_dict["mask"] = graph_dict[mapping[phase]]
+                # for mask_name in mapping.values():
+                #     graph_dict.pop(mask_name)
+                datasets[phase].append(
+                    {"subset_mask": getattr(graph, mapping[phase]), "graph": graph}
+                )
         return datasets

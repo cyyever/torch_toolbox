@@ -17,6 +17,16 @@ if has_torch_geometric:
 def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
     if has_torch_geometric:
         match data:
+            case {
+                "subset_mask": subset_mask,
+                "graph": graph,
+            }:
+                res = {
+                    "input": {"x": graph.x, "edge_index": graph.edge_index},
+                    "target": graph.y,
+                    "mask": subset_mask,
+                }
+                return res
             case torch_geometric.data.Data():
                 res = {
                     "input": {"x": data.x, "edge_index": data.edge_index},

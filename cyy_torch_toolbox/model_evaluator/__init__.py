@@ -1,4 +1,5 @@
 import torch
+import functools
 
 # module_dir = os.path.realpath(
 #     os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")
@@ -35,7 +36,10 @@ def get_model_evaluator(
         else:
             model_evaluator_fun = TextModelEvaluator
     elif dataset_collection.dataset_type == DatasetType.Graph:
-        model_evaluator_fun = GraphModelEvaluator
+        model_evaluator_fun = functools.partial(
+            GraphModelEvaluator,
+            edge_dict=dataset_collection.get_dataset_util().get_edge_dict(),
+        )
     if model_kwargs is None:
         model_kwargs = {}
     loss_fun_name = model_kwargs.get("loss_fun_name", None)
