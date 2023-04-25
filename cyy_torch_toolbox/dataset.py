@@ -16,6 +16,8 @@ def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:
             case [torch_geometric.data.Data()]:
                 graph = dataset[0]
                 return graph["mask"].sum()
+            case [{"subset_mask": subset_mask, "graph": _}]:
+                return subset_mask.sum()
     match dataset:
         case torch.utils.data.dataset.ConcatDataset():
             return sum(get_dataset_size(d) for d in dataset.datasets)
