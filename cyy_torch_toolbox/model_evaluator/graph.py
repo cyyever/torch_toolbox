@@ -39,7 +39,6 @@ class GraphModelEvaluator(ModelEvaluator):
             edge_index = inputs["edge_index"]
             node_indices = set(torch_geometric.utils.mask_to_index(mask).tolist())
             # self.node_index_map[phase] = node_indices
-            get_logger().error("id edge_dict %s",id(self.edge_dict))
             node_and_neighbours = GraphDatasetUtil.get_neighbors_from_edges(
                 node_indices=node_indices,
                 edge_dict=self.edge_dict,
