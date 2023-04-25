@@ -102,7 +102,7 @@ def select_item(
                         if not flag:
                             continue
                         if indices is None or idx in indices:
-                            yield idx, {"target": dataset[0]["y"][idx], "index": idx}
+                            yield idx, {"target": dataset[0]["graph"]["y"][idx], "index": idx}
                 return
 
     match dataset:

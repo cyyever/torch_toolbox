@@ -1,3 +1,4 @@
+from cyy_naive_lib.log import get_logger
 import torch
 
 from ..dataset_util import GraphDatasetUtil
@@ -38,8 +39,11 @@ class GraphModelEvaluator(ModelEvaluator):
             edge_index = inputs["edge_index"]
             node_indices = set(torch_geometric.utils.mask_to_index(mask).tolist())
             # self.node_index_map[phase] = node_indices
+            get_logger().error("id edge_dict %s",id(self.edge_dict))
             node_and_neighbours = GraphDatasetUtil.get_neighbors_from_edges(
-                node_indices=node_indices,edge_dict=self.edge_dict, hop=self.neighbour_hop
+                node_indices=node_indices,
+                edge_dict=self.edge_dict,
+                hop=self.neighbour_hop,
             )
             tmp = set(node_and_neighbours.keys())
             for value in node_and_neighbours.values():
