@@ -12,8 +12,8 @@ if has_torch_geometric:
 class GraphModelEvaluator(ModelEvaluator):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self.node_and_neighbour_index_map = {}
         # self.node_index_map = {}
+        self.node_and_neighbour_index_map = {}
         self.edge_index_map = {}
         self.node_and_neighbour_mask = {}
         self.node_mask = {}
@@ -47,7 +47,7 @@ class GraphModelEvaluator(ModelEvaluator):
                 node_index: idx
                 for idx, node_index in enumerate(sorted(node_and_neighbours))
             }
-            # self.node_and_neighbour_index_map[phase] = node_and_neighbour_index_map
+            self.node_and_neighbour_index_map[phase] = node_and_neighbour_index_map
             new_source_list = []
             new_target_list = []
             for source, target in GraphDatasetUtil.foreach_edge(edge_index):
