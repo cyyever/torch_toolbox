@@ -59,6 +59,17 @@ class DatasetCollection:
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
 
+    def __copy__(self):
+        new_obj = type(self)(
+            training_dataset=self.__raw_datasets[MachineLearningPhase.Training],
+        )
+        new_obj.__name = self.__name
+        new_obj.__raw_datasets = copy.copy(self.__raw_datasets)
+        new_obj.__datasets = copy.copy(self.__datasets)
+        new_obj.__dataset_type = self.__dataset_type
+        new_obj.__transforms = copy.copy(self.__transforms)
+        return new_obj
+
     @property
     def dataset_type(self) -> None | DatasetType:
         return self.__dataset_type

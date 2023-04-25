@@ -27,15 +27,15 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
                     "mask": subset_mask,
                 }
                 return res
-            case torch_geometric.data.Data():
-                res = {
-                    "input": {"x": data.x, "edge_index": data.edge_index},
-                    "target": data.y,
-                }
-                for attr_name in ["mask"]:
-                    if hasattr(data, attr_name):
-                        res[attr_name] = getattr(data, attr_name)
-                return res
+            # case torch_geometric.data.Data():
+            #     res = {
+            #         "input": {"x": data.x, "edge_index": data.edge_index},
+            #         "target": data.y,
+            #     }
+            #     for attr_name in ["mask"]:
+            #         if hasattr(data, attr_name):
+            #             res[attr_name] = getattr(data, attr_name)
+            #     return res
     if extract_index:
         match data:
             case {"data": real_data, "index": index} | [index, real_data]:

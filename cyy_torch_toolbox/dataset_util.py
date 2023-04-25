@@ -295,6 +295,8 @@ class TextDatasetUtil(DatasetSplitter):
 class GraphDatasetUtil(DatasetSplitter):
     def get_mask(self):
         assert len(self.dataset) == 1
+        if isinstance(self.dataset[0], dict):
+            return self.dataset[0]["subset_mask"]
         if hasattr(self.dataset[0], "mask"):
             return self.dataset[0].mask
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
@@ -370,7 +372,10 @@ class GraphDatasetUtil(DatasetSplitter):
         for index in indices:
             mask[index] = True
         # setattr(dataset, "__subset_mask", mask)
-        return [{"subset_mask": mask, "graph": self.dataset[0]}]
+        graph = self.dataset[0]
+        if isinstance(graph, dict):
+            graph = graph["graph"]
+        return [{"subset_mask": mask, "graph": graph}]
         # data_dict = dataset[0].to_dict()
         # data_dict["mask"] = mask
         # dataset = [torch_geometric.data.Data.from_dict(data_dict)]

@@ -291,6 +291,7 @@ class Executor(HookCollection):
                     continue
                 need_backward = True
                 optimizer = self.get_optimizer()
+                lr_scheduler = self.get_lr_scheduler()
                 optimizer.zero_grad(set_to_none=True)
 
             self.exec_hooks(
@@ -356,7 +357,6 @@ class Executor(HookCollection):
                 else:
                     optimizer.step()
                 if not step_skipped:
-                    lr_scheduler = self.get_lr_scheduler()
                     if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                         get_logger().debug("adjust lr after batch")
                         lr_scheduler.step()

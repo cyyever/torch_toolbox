@@ -1,5 +1,6 @@
-import torch
 import functools
+
+import torch
 
 # module_dir = os.path.realpath(
 #     os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")
@@ -8,7 +9,7 @@ import functools
 #     sys.path.append(module_dir)
 from ..dataset_collection import DatasetCollection
 from ..dependency import has_hugging_face
-from ..ml_type import DatasetType, ModelType
+from ..ml_type import DatasetType, MachineLearningPhase, ModelType
 from .base import ModelEvaluator, VisionModelEvaluator
 from .graph import GraphModelEvaluator
 from .text import TextModelEvaluator
@@ -38,7 +39,9 @@ def get_model_evaluator(
     elif dataset_collection.dataset_type == DatasetType.Graph:
         model_evaluator_fun = functools.partial(
             GraphModelEvaluator,
-            edge_dict=dataset_collection.get_dataset_util().get_edge_dict(),
+            edge_dict=dataset_collection.get_dataset_util(
+                MachineLearningPhase.Training
+            ).get_edge_dict(),
         )
     if model_kwargs is None:
         model_kwargs = {}
