@@ -70,9 +70,10 @@ class GraphModelEvaluator(ModelEvaluator):
         inputs["edge_index"] = self.edge_index_map[phase]
         kwargs["targets"] = kwargs["targets"][mask]
         inputs["x"] = inputs["x"][self.node_and_neighbour_mask[phase]]
+        kwargs["mask"] = self.node_mask[phase]
         return super().__call__(**kwargs)
 
-    def _forward_model(self, mask, **kwargs) -> dict | torch.Tensor:
+    def _forward_model(self, **kwargs) -> dict | torch.Tensor:
+        mask = kwargs.pop("mask")
         output = super()._forward_model(**kwargs)
-        phase = kwargs["phase"]
-        return output[self.node_mask[phase]]
+        return output[mask]
