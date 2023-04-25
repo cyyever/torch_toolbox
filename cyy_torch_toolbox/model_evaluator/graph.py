@@ -12,9 +12,11 @@ if has_torch_geometric:
 class GraphModelEvaluator(ModelEvaluator):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.node_and_neighbour_index_map = {}
-        self.node_index_map = {}
+        # self.node_and_neighbour_index_map = {}
+        # self.node_index_map = {}
         self.edge_index_map = {}
+        self.node_and_neighbour_mask = {}
+        self.node_mask = {}
         self.neighbour_hop = sum(
             1
             for _, module in self.model_util.get_modules()
@@ -30,10 +32,10 @@ class GraphModelEvaluator(ModelEvaluator):
             return super().__call__(**kwargs)
         phase = kwargs["phase"]
         mask = mask.view(-1)
-        if phase not in self.node_index_map:
+        if phase not in self.edge_index_map:
             edge_index = inputs["edge_index"]
             node_indices = set(torch_geometric.utils.mask_to_index(mask).tolist())
-            self.node_index_map[phase] = node_indices
+            # self.node_index_map[phase] = node_indices
             node_and_neighbours = GraphDatasetUtil.get_neighbors_from_edges(
                 node_indices=node_indices, edge_index=edge_index, hop=self.neighbour_hop
             )
@@ -45,7 +47,7 @@ class GraphModelEvaluator(ModelEvaluator):
                 node_index: idx
                 for idx, node_index in enumerate(sorted(node_and_neighbours))
             }
-            self.node_and_neighbour_index_map[phase] = node_and_neighbour_index_map
+            # self.node_and_neighbour_index_map[phase] = node_and_neighbour_index_map
             new_source_list = []
             new_target_list = []
             for source, target in GraphDatasetUtil.foreach_edge(edge_index):
@@ -56,23 +58,21 @@ class GraphModelEvaluator(ModelEvaluator):
                 data=[new_source_list, new_target_list], dtype=edge_index.dtype
             )
             self.edge_index_map[phase] = edge_index
-        else:
-            node_indices = self.node_index_map[phase]
-            node_and_neighbour_index_map = self.node_and_neighbour_index_map[phase]
-            node_and_neighbours = set(node_and_neighbour_index_map.keys())
-            edge_index = self.edge_index_map[phase]
-        inputs["edge_index"] = edge_index
+            node_and_neighbour_mask = torch.zeros_like(mask)
+            for idx in node_and_neighbours:
+                node_and_neighbour_mask[idx] = True
+            self.node_and_neighbour_mask[phase] = node_and_neighbour_mask
+            node_mask = torch.zeros((len(node_and_neighbours),), dtype=torch.bool)
+            for idx in node_indices:
+                node_mask[node_and_neighbour_index_map[idx]] = True
+            self.node_mask[phase] = node_mask
+
+        inputs["edge_index"] = self.edge_index_map[phase]
         kwargs["targets"] = kwargs["targets"][mask]
-        new_mask = torch.zeros_like(mask)
-        for idx in node_and_neighbours:
-            new_mask[idx] = True
-        inputs["x"] = inputs["x"][new_mask]
-        new_mask = torch.zeros((len(node_and_neighbours),), dtype=torch.bool)
-        for idx in node_indices:
-            new_mask[node_and_neighbour_index_map[idx]] = True
-        kwargs["mask"] = new_mask
+        inputs["x"] = inputs["x"][self.node_and_neighbour_mask[phase]]
         return super().__call__(**kwargs)
 
     def _forward_model(self, mask, **kwargs) -> dict | torch.Tensor:
         output = super()._forward_model(**kwargs)
-        return output[mask]
+        phase = kwargs["phase"]
+        return output[self.node_mask[phase]]
