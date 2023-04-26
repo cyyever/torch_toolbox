@@ -1,49 +1,13 @@
-try:
-    import torchvision
+import importlib.util
 
-    has_torchvision = True
-except BaseException:
-    has_torchvision = False
-
-try:
-    import torchtext
-
-    has_torchtext = True
-except BaseException:
-    has_torchtext = False
-
-try:
-    import torch_geometric
-
-    has_torch_geometric = True
-except BaseException:
-    has_torch_geometric = False
-try:
-    import torchaudio
-
-    has_torchaudio = True
-except BaseException:
-    has_torchaudio = False
-
-
-try:
-    import medmnist
-
-    has_medmnist = True
-except BaseException:
-    has_medmnist = False
-
-try:
-    import datasets
-    import transformers
-
-    has_hugging_face = True
-except BaseException:
-    has_hugging_face = False
-
-try:
-    import nvidia.dali
-
-    has_dali = True
-except ModuleNotFoundError:
-    has_dali = False
+has_torchvision: bool = importlib.util.find_spec("torchvision") is not None
+has_torchtext: bool = importlib.util.find_spec("torchtext") is not None
+has_torch_geometric: bool = importlib.util.find_spec("torch_geometric") is not None
+has_torchaudio: bool = importlib.util.find_spec("torchaudio") is not None
+has_medmnist: bool = importlib.util.find_spec("medmnist") is not None
+has_hugging_face: bool = (
+    importlib.util.find_spec("datasets") is not None
+    and importlib.util.find_spec("transformers") is not None
+)
+has_dali: bool = importlib.util.find_spec("nvidia.dali") is not None
+has_spacy: bool = importlib.util.find_spec("spacy") is not None

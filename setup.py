@@ -19,6 +19,7 @@ setuptools.setup(
         "cyy_torch_toolbox/model_transform",
         "cyy_torch_toolbox/model_evaluator",
         "cyy_torch_toolbox/dataset_transform",
+        "cyy_torch_toolbox/tokenizer",
         "cyy_torch_toolbox/metrics",
         "cyy_torch_toolbox/models",
         "cyy_torch_toolbox/dataloader",
