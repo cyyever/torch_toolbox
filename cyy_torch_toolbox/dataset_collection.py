@@ -306,8 +306,8 @@ class DatasetCollection:
                         "train_split", "train"
                     )
                 elif phase == MachineLearningPhase.Validation:
-                    if "val_split" in new_dataset_kwargs:
-                        new_dataset_kwargs["split"] = new_dataset_kwargs["val_split"]
+                    if "val_split" in dataset_kwargs:
+                        new_dataset_kwargs["split"] = dataset_kwargs["val_split"]
                     else:
                         if dataset_type == DatasetType.Text:
                             new_dataset_kwargs["split"] = "valid"
