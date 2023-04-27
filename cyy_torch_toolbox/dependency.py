@@ -11,3 +11,4 @@ has_hugging_face: bool = (
 )
 has_dali: bool = importlib.util.find_spec("nvidia.dali") is not None
 has_spacy: bool = importlib.util.find_spec("spacy") is not None
+has_pynvml: bool = importlib.util.find_spec("pynvml") is not None

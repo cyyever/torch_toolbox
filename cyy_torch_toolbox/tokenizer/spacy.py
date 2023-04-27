@@ -1,21 +1,24 @@
 from collections import Counter, OrderedDict
 
-import spacy
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.ml_type import MachineLearningPhase
 from torchtext.vocab import Vocab, vocab
+
+import spacy
+
+from ..dataset_collection import DatasetCollection
+from ..ml_type import MachineLearningPhase
 
 
 class SpacyTokenizer:
     def __init__(
         self,
-        dc,
+        dc: DatasetCollection,
         special_tokens: None | list[str] = None,
         keep_punct: bool = True,
         keep_stop: bool = True,
         min_freq: int = 1,
-        max_tokens=None,
-    ):
+        max_tokens: None | int = None,
+    ) -> None:
         self.__keep_punct = keep_punct
         self.__keep_stop = keep_stop
         self.__spacy = spacy.load("en_core_web_sm")
@@ -35,7 +38,6 @@ class SpacyTokenizer:
                     match input_data:
                         case str():
                             elements = [input_data]
-                            pass
                         case [*elements]:
                             pass
                         case _:

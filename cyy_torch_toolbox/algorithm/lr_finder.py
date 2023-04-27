@@ -1,6 +1,7 @@
 import torch
-from cyy_torch_toolbox.hook import Hook
-from cyy_torch_toolbox.ml_type import StopExecutingException
+
+from ..hook import Hook
+from ..ml_type import StopExecutingException
 
 
 class LRFinder(Hook):
