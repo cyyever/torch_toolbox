@@ -57,7 +57,7 @@ def get_model_evaluator(
         model_evaluator.model.load_state_dict(torch.load(model_path))
     word_vector_name = model_kwargs.get("word_vector_name", None)
     if word_vector_name is not None:
-        from ..word_vector import PretrainedWordVector
+        from .word_vector import PretrainedWordVector
 
         PretrainedWordVector(word_vector_name).load_to_model(
             model_evaluator=model_evaluator,
