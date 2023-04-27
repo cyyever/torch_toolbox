@@ -2,11 +2,11 @@ import copy
 from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.dataset import select_item
-from cyy_torch_toolbox.ml_type import DatasetType, TransformType
-from cyy_torch_toolbox.tensor import tensor_to
 from torch.utils.data._utils.collate import default_collate
 
+from ..dataset import select_item
+from ..ml_type import DatasetType, TransformType
+from ..tensor import tensor_to
 from .common import default_data_extraction
 
 
@@ -119,7 +119,7 @@ class Transforms:
             get_logger().warning("cache dataset to device memory: %s", device)
         else:
             get_logger().warning("cache dataset to main memory")
-        transformed_dataset = {}
+        transformed_dataset: dict = {}
         for k, item in select_item(dataset):
             item = self.extract_data(item)
             item["input"] = self.transform_input(item["input"], apply_random=False)

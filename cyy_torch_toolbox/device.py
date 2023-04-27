@@ -2,16 +2,18 @@
 
 
 import torch
+from cyy_naive_lib.log import get_logger
 
-if torch.cuda.is_available():
+from .dependency import has_pynvml
+
+if has_pynvml:
     import pynvml
 
 # import os
 
-from cyy_naive_lib.log import get_logger
-
 
 def get_cuda_device_memory_info(consider_cache: bool = False) -> dict:
+    assert has_pynvml
     result = {}
     pynvml.nvmlInit()
     for device_idx in range(torch.cuda.device_count()):
@@ -71,10 +73,7 @@ class CUDADeviceGreedyAllocator:
         memory_info = get_cuda_device_memory_info(consider_cache=True)
         memory_to_device = {}
         for device_id, info in memory_info.items():
-            if (
-                max_needed_bytes is not None
-                and memory_info[device_id].free < max_needed_bytes
-            ):
+            if max_needed_bytes is not None and info.free < max_needed_bytes:
                 continue
             if info.free not in memory_to_device:
                 memory_to_device[info.free] = []
@@ -91,7 +90,9 @@ class CUDADeviceGreedyAllocator:
         return devices[0]
 
 
-def get_device(max_needed_bytes=None, use_cuda_only: bool = False) -> torch.device:
+def get_device(
+    max_needed_bytes: None | int = None, use_cuda_only: bool = False
+) -> torch.device:
     if torch.cuda.is_available():
         device = CUDADeviceGreedyAllocator().get_device(
             max_needed_bytes=max_needed_bytes
