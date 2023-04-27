@@ -56,6 +56,7 @@ class DatasetCollection:
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
+        self.tokenizer: Any | None = None
 
     def __copy__(self):
         new_obj = type(self)(
@@ -66,6 +67,7 @@ class DatasetCollection:
         new_obj.__datasets = copy.copy(self.__datasets)
         new_obj.__dataset_type = self.__dataset_type
         new_obj.__transforms = copy.copy(self.__transforms)
+        new_obj.tokenizer = copy.copy(self.tokenizer)
         return new_obj
 
     @property
@@ -253,11 +255,11 @@ class DatasetCollection:
             dataset_type=dataset_type,
             name=name,
         )
-        add_transforms(dc, dataset_kwargs, model_config)
         if not dc.has_dataset(MachineLearningPhase.Validation):
             dc._split_training()
         if not dc.has_dataset(MachineLearningPhase.Test):
             dc._split_validation()
+        add_transforms(dc, dataset_kwargs, model_config)
         return dc
 
     def is_classification_dataset(self) -> bool:
@@ -438,7 +440,7 @@ class ClassificationDatasetCollection(DatasetCollection):
             )
         raise NotImplementedError()
 
-    def generate_raw_data(self, phase: MachineLearningPhase):
+    def generate_raw_data(self, phase: MachineLearningPhase) -> Generator:
         dataset_util = self.get_dataset_util(phase)
         return (
             self.get_raw_data(phase=phase, index=i) for i in range(len(dataset_util))
@@ -509,7 +511,10 @@ class DatasetCollectionConfig:
         )
         if not dc.is_classification_dataset():
             dc = create_dataset_collection(
-                DatasetCollection, self.dataset_name, self.dataset_kwargs
+                cls=DatasetCollection,
+                name=self.dataset_name,
+                dataset_kwargs=self.dataset_kwargs,
+                model_config=model_config,
             )
 
         self.__transform_training_dataset(dc=dc, save_dir=save_dir)
