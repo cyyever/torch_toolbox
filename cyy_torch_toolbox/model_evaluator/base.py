@@ -22,17 +22,23 @@ class ModelEvaluator:
     def __init__(
         self,
         model: torch.nn.Module,
+        model_name: str | None = None,
         model_type: None | ModelType = None,
         loss_fun: str | Callable | None = None,
     ):
         self._original_model: torch.nn.Module = model
         self._model: torch.nn.Module = model
+        self.__name = model_name
         self.__loss_fun: Callable | None = None
         if loss_fun is not None:
             self.set_loss_fun(loss_fun)
         self.__model_type = model_type
         self.need_input_features = False
         self.need_cpu_inputs = False
+
+    @property
+    def model_name(self) -> str | None:
+        return self.__name
 
     @property
     def model(self) -> torch.nn.Module:

@@ -12,13 +12,16 @@ from cyy_naive_lib.storage import get_cached_data
 
 from cyy_torch_toolbox.dataset import dataset_with_indices
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
-from cyy_torch_toolbox.dataset_transform import Transforms, add_transforms
+from cyy_torch_toolbox.dataset_transform import (Transforms,
+                                                 add_data_extraction,
+                                                 add_transforms)
 from cyy_torch_toolbox.dataset_transform.common import replace_target
 from cyy_torch_toolbox.dataset_util import (DatasetSplitter, GraphDatasetUtil,
                                             TextDatasetUtil, VisionDatasetUtil)
 from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
+from cyy_torch_toolbox.tokenizer import get_tokenizer
 
 if has_torch_geometric:
     import torch_geometric.data.dataset
@@ -34,7 +37,7 @@ class DatasetCollection:
         test_dataset: torch.utils.data.Dataset | None = None,
         dataset_type: DatasetType | None = None,
         name: str | None = None,
-    ):
+    ) -> None:
         self.__name: str | None = name
         self.__raw_datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
         self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
@@ -255,11 +258,13 @@ class DatasetCollection:
             dataset_type=dataset_type,
             name=name,
         )
+        add_data_extraction(dc)
+        if dc.dataset_type == DatasetType.Text:
+            dc.tokenizer = get_tokenizer(dc, dataset_kwargs)
         if not dc.has_dataset(MachineLearningPhase.Validation):
             dc._split_training()
         if not dc.has_dataset(MachineLearningPhase.Test):
             dc._split_validation()
-        add_transforms(dc, dataset_kwargs, model_config)
         return dc
 
     def is_classification_dataset(self) -> bool:
@@ -392,6 +397,11 @@ class DatasetCollection:
             cache_dir = DatasetCollection._get_dataset_cache_dir(self.name)
             return get_cached_data(os.path.join(cache_dir, file), computation_fun)
 
+    def add_transforms(self, model_evaluator, dataset_kwargs) -> None:
+        add_transforms(
+            dc=self, dataset_kwargs=dataset_kwargs, model_evaluator=model_evaluator
+        )
+
 
 class ClassificationDatasetCollection(DatasetCollection):
     @classmethod
@@ -451,10 +461,15 @@ class ClassificationDatasetCollection(DatasetCollection):
         reversed_label_names = {v: k for k, v in label_names.items()}
         return reversed_label_names[label_name]
 
-    def adapt_to_model(self, model, model_kwargs):
+    def add_transforms(self, model_evaluator, dataset_kwargs):
+        super().add_transforms(
+            model_evaluator=model_evaluator, dataset_kwargs=dataset_kwargs
+        )
         """add more transformers for model"""
         if self.dataset_type == DatasetType.Vision:
-            input_size = getattr(model.__class__, "input_size", None)
+            input_size = getattr(
+                model_evaluator.get_underlying_model().__class__, "input_size", None
+            )
             if input_size is not None:
                 get_logger().debug("resize input to %s", input_size)
                 self.append_transform(

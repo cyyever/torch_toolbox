@@ -23,6 +23,7 @@ if has_hugging_face:
 def get_model_evaluator(
     model: torch.nn.Module,
     dataset_collection: DatasetCollection,
+    model_name: str | None = None,
     model_type: None | ModelType = None,
     model_kwargs: dict | None = None,
 ) -> ModelEvaluator:
@@ -46,9 +47,11 @@ def get_model_evaluator(
     if model_kwargs is None:
         model_kwargs = {}
     loss_fun_name = model_kwargs.get("loss_fun_name", None)
-    model_type = ModelType.Classification
+    if model_type is None:
+        model_type = ModelType.Classification
     model_evaluator = model_evaluator_fun(
         model=model,
+        model_name=model_name,
         loss_fun=loss_fun_name,
         model_type=model_type,
     )

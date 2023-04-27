@@ -26,7 +26,7 @@ def get_mean_and_std(dc):
     return dc.get_cached_data("mean_and_std.pk", computation_fun)
 
 
-def add_vision_transforms(dc, dataset_kwargs=None, model_config=None):
+def add_vision_transforms(dc) -> None:
     assert dc.dataset_type == DatasetType.Vision
     dc.append_transform(torchvision.transforms.ToTensor(), key=TransformType.Input)
     mean, std = get_mean_and_std(dc)

@@ -7,17 +7,15 @@ import torchtext
 from ..dataset_collection import DatasetCollection
 from ..dependency import has_hugging_face, has_spacy, has_torchtext
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
+from ..model_evaluator import ModelEvaluator
 from .common import (default_data_extraction, replace_str, str_target_to_int,
                      swap_input_and_target, target_offset)
 
 if has_spacy:
-    from ..tokenizer import get_spacy_tokenizer
-    from ..tokenizer.spacy import SpacyTokenizer
+    from cyy_torch_toolbox.tokenizer.spacy import SpacyTokenizer
 
 if has_hugging_face:
     import transformers as hugging_face_transformers
-
-    from ..tokenizer import get_hugging_face_tokenizer
 
 
 def multi_nli_data_extraction(data: Any) -> dict:
@@ -38,20 +36,28 @@ def create_multi_nli_text(sample_input, cls_token, sep_token):
     return cls_token + " " + premise + " " + sep_token + " " + hypothesis
 
 
-def add_text_transforms(
-    dc: DatasetCollection,
-    dataset_kwargs: None | dict = None,
-    model_config: None | Any = None,
-) -> None:
+def add_text_extraction(dc: DatasetCollection) -> None:
     assert dc.dataset_type == DatasetType.Text
     assert has_torchtext
     # ExtractData
-    if dc.name.lower() == "multi_nli":
-        dc.append_transform(
-            key=TransformType.ExtractData, transform=multi_nli_data_extraction
-        )
-    else:
-        dc.append_transform(swap_input_and_target, key=TransformType.ExtractData)
+    if dc.name is not None:
+        match dc.name.lower():
+            case "multi_nli":
+                dc.clear_transform(key=TransformType.ExtractData)
+                dc.append_transform(
+                    key=TransformType.ExtractData, transform=multi_nli_data_extraction
+                )
+            case _:
+                dc.append_transform(
+                    swap_input_and_target, key=TransformType.ExtractData
+                )
+
+
+def add_text_transforms(
+    dc: DatasetCollection, model_evaluator: ModelEvaluator, dataset_kwargs: dict
+) -> None:
+    assert dc.dataset_type == DatasetType.Text
+    assert has_torchtext
     # InputText
     if dc.name.upper() == "IMDB":
         dc.append_transform(
@@ -72,32 +78,11 @@ def add_text_transforms(
             dc.append_transform(f, key=TransformType.InputText, phases=[phase])
 
     # Input && InputBatch
-    dc.tokenizer = None
-    if model_config is not None:
-        if "bert" in model_config.model_name:
-            dc.tokenizer = get_hugging_face_tokenizer(
-                model_config.model_name.replace("sequence_classification_", "")
-            )
-    tokenizer_kwargs = dataset_kwargs.get("tokenizer", {})
-    spacy_kwargs = tokenizer_kwargs.get("spacy_kwargs", {})
-    create_spacy: bool = (
-        dc.tokenizer is None
-        or spacy_kwargs
-        or tokenizer_kwargs.get("create_spacy", False)
-    )
-    if create_spacy:
-        dc.spacy_tokenizer = get_spacy_tokenizer(dc, **spacy_kwargs)
-    else:
-        dc.spacy_tokenizer = None
-    if dc.tokenizer is None:
-        dc.tokenizer = dc.spacy_tokenizer
 
     max_len = dataset_kwargs.get("max_len", None)
-    if max_len is None and model_config is not None:
-        max_len = model_config.model_kwargs.get("max_len", None)
     match dc.tokenizer:
         case SpacyTokenizer():
-            if dc.name.lower() == "multi_nli":
+            if dc.name is not None and dc.name.lower() == "multi_nli":
                 dc.append_transform(
                     functools.partial(
                         create_multi_nli_text,
@@ -106,7 +91,7 @@ def add_text_transforms(
                     ),
                     key=TransformType.InputText,
                 )
-            dc.append_transform(dc.spacy_tokenizer, key=TransformType.Input)
+            dc.append_transform(dc.tokenizer, key=TransformType.Input)
             if max_len is not None:
                 dc.append_transform(
                     torchtext.transforms.Truncate(max_seq_len=max_len),
