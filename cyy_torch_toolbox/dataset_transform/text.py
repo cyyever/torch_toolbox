@@ -15,9 +15,10 @@ if has_hugging_face:
 
     from ..tokenizer import get_hugging_face_tokenizer
 
+from ..dataset_collection import DatasetCollection
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 from .common import (default_data_extraction, replace_str, str_target_to_int,
-                     swap_input_and_target)
+                     swap_input_and_target, target_offset)
 
 
 def multi_nli_data_extraction(data: Any) -> dict:
@@ -38,12 +39,10 @@ def create_multi_nli_text(sample_input, cls_token, sep_token):
     return cls_token + " " + premise + " " + sep_token + " " + hypothesis
 
 
-def minus_one(target, index):
-    return target - 1
-
-
 def add_text_transforms(
-    dc, dataset_kwargs: None | dict = None, model_config=None
+    dc: DatasetCollection,
+    dataset_kwargs: None | dict = None,
+    model_config: None | Any = None,
 ) -> None:
     assert dc.dataset_type == DatasetType.Text
     assert has_torchtext
@@ -61,7 +60,7 @@ def add_text_transforms(
             key=TransformType.InputText,
         )
         dc.append_transform(
-            minus_one,
+            functools.partial(target_offset, offset=-1),
             key=TransformType.Target,
         )
 
