@@ -83,3 +83,6 @@ def swap_input_and_target(data):
 
 def replace_str(string, old, new):
     return string.replace(old, new)
+
+def target_offset(target, index: int, offset: int):
+    return target + offset
