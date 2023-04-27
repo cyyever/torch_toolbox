@@ -68,8 +68,12 @@ def _get_model_info() -> dict:
 
 
 def get_model(
-    name: str, dataset_collection: DatasetCollection, model_kwargs: dict = {}
+    name: str,
+    dataset_collection: DatasetCollection,
+    model_kwargs: dict | None = None,
 ) -> torch.nn.Module:
+    if not model_kwargs:
+        model_kwargs = {}
     model_info = _get_model_info()
 
     final_model_kwargs: dict = {}
@@ -161,7 +165,9 @@ class ModelConfig:
         self.pretrained: bool = False
         self.model_kwargs: dict = {}
 
-    def get_model(self, dc: DatasetCollection) -> ModelEvaluator:
+    def get_model(
+        self, dc: DatasetCollection, dataset_kwargs: None | dict = None
+    ) -> ModelEvaluator:
         assert not (self.pretrained and self.model_path)
         model_kwargs = copy.deepcopy(self.model_kwargs)
         if "pretrained" not in model_kwargs:
@@ -170,8 +176,13 @@ class ModelConfig:
             assert "model_path" not in model_kwargs
             model_kwargs["model_path"] = self.model_path
         model = get_model(
-            name=self.model_name, dataset_collection=dc, model_kwargs=model_kwargs
+            name=self.model_name,
+            dataset_collection=dc,
+            model_kwargs=model_kwargs,
         )
         return get_model_evaluator(
-            model=model, dataset_collection=dc, model_kwargs=model_kwargs
+            model=model,
+            dataset_collection=dc,
+            model_name=self.model_name,
+            model_kwargs=model_kwargs,
         )

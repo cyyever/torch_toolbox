@@ -5,14 +5,13 @@ from torchtext.vocab import Vocab, vocab
 
 import spacy
 
-from ..dataset_collection import DatasetCollection
 from ..ml_type import MachineLearningPhase
 
 
 class SpacyTokenizer:
     def __init__(
         self,
-        dc: DatasetCollection,
+        dc,
         special_tokens: None | list[str] = None,
         keep_punct: bool = True,
         keep_stop: bool = True,

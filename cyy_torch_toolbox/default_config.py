@@ -109,11 +109,13 @@ class DefaultConfig:
             model_evaluator = get_model_evaluator(model, dc)
 
         if model_evaluator is None:
-            model_evaluator = self.model_config.get_model(dc)
-        if hasattr(dc, "adapt_to_model"):
-            dc.adapt_to_model(
-                model_evaluator.get_underlying_model(), self.model_config.model_kwargs
+            model_evaluator = self.model_config.get_model(
+                dc, dataset_kwargs=self.dc_config.dataset_kwargs
             )
+        dc.add_transforms(
+            model_evaluator=model_evaluator,
+            dataset_kwargs=self.dc_config.dataset_kwargs,
+        )
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
             self.dc_config.dataset_name, self.model_config.model_name
         )
