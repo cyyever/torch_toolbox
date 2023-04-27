@@ -4,7 +4,11 @@ from typing import Any
 import torch
 import torchtext
 
+from ..dataset_collection import DatasetCollection
 from ..dependency import has_hugging_face, has_spacy, has_torchtext
+from ..ml_type import DatasetType, MachineLearningPhase, TransformType
+from .common import (default_data_extraction, replace_str, str_target_to_int,
+                     swap_input_and_target, target_offset)
 
 if has_spacy:
     from ..tokenizer import get_spacy_tokenizer
@@ -14,11 +18,6 @@ if has_hugging_face:
     import transformers as hugging_face_transformers
 
     from ..tokenizer import get_hugging_face_tokenizer
-
-from ..dataset_collection import DatasetCollection
-from ..ml_type import DatasetType, MachineLearningPhase, TransformType
-from .common import (default_data_extraction, replace_str, str_target_to_int,
-                     swap_input_and_target, target_offset)
 
 
 def multi_nli_data_extraction(data: Any) -> dict:
@@ -47,12 +46,12 @@ def add_text_transforms(
     assert dc.dataset_type == DatasetType.Text
     assert has_torchtext
     # ExtractData
-    dc.append_transform(swap_input_and_target, key=TransformType.ExtractData)
     if dc.name.lower() == "multi_nli":
-        dc.clear_transform(key=TransformType.ExtractData)
         dc.append_transform(
             key=TransformType.ExtractData, transform=multi_nli_data_extraction
         )
+    else:
+        dc.append_transform(swap_input_and_target, key=TransformType.ExtractData)
     # InputText
     if dc.name.upper() == "IMDB":
         dc.append_transform(
