@@ -1,70 +1,32 @@
 import copy
-import functools
 import os
 import sys
 
 import torch
 import torch.nn
-
-from cyy_torch_toolbox.dependency import has_hugging_face
-from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
-                                       ModelType)
-
-if has_hugging_face:
-    from cyy_torch_toolbox.models.huggingface_models import (
-        get_hugging_face_model_constructors,
-    )
-
 from cyy_naive_lib.log import get_logger
 
-from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.model_evaluator import (ModelEvaluator,
-                                               get_model_evaluator)
+from ..dataset_collection import DatasetCollection
+from ..dependency import has_hugging_face
+from ..ml_type import DatasetType, MachineLearningPhase, ModelType
+from ..model_evaluator import ModelEvaluator, get_model_evaluator
+from .torch_model import get_torch_model_info
 
-__model_info: dict = {}
+if has_hugging_face:
+    from .huggingface_model import get_hugging_face_model_info
 
 
-def _get_model_info() -> dict:
-    if __model_info:
-        return __model_info
-    github_repos: dict[DatasetType, list] = {}
-    github_repos[DatasetType.Vision] = [
-        "pytorch/vision:main",
-        "huggingface/pytorch-image-models:main",
-    ]
-    for dataset_type in DatasetType:
-        if dataset_type not in github_repos:
-            github_repos[dataset_type] = []
-        github_repos[dataset_type].append("cyyever/torch_models:main")
-
-    for dataset_type, repos in github_repos.items():
-        for repo in repos:
-            entrypoints = torch.hub.list(
-                repo, force_reload=False, trust_repo=True, skip_validation=True
-            )
-            for model_name in entrypoints:
-                if dataset_type not in __model_info:
-                    __model_info[dataset_type] = {}
-                if model_name.lower() not in __model_info[dataset_type]:
-                    __model_info[dataset_type][model_name.lower()] = (
-                        model_name,
-                        functools.partial(
-                            torch.hub.load,
-                            repo_or_dir=repo,
-                            model=model_name,
-                            force_reload=False,
-                            trust_repo=True,
-                            skip_validation=True,
-                            verbose=False,
-                        ),
-                        repo,
-                    )
-                else:
-                    get_logger().debug("ignore model_name %s", model_name)
-
-    if has_hugging_face:
-        __model_info[DatasetType.Text] |= get_hugging_face_model_constructors()
-    return __model_info
+def __get_model_info() -> dict:
+    model_info = get_torch_model_info()
+    for dataset_type, info in get_hugging_face_model_info().items():
+        if dataset_type not in model_info:
+            model_info[dataset_type] = info
+        else:
+            for model_name, res in info.items():
+                if model_name in model_info[dataset_type]:
+                    raise RuntimeError(f"model {model_name} from multiple sources")
+                model_info[dataset_type][model_name] = res
+    return model_info
 
 
 def get_model(
@@ -72,10 +34,16 @@ def get_model(
     dataset_collection: DatasetCollection,
     model_kwargs: dict | None = None,
 ) -> torch.nn.Module:
+    model_constructors = __get_model_info().get(dataset_collection.dataset_type, {})
+    model_constructor_info = model_constructors.get(name.lower(), {})
+    if not model_constructor_info:
+        raise NotImplementedError(
+            f"unsupported model {name}, supported models are "
+            + str(model_constructors.keys())
+        )
+
     if not model_kwargs:
         model_kwargs = {}
-    model_info = _get_model_info()
-
     final_model_kwargs: dict = {}
     match dataset_collection.dataset_type:
         case DatasetType.Vision:
@@ -112,18 +80,13 @@ def get_model(
     # use_checkpointing = model_kwargs.pop("use_checkpointing", False)
     while True:
         try:
-            model_constructors = model_info.get(dataset_collection.dataset_type, {})
-            model_name, model_constructor, repo = model_constructors.get(
-                name.lower(), (None, None, None)
+            model = model_constructor_info["constructor"](**final_model_kwargs)
+            get_logger().warning(
+                "use model arguments %s for model %s",
+                final_model_kwargs,
+                model_constructor_info["name"],
             )
-            if model_constructor is None:
-                raise NotImplementedError(
-                    f"unsupported model {name}, supported models are "
-                    + str(model_constructors.keys())
-                )
-            get_logger().info("use model %s", model_name)
-            model = model_constructor(**final_model_kwargs)
-            get_logger().warning("use model arguments %s", final_model_kwargs)
+            repo = model_constructor_info.get("repo", None)
             if repo is not None:
                 # we need the model path to pickle models
                 hub_dir = torch.hub.get_dir()

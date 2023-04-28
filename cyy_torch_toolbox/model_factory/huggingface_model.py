@@ -3,6 +3,8 @@ import functools
 import transformers
 from cyy_naive_lib.log import get_logger
 
+from ..ml_type import DatasetType
+
 __huggingface_models = [
     "bert-base-uncased",
     "bert-large-uncased",
@@ -130,17 +132,17 @@ def __create_hugging_face_model(model_name, pretrained, **model_kwargs):
     if pretrained:
         return pretrained_model
     get_logger().warning("use huggingface without pretrained parameters")
-    old_embedding = pretrained_model.get_input_embeddings()
+    # old_embedding = pretrained_model.get_input_embeddings()
     config = transformers.AutoConfig.from_pretrained(model_name, **model_kwargs)
     model = transformers.AutoModel.from_config(config)
-    model.set_input_embeddings(old_embedding)
+    # model.set_input_embeddings(old_embedding)
     return model
 
 
-def get_hugging_face_model_constructors() -> dict:
+def get_hugging_face_model_info() -> dict:
     model_info: dict = {}
     for model_name in __huggingface_models:
-        full_model_name = "sequence_classification_" + model_name
+        full_model_name = "hugging_face_sequence_classification_" + model_name
         model_info[full_model_name.lower()] = (
             full_model_name,
             functools.partial(
@@ -149,13 +151,13 @@ def get_hugging_face_model_constructors() -> dict:
             ),
             None,
         )
-        full_model_name = "huggingface_" + model_name
-        model_info[full_model_name.lower()] = (
-            full_model_name,
-            functools.partial(
+        full_model_name = "hugging_face_" + model_name
+        model_info[full_model_name.lower()] = {
+            "name": full_model_name,
+            "constructor": functools.partial(
                 __create_hugging_face_model,
                 model_name,
             ),
-            None,
-        )
-    return model_info
+            "has_tokenizer": True,
+        }
+    return {DatasetType.Text: model_info}
