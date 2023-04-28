@@ -58,8 +58,11 @@ def add_text_transforms(
 ) -> None:
     assert dc.dataset_type == DatasetType.Text
     assert has_torchtext
+    dataset_name: str = ""
+    if dc.name is not None:
+        dataset_name = dc.name.lower()
     # InputText
-    if dc.name.upper() == "IMDB":
+    if dataset_name == "imdb":
         dc.append_transform(
             functools.partial(replace_str, old="<br />", new=""),
             key=TransformType.InputText,
@@ -82,7 +85,7 @@ def add_text_transforms(
     max_len = dataset_kwargs.get("max_len", None)
     match dc.tokenizer:
         case SpacyTokenizer():
-            if dc.name is not None and dc.name.lower() == "multi_nli":
+            if dataset_name == "multi_nli":
                 dc.append_transform(
                     functools.partial(
                         create_multi_nli_text,
