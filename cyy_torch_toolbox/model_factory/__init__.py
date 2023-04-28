@@ -1,4 +1,5 @@
 import copy
+import functools
 import os
 import sys
 
@@ -16,6 +17,7 @@ if has_hugging_face:
     from .huggingface_model import get_hugging_face_model_info
 
 
+@functools.cache
 def __get_model_info() -> dict:
     model_info = get_torch_model_info()
     for dataset_type, info in get_hugging_face_model_info().items():
