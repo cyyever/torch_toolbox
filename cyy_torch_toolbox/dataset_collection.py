@@ -12,10 +12,10 @@ from cyy_naive_lib.storage import get_cached_data
 
 from cyy_torch_toolbox.dataset import dataset_with_indices
 from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
-from cyy_torch_toolbox.dataset_transform import (Transforms,
-                                                 add_data_extraction,
+from cyy_torch_toolbox.dataset_transform import (add_data_extraction,
                                                  add_transforms)
 from cyy_torch_toolbox.dataset_transform.common import replace_target
+from cyy_torch_toolbox.dataset_transform.transform import Transforms
 from cyy_torch_toolbox.dataset_util import (DatasetSplitter, GraphDatasetUtil,
                                             TextDatasetUtil, VisionDatasetUtil)
 from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision

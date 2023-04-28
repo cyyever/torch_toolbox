@@ -10,7 +10,7 @@ import torch
 import torch.utils
 
 from cyy_torch_toolbox.dataset import get_dataset_size, select_item, subset_dp
-from cyy_torch_toolbox.dataset_transform import Transforms
+from cyy_torch_toolbox.dataset_transform.transform import Transforms
 from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 

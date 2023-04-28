@@ -1,9 +1,10 @@
 import torch
 
+from ..dataset_collection import DatasetCollection
 from ..dataset_util import VisionDatasetUtil
 from ..dependency import has_torchvision
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
-from .transforms import Transforms
+from .transform import Transforms
 
 if has_torchvision:
     import torchvision
@@ -26,9 +27,14 @@ def get_mean_and_std(dc):
     return dc.get_cached_data("mean_and_std.pk", computation_fun)
 
 
+def add_vision_extraction(dc: DatasetCollection) -> None:
+    assert dc.dataset_type == DatasetType.Vision
+    assert has_torchvision
+    dc.append_transform(torchvision.transforms.ToTensor(), key=TransformType.Input)
+
+
 def add_vision_transforms(dc) -> None:
     assert dc.dataset_type == DatasetType.Vision
-    dc.append_transform(torchvision.transforms.ToTensor(), key=TransformType.Input)
     mean, std = get_mean_and_std(dc)
     dc.append_transform(
         torchvision.transforms.Normalize(mean=mean, std=std),
