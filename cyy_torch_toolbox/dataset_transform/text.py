@@ -2,7 +2,6 @@ import functools
 from typing import Any
 
 import torch
-import torchtext
 
 from ..dataset_collection import DatasetCollection
 from ..dependency import has_hugging_face, has_spacy, has_torchtext
@@ -11,6 +10,8 @@ from ..model_evaluator import ModelEvaluator
 from .common import (default_data_extraction, replace_str, str_target_to_int,
                      swap_input_and_target, target_offset)
 
+if has_torchtext:
+    import torchtext
 if has_spacy:
     from cyy_torch_toolbox.tokenizer.spacy import SpacyTokenizer
 
