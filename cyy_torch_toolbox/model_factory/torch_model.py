@@ -6,12 +6,9 @@ from cyy_naive_lib.log import get_logger
 
 from ..ml_type import DatasetType
 
-__model_info: dict = {}
-
 
 def get_torch_model_info() -> dict:
-    if __model_info:
-        return __model_info
+    model_info: dict = {}
     github_repos: dict[DatasetType, list] = {}
     github_repos[DatasetType.Vision] = [
         "pytorch/vision:main",
@@ -28,10 +25,10 @@ def get_torch_model_info() -> dict:
                 repo, force_reload=False, trust_repo=True, skip_validation=True
             )
             for model_name in entrypoints:
-                if dataset_type not in __model_info:
-                    __model_info[dataset_type] = {}
-                if model_name.lower() not in __model_info[dataset_type]:
-                    __model_info[dataset_type][model_name.lower()] = {
+                if dataset_type not in model_info:
+                    model_info[dataset_type] = {}
+                if model_name.lower() not in model_info[dataset_type]:
+                    model_info[dataset_type][model_name.lower()] = {
                         "name": model_name,
                         "constructor": functools.partial(
                             torch.hub.load,
@@ -47,4 +44,4 @@ def get_torch_model_info() -> dict:
                 else:
                     get_logger().debug("ignore model_name %s", model_name)
 
-    return __model_info
+    return model_info
