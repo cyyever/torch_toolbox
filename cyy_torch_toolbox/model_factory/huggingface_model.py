@@ -143,14 +143,14 @@ def get_hugging_face_model_info() -> dict:
     model_info: dict = {}
     for model_name in __huggingface_models:
         full_model_name = "hugging_face_sequence_classification_" + model_name
-        model_info[full_model_name.lower()] = (
-            full_model_name,
-            functools.partial(
+        model_info[full_model_name.lower()] = {
+            "name": full_model_name,
+            "constructor": functools.partial(
                 __create_hugging_face_classification_model,
                 model_name,
             ),
-            None,
-        )
+            "has_tokenizer": True,
+        }
         full_model_name = "hugging_face_" + model_name
         model_info[full_model_name.lower()] = {
             "name": full_model_name,
