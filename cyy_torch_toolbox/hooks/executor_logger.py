@@ -31,13 +31,14 @@ class ExecutorLogger(Hook):
             get_logger().info("optimizer is %s", optimizer)
         lr_scheduler = executor.get_lr_scheduler()
         if lr_scheduler is not None:
-            get_logger().info(
-                "lr_scheduler is %s",
-                type(lr_scheduler),
-            )
+            get_logger().info("lr_scheduler is %s", type(lr_scheduler))
         for phase in MachineLearningPhase:
             if executor.dataset_collection.has_dataset(phase):
                 get_logger().info("%s dataset len %s", phase, executor.dataset_size)
+        if executor.dataset_collection.tokenizer is not None:
+            get_logger().info(
+                "tokenizer is %s", type(executor.dataset_collection.tokenizer)
+            )
         # if os.getenv("draw_torch_model") is not None:
         #     executor._model_with_loss.trace_input = True
 
