@@ -9,6 +9,7 @@ from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 class KeepModelHook(Hook):
     __best_model: DataStorage = DataStorage(data=None)
+    keep_best_model: bool = False
     save_epoch_model: bool = False
     save_last_model: bool = False
     save_best_model: bool = False
@@ -36,10 +37,10 @@ class KeepModelHook(Hook):
             )
             trainer.save_model(model_path)
 
-        if self.save_best_model:
+        if self.save_best_model or self.keep_best_model:
             acc = trainer.get_cached_inferencer(
                 MachineLearningPhase.Validation
-            ).performance_metric.get_epoch_metric(epoch, "accuracy")
+            ).performance_metric.get_epoch_metric(1, "accuracy")
             if self.best_model is None or acc > self.best_model[1]:
                 self.__best_model.set_data(
                     (
@@ -47,6 +48,7 @@ class KeepModelHook(Hook):
                             get_cpu_device(), non_blocking=True
                         ),
                         acc,
+                        epoch,
                     )
                 )
 
@@ -65,7 +67,4 @@ class KeepModelHook(Hook):
                 os.path.join(self.__get_model_dir(trainer.save_dir), "last.pt")
             )
         if self.save_best_model:
-            self.__best_model.set_data(self.best_model[0])
             self.__best_model.save()
-        else:
-            self.__best_model.clear()

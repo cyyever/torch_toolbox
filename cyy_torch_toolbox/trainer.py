@@ -41,6 +41,13 @@ class Trainer(Executor):
             return None
         return keep_model_hook.best_model[0]
 
+    @property
+    def best_epoch(self) -> int:
+        keep_model_hook = self.get_hook("keep_model_hook")
+        if keep_model_hook.best_model is None:
+            return None
+        return keep_model_hook.best_model[2]
+
     def get_cached_inferencer(self, phase) -> Inferencer | None:
         return self.__inferencers.get(phase, None)
 
@@ -106,12 +113,14 @@ class Trainer(Executor):
     def _prepare_execution(
         self,
         batch_loss_log_times: None | int = None,
+        keep_best_model: bool = False,
         save_best_model: bool = False,
         save_epoch_model: bool = False,
         save_last_model: bool = False,
         **kwargs: dict,
     ) -> None:
         keep_model_hook = self.get_hook("keep_model_hook")
+        keep_model_hook.keep_best_model = keep_best_model
         keep_model_hook.save_best_model = save_best_model
         keep_model_hook.save_epoch_model = save_epoch_model
         keep_model_hook.save_last_model = save_last_model
