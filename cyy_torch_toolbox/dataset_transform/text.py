@@ -42,21 +42,20 @@ def create_multi_nli_text(sample_input, cls_token, sep_token):
 
 
 def add_text_extraction(dc: DatasetCollection) -> None:
-    pass
-    # assert dc.dataset_type == DatasetType.Text
-    # assert has_torchtext
-    # # ExtractData
-    # if dc.name is not None:
-    #     match dc.name.lower():
-    #         case "multi_nli":
-    #             dc.clear_transform(key=TransformType.ExtractData)
-    #             dc.append_transform(
-    #                 key=TransformType.ExtractData, transform=multi_nli_data_extraction
-    #             )
-    #         case _:
-    #             dc.append_transform(
-    #                 swap_input_and_target, key=TransformType.ExtractData
-    #             )
+    assert dc.dataset_type == DatasetType.Text
+    assert has_torchtext
+    # ExtractData
+    if dc.name is not None:
+        match dc.name.lower():
+            # case "multi_nli":
+            #     dc.clear_transform(key=TransformType.ExtractData)
+            #     dc.append_transform(
+            #         key=TransformType.ExtractData, transform=multi_nli_data_extraction
+            #     )
+            case "imdb":
+                dc.append_transform(
+                    swap_input_and_target, key=TransformType.ExtractData
+                )
 
 
 def add_text_transforms(
