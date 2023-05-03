@@ -111,7 +111,7 @@ __huggingface_models = [
 ]
 
 
-def __create_hugging_face_classification_model(model_name, pretrained, **model_kwargs):
+def __create_hugging_face_sequence_classification_model(model_name, pretrained, **model_kwargs):
     pretrained_model = transformers.AutoModelForSequenceClassification.from_pretrained(
         model_name, **model_kwargs
     )
@@ -146,7 +146,7 @@ def get_hugging_face_model_info() -> dict:
         model_info[full_model_name.lower()] = {
             "name": full_model_name,
             "constructor": functools.partial(
-                __create_hugging_face_classification_model,
+                __create_hugging_face_sequence_classification_model,
                 model_name,
             ),
             "has_tokenizer": True,
