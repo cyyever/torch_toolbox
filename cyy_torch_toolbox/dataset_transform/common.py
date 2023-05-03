@@ -38,17 +38,18 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
                 return default_data_extraction(real_data, extract_index=False) | {
                     "index": index
                 }
-            case {"input": sample_input, "target": target, "index": index}:
+            case {"index": index, **real_data}:
+                return default_data_extraction(real_data, extract_index=False) | {
+                    "index": index
+                }
+            case {"input": _, "edge_index": __, **___}:
                 return data
-            case {"target": target, "index": index}:
-                return data
-            case dict():
-                if "input" in data and "edge_index" in data["input"]:
-                    return data
         raise NotImplementedError(data)
     match data:
         case [sample_input, target]:
             return {"input": sample_input, "target": target}
+        case {"label": label, **other_data}:
+            return {"target": label, "input": other_data}
         case _:
             return data
 
@@ -83,6 +84,7 @@ def swap_input_and_target(data):
 
 def replace_str(string, old, new):
     return string.replace(old, new)
+
 
 def target_offset(target, index: int, offset: int):
     return target + offset

@@ -9,6 +9,7 @@ from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 from ..model_evaluator import ModelEvaluator
 from .common import (default_data_extraction, replace_str, str_target_to_int,
                      swap_input_and_target, target_offset)
+from .template import get_text_template, interpret_template
 
 if has_torchtext:
     import torchtext
@@ -22,7 +23,10 @@ if has_hugging_face:
 def multi_nli_data_extraction(data: Any) -> dict:
     match data:
         case {"premise": premise, "hypothesis": hypothesis, "label": label, **kwargs}:
-            item = {"input": [premise, hypothesis], "target": label}
+            item = {
+                "input": {"premise": premise, "hypothesis": hypothesis},
+                "target": label,
+            }
             if "index" in kwargs:
                 item["index"] = kwargs["index"]
             return item
@@ -38,20 +42,21 @@ def create_multi_nli_text(sample_input, cls_token, sep_token):
 
 
 def add_text_extraction(dc: DatasetCollection) -> None:
-    assert dc.dataset_type == DatasetType.Text
-    assert has_torchtext
-    # ExtractData
-    if dc.name is not None:
-        match dc.name.lower():
-            case "multi_nli":
-                dc.clear_transform(key=TransformType.ExtractData)
-                dc.append_transform(
-                    key=TransformType.ExtractData, transform=multi_nli_data_extraction
-                )
-            case _:
-                dc.append_transform(
-                    swap_input_and_target, key=TransformType.ExtractData
-                )
+    pass
+    # assert dc.dataset_type == DatasetType.Text
+    # assert has_torchtext
+    # # ExtractData
+    # if dc.name is not None:
+    #     match dc.name.lower():
+    #         case "multi_nli":
+    #             dc.clear_transform(key=TransformType.ExtractData)
+    #             dc.append_transform(
+    #                 key=TransformType.ExtractData, transform=multi_nli_data_extraction
+    #             )
+    #         case _:
+    #             dc.append_transform(
+    #                 swap_input_and_target, key=TransformType.ExtractData
+    #             )
 
 
 def add_text_transforms(
@@ -59,6 +64,8 @@ def add_text_transforms(
 ) -> None:
     assert dc.dataset_type == DatasetType.Text
     assert has_torchtext
+    if not dataset_kwargs:
+        dataset_kwargs = {}
     dataset_name: str = ""
     if dc.name is not None:
         dataset_name = dc.name.lower()
@@ -73,28 +80,25 @@ def add_text_transforms(
             key=TransformType.Target,
         )
 
-    if not dataset_kwargs:
-        dataset_kwargs = {}
+    # text_transforms = dataset_kwargs.get("text_transforms", {})
+    # for phase, transforms in text_transforms.items():
+    #     for f in transforms:
+    #         dc.append_transform(f, key=TransformType.InputText, phases=[phase])
 
-    text_transforms = dataset_kwargs.get("text_transforms", {})
-    for phase, transforms in text_transforms.items():
-        for f in transforms:
-            dc.append_transform(f, key=TransformType.InputText, phases=[phase])
+    assert model_evaluator.model_type is not None
+    text_template = get_text_template(
+        dataset_name=dataset_name, model_type=model_evaluator.model_type
+    )
+    if text_template is not None:
+        dc.append_transform(
+            functools.partial(interpret_template, template=text_template),
+            key=TransformType.InputText,
+        )
 
     # Input && InputBatch
-
     max_len = dataset_kwargs.get("max_len", None)
     match dc.tokenizer:
         case SpacyTokenizer():
-            if dataset_name == "multi_nli":
-                dc.append_transform(
-                    functools.partial(
-                        create_multi_nli_text,
-                        cls_token="<cls>",
-                        sep_token="<sep>",
-                    ),
-                    key=TransformType.InputText,
-                )
             dc.append_transform(dc.tokenizer, key=TransformType.Input)
             if max_len is not None:
                 dc.append_transform(
