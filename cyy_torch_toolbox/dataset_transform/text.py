@@ -1,5 +1,4 @@
 import functools
-from typing import Any
 
 import torch
 
@@ -20,38 +19,12 @@ if has_hugging_face:
     import transformers as hugging_face_transformers
 
 
-def multi_nli_data_extraction(data: Any) -> dict:
-    match data:
-        case {"premise": premise, "hypothesis": hypothesis, "label": label, **kwargs}:
-            item = {
-                "input": {"premise": premise, "hypothesis": hypothesis},
-                "target": label,
-            }
-            if "index" in kwargs:
-                item["index"] = kwargs["index"]
-            return item
-        case _:
-            return multi_nli_data_extraction(default_data_extraction(data))
-    raise NotImplementedError()
-
-
-def create_multi_nli_text(sample_input, cls_token, sep_token):
-    premise = sample_input[0]
-    hypothesis = sample_input[1]
-    return cls_token + " " + premise + " " + sep_token + " " + hypothesis
-
-
 def add_text_extraction(dc: DatasetCollection) -> None:
     assert dc.dataset_type == DatasetType.Text
     assert has_torchtext
     # ExtractData
     if dc.name is not None:
         match dc.name.lower():
-            # case "multi_nli":
-            #     dc.clear_transform(key=TransformType.ExtractData)
-            #     dc.append_transform(
-            #         key=TransformType.ExtractData, transform=multi_nli_data_extraction
-            #     )
             case "imdb":
                 dc.append_transform(
                     swap_input_and_target, key=TransformType.ExtractData
@@ -79,7 +52,8 @@ def add_text_transforms(
             key=TransformType.Target,
         )
 
-    # text_transforms = dataset_kwargs.get("text_transforms", {})
+    text_transforms = dataset_kwargs.get("text_transforms", {})
+    assert not text_transforms
     # for phase, transforms in text_transforms.items():
     #     for f in transforms:
     #         dc.append_transform(f, key=TransformType.InputText, phases=[phase])
@@ -96,6 +70,7 @@ def add_text_transforms(
 
     # Input && InputBatch
     max_len = dataset_kwargs.get("max_len", None)
+    print(dc.tokenizer)
     match dc.tokenizer:
         case SpacyTokenizer():
             dc.append_transform(dc.tokenizer, key=TransformType.Input)
@@ -127,9 +102,7 @@ def add_text_transforms(
         case _:
             raise NotImplementedError(str(type(dc.tokenizer)))
     # Target
-    if isinstance(
-        dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(0),
-        str,
-    ):
+    if dataset_name == "imdb":
         label_names = dc.get_label_names()
         dc.append_transform(str_target_to_int(label_names), key=TransformType.Target)
+    print(model_evaluator.model)
