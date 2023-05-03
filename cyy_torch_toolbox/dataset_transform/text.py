@@ -1,12 +1,13 @@
 import functools
 
 import torch
+from cyy_naive_lib.reflection import get_kwarg_names
 
 from ..dataset_collection import DatasetCollection
 from ..dependency import has_hugging_face, has_spacy, has_torchtext
-from ..ml_type import DatasetType, MachineLearningPhase, TransformType
+from ..ml_type import DatasetType, TransformType
 from ..model_evaluator import ModelEvaluator
-from .common import (default_data_extraction, replace_str, str_target_to_int,
+from .common import (int_target_to_text, replace_str, str_target_to_int,
                      swap_input_and_target, target_offset)
 from .template import get_text_template, interpret_template
 
@@ -70,7 +71,6 @@ def add_text_transforms(
 
     # Input && InputBatch
     max_len = dataset_kwargs.get("max_len", None)
-    print(dc.tokenizer)
     match dc.tokenizer:
         case SpacyTokenizer():
             dc.append_transform(dc.tokenizer, key=TransformType.Input)
@@ -88,7 +88,6 @@ def add_text_transforms(
                 key=TransformType.InputBatch,
             )
         case hugging_face_transformers.PreTrainedTokenizerBase():
-            assert max_len is not None
             dc.append_transform(
                 functools.partial(
                     dc.tokenizer,
@@ -101,8 +100,26 @@ def add_text_transforms(
             )
         case _:
             raise NotImplementedError(str(type(dc.tokenizer)))
+
     # Target
+    if has_hugging_face:
+        match model_evaluator.model:
+            case hugging_face_transformers.PreTrainedModel():
+                kwargs = get_kwarg_names(model_evaluator.model.forward)
+                if "labels" in kwargs:
+                    dc.append_transform(int_target_to_text, key=TransformType.Target)
+                    dc.append_transform(
+                        functools.partial(
+                            dc.tokenizer,
+                            max_length=max_len,
+                            padding="max_length",
+                            return_tensors="pt",
+                            truncation=True,
+                        ),
+                        key=TransformType.TargetBatch,
+                    )
+                    return
+
     if dataset_name == "imdb":
         label_names = dc.get_label_names()
         dc.append_transform(str_target_to_int(label_names), key=TransformType.Target)
-    print(model_evaluator.model)
