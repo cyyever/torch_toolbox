@@ -32,7 +32,7 @@ def get_model_evaluator(
         model_evaluator_fun = VisionModelEvaluator
     elif dataset_collection.dataset_type == DatasetType.Text:
         if has_hugging_face and isinstance(
-            model, transformers.modeling_utils.PreTrainedModel
+            model, transformers.PreTrainedModel
         ):
             model_evaluator_fun = HuggingFaceModelEvaluator
         else:
