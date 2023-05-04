@@ -111,17 +111,29 @@ __huggingface_models = [
 ]
 
 
-def __create_hugging_face_sequence_classification_model(model_name, pretrained, **model_kwargs):
+def __create_hugging_face_seq2seq_lm_model(model_name, pretrained, **model_kwargs):
+    pretrained_model = transformers.AutoModelForSeq2SeqLM.from_pretrained(
+        model_name, **model_kwargs
+    )
+    if pretrained:
+        return pretrained_model
+    get_logger().warning("use huggingface without pretrained parameters")
+    config = transformers.AutoConfig.from_pretrained(model_name, **model_kwargs)
+    model = transformers.AutoModelForSeq2SeqLM.from_config(config)
+    return model
+
+
+def __create_hugging_face_sequence_classification_model(
+    model_name, pretrained, **model_kwargs
+):
     pretrained_model = transformers.AutoModelForSequenceClassification.from_pretrained(
         model_name, **model_kwargs
     )
     if pretrained:
         return pretrained_model
     get_logger().warning("use huggingface without pretrained parameters")
-    old_embedding = pretrained_model.get_input_embeddings()
     config = transformers.AutoConfig.from_pretrained(model_name, **model_kwargs)
     model = transformers.AutoModelForSequenceClassification.from_config(config)
-    model.set_input_embeddings(old_embedding)
     return model
 
 
@@ -132,10 +144,8 @@ def __create_hugging_face_model(model_name, pretrained, **model_kwargs):
     if pretrained:
         return pretrained_model
     get_logger().warning("use huggingface without pretrained parameters")
-    # old_embedding = pretrained_model.get_input_embeddings()
     config = transformers.AutoConfig.from_pretrained(model_name, **model_kwargs)
     model = transformers.AutoModel.from_config(config)
-    # model.set_input_embeddings(old_embedding)
     return model
 
 
@@ -149,7 +159,6 @@ def get_hugging_face_model_info() -> dict:
                 __create_hugging_face_sequence_classification_model,
                 model_name,
             ),
-            "has_tokenizer": True,
         }
         full_model_name = "hugging_face_" + model_name
         model_info[full_model_name.lower()] = {
@@ -158,6 +167,13 @@ def get_hugging_face_model_info() -> dict:
                 __create_hugging_face_model,
                 model_name,
             ),
-            "has_tokenizer": True,
+        }
+        full_model_name = "hugging_face_seq2seq_lm_" + model_name
+        model_info[full_model_name.lower()] = {
+            "name": full_model_name,
+            "constructor": functools.partial(
+                __create_hugging_face_seq2seq_lm_model,
+                model_name,
+            ),
         }
     return {DatasetType.Text: model_info}

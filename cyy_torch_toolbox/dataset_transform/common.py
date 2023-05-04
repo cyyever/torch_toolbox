@@ -66,6 +66,15 @@ def str_target_to_int(label_names: dict) -> Callable:
     return functools.partial(__get_int_target, reversed_label_names)
 
 
+def int_target_to_text(target, index):
+    match target:
+        case 0:
+            return "zero"
+        case 1:
+            return "one"
+    return target
+
+
 def __replace_target(label_map, target, index):
     if index in label_map:
         assert label_map[index] != target
