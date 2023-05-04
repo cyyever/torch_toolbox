@@ -72,6 +72,12 @@ def int_target_to_text(target, index):
             return "zero"
         case 1:
             return "one"
+        case 2:
+            return "two"
+        case 3:
+            return "three"
+        case int():
+            raise NotImplementedError()
     return target
 
 

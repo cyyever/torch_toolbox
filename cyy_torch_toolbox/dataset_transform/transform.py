@@ -1,6 +1,7 @@
 import copy
 from typing import Any, Callable
 
+import torch
 from cyy_naive_lib.log import get_logger
 from torch.utils.data._utils.collate import default_collate
 
@@ -72,7 +73,7 @@ class Transforms:
             batch_transforms.append(default_collate)
         for f in batch_transforms:
             targets = f(targets)
-        return targets.reshape(-1)
+        return targets
 
     def collate_batch(self, batch: Any) -> dict:
         inputs = []

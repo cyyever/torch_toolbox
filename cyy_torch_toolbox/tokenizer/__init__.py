@@ -10,10 +10,10 @@ if has_hugging_face:
     import transformers
 
 
-def __get_hugging_face_tokenizer(tokenizer_type):
+def __get_hugging_face_tokenizer(tokenizer_type, kwargs):
     if not has_hugging_face:
         raise RuntimeError("no hugging face library")
-    return transformers.AutoTokenizer.from_pretrained(tokenizer_type)
+    return transformers.AutoTokenizer.from_pretrained(tokenizer_type, **kwargs)
 
 
 def get_tokenizer(dc, dataset_kwargs: dict | None) -> Any:
@@ -25,7 +25,7 @@ def get_tokenizer(dc, dataset_kwargs: dict | None) -> Any:
         case "hugging_face":
             assert has_hugging_face
             return __get_hugging_face_tokenizer(
-                dataset_kwargs.get("tokenizer", {})["name"]
+                tokenizer_config["name"], tokenizer_config["kwargs"]
             )
         case "spacy":
             assert has_spacy
