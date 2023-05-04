@@ -49,6 +49,3 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
                 "classification_output": output["logits"],
             }
         raise NotImplementedError()
-        return super()._forward_model(
-            inputs=inputs, targets=targets, input_features=input_features, **kwargs
-        )

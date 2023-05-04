@@ -93,9 +93,13 @@ class ModelEvaluator:
                 need_backward=need_backward,
             )
 
-        # DALI returns nested targets
-        if len(targets.shape) > 1:
-            targets = targets.view(-1).long()
+        # deal with nested targets
+        if self.model_type == ModelType.Classification and isinstance(
+            targets, torch.Tensor
+        ):
+            targets = targets.view(-1)
+            if targets.dtype == torch.int:
+                targets = targets.long()
 
         cpu_inputs = None
         if device is not None:
