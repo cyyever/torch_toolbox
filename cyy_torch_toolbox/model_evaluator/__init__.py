@@ -45,8 +45,6 @@ def get_model_evaluator(
     if model_kwargs is None:
         model_kwargs = {}
     loss_fun_name = model_kwargs.get("loss_fun_name", None)
-    if model_type is None:
-        model_type = ModelType.Classification
     model_evaluator = model_evaluator_fun(
         model=model,
         model_name=model_name,

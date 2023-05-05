@@ -14,12 +14,13 @@ class AccuracyMetric(Metric):
         self.__dataset_size = 0
         self.__correct_count = None
 
-    def _after_batch(self, **kwargs):
-        output = kwargs["result"]["model_output"]
-        targets = kwargs["result"]["targets"]
-        if len(output.shape) == 1:
+    def _after_batch(self, result, **kwargs):
+        output = result["model_output"]
+        logits = result.get("logits", None)
+        targets = result["targets"]
+        if logits is not None:
             correct_count = (
-                torch.eq(torch.round(output.sigmoid()), targets).view(-1).sum()
+                torch.eq(torch.round(logits.sigmoid()), targets).view(-1).sum()
             )
         else:
             correct_count = (

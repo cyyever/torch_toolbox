@@ -10,6 +10,7 @@ class MachineLearningPhase(IntEnum):
 class ModelType(IntEnum):
     Classification = auto()
     Detection = auto()
+    TextGeneration = auto()
 
 
 class DatasetType(IntEnum):

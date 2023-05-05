@@ -5,7 +5,7 @@ from cyy_naive_lib.reflection import get_kwarg_names
 
 from ..dataset_collection import DatasetCollection
 from ..dependency import has_hugging_face, has_spacy, has_torchtext
-from ..ml_type import DatasetType, TransformType
+from ..ml_type import DatasetType, ModelType, TransformType
 from ..model_evaluator import ModelEvaluator
 from .common import (int_target_to_text, replace_str, str_target_to_int,
                      swap_input_and_target, target_offset)
@@ -103,22 +103,20 @@ def add_text_transforms(
 
     # Target
     if has_hugging_face:
-        match model_evaluator.model:
-            case hugging_face_transformers.PreTrainedModel():
-                kwargs = get_kwarg_names(model_evaluator.model.forward)
-                if "labels" in kwargs:
-                    dc.append_transform(int_target_to_text, key=TransformType.Target)
-                    dc.append_transform(
-                        functools.partial(
-                            dc.tokenizer,
-                            max_length=max_len,
-                            padding="max_length",
-                            return_tensors="pt",
-                            truncation=True,
-                        ),
-                        key=TransformType.TargetBatch,
-                    )
-                    return
+        match model_evaluator.model_type:
+            case ModelType.TextGeneration:
+                dc.append_transform(int_target_to_text, key=TransformType.Target)
+                dc.append_transform(
+                    functools.partial(
+                        dc.tokenizer,
+                        max_length=max_len,
+                        padding="max_length",
+                        return_tensors="pt",
+                        truncation=True,
+                    ),
+                    key=TransformType.TargetBatch,
+                )
+                return
 
     if dataset_name == "imdb":
         label_names = dc.get_label_names()

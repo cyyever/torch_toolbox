@@ -3,17 +3,17 @@ import copy
 import torch
 import transformers
 from cyy_naive_lib.log import get_logger
-from cyy_naive_lib.reflection import get_kwarg_names
 
 from ..ml_type import ModelType
 from .text import TextModelEvaluator
 
 
 class HuggingFaceModelEvaluator(TextModelEvaluator):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        assert isinstance(self.model, transformers.modeling_utils.PreTrainedModel)
-        assert self.model_type == ModelType.Classification
+    def __init__(self, model, model_type, **kwargs):
+        if model_type is None:
+            if "ConditionalGeneration" in model.__class__.__name__:
+                model_type = ModelType.TextGeneration
+        super().__init__(model=model, model_type=model_type, **kwargs)
 
     def get_input_feature(self, inputs):
         match inputs:
@@ -44,8 +44,9 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
             targets = targets.input_ids
         # get_logger().error("inputs %s,labels %s", inputs, targets)
         output = self.model(**inputs, labels=targets)
-        get_logger().error("output is %s %s", output.loss,output.logits)
         return {
-            "loss": output["loss"],
-            "classification_output": output["logits"],
+            "model_output": output,
+            "logits": output.logits,
+            "loss": output.loss,
+            "is_averaged_loss": True,
         }
