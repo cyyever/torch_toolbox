@@ -32,6 +32,8 @@ class ModelEvaluator:
         self.__loss_fun: Callable | None = None
         if loss_fun is not None:
             self.set_loss_fun(loss_fun)
+        if model_type is None:
+            model_type = ModelType.Classification
         self.__model_type = model_type
         self.need_input_features = False
         self.need_cpu_inputs = False

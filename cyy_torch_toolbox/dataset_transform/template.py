@@ -6,7 +6,7 @@ from ..ml_type import ModelType
 def get_text_template(dataset_name: str, model_type: ModelType) -> list[str] | None:
     match dataset_name.lower():
         case "multi_nli":
-            if model_type == ModelType.Classification:
+            if model_type in (ModelType.Classification, ModelType.TextGeneration):
                 return ["<cls>", " ", "{premise}", " ", "<sep>", " ", "{hypothesis}"]
     return None
 
