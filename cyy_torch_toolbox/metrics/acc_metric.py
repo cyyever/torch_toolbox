@@ -15,7 +15,7 @@ class AccuracyMetric(Metric):
         self.__correct_count = None
 
     def _after_batch(self, **kwargs):
-        output = kwargs["result"]["classification_output"]
+        output = kwargs["result"]["model_output"]
         targets = kwargs["result"]["targets"]
         if len(output.shape) == 1:
             correct_count = (
