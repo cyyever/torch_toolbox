@@ -117,33 +117,17 @@ class ModelEvaluator:
         if input_features is None and self.need_input_features:
             input_features = self.get_input_feature(inputs)
             assert input_features is not None
-        output = self._forward_model(
+        return self._forward_model(
             inputs=inputs, input_features=input_features, targets=targets, **kwargs
-        )
-
-        match output:
-            case torch.Tensor():
-                match self.loss_fun:
-                    case nn.BCEWithLogitsLoss():
-                        output = output.view(-1)
-                        targets = targets.to(
-                            dtype=output.dtype, non_blocking=non_blocking
-                        )
-                loss = self.loss_fun(output, targets)
-                output = {"loss": loss, "classification_output": output}
-        is_averaged_loss = self.__is_averaged_loss()
-        if is_averaged_loss is None:
-            is_averaged_loss = output["classification_output"] is not None
-        return output | {
+        ) | {
             "inputs": inputs,
             "cpu_inputs": cpu_inputs,
             "input_features": input_features,
             "targets": targets,
-            "is_averaged_loss": is_averaged_loss,
         }
 
     def _forward_model(
-        self, inputs, input_features=None, **kwargs
+        self, inputs, input_features, targets, **kwargs: dict
     ) -> dict | torch.Tensor:
         fun: Callable = self.model
         if hasattr(self.model, "forward_input_feature") and input_features is not None:
@@ -153,13 +137,26 @@ class ModelEvaluator:
             real_inputs = inputs
         match real_inputs:
             case torch.Tensor():
-                return fun(real_inputs)
+                output = fun(real_inputs)
             case tuple():
-                return fun(*real_inputs)
+                output = fun(*real_inputs)
             case dict():
-                return fun(**real_inputs)
+                output = fun(**real_inputs)
             case _:
                 raise NotImplementedError(type(real_inputs))
+
+        match output:
+            case torch.Tensor():
+                match self.loss_fun:
+                    case nn.BCEWithLogitsLoss():
+                        output = output.view(-1)
+                loss = self.loss_fun(output, targets)
+                return {
+                    "loss": loss,
+                    "model_output": output,
+                    "is_averaged_loss": self.__is_averaged_loss(),
+                }
+        raise NotImplementedError()
 
     def replace_model(self, model):
         return ModelEvaluator(

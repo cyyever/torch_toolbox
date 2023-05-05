@@ -2,8 +2,10 @@ import copy
 
 import torch
 import transformers
+from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_kwarg_names
 
+from ..ml_type import ModelType
 from .text import TextModelEvaluator
 
 
@@ -11,6 +13,7 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         assert isinstance(self.model, transformers.modeling_utils.PreTrainedModel)
+        assert self.model_type == ModelType.Classification
 
     def get_input_feature(self, inputs):
         match inputs:
@@ -29,23 +32,20 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
     def _forward_model(
         self, inputs, targets, input_features=None, **kwargs
     ) -> dict | torch.Tensor:
-        if hasattr(self.model, "forward"):
-            kwarg_names = get_kwarg_names(self.model.forward)
-        else:
-            kwarg_names = get_kwarg_names(self.model)
-        if "input_ids" in kwarg_names and "inputs_embeds" in kwarg_names:
-            if input_features is not None:
-                if inputs is not None:
-                    new_inputs = copy.copy(inputs)
-                    new_inputs.pop("input_ids", None)
-                else:
-                    new_inputs = {}
-                new_inputs["inputs_embeds"] = input_features
-                output = self.model(**new_inputs, labels=targets)
+        if input_features is not None:
+            if inputs is not None:
+                inputs = copy.copy(inputs)
+                inputs.pop("input_ids", None)
             else:
-                output = self.model(**inputs, labels=targets)
-            return {
-                "loss": output["loss"],
-                "classification_output": output["logits"],
-            }
-        raise NotImplementedError()
+                inputs = {}
+            inputs["inputs_embeds"] = input_features
+
+        if hasattr(targets, "input_ids"):
+            targets = targets.input_ids
+        # get_logger().error("inputs %s,labels %s", inputs, targets)
+        output = self.model(**inputs, labels=targets)
+        get_logger().error("output is %s %s", output.loss,output.logits)
+        return {
+            "loss": output["loss"],
+            "classification_output": output["logits"],
+        }
