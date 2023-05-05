@@ -2,7 +2,7 @@ import copy
 import functools
 import os
 import random
-from collections.abc import Sequence
+from collections.abc import Iterable
 from typing import Any, Generator
 
 import PIL
@@ -43,7 +43,7 @@ class DatasetUtil:
     def decompose(self) -> None | dict:
         return None
 
-    def get_samples(self, indices: Sequence | None = None) -> Generator:
+    def get_samples(self, indices: Iterable | None = None) -> Generator:
         items = select_item(dataset=self.dataset, indices=indices, mask=self.get_mask())
         if self.__transforms is None:
             return items
@@ -322,13 +322,13 @@ class GraphDatasetUtil(DatasetSplitter):
     def get_edge_dict(self) -> dict:
         assert len(self.dataset) == 1
         key: str = "__torch_toolbox_edge_dict"
-        for graph_dict in self.dataset:
-            graph = graph_dict["graph"]
-            if hasattr(graph, key):
-                return getattr(graph, key)
-            edge_dict = GraphDatasetUtil.edge_to_dict(edge_index=graph.edge_index)
-            setattr(graph, key, edge_dict)
-            return edge_dict
+        graph_dict = self.dataset[0]
+        graph = graph_dict["graph"]
+        if hasattr(graph, key):
+            return getattr(graph, key)
+        edge_dict = GraphDatasetUtil.edge_to_dict(edge_index=graph.edge_index)
+        setattr(graph, key, edge_dict)
+        return edge_dict
 
     def get_boundary(self, node_indices: list) -> dict:
         assert len(self.dataset) == 1
@@ -341,7 +341,7 @@ class GraphDatasetUtil(DatasetSplitter):
 
     @classmethod
     def get_neighbors_from_edges(
-        cls, node_indices: Sequence, edge_dict: dict, hop
+        cls, node_indices: Iterable, edge_dict: dict, hop: int
     ) -> dict:
         res: dict = {}
         node_indices = set(node_indices)
@@ -358,7 +358,7 @@ class GraphDatasetUtil(DatasetSplitter):
             res[node_idx] = neighbors
         return res
 
-    def get_neighbors(self, node_indices: Sequence, hop: int) -> dict:
+    def get_neighbors(self, node_indices: Iterable, hop: int) -> dict:
         assert len(self.dataset) == 1
         return GraphDatasetUtil.get_neighbors_from_edges(
             node_indices=node_indices, edge_dict=self.get_edge_dict(), hop=hop

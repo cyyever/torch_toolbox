@@ -31,9 +31,7 @@ def get_model_evaluator(
     if dataset_collection.dataset_type == DatasetType.Vision:
         model_evaluator_fun = VisionModelEvaluator
     elif dataset_collection.dataset_type == DatasetType.Text:
-        if has_hugging_face and isinstance(
-            model, transformers.PreTrainedModel
-        ):
+        if has_hugging_face and isinstance(model, transformers.PreTrainedModel):
             model_evaluator_fun = HuggingFaceModelEvaluator
         else:
             model_evaluator_fun = TextModelEvaluator
@@ -67,4 +65,7 @@ def get_model_evaluator(
             tokenizer=dataset_collection.tokenizer,
             freeze_embedding=model_kwargs.get("freeze_word_vector", False),
         )
+    for frozen_module_name in model_kwargs.get("frozen_module_names", []):
+        model_evaluator.model_util.freeze_modules(module_name=frozen_module_name)
+
     return model_evaluator

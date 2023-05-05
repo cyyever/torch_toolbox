@@ -1,4 +1,4 @@
-from typing import Any, Callable, Optional, Type
+from typing import Any, Callable, Generator, Type
 
 import torch
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
@@ -9,16 +9,16 @@ from cyy_torch_toolbox.tensor import (cat_tensors_to_vector, load_tensor_dict,
 
 
 class ModelUtil:
-    def __init__(self, model: torch.nn.Module):
+    def __init__(self, model: torch.nn.Module) -> None:
         self.__model = model
-        self.__parameter_shapes: Optional[dict] = None
+        self.__parameter_shapes: dict | None = None
         self.__cached_buffer_names: set | None = None
 
     @property
     def model(self):
         return self.__model
 
-    def get_parameter_seq(self, detach=True):
+    def get_parameter_seq(self, detach: bool = True) -> Generator:
         res = self.get_parameter_dict(detach=detach)
         return get_mapping_values_by_key_order(res)
 
@@ -128,7 +128,7 @@ class ModelUtil:
         self.change_modules(f=impl, module_type=torch.nn.modules.batchnorm._NormBase)
 
     def reset_running_stats(self) -> None:
-        for name, module in self.get_modules():
+        for _, module in self.get_modules():
             if hasattr(module, "reset_running_stats"):
                 module.reset_running_stats()
 
