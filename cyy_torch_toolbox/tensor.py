@@ -1,5 +1,6 @@
 import functools
 import pickle
+from collections.abc import Iterable
 from typing import Any, Callable
 
 import numpy
@@ -13,7 +14,7 @@ except ModuleNotFoundError:
     has_hugging_face = False
 
 
-def cat_tensors_to_vector(tensors: list) -> torch.Tensor:
+def cat_tensors_to_vector(tensors: Iterable) -> torch.Tensor:
     return torch.cat([t.view(-1) for t in tensors])
 
 

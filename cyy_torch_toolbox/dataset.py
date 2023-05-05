@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Iterable
 from typing import Generator
 
 from cyy_torch_toolbox.dependency import has_torch_geometric
@@ -77,7 +77,7 @@ def dataset_with_indices(
 
 def select_item(
     dataset: torch.utils.data.Dataset,
-    indices: None | Sequence = None,
+    indices: None | Iterable = None,
     mask: None | torch.Tensor = None,
 ) -> Generator:
     if indices is not None:
@@ -102,7 +102,10 @@ def select_item(
                         if not flag:
                             continue
                         if indices is None or idx in indices:
-                            yield idx, {"target": dataset[0]["graph"]["y"][idx], "index": idx}
+                            yield idx, {
+                                "target": dataset[0]["graph"]["y"][idx],
+                                "index": idx,
+                            }
                 return
 
     match dataset:
@@ -127,7 +130,7 @@ def select_item(
 
 
 def subset_dp(
-    dataset: torch.utils.data.Dataset, indices: None | Sequence = None
+    dataset: torch.utils.data.Dataset, indices: None | Iterable = None
 ) -> torch.utils.data.MapDataPipe:
     return torchdata.datapipes.map.SequenceWrapper(
         list(dict(select_item(dataset, indices)).values()), deepcopy=False
