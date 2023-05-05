@@ -16,10 +16,9 @@ def __get_hugging_face_tokenizer(tokenizer_type, kwargs):
     return transformers.AutoTokenizer.from_pretrained(tokenizer_type, **kwargs)
 
 
-def get_tokenizer(dc, dataset_kwargs: dict | None) -> Any:
-    if not dataset_kwargs:
-        dataset_kwargs = {}
-    tokenizer_config = dataset_kwargs.get("tokenizer", {})
+def get_tokenizer(dc, tokenizer_config: dict | None = None) -> Any:
+    if tokenizer_config is None:
+        tokenizer_config = {}
     tokenizer_type = tokenizer_config.get("type", "spacy")
     match tokenizer_type:
         case "hugging_face":

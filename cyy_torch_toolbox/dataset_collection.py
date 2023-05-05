@@ -260,7 +260,7 @@ class DatasetCollection:
         )
         add_data_extraction(dc)
         if dc.dataset_type == DatasetType.Text:
-            dc.tokenizer = get_tokenizer(dc, dataset_kwargs)
+            dc.tokenizer = get_tokenizer(dc, dataset_kwargs.get("tokenizer", {}))
         if not dc.has_dataset(MachineLearningPhase.Validation):
             dc._split_training()
         if not dc.has_dataset(MachineLearningPhase.Test):
