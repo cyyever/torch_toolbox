@@ -100,8 +100,8 @@ class ModelEvaluator:
             targets, torch.Tensor
         ):
             targets = targets.view(-1)
-            if targets.dtype == torch.int:
-                targets = targets.long()
+            # if targets.dtype == torch.int:
+            #     targets = targets.long()
 
         cpu_inputs = None
         if device is not None:
@@ -120,7 +120,11 @@ class ModelEvaluator:
             input_features = self.get_input_feature(inputs)
             assert input_features is not None
         return self._forward_model(
-            inputs=inputs, input_features=input_features, targets=targets, **kwargs
+            inputs=inputs,
+            input_features=input_features,
+            targets=targets,
+            non_blocking=non_blocking,
+            **kwargs,
         ) | {
             "inputs": inputs,
             "cpu_inputs": cpu_inputs,
@@ -129,7 +133,7 @@ class ModelEvaluator:
         }
 
     def _forward_model(
-        self, inputs, input_features, targets, **kwargs: dict
+        self, inputs, input_features, targets, non_blocking, **kwargs: dict
     ) -> dict | torch.Tensor:
         fun: Callable = self.model
         if hasattr(self.model, "forward_input_feature") and input_features is not None:
@@ -152,6 +156,9 @@ class ModelEvaluator:
                 match self.loss_fun:
                     case nn.BCEWithLogitsLoss():
                         output = output.view(-1)
+                        targets = targets.to(
+                            dtype=output.dtype, non_blocking=non_blocking
+                        )
                 loss = self.loss_fun(output, targets)
                 return {
                     "loss": loss,
