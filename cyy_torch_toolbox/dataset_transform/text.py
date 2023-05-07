@@ -1,11 +1,11 @@
 import functools
 
 import torch
-from cyy_naive_lib.reflection import get_kwarg_names
 
 from ..dataset_collection import DatasetCollection
 from ..dependency import has_hugging_face, has_spacy, has_torchtext
-from ..ml_type import DatasetType, ModelType, TransformType
+from ..ml_type import (DatasetType, MachineLearningPhase, ModelType,
+                       TransformType)
 from ..model_evaluator import ModelEvaluator
 from .common import (int_target_to_text, replace_str, str_target_to_int,
                      swap_input_and_target, target_offset)
@@ -116,8 +116,10 @@ def add_text_transforms(
                     ),
                     key=TransformType.TargetBatch,
                 )
-                return
-
-    if dataset_name == "imdb":
+    # Target
+    if model_evaluator.model_type == ModelType.Classification and isinstance(
+        dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(0),
+        str,
+    ):
         label_names = dc.get_label_names()
         dc.append_transform(str_target_to_int(label_names), key=TransformType.Target)
