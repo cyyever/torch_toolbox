@@ -19,13 +19,12 @@ class AccuracyMetric(Metric):
         logits = result.get("logits", None)
         targets = result["targets"]
         if logits is not None:
-            correct_count = (
-                torch.eq(torch.round(logits.sigmoid()), targets).view(-1).sum()
-            )
-        else:
-            correct_count = (
-                torch.eq(torch.max(output, dim=1)[1], targets).view(-1).sum()
-            )
+            output = logits
+            # correct_count = (
+            #     torch.eq(torch.round(logits.sigmoid()), targets).view(-1).sum()
+            # )
+        # else:
+        correct_count = torch.eq(torch.max(output, dim=1)[1], targets).view(-1).sum()
         if self.__correct_count is None:
             self.__correct_count = correct_count
         else:
