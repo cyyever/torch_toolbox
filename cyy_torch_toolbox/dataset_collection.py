@@ -209,6 +209,8 @@ class DatasetCollection:
         dataset_kwargs: dict | None = None,
         model_config=None,
     ) -> Any:
+        if dataset_kwargs is None:
+            dataset_kwargs = {}
         constructor_kwargs = get_kwarg_names(dataset_constructor)
         dataset_kwargs_fun = cls.__prepare_dataset_kwargs(
             name, constructor_kwargs, dataset_kwargs
