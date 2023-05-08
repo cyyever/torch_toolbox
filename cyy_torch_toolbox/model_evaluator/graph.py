@@ -1,5 +1,5 @@
-from cyy_naive_lib.log import get_logger
 import torch
+from cyy_naive_lib.log import get_logger
 
 from ..dataset_util import GraphDatasetUtil
 from ..dependency import has_torch_geometric
@@ -73,12 +73,13 @@ class GraphModelEvaluator(ModelEvaluator):
             self.node_mask[phase] = node_mask
 
         inputs["edge_index"] = self.edge_index_map[phase]
-        kwargs["targets"] = kwargs["targets"][mask]
+        kwargs["targets"] = kwargs["targets"].view(-1)[mask]
+        print("targets", kwargs["targets"])
         inputs["x"] = inputs["x"][self.node_and_neighbour_mask[phase]]
         kwargs["mask"] = self.node_mask[phase]
         return super().__call__(**kwargs)
 
-    def _forward_model(self, **kwargs) -> dict | torch.Tensor:
+    def _compute_loss(self, output, **kwargs):
         mask = kwargs.pop("mask")
-        output = super()._forward_model(**kwargs)
-        return output[mask]
+        output = output[mask]
+        return super()._compute_loss(output=output, **kwargs)

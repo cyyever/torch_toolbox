@@ -34,7 +34,11 @@ class ExecutorLogger(Hook):
             get_logger().info("lr_scheduler is %s", type(lr_scheduler))
         for phase in MachineLearningPhase:
             if executor.dataset_collection.has_dataset(phase):
-                get_logger().info("%s dataset len %s", phase, executor.dataset_size)
+                get_logger().info(
+                    "%s dataset len %s",
+                    phase,
+                    len(executor.dataset_collection.get_dataset_util(phase=phase)),
+                )
         if executor.dataset_collection.tokenizer is not None:
             get_logger().info(
                 "tokenizer is %s", type(executor.dataset_collection.tokenizer)

@@ -390,10 +390,6 @@ class GraphDatasetUtil(DatasetSplitter):
             datasets[phase] = []
         for graph in self.dataset:
             for phase in MachineLearningPhase:
-                # graph_dict = graph.to_dict()
-                # graph_dict["mask"] = graph_dict[mapping[phase]]
-                # for mask_name in mapping.values():
-                #     graph_dict.pop(mask_name)
                 datasets[phase].append(
                     {"subset_mask": getattr(graph, mapping[phase]), "graph": graph}
                 )
