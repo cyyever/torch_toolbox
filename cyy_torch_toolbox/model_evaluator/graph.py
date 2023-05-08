@@ -74,7 +74,6 @@ class GraphModelEvaluator(ModelEvaluator):
 
         inputs["edge_index"] = self.edge_index_map[phase]
         kwargs["targets"] = kwargs["targets"].view(-1)[mask]
-        print("targets", kwargs["targets"])
         inputs["x"] = inputs["x"][self.node_and_neighbour_mask[phase]]
         kwargs["mask"] = self.node_mask[phase]
         return super().__call__(**kwargs)
