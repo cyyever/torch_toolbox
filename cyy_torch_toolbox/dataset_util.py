@@ -367,19 +367,13 @@ class GraphDatasetUtil(DatasetSplitter):
     def get_subset(self, indices: list) -> list:
         assert indices
         mask = copy.deepcopy(self.get_mask())
-        # dataset = copy.deepcopy(self.dataset)
         mask.fill_(False)
         for index in indices:
             mask[index] = True
-        # setattr(dataset, "__subset_mask", mask)
         graph = self.dataset[0]
         if isinstance(graph, dict):
             graph = graph["graph"]
         return [{"subset_mask": mask, "graph": graph}]
-        # data_dict = dataset[0].to_dict()
-        # data_dict["mask"] = mask
-        # dataset = [torch_geometric.data.Data.from_dict(data_dict)]
-        # return self.dataset
 
     def decompose(self) -> None | dict:
         mapping = {
@@ -396,7 +390,6 @@ class GraphDatasetUtil(DatasetSplitter):
             datasets[phase] = []
         for graph in self.dataset:
             for phase in MachineLearningPhase:
-
                 # graph_dict = graph.to_dict()
                 # graph_dict["mask"] = graph_dict[mapping[phase]]
                 # for mask_name in mapping.values():
