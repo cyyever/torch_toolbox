@@ -5,29 +5,15 @@ from cyy_naive_lib.log import get_logger
 
 from ..dependency import has_torch_geometric
 
+if has_torch_geometric:
+    from .graph import pyg_data_extraction
+
 
 def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
     if has_torch_geometric:
-        match data:
-            case {
-                "subset_mask": subset_mask,
-                "graph": graph,
-            }:
-                res = {
-                    "input": {"x": graph.x, "edge_index": graph.edge_index},
-                    "target": graph.y,
-                    "mask": subset_mask,
-                }
-                return res
-            # case torch_geometric.data.Data():
-            #     res = {
-            #         "input": {"x": data.x, "edge_index": data.edge_index},
-            #         "target": data.y,
-            #     }
-            #     for attr_name in ["mask"]:
-            #         if hasattr(data, attr_name):
-            #             res[attr_name] = getattr(data, attr_name)
-            #     return res
+        result = pyg_data_extraction(data=data, extract_index=extract_index)
+        if result is not None:
+            return result
     if extract_index:
         match data:
             case {"data": real_data, "index": index}:
