@@ -5,6 +5,7 @@ from cyy_naive_lib.storage import DataStorage
 from cyy_torch_toolbox.device import get_cpu_device
 from cyy_torch_toolbox.hook import Hook
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
+from cyy_torch_toolbox.tensor import tensor_to
 
 
 class KeepModelHook(Hook):
@@ -44,8 +45,12 @@ class KeepModelHook(Hook):
             if self.best_model is None or acc > self.best_model[1]:
                 self.__best_model.set_data(
                     (
-                        copy.deepcopy(trainer.model_evaluator.model).to(
-                            get_cpu_device(), non_blocking=True
+                        tensor_to(
+                            data=copy.deepcopy(
+                                trainer.model_util.get_parameter_dict()
+                            ),
+                            non_blocking=True,
+                            device=get_cpu_device(),
                         ),
                         acc,
                         epoch,
