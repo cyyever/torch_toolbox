@@ -133,7 +133,7 @@ class ModelEvaluator:
         }
 
     def _forward_model(
-        self, inputs, input_features, targets, non_blocking, **kwargs: dict
+        self, inputs, input_features, targets, **kwargs: dict
     ) -> dict | torch.Tensor:
         fun: Callable = self.model
         if hasattr(self.model, "forward_input_feature") and input_features is not None:
@@ -150,7 +150,9 @@ class ModelEvaluator:
                 output = fun(**real_inputs)
             case _:
                 raise NotImplementedError(type(real_inputs))
+        return self._compute_loss(output=output, targets=targets, **kwargs)
 
+    def _compute_loss(self, output, targets, non_blocking, **kwargs):
         match output:
             case torch.Tensor():
                 match self.loss_fun:
