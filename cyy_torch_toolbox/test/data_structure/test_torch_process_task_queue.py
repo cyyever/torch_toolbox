@@ -10,7 +10,10 @@ def hello(tasks, **kwargs):
 
 def test_process_task_queue():
     queue = TorchProcessTaskQueue(
-        hello, send_tensor_in_cpu=True, assemble_tensor=True, batch_process=True
+        worker_fun=hello,
+        send_tensor_in_cpu=True,
+        assemble_tensor=True,
+        batch_process=True,
     )
     queue.start()
     queue.add_task(())
