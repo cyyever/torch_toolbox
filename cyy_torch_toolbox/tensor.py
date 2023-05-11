@@ -5,6 +5,7 @@ from typing import Any, Callable
 
 import numpy
 import torch
+from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 
 try:
     import transformers
@@ -16,6 +17,10 @@ except ModuleNotFoundError:
 
 def cat_tensors_to_vector(tensors: Iterable) -> torch.Tensor:
     return torch.cat([t.view(-1) for t in tensors])
+
+
+def cat_tensor_dict(tensor_dict: dict) -> torch.Tensor:
+    return cat_tensors_to_vector(get_mapping_values_by_key_order(tensor_dict))
 
 
 def load_tensor_dict_from_seq(shapes: dict, tensor_seq: list) -> dict:

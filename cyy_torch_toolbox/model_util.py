@@ -118,6 +118,13 @@ class ModelUtil:
                     raise NotImplementedError(k) from e
             raise e
 
+    def get_gradient_dict(self) -> dict:
+        return {
+            k: v.grad
+            for k, v in self.get_parameter_dict(detach=False).items()
+            if v.grad is not None
+        }
+
     def disable_running_stats(self) -> None:
         def impl(_, module, __):
             module.track_running_stats = False
