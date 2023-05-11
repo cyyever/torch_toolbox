@@ -32,7 +32,7 @@ class Inferencer(Executor):
     def _get_backward_loss(self, result):
         return result["normalized_batch_loss"]
 
-    def get_gradient(self):
+    def get_gradient(self) -> dict:
         normal_stop: bool = self.inference(use_grad=True)
         assert normal_stop
-        return self.model_util.get_gradient_list()
+        return self.model_util.get_gradient_dict()
