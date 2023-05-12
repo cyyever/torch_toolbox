@@ -50,8 +50,8 @@ def get_cuda_devices() -> list[torch.device]:
 def get_devices() -> list[torch.device]:
     if torch.cuda.is_available():
         return get_cuda_devices()
-    if torch.backends.mps.is_available():
-        return [torch.device("mps")]
+    # if torch.backends.mps.is_available():
+    #     return [torch.device("mps")]
     return [torch.device("cpu")]
 
 
@@ -105,6 +105,6 @@ def get_device(
             "cuda device is unavailable, max_needed_bytes is %s, switch to CPU",
             max_needed_bytes,
         )
-    if torch.backends.mps.is_available():
-        return torch.device("mps")
+    # if torch.backends.mps.is_available():
+    #     return torch.device("mps")
     return get_cpu_device()
