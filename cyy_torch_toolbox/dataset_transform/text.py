@@ -2,7 +2,8 @@ import functools
 
 import torch
 
-from ..dataset_collection import DatasetCollection
+from ..dataset_collection import (ClassificationDatasetCollection,
+                                  DatasetCollection)
 from ..dependency import has_hugging_face, has_spacy, has_torchtext
 from ..ml_type import (DatasetType, MachineLearningPhase, ModelType,
                        TransformType)
@@ -14,7 +15,7 @@ from .template import get_text_template, interpret_template
 if has_torchtext:
     import torchtext
 if has_spacy:
-    from cyy_torch_toolbox.tokenizer.spacy import SpacyTokenizer
+    from ..tokenizer.spacy import SpacyTokenizer
 
 if has_hugging_face:
     import transformers as hugging_face_transformers
@@ -117,9 +118,15 @@ def add_text_transforms(
                     key=TransformType.TargetBatch,
                 )
     # Target
-    if model_evaluator.model_type == ModelType.Classification and isinstance(
-        dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(0),
-        str,
-    ):
-        label_names = dc.get_label_names()
-        dc.append_transform(str_target_to_int(label_names), key=TransformType.Target)
+    if model_evaluator.model_type == ModelType.Classification:
+        assert isinstance(dc, ClassificationDatasetCollection)
+        if isinstance(
+            dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(
+                0
+            ),
+            str,
+        ):
+            label_names = dc.get_label_names()
+            dc.append_transform(
+                str_target_to_int(label_names), key=TransformType.Target
+            )

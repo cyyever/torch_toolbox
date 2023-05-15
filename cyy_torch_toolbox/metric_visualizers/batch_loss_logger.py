@@ -15,12 +15,15 @@ class BatchLossLogger(MetricVisualizer):
             return
         executor = kwargs.get("executor")
         interval = executor._data["dataset_size"] // (self.log_times * batch_size)
+        learning_rates = self.__learning_rate_hook.learning_rates
+        if len(learning_rates) == 1:
+            learning_rates = learning_rates[0]
         if interval == 0 or batch_index % interval == 0:
             get_logger().info(
                 "%sepoch: %s, batch: %s, learning rate: %e, batch loss: %e",
                 self.prefix + " " if self.prefix else "",
                 epoch,
                 batch_index,
-                executor._data["cur_learning_rates"][0],
+                learning_rates,
                 result["loss"],
             )

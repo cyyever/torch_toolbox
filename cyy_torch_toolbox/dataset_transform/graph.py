@@ -1,7 +1,5 @@
 from typing import Any
 
-import torch_geometric
-
 
 def pyg_data_extraction(data: Any, extract_index: bool = True) -> dict | None:
     match data:
