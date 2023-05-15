@@ -6,6 +6,7 @@ from cyy_torch_toolbox.ml_type import ModelType
 from .acc_metric import AccuracyMetric
 from .dataloader_profiler import DataloaderProfiler
 from .grad_metric import GradMetric
+from .learning_rate_metric import LearningRateMetric
 from .loss_metric import LossMetric
 from .metric import Metric
 
@@ -23,6 +24,7 @@ class PerformanceMetric(Metric):
             self.__grad_metric = GradMetric()
         if profile:
             self.__dataloader_profiler = DataloaderProfiler()
+        self.__lr_metric = LearningRateMetric()
 
     def _before_epoch(self, **kwargs):
         self.__epoch_time_point = time.time()
