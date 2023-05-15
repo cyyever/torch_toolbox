@@ -1,9 +1,8 @@
 import copy
 from typing import Any, Callable
 
-import torch
 from cyy_naive_lib.log import get_logger
-from torch.utils.data._utils.collate import default_collate
+from torch.utils.data import default_collate
 
 from ..dataset import select_item
 from ..ml_type import TransformType

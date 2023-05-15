@@ -3,13 +3,14 @@ from typing import Callable
 
 import torch
 from cyy_naive_lib.log import get_logger
+from torch import nn
+
 # from cyy_torch_toolbox.device import get_devices
-from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
+from ..ml_type import MachineLearningPhase, ModelType
 # from cyy_torch_toolbox.model_transform.checkpointed_model import \
 #     get_checkpointed_model
-from cyy_torch_toolbox.model_util import ModelUtil
-from cyy_torch_toolbox.tensor import tensor_to
-from torch import nn
+from ..model_util import ModelUtil
+from ..tensor import tensor_to
 
 # from torch.nn.parallel import DistributedDataParallel as DDP
 

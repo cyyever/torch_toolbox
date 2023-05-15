@@ -2,10 +2,11 @@ import copy
 from typing import Any
 
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.dataset import get_dataset_size
-from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.dependency import has_dali, has_torchvision
-from cyy_torch_toolbox.ml_type import MachineLearningPhase, ModelType
+
+from ..dataset import get_dataset_size
+from ..dataset_collection import DatasetCollection
+from ..dependency import has_dali, has_torchvision
+from ..ml_type import MachineLearningPhase, ModelType
 
 if has_dali and has_torchvision:
     import nvidia.dali

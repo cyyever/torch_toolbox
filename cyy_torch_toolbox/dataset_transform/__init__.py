@@ -1,7 +1,7 @@
 from ..ml_type import DatasetType
 
 
-def add_data_extraction(dc):
+def add_data_extraction(dc) -> None:
     if dc.dataset_type == DatasetType.Text:
         from .text import add_text_extraction
 
@@ -14,7 +14,7 @@ def add_data_extraction(dc):
         return
 
 
-def add_transforms(dc, dataset_kwargs, model_evaluator):
+def add_transforms(dc, dataset_kwargs, model_evaluator) -> None:
     if dc.dataset_type == DatasetType.Vision:
         from .vision import add_vision_transforms
 

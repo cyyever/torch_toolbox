@@ -53,13 +53,13 @@ class MetricTensorBoard(MetricVisualizer):
     def _after_validation(self, executor, epoch, **kwargs):
         trainer = executor
 
-        if "cur_learning_rates" not in trainer._data:
-            return
-        learning_rates = trainer._data["cur_learning_rates"]
-        assert len(learning_rates) == 1
-        self.writer.add_scalar(
-            self.get_tag_name("learning rate"), learning_rates[0], epoch
-        )
+        # if "cur_learning_rates" not in trainer._data:
+        #     return
+        # learning_rates = trainer._data["cur_learning_rates"]
+        # assert len(learning_rates) == 1
+        # self.writer.add_scalar(
+        #     self.get_tag_name("learning rate"), learning_rates[0], epoch
+        # )
         optimizer = trainer.get_optimizer()
         for group in optimizer.param_groups:
             if "momentum" in group:

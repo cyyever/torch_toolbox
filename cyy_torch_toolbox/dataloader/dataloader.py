@@ -3,10 +3,10 @@ from typing import Any
 
 import torch
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.dependency import has_dali, has_torchvision
-from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
-                                       ModelType)
+
+from ..dataset_collection import DatasetCollection
+from ..dependency import has_dali, has_torchvision
+from ..ml_type import DatasetType, MachineLearningPhase, ModelType
 
 if has_dali and has_torchvision:
     from cyy_torch_toolbox.dataloader.dali_dataloader import \
@@ -20,7 +20,6 @@ def get_dataloader(
     device=None,
     cache_transforms: str | None = None,
     model_type: ModelType | None = None,
-    use_dali: bool = True,
 ) -> Any:
     dataset = dc.get_dataset(phase=phase)
     transforms = dc.get_transforms(phase=phase)
