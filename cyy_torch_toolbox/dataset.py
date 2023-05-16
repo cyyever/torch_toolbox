@@ -56,6 +56,8 @@ def dataset_with_indices(
         if isinstance(dataset, torch_geometric.data.dataset.Dataset):
             return dataset
     match dataset:
+        case list():
+            return dataset
         case torch.utils.data.IterableDataset():
             dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
     match dataset:

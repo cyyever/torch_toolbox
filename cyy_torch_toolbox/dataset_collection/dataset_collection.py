@@ -11,8 +11,7 @@ from cyy_naive_lib.storage import get_cached_data
 from ..dataset import dataset_with_indices
 from ..dataset_transform import add_data_extraction, add_transforms
 from ..dataset_transform.transform import Transforms
-from ..dataset_util import (DatasetSplitter, GraphDatasetUtil, TextDatasetUtil,
-                            VisionDatasetUtil)
+from ..dataset_util import DatasetSplitter, get_dataset_util_cls
 from ..ml_type import DatasetType, MachineLearningPhase
 from ..tokenizer import get_tokenizer
 from .dataset_repository import get_dataset
@@ -112,16 +111,7 @@ class DatasetCollection:
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetSplitter:
-        match self.dataset_type:
-            case DatasetType.Vision:
-                class_name = VisionDatasetUtil
-            case DatasetType.Text:
-                class_name = TextDatasetUtil
-            case DatasetType.Graph:
-                class_name = GraphDatasetUtil
-            case _:
-                class_name = DatasetSplitter
-        return class_name(
+        return get_dataset_util_cls(dataset_type=self.dataset_type)(
             dataset=self.get_dataset(phase),
             transforms=self.__transforms[phase],
             name=self.name,
@@ -206,9 +196,22 @@ class DatasetCollection:
         )
         add_data_extraction(dc)
         if not dc.has_dataset(MachineLearningPhase.Validation):
-            dc._split_training()
+            dc.__iid_split(
+                from_phase=MachineLearningPhase.Training,
+                parts={
+                    MachineLearningPhase.Training: 8,
+                    MachineLearningPhase.Validation: 1,
+                    MachineLearningPhase.Test: 1,
+                },
+            )
         if not dc.has_dataset(MachineLearningPhase.Test):
-            dc._split_validation()
+            dc.__iid_split(
+                from_phase=MachineLearningPhase.Validation,
+                parts={
+                    MachineLearningPhase.Validation: 1,
+                    MachineLearningPhase.Test: 1,
+                },
+            )
         return dc
 
     def is_classification_dataset(self) -> bool:
@@ -225,6 +228,27 @@ class DatasetCollection:
             case int():
                 return True
         return False
+
+    def __iid_split(
+        self,
+        from_phase: MachineLearningPhase,
+        parts: dict[MachineLearningPhase, float],
+    ) -> None:
+        assert self.has_dataset(phase=from_phase)
+        assert parts
+        for phase in parts:
+            assert not self.has_dataset(phase=phase)
+        get_logger().debug("split %s dataset for %s", from_phase, self.name)
+        dataset_util = self.get_dataset_util(phase=from_phase)
+        part_list = list(parts.items())
+
+        datasets = dataset_util.split_by_indices(
+            dataset_util.iid_split_indices([part for (_, part) in part_list])
+        )
+        raw_dataset = self.__raw_datasets.get(phase=from_phase)
+        for phase, dataset in zip([phase for (phase, _) in part_list], datasets):
+            self.__datasets[phase] = dataset
+            self.__raw_datasets[phase] = raw_dataset
 
     def _split_training(self) -> None:
         assert (
