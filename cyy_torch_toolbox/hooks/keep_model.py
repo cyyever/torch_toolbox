@@ -46,9 +46,7 @@ class KeepModelHook(Hook):
                 self.__best_model.set_data(
                     (
                         tensor_to(
-                            data=copy.deepcopy(
-                                trainer.model_util.get_parameter_dict()
-                            ),
+                            data=copy.deepcopy(trainer.model_util.get_parameter_dict()),
                             non_blocking=True,
                             device=get_cpu_device(),
                         ),
@@ -56,14 +54,14 @@ class KeepModelHook(Hook):
                         epoch,
                     )
                 )
-
-                assert trainer.save_dir is not None
-                self.__best_model.set_data_path(
-                    os.path.join(
-                        self.__get_model_dir(trainer.save_dir), "best_model.pk"
+                if self.save_best_model:
+                    assert trainer.save_dir is not None
+                    self.__best_model.set_data_path(
+                        os.path.join(
+                            self.__get_model_dir(trainer.save_dir), "best_model.pk"
+                        )
                     )
-                )
-                self.__best_model.save()
+                    self.__best_model.save()
 
     def _after_execute(self, executor, **kwargs):
         trainer = executor
