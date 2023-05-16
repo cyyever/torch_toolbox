@@ -236,8 +236,6 @@ class DatasetCollection:
     ) -> None:
         assert self.has_dataset(phase=from_phase)
         assert parts
-        for phase in parts:
-            assert not self.has_dataset(phase=phase)
         get_logger().debug("split %s dataset for %s", from_phase, self.name)
         dataset_util = self.get_dataset_util(phase=from_phase)
         part_list = list(parts.items())
@@ -245,7 +243,7 @@ class DatasetCollection:
         datasets = dataset_util.split_by_indices(
             dataset_util.iid_split_indices([part for (_, part) in part_list])
         )
-        raw_dataset = self.__raw_datasets.get(phase=from_phase)
+        raw_dataset = self.__raw_datasets.get(from_phase)
         for phase, dataset in zip([phase for (phase, _) in part_list], datasets):
             self.__datasets[phase] = dataset
             self.__raw_datasets[phase] = raw_dataset
