@@ -6,14 +6,13 @@ import torch
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_class_attrs, get_kwarg_names
 
-from .dependency import (has_hugging_face, has_medmnist, has_torch_geometric,
-                         has_torchaudio, has_torchtext, has_torchvision)
-from .ml_type import DatasetType, MachineLearningPhase
+from ..dependency import (has_hugging_face, has_medmnist, has_torch_geometric,
+                          has_torchaudio, has_torchtext, has_torchvision)
+from ..ml_type import DatasetType, MachineLearningPhase
 
 if has_torchvision:
-    import torchvision
-
     import cyy_torch_toolbox.dataset_wrapper.vision as local_vision_datasets
+    import torchvision
 
 if has_torchtext:
     import torchtext
@@ -21,9 +20,8 @@ if has_torchtext:
 if has_torch_geometric:
     import torch_geometric
 if has_torchaudio:
-    import torchaudio
-
     import cyy_torch_toolbox.dataset_wrapper.audio as local_audio_datasets
+    import torchaudio
 if has_medmnist:
     import medmnist
 if has_hugging_face:
