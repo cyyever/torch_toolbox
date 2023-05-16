@@ -93,12 +93,10 @@ class DatasetCollection:
         )
 
     def foreach_raw_dataset(self) -> Generator:
-        for dataset in self.__raw_datasets.values():
-            yield dataset
+        yield from self.__raw_datasets.values()
 
     def foreach_dataset(self) -> Generator:
-        for dataset in self.__datasets.values():
-            yield dataset
+        yield from self.__datasets.values()
 
     def transform_all_datasets(self, transformer: Callable) -> None:
         for phase in self.__datasets:
@@ -114,19 +112,15 @@ class DatasetCollection:
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
         return self.__datasets[phase]
 
-    # def get_training_dataset(self) -> torch.utils.data.Dataset:
-    #     return self.get_dataset(MachineLearningPhase.Training)
-
     def get_transforms(self, phase: MachineLearningPhase) -> Transforms:
         return self.__transforms[phase]
 
     def get_original_dataset(
         self, phase: MachineLearningPhase
     ) -> torch.utils.data.Dataset:
-        dataset = self.__raw_datasets.get(phase)
-        if hasattr(dataset, "dataset"):
-            dataset = dataset.dataset
-        return dataset
+        dataset_util = self.get_dataset_util(phase=phase)
+        dataset_util.dataset = self.__raw_datasets.get(phase)
+        return dataset_util.get_original_dataset()
 
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
@@ -372,7 +366,6 @@ class DatasetCollection:
         ):
             self.__raw_datasets[phase] = raw_training_dataset
         self.__datasets = datasets
-        return
 
     def _split_validation(self) -> None:
         assert not self.has_dataset(
@@ -467,7 +460,7 @@ class ClassificationDatasetCollection(DatasetCollection):
         super().add_transforms(
             model_evaluator=model_evaluator, dataset_kwargs=dataset_kwargs
         )
-        """add more transformers for model"""
+        # add more transformers for model
         if self.dataset_type == DatasetType.Vision:
             input_size = getattr(
                 model_evaluator.get_underlying_model().__class__, "input_size", None
