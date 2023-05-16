@@ -7,24 +7,19 @@ from typing import Any, Callable, Generator
 import torch
 from cyy_naive_lib.fs.ssd import is_ssd
 from cyy_naive_lib.log import get_logger
-from cyy_naive_lib.reflection import get_kwarg_names
 from cyy_naive_lib.storage import get_cached_data
 
-from cyy_torch_toolbox.dataset import dataset_with_indices
-from cyy_torch_toolbox.dataset_repository import get_dataset_constructors
-from cyy_torch_toolbox.dataset_transform import (add_data_extraction,
-                                                 add_transforms)
-from cyy_torch_toolbox.dataset_transform.common import replace_target
-from cyy_torch_toolbox.dataset_transform.transform import Transforms
-from cyy_torch_toolbox.dataset_util import (DatasetSplitter, GraphDatasetUtil,
-                                            TextDatasetUtil, VisionDatasetUtil)
-from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
-from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
-                                       TransformType)
-from cyy_torch_toolbox.tokenizer import get_tokenizer
+from .dataset import dataset_with_indices
+from .dataset_repository import get_dataset
+from .dataset_transform import add_data_extraction, add_transforms
+from .dataset_transform.common import replace_target
+from .dataset_transform.transform import Transforms
+from .dataset_util import (DatasetSplitter, GraphDatasetUtil, TextDatasetUtil,
+                           VisionDatasetUtil)
+from .dependency import has_torchvision
+from .ml_type import DatasetType, MachineLearningPhase, TransformType
+from .tokenizer import get_tokenizer
 
-if has_torch_geometric:
-    import torch_geometric.data.dataset
 if has_torchvision:
     import torchvision
 
@@ -32,29 +27,17 @@ if has_torchvision:
 class DatasetCollection:
     def __init__(
         self,
-        training_dataset: torch.utils.data.Dataset,
-        validation_dataset: torch.utils.data.Dataset | None = None,
-        test_dataset: torch.utils.data.Dataset | None = None,
+        datasets: dict[MachineLearningPhase, torch.utils.data.Dataset],
         dataset_type: DatasetType | None = None,
         name: str | None = None,
     ) -> None:
         self.__name: str | None = name
-        self.__raw_datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
+        self.__raw_datasets: dict[
+            MachineLearningPhase, torch.utils.data.Dataset
+        ] = datasets
         self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
-        self.__raw_datasets[MachineLearningPhase.Training] = training_dataset
-        self.__datasets[MachineLearningPhase.Training] = dataset_with_indices(
-            training_dataset
-        )
-        if validation_dataset is not None:
-            self.__raw_datasets[MachineLearningPhase.Validation] = validation_dataset
-            self.__datasets[MachineLearningPhase.Validation] = dataset_with_indices(
-                validation_dataset
-            )
-        if test_dataset is not None:
-            self.__raw_datasets[MachineLearningPhase.Test] = test_dataset
-            self.__datasets[MachineLearningPhase.Test] = dataset_with_indices(
-                test_dataset
-            )
+        for k, v in self.__raw_datasets.items():
+            self.__datasets[k] = dataset_with_indices(v)
         self.__dataset_type: DatasetType | None = dataset_type
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
@@ -63,12 +46,12 @@ class DatasetCollection:
 
     def __copy__(self):
         new_obj = type(self)(
-            training_dataset=self.__raw_datasets[MachineLearningPhase.Training],
+            datasets={},
+            dataset_type=self.__dataset_type,
+            name=self.__name,
         )
-        new_obj.__name = self.__name
         new_obj.__raw_datasets = copy.copy(self.__raw_datasets)
         new_obj.__datasets = copy.copy(self.__datasets)
-        new_obj.__dataset_type = self.__dataset_type
         new_obj.__transforms = copy.copy(self.__transforms)
         new_obj.tokenizer = copy.copy(self.tokenizer)
         return new_obj
@@ -198,59 +181,19 @@ class DatasetCollection:
     def create(
         cls,
         name: str,
-        dataset_type: DatasetType,
-        dataset_constructor: Callable,
-        dataset_kwargs: dict | None = None,
-        model_config=None,
+        dataset_kwargs: dict,
     ) -> Any:
-        if dataset_kwargs is None:
-            dataset_kwargs = {}
-        constructor_kwargs = get_kwarg_names(dataset_constructor)
-        dataset_kwargs_fun = cls.__prepare_dataset_kwargs(
-            name, constructor_kwargs, dataset_kwargs
-        )
-        training_dataset = None
-        validation_dataset = None
-        test_dataset = None
-
-        for phase in MachineLearningPhase:
-            while True:
-                try:
-                    processed_dataset_kwargs = dataset_kwargs_fun(
-                        phase=phase, dataset_type=dataset_type
-                    )
-                    if processed_dataset_kwargs is None:
-                        break
-                    dataset = dataset_constructor(**processed_dataset_kwargs)
-                    if has_torch_geometric and isinstance(
-                        dataset, torch_geometric.data.dataset.Dataset
-                    ):
-                        assert len(dataset) == 1
-                    if phase == MachineLearningPhase.Training:
-                        training_dataset = dataset
-                    elif phase == MachineLearningPhase.Validation:
-                        validation_dataset = dataset
-                    else:
-                        test_dataset = dataset
-                    break
-                except Exception as e:
-                    get_logger().debug("has exception %s", e)
-                    if "of splits is not supported for dataset" in str(e):
-                        break
-                    if "for argument split. Valid values are" in str(e):
-                        break
-                    if "Unknown split" in str(e):
-                        break
-                    raise e
-
-        if validation_dataset is None:
-            validation_dataset = test_dataset
-            test_dataset = None
+        if "root" not in dataset_kwargs:
+            dataset_kwargs["root"] = cls.__get_dataset_dir(name)
+        if "download" not in dataset_kwargs:
+            dataset_kwargs["download"] = True
+        res = get_dataset(name=name, dataset_kwargs=dataset_kwargs)
+        if res is None:
+            raise NotImplementedError(name)
+        dataset_type, datasets = res
 
         dc = DatasetCollection(
-            training_dataset=training_dataset,
-            validation_dataset=validation_dataset,
-            test_dataset=test_dataset,
+            datasets=datasets,
             dataset_type=dataset_type,
             name=name,
         )
@@ -277,70 +220,6 @@ class DatasetCollection:
             case int():
                 return True
         return False
-
-    @classmethod
-    def __prepare_dataset_kwargs(
-        cls,
-        name: str,
-        constructor_kwargs: set,
-        dataset_kwargs: dict | None = None,
-    ) -> Callable:
-        if dataset_kwargs is None:
-            dataset_kwargs = {}
-        new_dataset_kwargs = copy.deepcopy(dataset_kwargs)
-        if "root" not in new_dataset_kwargs:
-            new_dataset_kwargs["root"] = cls.__get_dataset_dir(name)
-        if "download" not in new_dataset_kwargs:
-            new_dataset_kwargs["download"] = True
-
-        def get_dataset_kwargs_per_phase(
-            dataset_type: DatasetType, phase: MachineLearningPhase
-        ) -> dict | None:
-            if "train" in constructor_kwargs:
-                # Some dataset only have train and test parts
-                if phase == MachineLearningPhase.Validation:
-                    return None
-                new_dataset_kwargs["train"] = phase == MachineLearningPhase.Training
-            elif "split" in constructor_kwargs and dataset_type != DatasetType.Graph:
-                if phase == MachineLearningPhase.Training:
-                    new_dataset_kwargs["split"] = new_dataset_kwargs.get(
-                        "train_split", "train"
-                    )
-                elif phase == MachineLearningPhase.Validation:
-                    if "val_split" in dataset_kwargs:
-                        new_dataset_kwargs["split"] = dataset_kwargs["val_split"]
-                    else:
-                        if dataset_type == DatasetType.Text:
-                            new_dataset_kwargs["split"] = "valid"
-                        else:
-                            new_dataset_kwargs["split"] = "val"
-                else:
-                    new_dataset_kwargs["split"] = new_dataset_kwargs.get(
-                        "test_split", "test"
-                    )
-            elif "subset" in constructor_kwargs:
-                if phase == MachineLearningPhase.Training:
-                    new_dataset_kwargs["subset"] = "training"
-                elif phase == MachineLearningPhase.Validation:
-                    new_dataset_kwargs["subset"] = "validation"
-                else:
-                    new_dataset_kwargs["subset"] = "testing"
-            else:
-                if phase != MachineLearningPhase.Training:
-                    return None
-            discarded_dataset_kwargs = set()
-            for k in new_dataset_kwargs:
-                if k not in constructor_kwargs:
-                    discarded_dataset_kwargs.add(k)
-            if discarded_dataset_kwargs:
-                get_logger().warning(
-                    "discarded_dataset_kwargs %s", discarded_dataset_kwargs
-                )
-                for k in discarded_dataset_kwargs:
-                    new_dataset_kwargs.pop(k)
-            return new_dataset_kwargs
-
-        return get_dataset_kwargs_per_phase
 
     def _split_training(self) -> None:
         assert (
@@ -476,27 +355,11 @@ class ClassificationDatasetCollection(DatasetCollection):
         )
 
 
-def create_dataset_collection(
-    cls, name: str, dataset_kwargs: dict | None = None, model_config=None
-):
+def create_dataset_collection(cls, name: str, dataset_kwargs: dict | None = None):
+    if dataset_kwargs is None:
+        dataset_kwargs = {}
     with cls.lock:
-        dataset_names = set()
-        for dataset_type in DatasetType:
-            dataset_constructors = get_dataset_constructors(
-                dataset_type=dataset_type,
-            )
-            if name in dataset_constructors:
-                return cls.create(
-                    name=name,
-                    dataset_type=dataset_type,
-                    dataset_constructor=dataset_constructors[name],
-                    dataset_kwargs=dataset_kwargs,
-                    model_config=model_config,
-                )
-            dataset_names |= set(dataset_constructors.keys())
-
-        get_logger().error("supported datasets are %s", sorted(dataset_names))
-        raise NotImplementedError(name)
+        return cls.create(name=name, dataset_kwargs=dataset_kwargs)
 
 
 class DatasetCollectionConfig:
@@ -509,7 +372,7 @@ class DatasetCollectionConfig:
         self.training_dataset_label_map = None
         self.training_dataset_label_noise_percentage = None
 
-    def create_dataset_collection(self, save_dir=None, model_config=None):
+    def create_dataset_collection(self, save_dir=None):
         if self.dataset_name is None:
             raise RuntimeError("dataset_name is None")
 
@@ -517,14 +380,12 @@ class DatasetCollectionConfig:
             cls=ClassificationDatasetCollection,
             name=self.dataset_name,
             dataset_kwargs=self.dataset_kwargs,
-            model_config=model_config,
         )
         if not dc.is_classification_dataset():
             dc = create_dataset_collection(
                 cls=DatasetCollection,
                 name=self.dataset_name,
                 dataset_kwargs=self.dataset_kwargs,
-                model_config=model_config,
             )
 
         self.__transform_training_dataset(dc=dc, save_dir=save_dir)

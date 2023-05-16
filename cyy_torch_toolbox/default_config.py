@@ -93,7 +93,6 @@ class DefaultConfig:
         get_logger().debug("use dataset %s", self.dc_config.dataset_name)
         return self.dc_config.create_dataset_collection(
             save_dir=self.get_save_dir(),
-            model_config=self.model_config,
         )
 
     def create_trainer(
