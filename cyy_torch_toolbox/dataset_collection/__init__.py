@@ -9,16 +9,16 @@ from cyy_naive_lib.fs.ssd import is_ssd
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.storage import get_cached_data
 
-from .dataset import dataset_with_indices
+from ..dataset import dataset_with_indices
+from ..dataset_transform import add_data_extraction, add_transforms
+from ..dataset_transform.common import replace_target
+from ..dataset_transform.transform import Transforms
+from ..dataset_util import (DatasetSplitter, GraphDatasetUtil, TextDatasetUtil,
+                            VisionDatasetUtil)
+from ..dependency import has_torchvision
+from ..ml_type import DatasetType, MachineLearningPhase, TransformType
+from ..tokenizer import get_tokenizer
 from .dataset_repository import get_dataset
-from .dataset_transform import add_data_extraction, add_transforms
-from .dataset_transform.common import replace_target
-from .dataset_transform.transform import Transforms
-from .dataset_util import (DatasetSplitter, GraphDatasetUtil, TextDatasetUtil,
-                           VisionDatasetUtil)
-from .dependency import has_torchvision
-from .ml_type import DatasetType, MachineLearningPhase, TransformType
-from .tokenizer import get_tokenizer
 
 if has_torchvision:
     import torchvision
