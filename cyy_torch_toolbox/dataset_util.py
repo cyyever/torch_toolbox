@@ -63,7 +63,7 @@ class DatasetUtil:
     def __decode_target(cls, target) -> set:
         match target:
             case int() | str():
-                return set([target])
+                return {target}
             case list():
                 return set(target)
             case torch.Tensor():
@@ -72,7 +72,7 @@ class DatasetUtil:
                 if "labels" in target:
                     return set(target["labels"].tolist())
                 if all(isinstance(s, str) and s.isnumeric() for s in target):
-                    return set(int(s) for s in target)
+                    return {int(s) for s in target}
         raise RuntimeError("can't extract labels from target: " + str(target))
 
     def _get_sample_input(self, index: int, apply_transform: bool = True) -> Any:
@@ -219,7 +219,7 @@ class DatasetSplitter(DatasetUtil):
         labels = self.get_labels()
         randomized_label_map = {}
         for label, indices in sample_indices.items():
-            other_labels = list(set(labels) - set([label]))
+            other_labels = list(set(labels) - {label})
             for index in indices:
                 randomized_label_map[index] = random.choice(other_labels)
         return randomized_label_map
@@ -356,7 +356,7 @@ class GraphDatasetUtil(DatasetSplitter):
         node_indices = set(node_indices)
         assert hop > 0
         for node_idx in node_indices:
-            unchecked_nodes = set([node_idx])
+            unchecked_nodes = {node_idx}
             neighbors = unchecked_nodes
             for _ in range(hop):
                 new_neighbors: set = set()
