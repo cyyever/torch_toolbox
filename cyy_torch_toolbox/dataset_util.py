@@ -85,7 +85,7 @@ class DatasetUtil:
             )
         return sample_input
 
-    def get_batch_labels(self, indices=None) -> Generator:
+    def get_batch_labels(self, indices: None | Iterable = None) -> Generator:
         for idx, sample in self.get_samples(indices):
             target = sample["target"]
             if self.__transforms is not None:
@@ -97,6 +97,9 @@ class DatasetUtil:
             assert len(labels) == 1
             return next(iter(labels))
         return None
+
+    def get_sample_raw_input(self, index: int) -> Any:
+        raise NotImplementedError()
 
     def get_labels(self) -> set:
         return set().union(*tuple(set(labels) for _, labels in self.get_batch_labels()))
@@ -114,13 +117,13 @@ class DatasetUtil:
             if classes and isinstance(classes[0], str):
                 return dict(enumerate(classes))
 
-        def get_label_name(container: set, index) -> set:
+        def get_label_name(container: set, index: int) -> set:
             label = self.get_sample_label(index)
             if isinstance(label, str):
                 container.add(label)
             return container
 
-        label_names = functools.reduce(get_label_name, range(len(self)), set())
+        label_names: set = functools.reduce(get_label_name, range(len(self)), set())
         if label_names:
             return dict(enumerate(sorted(label_names)))
         raise RuntimeError("no label names detected")
@@ -268,6 +271,9 @@ class VisionDatasetUtil(DatasetSplitter):
             case _:
                 torchvision.utils.save_image(sample_input, path)
 
+    def get_sample_raw_input(self, index: int) -> Any:
+        return self.get_sample_image(index=index)
+
     @torch.no_grad()
     def get_sample_image(self, index: int) -> Any:
         tensor = self._get_sample_input(index, apply_transform=False)
@@ -290,6 +296,9 @@ class TextDatasetUtil(DatasetSplitter):
     @torch.no_grad()
     def get_sample_text(self, index: int) -> str:
         return self._get_sample_input(index, apply_transform=False)
+
+    def get_sample_raw_input(self, index: int) -> Any:
+        return self.get_sample_text(index=index)
 
 
 class GraphDatasetUtil(DatasetSplitter):
