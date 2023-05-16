@@ -1,6 +1,8 @@
-from typing import Generator
+import os
+from typing import Any, Callable, Generator
 
 from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.storage import get_cached_data
 
 from ..dependency import has_torchvision
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
@@ -19,9 +21,9 @@ class ClassificationDatasetCollection(DatasetCollection):
         return dc
 
     def get_labels(self, use_cache: bool = True) -> set:
-        def computation_fun():
-            if self.name.lower() == "imagenet":
-                return range(1000)
+        def computation_fun() -> set:
+            if self.name is not None and self.name.lower() == "imagenet":
+                return set(range(1000))
             return self.get_dataset_util(
                 phase=MachineLearningPhase.Training
             ).get_labels()
@@ -43,19 +45,11 @@ class ClassificationDatasetCollection(DatasetCollection):
         return self.get_cached_data("label_names.pk", computation_fun)
 
     def get_raw_data(self, phase: MachineLearningPhase, index: int) -> tuple:
-        if self.dataset_type == DatasetType.Vision:
-            dataset_util = self.get_dataset_util(phase)
-            return (
-                dataset_util.get_sample_image(index),
-                dataset_util.get_sample_label(index),
-            )
-        if self.dataset_type == DatasetType.Text:
-            dataset_util = self.get_dataset_util(phase)
-            return (
-                dataset_util.get_sample_text(index),
-                dataset_util.get_sample_label(index),
-            )
-        raise NotImplementedError()
+        dataset_util = self.get_dataset_util(phase)
+        return (
+            dataset_util.get_sample_raw_input(index),
+            dataset_util.get_sample_label(index),
+        )
 
     def generate_raw_data(self, phase: MachineLearningPhase) -> Generator:
         dataset_util = self.get_dataset_util(phase)
@@ -86,3 +80,9 @@ class ClassificationDatasetCollection(DatasetCollection):
             "use transformers for training => \n %s",
             str(self.get_transforms(MachineLearningPhase.Training)),
         )
+
+    def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
+        with DatasetCollection.lock:
+            assert self.name is not None
+            cache_dir = DatasetCollection._get_dataset_cache_dir(self.name)
+            return get_cached_data(os.path.join(cache_dir, file), computation_fun)

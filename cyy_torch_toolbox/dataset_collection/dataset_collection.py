@@ -6,7 +6,6 @@ from typing import Any, Callable, Generator
 import torch
 from cyy_naive_lib.fs.ssd import is_ssd
 from cyy_naive_lib.log import get_logger
-from cyy_naive_lib.storage import get_cached_data
 
 from ..dataset import dataset_with_indices
 from ..dataset_transform import add_data_extraction, add_transforms
@@ -125,12 +124,6 @@ class DatasetCollection:
         dataset_util.dataset = self.__raw_datasets.get(phase)
         return dataset_util.get_original_dataset()
 
-    # def clear_transform(self, key, phases=None):
-    #     for phase in MachineLearningPhase:
-    #         if phases is not None and phase not in phases:
-    #             continue
-    #         self.__transforms[phase].clear(key)
-
     def append_transform(self, transform, key, phases=None):
         for phase in MachineLearningPhase:
             if phases is not None and phase not in phases:
@@ -247,56 +240,6 @@ class DatasetCollection:
         for phase, dataset in zip([phase for (phase, _) in part_list], datasets):
             self.__datasets[phase] = dataset
             self.__raw_datasets[phase] = raw_dataset
-
-    def _split_training(self) -> None:
-        assert (
-            self.has_dataset(phase=MachineLearningPhase.Training)
-            and not self.has_dataset(phase=MachineLearningPhase.Test)
-            and not self.has_dataset(phase=MachineLearningPhase.Validation)
-        )
-        get_logger().debug("split training dataset for %s", self.name)
-        dataset_util = self.get_dataset_util(phase=MachineLearningPhase.Training)
-        datasets = dataset_util.decompose()
-        if datasets is None:
-
-            def computation_fun():
-                return dataset_util.iid_split_indices([8, 1, 1])
-
-            split_index_lists = computation_fun()
-            datasets = dataset_util.split_by_indices(split_index_lists)
-            datasets = dict(zip(MachineLearningPhase, datasets))
-        raw_training_dataset = self.__raw_datasets.get(MachineLearningPhase.Training)
-        for phase in (
-            MachineLearningPhase.Validation,
-            MachineLearningPhase.Test,
-        ):
-            self.__raw_datasets[phase] = raw_training_dataset
-        self.__datasets = datasets
-
-    def _split_validation(self) -> None:
-        assert not self.has_dataset(
-            phase=MachineLearningPhase.Test
-        ) and self.has_dataset(phase=MachineLearningPhase.Validation)
-        get_logger().debug("split validation dataset for %s", self.name)
-        dataset_util = self.get_dataset_util(phase=MachineLearningPhase.Validation)
-
-        def computation_fun():
-            return dataset_util.iid_split_indices([1, 1])
-
-        datasets = dataset_util.split_by_indices(computation_fun())
-        self.__datasets[MachineLearningPhase.Validation] = datasets[0]
-        self.__datasets[MachineLearningPhase.Test] = datasets[1]
-        raw_dataset = self.__raw_datasets.get(MachineLearningPhase.Validation)
-        for phase in (
-            MachineLearningPhase.Validation,
-            MachineLearningPhase.Test,
-        ):
-            self.__raw_datasets[phase] = raw_dataset
-
-    def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
-        with DatasetCollection.lock:
-            cache_dir = DatasetCollection._get_dataset_cache_dir(self.name)
-            return get_cached_data(os.path.join(cache_dir, file), computation_fun)
 
     def add_transforms(self, model_evaluator, dataset_kwargs) -> None:
         add_transforms(
