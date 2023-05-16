@@ -3,7 +3,7 @@ import functools
 import os
 import random
 from collections.abc import Iterable
-from typing import Any, Generator
+from typing import Any, Generator, Type
 
 import PIL
 import torch
@@ -12,7 +12,7 @@ import torch.utils
 from cyy_torch_toolbox.dataset import get_dataset_size, select_item, subset_dp
 from cyy_torch_toolbox.dataset_transform.transform import Transforms
 from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
-from cyy_torch_toolbox.ml_type import MachineLearningPhase
+from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 
 if has_torchvision:
     import torchvision
@@ -386,11 +386,34 @@ class GraphDatasetUtil(DatasetSplitter):
         ):
             return None
         datasets: dict = {}
-        for phase in MachineLearningPhase:
-            datasets[phase] = []
         for graph in self.dataset:
-            for phase in MachineLearningPhase:
+            for phase, mask_name in mapping.items():
+                if phase not in datasets:
+                    datasets[phase] = []
                 datasets[phase].append(
-                    {"subset_mask": getattr(graph, mapping[phase]), "graph": graph}
+                    {
+                        "subset_mask": getattr(graph, mask_name),
+                        "graph": graph,
+                        "original_dataset": self.dataset,
+                    }
                 )
         return datasets
+
+    def get_original_dataset(self) -> torch.utils.data.Dataset:
+        assert len(self.dataset) == 1
+        if "original_dataset" in self.dataset[0]:
+            return self.dataset[0]["original_dataset"]
+        return super().get_original_dataset()
+
+
+def get_dataset_util_cls(dataset_type: DatasetType) -> Type:
+    match dataset_type:
+        case DatasetType.Vision:
+            class_name = VisionDatasetUtil
+        case DatasetType.Text:
+            class_name = TextDatasetUtil
+        case DatasetType.Graph:
+            class_name = GraphDatasetUtil
+        case _:
+            class_name = DatasetSplitter
+    return class_name
