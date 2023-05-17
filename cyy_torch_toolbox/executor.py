@@ -350,9 +350,6 @@ class Executor(HookCollection):
                 else:
                     optimizer.step()
                 if step_skipped:
-                    print("continue")
-                    # if self._hook_config.use_amp:
-                    #     self.disable_hook("AMP")
                     continue
                 if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                     get_logger().debug("adjust lr after batch")
@@ -369,8 +366,6 @@ class Executor(HookCollection):
                     step_skipped=False,
                     **batch,
                 )
-                # if self._hook_config.use_amp:
-                #     self.enable_hook("AMP")
             self.exec_hooks(
                 hook_point=ExecutorHookPoint.AFTER_BATCH,
                 epoch=epoch,
