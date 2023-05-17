@@ -60,7 +60,7 @@ class DatasetUtil:
         return None
 
     @classmethod
-    def __decode_target(cls, target) -> set:
+    def __decode_target(cls: Type, target: Any) -> set:
         match target:
             case int() | str():
                 return {target}
@@ -112,10 +112,12 @@ class DatasetUtil:
 
     def get_label_names(self) -> dict:
         original_dataset = self.get_original_dataset()
-        if hasattr(original_dataset, "classes"):
-            classes = getattr(original_dataset, "classes")
-            if classes and isinstance(classes[0], str):
-                return dict(enumerate(classes))
+        if (
+            hasattr(original_dataset, "classes")
+            and original_dataset.classes
+            and isinstance(original_dataset.classes[0], str)
+        ):
+            return dict(enumerate(original_dataset.classes))
 
         def get_label_name(container: set, index: int) -> set:
             label = self.get_sample_label(index)
