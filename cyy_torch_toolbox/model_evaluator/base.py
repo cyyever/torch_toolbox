@@ -1,5 +1,5 @@
 import functools
-from typing import Callable
+from typing import Any, Callable
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -81,14 +81,14 @@ class ModelEvaluator:
 
     def __call__(
         self,
-        inputs,
-        targets,
+        inputs: Any,
+        targets: Any,
         phase: MachineLearningPhase | None = None,
-        device=None,
+        device: torch.device = None,
         non_blocking: bool = False,
-        input_features=None,
+        input_features: None | Any = None,
         need_backward: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         if phase is not None:
             self.__set_model_mode(
@@ -134,7 +134,7 @@ class ModelEvaluator:
         }
 
     def _forward_model(
-        self, inputs, input_features, targets, **kwargs: dict
+        self, inputs: Any, input_features: Any, **kwargs: Any
     ) -> dict | torch.Tensor:
         fun: Callable = self.model
         if hasattr(self.model, "forward_input_feature") and input_features is not None:
@@ -151,9 +151,11 @@ class ModelEvaluator:
                 output = fun(**real_inputs)
             case _:
                 raise NotImplementedError(type(real_inputs))
-        return self._compute_loss(output=output, targets=targets, **kwargs)
+        return self._compute_loss(output=output, **kwargs)
 
-    def _compute_loss(self, output, targets, non_blocking, **kwargs):
+    def _compute_loss(
+        self, output: Any, targets: Any, non_blocking: bool, **kwargs: Any
+    ):
         match output:
             case torch.Tensor():
                 match self.loss_fun:

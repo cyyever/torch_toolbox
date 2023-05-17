@@ -1,5 +1,4 @@
 import torch
-from cyy_naive_lib.log import get_logger
 
 from ..dataset_util import GraphDatasetUtil
 from ..dependency import has_torch_geometric

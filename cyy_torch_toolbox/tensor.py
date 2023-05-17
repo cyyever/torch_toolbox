@@ -70,7 +70,7 @@ class __RecursiveCheckPoint:
         self.data = data
 
 
-def recursive_tensor_op(data: Any, fun: Callable, **kwargs: dict) -> Any:
+def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
     match data:
         case __RecursiveCheckPoint():
             if kwargs.pop("__check_recursive_point", False):
