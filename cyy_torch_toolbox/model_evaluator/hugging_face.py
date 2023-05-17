@@ -1,15 +1,15 @@
 import copy
+from typing import Any
 
 import torch
 import transformers
-from cyy_naive_lib.log import get_logger
 
 from ..ml_type import ModelType
 from .text import TextModelEvaluator
 
 
 class HuggingFaceModelEvaluator(TextModelEvaluator):
-    def __init__(self, model, model_type, **kwargs):
+    def __init__(self, model, model_type, **kwargs: Any) -> None:
         if model_type is None:
             if "ConditionalGeneration" in model.__class__.__name__:
                 model_type = ModelType.TextGeneration

@@ -41,7 +41,7 @@ def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
 
 
 def __get_int_target(
-    reversed_label_names: dict, label_name: str, *args: list, **kwargs: dict
+    reversed_label_names: dict, label_name: str, *args: list, **kwargs: Any
 ) -> int:
     return reversed_label_names[label_name]
 

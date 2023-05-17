@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+from typing import Any
 
 from cyy_torch_toolbox.data_structure.torch_task_queue import TorchTaskQueue
 from cyy_torch_toolbox.device import get_cpu_device
@@ -17,7 +17,7 @@ class TorchProcessTaskQueue(TorchTaskQueue):
         send_tensor_in_cpu: bool = False,
         use_manager: bool = True,
         assemble_tensor: bool = False,
-        **kwargs: dict
+        **kwargs: Any
     ) -> None:
         self.__send_tensor_in_cpu = send_tensor_in_cpu
         if assemble_tensor:

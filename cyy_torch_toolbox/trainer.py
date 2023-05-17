@@ -118,7 +118,7 @@ class Trainer(Executor):
         save_best_model: bool = False,
         save_epoch_model: bool = False,
         save_last_model: bool = False,
-        **kwargs: dict,
+        **kwargs: Any,
     ) -> None:
         keep_model_hook = self.get_hook("keep_model_hook")
         keep_model_hook.keep_best_model = keep_best_model
