@@ -1,5 +1,6 @@
 import contextlib
 import copy
+from typing import Any
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -19,7 +20,7 @@ from cyy_torch_toolbox.model_evaluator import ModelEvaluator
 class Trainer(Executor):
     def __init__(
         self,
-        **kwargs: dict,
+        **kwargs: Any,
     ) -> None:
         super().__init__(
             phase=MachineLearningPhase.Training,
@@ -29,7 +30,7 @@ class Trainer(Executor):
         self.append_hook(BatchLossLogger(), "batch_loss_logger")
         self.append_hook(KeepModelHook(), "keep_model_hook")
 
-    def set_device(self, device) -> None:
+    def set_device(self, device: torch.device) -> None:
         super().set_device(device)
         for inferencer in self.__inferencers.values():
             inferencer.set_device(device)
@@ -42,13 +43,13 @@ class Trainer(Executor):
         return keep_model_hook.best_model[0]
 
     @property
-    def best_epoch(self) -> int:
+    def best_epoch(self) -> int | None:
         keep_model_hook = self.get_hook("keep_model_hook")
         if keep_model_hook.best_model is None:
             return None
         return keep_model_hook.best_model[2]
 
-    def get_cached_inferencer(self, phase) -> Inferencer | None:
+    def get_cached_inferencer(self, phase: MachineLearningPhase) -> Inferencer | None:
         return self.__inferencers.get(phase, None)
 
     def get_inferencer(
@@ -57,7 +58,7 @@ class Trainer(Executor):
         if deepcopy_model:
             model_evaluator: ModelEvaluator = copy.deepcopy(self.model_evaluator)
         else:
-            model_evaluator: ModelEvaluator = copy.copy(self.model_evaluator)
+            model_evaluator = copy.copy(self.model_evaluator)
         inferencer: Inferencer | None = None
         if model_evaluator.model_type == ModelType.Classification:
             inferencer = ClassificationInferencer(
@@ -96,7 +97,7 @@ class Trainer(Executor):
     def remove_lr_scheduler(self) -> None:
         self._data.pop("lr_scheduler", None)
 
-    def load_model(self, model_path) -> None:
+    def load_model(self, model_path: str) -> None:
         super().load_model(model_path)
         self.remove_optimizer()
 
@@ -131,7 +132,7 @@ class Trainer(Executor):
                 inferencer.set_visualizer_prefix(self._visualizer_prefix)
         super()._prepare_execution(**kwargs)
 
-    def train(self, run_validation=True, **kwargs) -> None:
+    def train(self, run_validation=True, **kwargs: Any) -> None:
         try:
             with (
                 torch.cuda.device(self.device)

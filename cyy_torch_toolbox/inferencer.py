@@ -1,4 +1,5 @@
 import contextlib
+from typing import Any
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -8,7 +9,7 @@ from cyy_torch_toolbox.ml_type import ExecutorHookPoint, StopExecutingException
 
 
 class Inferencer(Executor):
-    def inference(self, use_grad: bool = False, **kwargs: dict) -> bool:
+    def inference(self, use_grad: bool = False, **kwargs: Any) -> bool:
         has_failure: bool = False
         try:
             self._prepare_execution(**kwargs)

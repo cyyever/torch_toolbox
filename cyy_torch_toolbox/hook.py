@@ -1,5 +1,6 @@
 import copy
-from typing import Callable, Dict, Generator, List
+from collections.abc import Iterable
+from typing import Any, Callable, Dict, Generator, List
 
 from cyy_torch_toolbox.ml_type import ExecutorHookPoint
 
@@ -44,8 +45,7 @@ class Hook:
 
     def yield_hooks(self):
         for c in self._sub_hooks:
-            for hook in c.yield_hooks():
-                yield hook
+            yield from c.yield_hooks()
 
         for hook_point in ExecutorHookPoint:
             res = self.__get_hook(hook_point)
@@ -54,13 +54,13 @@ class Hook:
 
 
 class HookCollection:
-    def __init__(self):
+    def __init__(self) -> None:
         self.__hooks: Dict[ExecutorHookPoint, List[Dict[str, Callable]]] = {}
         self.__stripable_hooks: set = set()
         self.__disabled_hooks: set = set()
         self.__hook_objs: dict = {}
 
-    def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: dict) -> None:
+    def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
         for hook in copy.copy(self.__hooks.get(hook_point, [])):
             for name, fun in copy.copy(hook).items():
                 if name not in self.__disabled_hooks:
@@ -135,7 +135,7 @@ class HookCollection:
     def get_hook(self, hook_name: str) -> Hook:
         return self.__hook_objs[hook_name]
 
-    def get_hooks(self) -> Generator:
+    def get_hooks(self) -> Iterable:
         return self.__hook_objs.values()
 
     def has_hook_obj(self, hook_name: str) -> bool:

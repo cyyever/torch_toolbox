@@ -74,8 +74,9 @@ class Executor(HookCollection):
     def phase(self):
         return self.__phase
 
-    def exec_hooks(self, *args: list, **kwargs: dict) -> None:
-        super().exec_hooks(*args, executor=self, **kwargs)
+    def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
+        kwargs["executor"] = self
+        super().exec_hooks(hook_point=hook_point, **kwargs)
 
     def set_save_dir(self, save_dir: str) -> None:
         self.__save_dir = save_dir
@@ -161,7 +162,7 @@ class Executor(HookCollection):
         if self._visualizer_prefix is not None:
             self.set_visualizer_prefix(self._visualizer_prefix)
         self._data["dataset_size"] = self.dataset_size
-        self.exec_hooks(ExecutorHookPoint.BEFORE_EXECUTE)
+        self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_EXECUTE)
 
     @property
     def dataset_collection(self) -> DatasetCollection:
@@ -171,6 +172,7 @@ class Executor(HookCollection):
     def device(self) -> torch.device:
         if self.__device is None:
             self.set_device(get_device())
+        assert self.__device is not None
         return self.__device
 
     def set_device(self, device: torch.device) -> None:
@@ -272,10 +274,10 @@ class Executor(HookCollection):
             hook_point=ExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
         )
-        self.exec_hooks(ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
+        self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
         for batch_index, batch in enumerate(self.dataloader):
             self.exec_hooks(
-                ExecutorHookPoint.AFTER_FETCH_BATCH,
+                hook_point=ExecutorHookPoint.AFTER_FETCH_BATCH,
                 batch_index=batch_index,
             )
             batch["batch_index"] = batch_index
@@ -295,7 +297,7 @@ class Executor(HookCollection):
                 optimizer.zero_grad(set_to_none=True)
 
             self.exec_hooks(
-                ExecutorHookPoint.BEFORE_BATCH,
+                hook_point=ExecutorHookPoint.BEFORE_BATCH,
                 epoch=epoch,
                 **batch,
             )
@@ -307,7 +309,7 @@ class Executor(HookCollection):
             }
             if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
                 self.exec_hooks(
-                    ExecutorHookPoint.MODEL_FORWARD,
+                    hook_point=ExecutorHookPoint.MODEL_FORWARD,
                     model_kwargs=kwargs,
                 )
                 result = self._data.pop("forward_result")
@@ -321,15 +323,15 @@ class Executor(HookCollection):
                     result["loss"] * batch["batch_size"] / self._data["dataset_size"]
                 )
             else:
-                assert False
-                normalized_batch_loss = result["loss"] / self._data["dataset_size"]
+                raise NotImplementedError()
+                # normalized_batch_loss = result["loss"] / self._data["dataset_size"]
             result["normalized_batch_loss"] = normalized_batch_loss
             batch["cpu_inputs"] = result["cpu_inputs"]
             batch["inputs"] = result["inputs"]
             batch["targets"] = result["targets"]
             batch["input_features"] = result["input_features"]
             self.exec_hooks(
-                ExecutorHookPoint.AFTER_FORWARD,
+                hook_point=ExecutorHookPoint.AFTER_FORWARD,
                 epoch=epoch,
                 **batch,
             )
@@ -338,12 +340,14 @@ class Executor(HookCollection):
                 loss = self._get_backward_loss(result=result)
                 assert loss is not None
                 if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):
-                    self.exec_hooks(ExecutorHookPoint.MODEL_BACKWARD, loss=loss)
+                    self.exec_hooks(
+                        hook_point=ExecutorHookPoint.MODEL_BACKWARD, loss=loss
+                    )
                 else:
                     loss.backward()
 
             self.exec_hooks(
-                ExecutorHookPoint.AFTER_BATCH,
+                hook_point=ExecutorHookPoint.AFTER_BATCH,
                 epoch=epoch,
                 result=result,
                 **batch,
@@ -365,14 +369,14 @@ class Executor(HookCollection):
                         step_lr_after_epoch = True
 
                 self.exec_hooks(
-                    ExecutorHookPoint.AFTER_OPTIMIZER_STEP,
+                    hook_point=ExecutorHookPoint.AFTER_OPTIMIZER_STEP,
                     epoch=epoch,
                     step_skipped=step_skipped,
                     **batch,
                 )
 
             self.exec_hooks(
-                ExecutorHookPoint.BEFORE_FETCH_BATCH,
+                hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH,
                 batch_index=batch_index + 1,
             )
         if in_training and step_lr_after_epoch:
@@ -389,7 +393,7 @@ class Executor(HookCollection):
                     lr_scheduler.step()
 
         self.exec_hooks(
-            ExecutorHookPoint.AFTER_EPOCH,
+            hook_point=ExecutorHookPoint.AFTER_EPOCH,
             epoch=epoch,
         )
 
