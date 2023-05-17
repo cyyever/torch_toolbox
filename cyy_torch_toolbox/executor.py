@@ -350,6 +350,11 @@ class Executor(HookCollection):
                 else:
                     optimizer.step()
                 if step_skipped:
+                    self.exec_hooks(
+                        hook_point=ExecutorHookPoint.CANCEL_FORWARD,
+                        epoch=epoch,
+                        **batch,
+                    )
                     continue
                 if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                     get_logger().debug("adjust lr after batch")
@@ -359,13 +364,6 @@ class Executor(HookCollection):
                     step_lr_after_epoch = True
                 break
 
-            if in_training:
-                self.exec_hooks(
-                    hook_point=ExecutorHookPoint.AFTER_OPTIMIZER_STEP,
-                    epoch=epoch,
-                    step_skipped=False,
-                    **batch,
-                )
             self.exec_hooks(
                 hook_point=ExecutorHookPoint.AFTER_BATCH,
                 epoch=epoch,
