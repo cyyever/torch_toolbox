@@ -44,7 +44,6 @@ class ExecutorHookPoint(IntEnum):
     BEFORE_BATCH = auto()
     AFTER_FORWARD = auto()
     AFTER_BATCH = auto()
-    AFTER_LOAD_MODEL = auto()
     AFTER_VALIDATION = auto()
 
 
