@@ -39,6 +39,7 @@ class DatasetCollection:
         if not dataset_kwargs:
             dataset_kwargs = {}
         self.__dataset_kwargs: dict = copy.deepcopy(dataset_kwargs)
+        add_data_extraction(self)
 
     @property
     def name(self) -> str | None:
@@ -186,8 +187,8 @@ class DatasetCollection:
             datasets=datasets,
             dataset_type=dataset_type,
             name=name,
+            dataset_kwargs=dataset_kwargs,
         )
-        add_data_extraction(dc)
         if not dc.has_dataset(MachineLearningPhase.Validation):
             dc.__iid_split(
                 from_phase=MachineLearningPhase.Training,
