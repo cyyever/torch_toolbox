@@ -172,7 +172,7 @@ class Trainer(Executor):
         except StopExecutingException:
             get_logger().warning("stop training")
         finally:
-            self._wait_stream()
+            self.wait_stream()
         self.exec_hooks(
             ExecutorHookPoint.AFTER_EXECUTE,
             epoch=self.hyper_parameter.epoch,

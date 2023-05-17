@@ -27,7 +27,7 @@ class Inferencer(Executor):
             get_logger().warning("stop inference")
             has_failure = True
         finally:
-            self._wait_stream()
+            self.wait_stream()
         return not has_failure
 
     def _get_backward_loss(self, result):

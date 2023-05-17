@@ -1,5 +1,4 @@
 import os
-import shutil
 from typing import Any, Callable
 
 import torch
@@ -130,7 +129,7 @@ class Executor(HookCollection):
 
     @property
     def model_evaluator(self) -> ModelEvaluator:
-        self._wait_stream()
+        self.wait_stream()
         return self.__model_evaluator
 
     @property
@@ -138,7 +137,7 @@ class Executor(HookCollection):
         return self.model_evaluator.model_util
 
     @property
-    def loss_fun(self):
+    def loss_fun(self) -> Callable:
         return self.__model_evaluator.loss_fun
 
     @property
@@ -178,7 +177,7 @@ class Executor(HookCollection):
     def set_device(self, device: torch.device) -> None:
         if self.__device == device:
             return
-        self._wait_stream()
+        self.wait_stream()
         self.__device = device
         get_logger().info("%s use device %s", str(self.__phase), self.__device)
         self.__cuda_stream = None
@@ -198,27 +197,18 @@ class Executor(HookCollection):
             self.__cuda_stream.wait_stream(torch.cuda.current_stream())
         return self.__cuda_stream
 
-    def wait_stream(self):
-        self._wait_stream()
-
-    def _wait_stream(self):
+    def wait_stream(self) -> None:
         if self.__cuda_stream is not None:
             self.__cuda_stream.synchronize()
             assert self.__cuda_stream.query()
 
     def set_dataset_collection(self, dc: DatasetCollection) -> None:
-        self._wait_stream()
+        self.wait_stream()
         self.__dataset_collection = dc
-        if self.save_dir is not None:
-            shutil.rmtree(os.path.join(self.save_dir, "dc.pk"), ignore_errors=True)
 
     def set_model_evaluator(self, model_evaluator: ModelEvaluator) -> None:
-        self._wait_stream()
+        self.wait_stream()
         self.__model_evaluator = model_evaluator
-        if self.save_dir is not None:
-            shutil.rmtree(
-                os.path.join(self.save_dir, "model_and_loss.pk"), ignore_errors=True
-            )
 
     def load_model(self, model_path):
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
@@ -226,15 +216,12 @@ class Executor(HookCollection):
     def save_model(self, model_path):
         torch.save(self.model.state_dict(), model_path)
 
-    def offload_from_gpu(self):
-        self._wait_stream()
+    def offload_from_gpu(self) -> None:
+        self.wait_stream()
         self.__model_evaluator.offload_from_memory()
-        # if self.__dataloader is not None:
-        #     del self.__dataloader
-        #     self.__dataloader = None
         torch.cuda.empty_cache()
 
-    def split_batch_input(self, inputs, targets, input_features=None):
+    def split_batch_input(self, inputs, targets, input_features=None) -> tuple:
         batch_dim = 0
         if self.dataset_collection.dataset_type == DatasetType.Text:
             if "BatchEncoding" in type(inputs).__name__:
