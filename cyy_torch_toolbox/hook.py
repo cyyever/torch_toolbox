@@ -70,7 +70,11 @@ class HookCollection:
         self,
         hook_point: ExecutorHookPoint,
     ) -> bool:
-        return hook_point in self.__hooks
+        for hook in self.__hooks.get(hook_point, []):
+            for name in hook:
+                if name not in self.__disabled_hooks:
+                    return True
+        return False
 
     def hooks(self):
         return self.__hooks

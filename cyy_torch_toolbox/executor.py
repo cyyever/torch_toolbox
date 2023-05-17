@@ -281,7 +281,6 @@ class Executor(HookCollection):
                 need_backward = True
                 optimizer = self.get_optimizer()
                 lr_scheduler = self.get_lr_scheduler()
-                optimizer.zero_grad(set_to_none=True)
 
             self.exec_hooks(
                 hook_point=ExecutorHookPoint.BEFORE_BATCH,
@@ -294,52 +293,55 @@ class Executor(HookCollection):
                 "need_backward": need_backward,
                 "non_blocking": True,
             }
-            if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
-                self.exec_hooks(
-                    hook_point=ExecutorHookPoint.MODEL_FORWARD,
-                    model_kwargs=kwargs,
-                )
-                result = self._data.pop("forward_result")
-            else:
-                result = self.__model_evaluator(**kwargs)
 
-            get_logger().debug("use dataset size %s", self._data["dataset_size"])
-            if result["is_averaged_loss"]:
-                assert self._data["dataset_size"] > 1
-                normalized_batch_loss = (
-                    result["loss"] * batch["batch_size"] / self._data["dataset_size"]
-                )
-            else:
-                raise NotImplementedError()
-                # normalized_batch_loss = result["loss"] / self._data["dataset_size"]
-            result["normalized_batch_loss"] = normalized_batch_loss
-            batch["cpu_inputs"] = result["cpu_inputs"]
-            batch["inputs"] = result["inputs"]
-            batch["targets"] = result["targets"]
-            batch["input_features"] = result["input_features"]
-            self.exec_hooks(
-                hook_point=ExecutorHookPoint.AFTER_FORWARD,
-                epoch=epoch,
-                **batch,
-            )
+            forward_result: dict = {}
 
-            if need_backward:
-                loss = self._get_backward_loss(result=result)
-                assert loss is not None
-                if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):
+            while True:
+                if in_training:
+                    optimizer.zero_grad(set_to_none=True)
+                if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
                     self.exec_hooks(
-                        hook_point=ExecutorHookPoint.MODEL_BACKWARD, loss=loss
+                        hook_point=ExecutorHookPoint.MODEL_FORWARD,
+                        model_kwargs=kwargs,
+                    )
+                    forward_result = self._data.pop("forward_result")
+                else:
+                    forward_result = self.__model_evaluator(**kwargs)
+
+                get_logger().debug("use dataset size %s", self._data["dataset_size"])
+                if forward_result["is_averaged_loss"]:
+                    assert self._data["dataset_size"] > 1
+                    normalized_batch_loss = (
+                        forward_result["loss"]
+                        * batch["batch_size"]
+                        / self._data["dataset_size"]
                     )
                 else:
-                    loss.backward()
+                    raise NotImplementedError()
+                    # normalized_batch_loss = forward_result["loss"] / self._data["dataset_size"]
+                forward_result["normalized_batch_loss"] = normalized_batch_loss
+                batch["cpu_inputs"] = forward_result["cpu_inputs"]
+                batch["inputs"] = forward_result["inputs"]
+                batch["targets"] = forward_result["targets"]
+                batch["input_features"] = forward_result["input_features"]
+                self.exec_hooks(
+                    hook_point=ExecutorHookPoint.AFTER_FORWARD,
+                    epoch=epoch,
+                    **batch,
+                )
 
-            self.exec_hooks(
-                hook_point=ExecutorHookPoint.AFTER_BATCH,
-                epoch=epoch,
-                result=result,
-                **batch,
-            )
-            if in_training:
+                if need_backward:
+                    loss = self._get_backward_loss(result=forward_result)
+                    assert loss is not None
+                    if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):
+                        self.exec_hooks(
+                            hook_point=ExecutorHookPoint.MODEL_BACKWARD, loss=loss
+                        )
+                    else:
+                        loss.backward()
+
+                if not in_training:
+                    break
                 step_skipped: bool = False
                 if self.has_hook(ExecutorHookPoint.OPTIMIZER_STEP):
                     self._data["step_skipped"] = False
@@ -347,20 +349,34 @@ class Executor(HookCollection):
                     step_skipped = self._data["step_skipped"]
                 else:
                     optimizer.step()
-                if not step_skipped:
-                    if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                        get_logger().debug("adjust lr after batch")
-                        lr_scheduler.step()
-                        step_lr_after_epoch = False
-                    else:
-                        step_lr_after_epoch = True
+                if step_skipped:
+                    print("continue")
+                    # if self._hook_config.use_amp:
+                    #     self.disable_hook("AMP")
+                    continue
+                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+                    get_logger().debug("adjust lr after batch")
+                    lr_scheduler.step()
+                    step_lr_after_epoch = False
+                else:
+                    step_lr_after_epoch = True
+                break
 
+            if in_training:
                 self.exec_hooks(
                     hook_point=ExecutorHookPoint.AFTER_OPTIMIZER_STEP,
                     epoch=epoch,
-                    step_skipped=step_skipped,
+                    step_skipped=False,
                     **batch,
                 )
+                # if self._hook_config.use_amp:
+                #     self.enable_hook("AMP")
+            self.exec_hooks(
+                hook_point=ExecutorHookPoint.AFTER_BATCH,
+                epoch=epoch,
+                result=forward_result,
+                **batch,
+            )
 
             self.exec_hooks(
                 hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH,
