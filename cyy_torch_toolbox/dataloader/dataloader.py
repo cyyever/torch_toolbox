@@ -9,15 +9,14 @@ from ..dependency import has_dali, has_torchvision
 from ..ml_type import DatasetType, MachineLearningPhase, ModelType
 
 if has_dali and has_torchvision:
-    from cyy_torch_toolbox.dataloader.dali_dataloader import \
-        get_dali_dataloader
+    from .dali_dataloader import get_dali_dataloader
 
 
 def get_dataloader(
     dc: DatasetCollection,
     phase: MachineLearningPhase,
     batch_size: int,
-    device=None,
+    device: torch.device,
     cache_transforms: str | None = None,
     model_type: ModelType | None = None,
 ) -> Any:
