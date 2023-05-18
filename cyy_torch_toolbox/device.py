@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-
-
 import torch
 from cyy_naive_lib.log import get_logger
 
@@ -9,10 +6,9 @@ from .dependency import has_pynvml
 if has_pynvml:
     import pynvml
 
-# import os
-
 
 def get_cuda_device_memory_info(consider_cache: bool = False) -> dict:
+    assert torch.cuda.is_available()
     assert has_pynvml
     result = {}
     pynvml.nvmlInit()
@@ -56,11 +52,11 @@ def get_devices() -> list[torch.device]:
 
 
 class CUDADeviceRoundRobinAllocator:
-    def __init__(self):
+    def __init__(self) -> None:
         self.__devices = get_cuda_devices()
         self.__idx = 0
 
-    def get_device(self):
+    def get_device(self) -> torch.device:
         device = self.__devices[self.__idx]
         self.__idx += 1
         if self.__idx >= len(self.__devices):
@@ -69,9 +65,9 @@ class CUDADeviceRoundRobinAllocator:
 
 
 class CUDADeviceGreedyAllocator:
-    def get_devices(self, max_needed_bytes):
+    def get_devices(self, max_needed_bytes: int | None) -> list[torch.device]:
         memory_info = get_cuda_device_memory_info(consider_cache=True)
-        memory_to_device = {}
+        memory_to_device: dict = {}
         for device_id, info in memory_info.items():
             if max_needed_bytes is not None and info.free < max_needed_bytes:
                 continue
@@ -79,11 +75,11 @@ class CUDADeviceGreedyAllocator:
                 memory_to_device[info.free] = []
             memory_to_device[info.free].append(torch.device(f"cuda:{device_id}"))
         devices = []
-        for k in reversed(sorted(memory_to_device.keys())):
+        for k in sorted(memory_to_device.keys(), reverse=True):
             devices += memory_to_device[k]
         return devices
 
-    def get_device(self, max_needed_bytes=None):
+    def get_device(self, max_needed_bytes: int | None = None) -> None | torch.device:
         devices = self.get_devices(max_needed_bytes=max_needed_bytes)
         if not devices:
             return None
