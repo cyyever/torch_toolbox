@@ -10,9 +10,7 @@ if has_hugging_face:
     import transformers
 
 
-def get_tokenizer(dc, tokenizer_config: dict | None = None) -> Any:
-    if tokenizer_config is None:
-        tokenizer_config = {}
+def get_tokenizer(dc, tokenizer_config: dict) -> Any:
     tokenizer_type = tokenizer_config.get("type", "spacy")
     match tokenizer_type:
         case "hugging_face":
