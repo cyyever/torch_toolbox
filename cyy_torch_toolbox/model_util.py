@@ -4,8 +4,8 @@ import torch
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 from cyy_naive_lib.log import get_logger
 
-from cyy_torch_toolbox.tensor import (cat_tensors_to_vector, load_tensor_dict,
-                                      load_tensor_dict_from_seq)
+from .tensor import (cat_tensors_to_vector, load_tensor_dict,
+                     load_tensor_dict_from_seq)
 
 
 class ModelUtil:

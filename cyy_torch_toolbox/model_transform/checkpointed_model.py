@@ -1,11 +1,12 @@
 import copy
 
 import torch
-import torch.nn as nn
 import torch.utils.checkpoint
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.model_util import ModelUtil
-from cyy_torch_toolbox.reproducible_env import global_reproducible_env
+from torch import nn
+
+from ..model_util import ModelUtil
+from ..reproducible_env import global_reproducible_env
 
 
 class _CheckPointBlock(nn.Module):
