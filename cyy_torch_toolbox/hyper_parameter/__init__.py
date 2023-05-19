@@ -1,18 +1,17 @@
 import copy
 import functools
 from enum import IntEnum, auto
-from typing import Any, Callable
+from typing import Any, Callable, Type
 
 import torch
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import call_fun, get_class_attrs
 
-from cyy_torch_toolbox.algorithm.lr_finder import LRFinder
-from cyy_torch_toolbox.data_structure.torch_thread_task_queue import \
-    TorchThreadTaskQueue
+from ..data_structure.torch_thread_task_queue import TorchThreadTaskQueue
+from .lr_finder import LRFinder
 
 
-def determine_learning_rate(task, **kwargs):
+def determine_learning_rate(task: Any, **kwargs: Any) -> float:
     tmp_trainer, device = task
     tmp_trainer.set_device(device)
     tmp_trainer.disable_stripable_hooks()
@@ -111,7 +110,7 @@ class HyperParameter:
         return isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR)
 
     @classmethod
-    def get_lr_scheduler_factory(cls, name, dataset_name=None, **kwargs):
+    def get_lr_scheduler_factory(cls, name: str, dataset_name=None, **kwargs):
         return functools.partial(
             cls.default_lr_scheduler_factory,
             name=name,
@@ -122,7 +121,7 @@ class HyperParameter:
     @classmethod
     def default_lr_scheduler_factory(
         cls, hyper_parameter, trainer, name, dataset_name, kwargs
-    ):
+    ) -> Any:
         optimizer = trainer.get_optimizer()
         training_dataset_size = trainer.dataset_size
         full_kwargs: dict = {}
@@ -179,7 +178,7 @@ class HyperParameter:
         return ["ReduceLROnPlateau", "OneCycleLR", "CosineAnnealingLR", "MultiStepLR"]
 
     @classmethod
-    def get_optimizer_factory(cls, name: str) -> Any:
+    def get_optimizer_factory(cls, name: str) -> Type:
         optimizer_class = cls.__get_optimizer_classes().get(name, None)
         if optimizer_class is None:
             raise RuntimeError(
@@ -188,7 +187,7 @@ class HyperParameter:
             )
         return optimizer_class
 
-    def get_optimizer(self, trainer) -> Any:
+    def get_optimizer(self, trainer: Any) -> Any:
         assert self.__optimizer_factory is not None
         foreach = not torch.backends.mps.is_available()
         kwargs: dict = {
