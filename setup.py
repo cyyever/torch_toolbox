@@ -17,6 +17,7 @@ setuptools.setup(
         "cyy_torch_toolbox/dataset_wrapper",
         "cyy_torch_toolbox/dataset_wrapper/vision",
         "cyy_torch_toolbox/dataset_wrapper/audio",
+        "cyy_torch_toolbox/hyper_parameter",
         "cyy_torch_toolbox/model_transform",
         "cyy_torch_toolbox/model_evaluator",
         "cyy_torch_toolbox/model_factory",
@@ -27,7 +28,6 @@ setuptools.setup(
         "cyy_torch_toolbox/hooks",
         "cyy_torch_toolbox/metric_visualizers",
         "cyy_torch_toolbox/data_structure",
-        "cyy_torch_toolbox/algorithm",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
