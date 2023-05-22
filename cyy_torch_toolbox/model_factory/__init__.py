@@ -130,9 +130,7 @@ class ModelConfig:
         self.pretrained: bool = False
         self.model_kwargs: dict = {}
 
-    def get_model(
-        self, dc: DatasetCollection, dataset_kwargs: None | dict = None
-    ) -> ModelEvaluator:
+    def get_model(self, dc: DatasetCollection) -> ModelEvaluator:
         assert not (self.pretrained and self.model_path)
         model_kwargs = copy.deepcopy(self.model_kwargs)
         if "pretrained" not in model_kwargs:

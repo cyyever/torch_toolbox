@@ -242,7 +242,9 @@ class DatasetCollection:
             self.__datasets[phase] = dataset
             self.__raw_datasets[phase] = raw_dataset
 
-    def add_transforms(self, model_evaluator, dataset_kwargs) -> None:
+    def add_transforms(self, model_evaluator) -> None:
         add_transforms(
-            dc=self, dataset_kwargs=dataset_kwargs, model_evaluator=model_evaluator
+            dc=self,
+            dataset_kwargs=self.__dataset_kwargs,
+            model_evaluator=model_evaluator,
         )
