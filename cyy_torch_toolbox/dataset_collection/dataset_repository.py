@@ -197,10 +197,12 @@ def __create_dataset(
         test_dataset = None
 
     if validation_dataset is None and test_dataset is None:
-        datasets = get_dataset_util_cls(dataset_type)(training_dataset).decompose()
+        datasets: dict = get_dataset_util_cls(dataset_type)(
+            training_dataset
+        ).decompose()
         if datasets is not None:
             return dataset_type, datasets
-    datasets: dict = {MachineLearningPhase.Training: training_dataset}
+    datasets = {MachineLearningPhase.Training: training_dataset}
     if validation_dataset is not None:
         datasets[MachineLearningPhase.Validation] = validation_dataset
     if test_dataset is not None:
