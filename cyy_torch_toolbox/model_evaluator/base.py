@@ -61,13 +61,15 @@ class ModelEvaluator:
         return self.__loss_fun
 
     def set_loss_fun(self, loss_fun: Callable | str) -> None:
-        if isinstance(loss_fun, str):
-            if loss_fun == "CrossEntropyLoss":
+        match loss_fun:
+            case "CrossEntropyLoss":
                 self.__loss_fun = nn.CrossEntropyLoss()
-            else:
+            case "NLLLoss":
+                self.__loss_fun = nn.NLLLoss()
+            case str():
                 raise RuntimeError(f"unknown loss function {loss_fun}")
-        else:
-            self.__loss_fun = loss_fun
+            case _:
+                self.__loss_fun = loss_fun
 
     def offload_from_memory(self):
         self.model.zero_grad(set_to_none=True)
