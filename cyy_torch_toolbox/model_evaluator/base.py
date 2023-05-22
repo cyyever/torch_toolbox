@@ -5,13 +5,13 @@ import torch
 from cyy_naive_lib.log import get_logger
 from torch import nn
 
-# from cyy_torch_toolbox.device import get_devices
 from ..ml_type import MachineLearningPhase, ModelType
-# from cyy_torch_toolbox.model_transform.checkpointed_model import \
-#     get_checkpointed_model
 from ..model_util import ModelUtil
 from ..tensor import tensor_to
 
+# from cyy_torch_toolbox.model_transform.checkpointed_model import \
+#     get_checkpointed_model
+# from cyy_torch_toolbox.device import get_devices
 # from torch.nn.parallel import DistributedDataParallel as DDP
 
 
@@ -84,7 +84,7 @@ class ModelEvaluator:
         inputs: Any,
         targets: Any,
         phase: MachineLearningPhase | None = None,
-        device: torch.device = None,
+        device: None | torch.device = None,
         non_blocking: bool = False,
         input_features: None | Any = None,
         need_backward: bool = False,
@@ -133,9 +133,7 @@ class ModelEvaluator:
             "targets": targets,
         }
 
-    def _forward_model(
-        self, inputs: Any, input_features: Any, **kwargs: Any
-    ) -> dict | torch.Tensor:
+    def _forward_model(self, inputs: Any, input_features: Any, **kwargs: Any) -> dict:
         fun: Callable = self.model
         if hasattr(self.model, "forward_input_feature") and input_features is not None:
             fun = self.model.forward_input_feature
@@ -155,7 +153,7 @@ class ModelEvaluator:
 
     def _compute_loss(
         self, output: Any, targets: Any, non_blocking: bool, **kwargs: Any
-    ):
+    ) -> dict:
         match output:
             case torch.Tensor():
                 match self.loss_fun:

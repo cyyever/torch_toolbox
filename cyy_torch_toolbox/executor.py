@@ -56,7 +56,7 @@ class Executor(HookCollection):
         # self.append_hook(MetricTensorBoard(), "tensor_board_visualizer")
         self.__save_dir: None | str = None
         self._visualizer_prefix: None | str = None
-        self.cache_transforms = None
+        self.cache_transforms: None | str = None
 
     @property
     def hyper_parameter(self):
@@ -79,11 +79,10 @@ class Executor(HookCollection):
 
     def set_save_dir(self, save_dir: str) -> None:
         self.__save_dir = save_dir
-        if save_dir is not None:
-            data_dir = os.path.join(save_dir, "visualizer")
-            for hook in self.get_hooks():
-                if isinstance(hook, MetricVisualizer):
-                    hook.set_data_dir(data_dir)
+        data_dir = os.path.join(save_dir, "visualizer")
+        for hook in self.get_hooks():
+            if isinstance(hook, MetricVisualizer):
+                hook.set_data_dir(data_dir)
 
     def set_visualizer_prefix(self, prefix: str) -> None:
         self._visualizer_prefix = prefix
@@ -92,7 +91,7 @@ class Executor(HookCollection):
                 hook.set_prefix(prefix)
 
     @property
-    def save_dir(self):
+    def save_dir(self) -> None | str:
         return self.__save_dir
 
     @property
@@ -147,7 +146,7 @@ class Executor(HookCollection):
     def replace_model(self, fun: Callable) -> None:
         self.__model_evaluator = self.model_evaluator.replace_model(fun(self.model))
 
-    def _prepare_execution(self, **kwargs):
+    def _prepare_execution(self, **kwargs: Any) -> None:
         self._data.clear()
         if self._hook_config:
             for k, v in kwargs.items():
