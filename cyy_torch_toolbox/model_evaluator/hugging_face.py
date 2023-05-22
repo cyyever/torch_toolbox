@@ -1,7 +1,6 @@
 import copy
 from typing import Any
 
-import torch
 import transformers
 
 from ..ml_type import ModelType
@@ -15,7 +14,7 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
                 model_type = ModelType.TextGeneration
         super().__init__(model=model, model_type=model_type, **kwargs)
 
-    def get_input_feature(self, inputs):
+    def get_input_feature(self, inputs) -> Any:
         match inputs:
             case transformers.tokenization_utils_base.BatchEncoding() | dict():
                 input_ids = inputs["input_ids"]
@@ -30,8 +29,8 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
         raise NotImplementedError(self.model)
 
     def _forward_model(
-        self, inputs, targets, input_features=None, **kwargs
-    ) -> dict | torch.Tensor:
+        self, inputs, targets, input_features=None, **kwargs: Any
+    ) -> dict:
         if input_features is not None:
             if inputs is not None:
                 inputs = copy.copy(inputs)
