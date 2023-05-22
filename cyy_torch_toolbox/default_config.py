@@ -24,16 +24,16 @@ from cyy_torch_toolbox.trainer import Trainer
 
 @dataclass
 class DefaultConfig:
-    def __init__(self, dataset_name=None, model_name=None):
+    def __init__(self, dataset_name: str, model_name: str) -> None:
         self.make_reproducible_env = False
         self.reproducible_env_load_path = None
         self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
         self.hyper_parameter_config: HyperParameterConfig = HyperParameterConfig()
         self.model_config = ModelConfig(model_name=model_name)
         self.hook_config = HookConfig()
-        self.save_dir = None
+        self.save_dir: str | None = None
         self.log_level = None
-        self.cache_transforms = None
+        self.cache_transforms: None | str = None
 
     def load_config(self, conf: Any, check_config: bool = True) -> dict:
         return DefaultConfig.__load_config(self, conf, check_config)
@@ -41,10 +41,11 @@ class DefaultConfig:
     @classmethod
     def __load_config(cls, obj: Any, conf: Any, check_config: bool = True) -> dict:
         if not isinstance(conf, dict):
-            conf_container = OmegaConf.to_container(conf)
+            conf_container: dict = OmegaConf.to_container(conf)
         else:
             conf_container = conf
         for attr in copy.copy(conf_container):
+            assert isinstance(attr, str)
             if not hasattr(obj, attr):
                 continue
             value = conf_container.pop(attr)
@@ -133,12 +134,12 @@ class DefaultConfig:
         trainer = self.create_trainer()
         return trainer.get_inferencer(phase)
 
-    def apply_global_config(self):
+    def apply_global_config(self) -> None:
         if self.log_level is not None:
             set_level(self.log_level)
         self.__set_reproducible_env()
 
-    def __set_reproducible_env(self):
+    def __set_reproducible_env(self) -> None:
         if self.reproducible_env_load_path is not None:
             assert not global_reproducible_env.enabled
             global_reproducible_env.load(self.reproducible_env_load_path)
