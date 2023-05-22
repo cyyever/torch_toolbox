@@ -3,6 +3,7 @@ import datetime
 import os
 import uuid
 from dataclasses import dataclass
+from typing import Any
 
 import torch
 from cyy_naive_lib.log import get_logger, set_level
@@ -34,11 +35,11 @@ class DefaultConfig:
         self.log_level = None
         self.cache_transforms = None
 
-    def load_config(self, conf, check_config: bool = True) -> dict:
+    def load_config(self, conf: Any, check_config: bool = True) -> dict:
         return DefaultConfig.__load_config(self, conf, check_config)
 
     @classmethod
-    def __load_config(cls, obj, conf, check_config: bool = True) -> dict:
+    def __load_config(cls, obj: Any, conf: Any, check_config: bool = True) -> dict:
         if not isinstance(conf, dict):
             conf_container = OmegaConf.to_container(conf)
         else:
@@ -75,7 +76,7 @@ class DefaultConfig:
             assert not conf_container
         return conf_container
 
-    def get_save_dir(self):
+    def get_save_dir(self) -> str:
         model_name = self.model_config.model_name
         if model_name is None:
             model_name = "custom_model"
@@ -89,7 +90,7 @@ class DefaultConfig:
             )
         return self.save_dir
 
-    def create_dataset_collection(self):
+    def create_dataset_collection(self) -> DatasetCollection:
         get_logger().debug("use dataset %s", self.dc_config.dataset_name)
         return self.dc_config.create_dataset_collection(
             save_dir=self.get_save_dir(),
@@ -108,12 +109,10 @@ class DefaultConfig:
             model_evaluator = get_model_evaluator(model, dc)
 
         if model_evaluator is None:
-            model_evaluator = self.model_config.get_model(
-                dc, dataset_kwargs=self.dc_config.dataset_kwargs
-            )
+            model_evaluator = self.model_config.get_model(dc)
         dc.add_transforms(
             model_evaluator=model_evaluator,
-            dataset_kwargs=self.dc_config.dataset_kwargs,
+            dataset_kwargs=dc.dataset_kwargs,
         )
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
             self.dc_config.dataset_name, self.model_config.model_name
