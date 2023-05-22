@@ -25,7 +25,7 @@ setuptools.setup(
         "cyy_torch_toolbox/tokenizer",
         "cyy_torch_toolbox/metrics",
         "cyy_torch_toolbox/dataloader",
-        "cyy_torch_toolbox/hooks",
+        "cyy_torch_toolbox/hook",
         "cyy_torch_toolbox/metric_visualizers",
         "cyy_torch_toolbox/data_structure",
     ],

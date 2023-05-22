@@ -2,18 +2,21 @@ import copy
 from collections.abc import Iterable
 from typing import Any, Callable, Dict, Generator, List
 
-from cyy_torch_toolbox.ml_type import ExecutorHookPoint
+from ..ml_type import ExecutorHookPoint
 
 
 class Hook:
-    def __init__(self, stripable=False):
-        self.__stripable = stripable
-        self._is_cyy_torch_toolbox_hook = True
-        self._sub_hooks = []
-        self._enabled = True
+    def __init__(self, stripable: bool = False) -> None:
+        self.__stripable: bool = stripable
+        self.is_cyy_torch_toolbox_hook: bool = True
+        self._sub_hooks: list = []
+        self._enabled: bool = True
 
     def __setattr__(self, name, value):
-        if hasattr(value, "_is_cyy_torch_toolbox_hook"):
+        if (
+            hasattr(value, "is_cyy_torch_toolbox_hook")
+            and self.is_cyy_torch_toolbox_hook
+        ):
             self._sub_hooks.append(value)
         super().__setattr__(name, value)
 

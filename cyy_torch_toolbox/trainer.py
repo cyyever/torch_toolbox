@@ -8,8 +8,9 @@ from cyy_naive_lib.log import get_logger
 from .classification_inferencer import ClassificationInferencer
 from .dataset_collection import DatasetCollection
 from .executor import Executor
-from .hook_config import HookConfig
-from .hooks.keep_model import KeepModelHook
+from .hook.config import HookConfig
+from .hook.keep_model import KeepModelHook
+from .hyper_parameter import HyperParameter
 from .inferencer import Inferencer
 from .metric_visualizers.batch_loss_logger import BatchLossLogger
 from .ml_type import (ExecutorHookPoint, MachineLearningPhase, ModelType,
@@ -183,15 +184,15 @@ class Trainer(Executor):
 
 
 class TrainerConfig:
-    def __init__(self):
-        self.hook_config = HookConfig()
+    def __init__(self) -> None:
+        self.hook_config: HookConfig = HookConfig()
         self.cache_transforms: None | str = None
 
     def create_trainer(
         self,
         dataset_collection: DatasetCollection,
         model_evaluator: ModelEvaluator,
-        hyper_parameter,
+        hyper_parameter: HyperParameter,
     ) -> Trainer:
         dataset_collection.add_transforms(
             model_evaluator=model_evaluator,
