@@ -1,6 +1,7 @@
 import copy
 from typing import Any
 
+import torch
 import transformers
 
 from ..ml_type import ModelType
@@ -14,7 +15,7 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
                 model_type = ModelType.TextGeneration
         super().__init__(model=model, model_type=model_type, **kwargs)
 
-    def get_input_feature(self, inputs) -> Any:
+    def get_input_feature(self, inputs) -> torch.Tensor:
         match inputs:
             case transformers.tokenization_utils_base.BatchEncoding() | dict():
                 input_ids = inputs["input_ids"]
@@ -28,9 +29,7 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
             return self.model.get_input_embeddings()(input_ids).detach()
         raise NotImplementedError(self.model)
 
-    def _forward_model(
-        self, inputs, targets, input_features=None, **kwargs: Any
-    ) -> dict:
+    def _create_input(self, inputs: dict, targets, input_features=None) -> dict:
         if input_features is not None:
             if inputs is not None:
                 inputs = copy.copy(inputs)
@@ -41,9 +40,18 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
 
         if hasattr(targets, "input_ids"):
             targets = targets.input_ids
-        # get_logger().error("inputs %s,labels %s", inputs, targets)
-        output = self.model(**inputs, labels=targets)
+        inputs["labels"] = targets
+        return inputs
+
+    def _forward_model(
+        self, inputs: dict, targets, input_features=None, **kwargs: Any
+    ) -> dict:
+        model_input = self._create_input(
+            inputs=inputs, targets=targets, input_features=input_features
+        )
+        output = self.model(**model_input)
         return {
+            "model_input": model_input,
             "model_output": output,
             "logits": output.logits,
             "loss": output.loss,

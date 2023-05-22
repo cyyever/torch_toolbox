@@ -2,11 +2,6 @@ import functools
 
 import torch
 
-# module_dir = os.path.realpath(
-#     os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")
-# )
-# if module_dir not in sys.path:
-#     sys.path.append(module_dir)
 from ..dataset_collection import DatasetCollection
 from ..dependency import has_hugging_face
 from ..ml_type import DatasetType, MachineLearningPhase, ModelType
