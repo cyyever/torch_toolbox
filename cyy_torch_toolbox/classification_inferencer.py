@@ -1,5 +1,6 @@
 from cyy_torch_toolbox.inferencer import Inferencer
-from cyy_torch_toolbox.metrics.prob_metric import ProbabilityMetric
+
+# from cyy_torch_toolbox.metrics.prob_metric import ProbabilityMetric
 
 # from torchvision.ops.boxes import box_iou
 
