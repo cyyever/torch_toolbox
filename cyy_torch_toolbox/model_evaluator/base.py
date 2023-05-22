@@ -27,7 +27,6 @@ class ModelEvaluator:
         model_type: None | ModelType = None,
         loss_fun: str | Callable | None = None,
     ):
-        self._original_model: torch.nn.Module = model
         self._model: torch.nn.Module = model
         self.__name = model_name
         self.__loss_fun: Callable | None = None
@@ -220,11 +219,12 @@ class ModelEvaluator:
         get_logger().error("can't choose a loss function, model is %s", self._model)
         raise NotImplementedError(type(last_layer))
 
-    def get_underlying_model(self):
-        model = self._original_model
-        if isinstance(model, torch.quantization.stubs.QuantWrapper):
-            return model.module
-        return model
+    def get_underlying_model(self) -> torch.nn.Module:
+        match self.model:
+            case torch.quantization.stubs.QuantWrapper():
+                return self.model.module
+            case _:
+                return self.model
 
     def __is_averaged_loss(self) -> bool | None:
         if hasattr(self.loss_fun, "reduction"):
