@@ -113,7 +113,6 @@ class DefaultConfig:
             model_evaluator = self.model_config.get_model(dc)
         dc.add_transforms(
             model_evaluator=model_evaluator,
-            dataset_kwargs=dc.dataset_kwargs,
         )
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
             self.dc_config.dataset_name, self.model_config.model_name
