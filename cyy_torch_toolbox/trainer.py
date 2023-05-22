@@ -5,16 +5,16 @@ from typing import Any
 import torch
 from cyy_naive_lib.log import get_logger
 
-from cyy_torch_toolbox.classification_inferencer import \
-    ClassificationInferencer
-from cyy_torch_toolbox.executor import Executor
-from cyy_torch_toolbox.hooks.keep_model import KeepModelHook
-from cyy_torch_toolbox.inferencer import Inferencer
-from cyy_torch_toolbox.metric_visualizers.batch_loss_logger import \
-    BatchLossLogger
-from cyy_torch_toolbox.ml_type import (ExecutorHookPoint, MachineLearningPhase,
-                                       ModelType, StopExecutingException)
-from cyy_torch_toolbox.model_evaluator import ModelEvaluator
+from .classification_inferencer import ClassificationInferencer
+from .dataset_collection import DatasetCollection
+from .executor import Executor
+from .hook_config import HookConfig
+from .hooks.keep_model import KeepModelHook
+from .inferencer import Inferencer
+from .metric_visualizers.batch_loss_logger import BatchLossLogger
+from .ml_type import (ExecutorHookPoint, MachineLearningPhase, ModelType,
+                      StopExecutingException)
+from .model_evaluator import ModelEvaluator
 
 
 class Trainer(Executor):
@@ -180,3 +180,27 @@ class Trainer(Executor):
 
     def _get_backward_loss(self, result):
         return result["loss"]
+
+
+class TrainerConfig:
+    def __init__(self):
+        self.hook_config = HookConfig()
+        self.cache_transforms: None | str = None
+
+    def create_trainer(
+        self,
+        dataset_collection: DatasetCollection,
+        model_evaluator: ModelEvaluator,
+        hyper_parameter,
+    ) -> Trainer:
+        dataset_collection.add_transforms(
+            model_evaluator=model_evaluator,
+        )
+        trainer = Trainer(
+            model_evaluator=model_evaluator,
+            dataset_collection=dataset_collection,
+            hyper_parameter=hyper_parameter,
+            hook_config=self.hook_config,
+        )
+        trainer.cache_transforms = self.cache_transforms
+        return trainer
