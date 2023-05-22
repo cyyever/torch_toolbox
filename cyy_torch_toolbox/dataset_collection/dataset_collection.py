@@ -46,6 +46,10 @@ class DatasetCollection:
         return self.__name
 
     @property
+    def dataset_kwargs(self) -> dict:
+        return self.__dataset_kwargs
+
+    @property
     def tokenizer(self) -> Any | None:
         if self.__tokenizer is None and self.dataset_type == DatasetType.Text:
             self.__tokenizer = get_tokenizer(
@@ -245,6 +249,5 @@ class DatasetCollection:
     def add_transforms(self, model_evaluator) -> None:
         add_transforms(
             dc=self,
-            dataset_kwargs=self.__dataset_kwargs,
             model_evaluator=model_evaluator,
         )

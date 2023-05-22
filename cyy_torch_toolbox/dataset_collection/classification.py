@@ -62,10 +62,8 @@ class ClassificationDatasetCollection(DatasetCollection):
         reversed_label_names = {v: k for k, v in label_names.items()}
         return reversed_label_names[label_name]
 
-    def add_transforms(self, model_evaluator, dataset_kwargs):
-        super().add_transforms(
-            model_evaluator=model_evaluator, dataset_kwargs=dataset_kwargs
-        )
+    def add_transforms(self, model_evaluator):
+        super().add_transforms(model_evaluator=model_evaluator)
         # add more transformers for model
         if self.dataset_type == DatasetType.Vision:
             input_size = getattr(

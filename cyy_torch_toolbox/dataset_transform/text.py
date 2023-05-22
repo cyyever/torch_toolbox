@@ -33,13 +33,9 @@ def add_text_extraction(dc: DatasetCollection) -> None:
                 )
 
 
-def add_text_transforms(
-    dc: DatasetCollection, model_evaluator: ModelEvaluator, dataset_kwargs: dict
-) -> None:
+def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) -> None:
     assert dc.dataset_type == DatasetType.Text
     assert has_torchtext
-    if not dataset_kwargs:
-        dataset_kwargs = {}
     dataset_name: str = ""
     if dc.name is not None:
         dataset_name = dc.name.lower()
@@ -54,7 +50,7 @@ def add_text_transforms(
             key=TransformType.Target,
         )
 
-    text_transforms = dataset_kwargs.get("text_transforms", {})
+    text_transforms = dc.dataset_kwargs.get("text_transforms", {})
     assert not text_transforms
     # for phase, transforms in text_transforms.items():
     #     for f in transforms:
@@ -71,7 +67,7 @@ def add_text_transforms(
         )
 
     # Input && InputBatch
-    max_len = dataset_kwargs.get("max_len", None)
+    max_len = dc.dataset_kwargs.get("max_len", None)
     match dc.tokenizer:
         case SpacyTokenizer():
             dc.append_transform(dc.tokenizer, key=TransformType.Input)
