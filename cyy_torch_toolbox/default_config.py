@@ -11,7 +11,6 @@ from omegaconf import OmegaConf
 
 from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
                                                   DatasetCollectionConfig)
-from cyy_torch_toolbox.hook_config import HookConfig
 from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
@@ -19,7 +18,7 @@ from cyy_torch_toolbox.model_evaluator import (ModelEvaluator,
                                                get_model_evaluator)
 from cyy_torch_toolbox.model_factory import ModelConfig
 from cyy_torch_toolbox.reproducible_env import global_reproducible_env
-from cyy_torch_toolbox.trainer import Trainer
+from cyy_torch_toolbox.trainer import Trainer, TrainerConfig
 
 
 @dataclass
@@ -30,10 +29,9 @@ class DefaultConfig:
         self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
         self.hyper_parameter_config: HyperParameterConfig = HyperParameterConfig()
         self.model_config = ModelConfig(model_name=model_name)
-        self.hook_config = HookConfig()
+        self.trainer_config = TrainerConfig()
         self.save_dir: str | None = None
         self.log_level = None
-        self.cache_transforms: None | str = None
 
     def load_config(self, conf: Any, check_config: bool = True) -> dict:
         return DefaultConfig.__load_config(self, conf, check_config)
@@ -66,6 +64,10 @@ class DefaultConfig:
         if hasattr(obj, "model_config"):
             conf_container = cls.__load_config(
                 obj.model_config, conf_container, check_config=False
+            )
+        if hasattr(obj, "trainer_config"):
+            conf_container = cls.__load_config(
+                obj.hook_config, conf_container, check_config=False
             )
         if hasattr(obj, "hook_config"):
             conf_container = cls.__load_config(
@@ -101,30 +103,20 @@ class DefaultConfig:
         self,
         dc: DatasetCollection | None = None,
         model_evaluator: ModelEvaluator | None = None,
-        model: None | torch.nn.Module = None,
     ) -> Trainer:
-        assert not (model and model_evaluator)
         if dc is None:
             dc = self.create_dataset_collection()
-        if model is not None:
-            model_evaluator = get_model_evaluator(model, dc)
-
         if model_evaluator is None:
             model_evaluator = self.model_config.get_model(dc)
-        dc.add_transforms(
-            model_evaluator=model_evaluator,
-        )
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
             self.dc_config.dataset_name, self.model_config.model_name
         )
-        trainer = Trainer(
-            model_evaluator=model_evaluator,
+        trainer: Trainer = self.trainer_config.create_trainer(
             dataset_collection=dc,
+            model_evaluator=model_evaluator,
             hyper_parameter=hyper_parameter,
-            hook_config=self.hook_config,
         )
         trainer.set_save_dir(self.get_save_dir())
-        trainer.cache_transforms = self.cache_transforms
         return trainer
 
     def create_inferencer(
