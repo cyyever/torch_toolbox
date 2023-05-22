@@ -1,10 +1,10 @@
 import torch
 import torch.cuda
 
-from cyy_torch_toolbox.hooks.amp import AMP
-from cyy_torch_toolbox.hooks.cudnn import CUDNNHook
-from cyy_torch_toolbox.hooks.debugger import Debugger
-from cyy_torch_toolbox.hooks.profiler import Profiler
+from cyy_torch_toolbox.hook.amp import AMP
+from cyy_torch_toolbox.hook.cudnn import CUDNNHook
+from cyy_torch_toolbox.hook.debugger import Debugger
+from cyy_torch_toolbox.hook.profiler import Profiler
 from cyy_torch_toolbox.metric_visualizers.performance_metric_recorder import \
     PerformanceMetricRecorder
 from cyy_torch_toolbox.ml_type import MachineLearningPhase

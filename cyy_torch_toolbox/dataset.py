@@ -1,13 +1,13 @@
 from collections.abc import Iterable
 from typing import Generator
 
+import torch
+import torchdata
+
 from cyy_torch_toolbox.dependency import has_torch_geometric
 
 if has_torch_geometric:
     import torch_geometric.data
-
-import torch
-import torchdata
 
 
 def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:

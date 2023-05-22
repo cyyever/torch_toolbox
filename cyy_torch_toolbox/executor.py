@@ -4,25 +4,24 @@ from typing import Any, Callable
 import torch
 from cyy_naive_lib.log import get_logger
 
-from cyy_torch_toolbox.dataloader.dataloader import get_dataloader
-from cyy_torch_toolbox.dataset_collection import DatasetCollection
-from cyy_torch_toolbox.dataset_util import DatasetUtil
-from cyy_torch_toolbox.device import get_device
-from cyy_torch_toolbox.hook import HookCollection
-from cyy_torch_toolbox.hook_config import HookConfig
-from cyy_torch_toolbox.hooks.executor_logger import ExecutorLogger
-from cyy_torch_toolbox.hyper_parameter import HyperParameter
+from .dataloader.dataloader import get_dataloader
+from .dataset_collection import DatasetCollection
+from .dataset_util import DatasetUtil
+from .device import get_device
+from .hook import HookCollection
+from .hook.config import HookConfig
+from .hook.executor_logger import ExecutorLogger
+from .hyper_parameter import HyperParameter
+from .metric_visualizers.metric_visualizer import MetricVisualizer
+from .metric_visualizers.performance_metric_logger import \
+    PerformanceMetricLogger
+from .metrics.performance_metric import PerformanceMetric
+from .ml_type import DatasetType, ExecutorHookPoint, MachineLearningPhase
+from .model_evaluator import ModelEvaluator
+from .model_util import ModelUtil
+
 # from cyy_torch_toolbox.metric_visualizers.metric_tensorboard import \
 #     MetricTensorBoard
-from cyy_torch_toolbox.metric_visualizers.metric_visualizer import \
-    MetricVisualizer
-from cyy_torch_toolbox.metric_visualizers.performance_metric_logger import \
-    PerformanceMetricLogger
-from cyy_torch_toolbox.metrics.performance_metric import PerformanceMetric
-from cyy_torch_toolbox.ml_type import (DatasetType, ExecutorHookPoint,
-                                       MachineLearningPhase)
-from cyy_torch_toolbox.model_evaluator import ModelEvaluator
-from cyy_torch_toolbox.model_util import ModelUtil
 
 
 class Executor(HookCollection):
@@ -59,7 +58,7 @@ class Executor(HookCollection):
         self.cache_transforms: None | str = None
 
     @property
-    def hyper_parameter(self):
+    def hyper_parameter(self) -> HyperParameter:
         return self.__hyper_parameter
 
     def _get_batch_size(self) -> int:
