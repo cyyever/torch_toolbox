@@ -1,6 +1,7 @@
 import functools
 
 import torch
+from cyy_naive_lib.log import get_logger
 
 from ..dataset_collection import (ClassificationDatasetCollection,
                                   DatasetCollection)
@@ -68,6 +69,7 @@ def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) 
 
     # Input && InputBatch
     max_len = dc.dataset_kwargs.get("max_len", None)
+    get_logger().info("use text max_len %s", max_len)
     match dc.tokenizer:
         case SpacyTokenizer():
             dc.append_transform(dc.tokenizer, key=TransformType.Input)
