@@ -1,4 +1,3 @@
-import copy
 from typing import Any
 
 import torch
@@ -15,52 +14,39 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
                 model_type = ModelType.TextGeneration
         super().__init__(model=model, model_type=model_type, **kwargs)
 
-    def split_batch_input(self, inputs, targets, input_features=None) -> tuple:
+    def split_batch_input(self, inputs, targets) -> tuple:
         batch_dim = 0
         new_inputs = []
         first_value = next(iter(inputs.values()))
         assert isinstance(first_value, torch.Tensor)
         for i in range(first_value.size(dim=0)):
-            new_inputs.append(
-                {k: v[i].unsqueeze(dim=0) for k, v in inputs.items()}
-            )
+            new_inputs.append({k: v[i].unsqueeze(dim=0) for k, v in inputs.items()})
         inputs = new_inputs
-        return inputs, batch_dim, input_features
+        return inputs, batch_dim
 
     def get_input_feature(self, inputs) -> torch.Tensor:
-        match inputs:
-            case transformers.tokenization_utils_base.BatchEncoding() | dict():
-                input_ids = inputs["input_ids"]
-            case _:
-                input_ids = inputs
+        input_ids = inputs["input_ids"]
         if hasattr(self.model, "distilbert"):
             if len(list(input_ids.shape)) == 1:
                 input_ids = input_ids.unsqueeze(dim=0)
-            return self.model.distilbert.embeddings(input_ids).detach()
-        if hasattr(self.model, "bert"):
-            return self.model.get_input_embeddings()(input_ids).detach()
-        raise NotImplementedError(self.model)
+            embeddings = self.model.distilbert.embeddings(input_ids).detach()
+        elif hasattr(self.model, "bert"):
+            embeddings = self.model.get_input_embeddings()(input_ids).detach()
+        else:
+            raise NotImplementedError(self.model)
+        inputs.pop("input_ids", None)
+        inputs["inputs_embeds"] = embeddings
 
-    def _create_input(self, inputs: dict, targets, input_features=None) -> dict:
-        if input_features is not None:
-            if inputs is not None:
-                inputs = copy.copy(inputs)
-                inputs.pop("input_ids", None)
-            else:
-                inputs = {}
-            inputs["inputs_embeds"] = input_features
-
+    def _create_input(
+        self, inputs: dict, targets, is_input_feature: bool, **kwargs: Any
+    ) -> dict:
         if hasattr(targets, "input_ids"):
             targets = targets.input_ids
         inputs["labels"] = targets
         return inputs
 
-    def _forward_model(
-        self, inputs: dict, targets, input_features=None, **kwargs: Any
-    ) -> dict:
-        model_input = self._create_input(
-            inputs=inputs, targets=targets, input_features=input_features
-        )
+    def _forward_model(self, **kwargs: Any) -> dict:
+        model_input = self._create_input(**kwargs)
         output = self.model(**model_input)
         return {
             "model_input": model_input,
