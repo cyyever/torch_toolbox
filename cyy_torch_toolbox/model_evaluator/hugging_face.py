@@ -1,7 +1,6 @@
 from typing import Any
 
 import torch
-import transformers
 
 from ..ml_type import ModelType
 from .text import TextModelEvaluator
@@ -24,7 +23,7 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
         inputs = new_inputs
         return inputs, batch_dim
 
-    def get_input_feature(self, inputs) -> torch.Tensor:
+    def get_input_feature(self, inputs) -> dict:
         input_ids = inputs["input_ids"]
         if hasattr(self.model, "distilbert"):
             if len(list(input_ids.shape)) == 1:
@@ -36,6 +35,7 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
             raise NotImplementedError(self.model)
         inputs.pop("input_ids", None)
         inputs["inputs_embeds"] = embeddings
+        return inputs
 
     def _create_input(
         self, inputs: dict, targets, is_input_feature: bool, **kwargs: Any

@@ -16,7 +16,7 @@ from .metric_visualizers.metric_visualizer import MetricVisualizer
 from .metric_visualizers.performance_metric_logger import \
     PerformanceMetricLogger
 from .metrics.performance_metric import PerformanceMetric
-from .ml_type import DatasetType, ExecutorHookPoint, MachineLearningPhase
+from .ml_type import ExecutorHookPoint, MachineLearningPhase
 from .model_evaluator import ModelEvaluator
 from .model_util import ModelUtil
 
