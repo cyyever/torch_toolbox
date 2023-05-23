@@ -219,32 +219,6 @@ class Executor(HookCollection):
         self.__model_evaluator.offload_from_memory()
         torch.cuda.empty_cache()
 
-    def split_batch_input(self, inputs, targets, input_features=None) -> tuple:
-        batch_dim = 0
-        if self.dataset_collection.dataset_type == DatasetType.Text:
-            if "BatchEncoding" in type(inputs).__name__:
-                new_inputs = []
-                first_value = next(iter(inputs.values()))
-                assert isinstance(first_value, torch.Tensor)
-                for i in range(first_value.size(dim=0)):
-                    new_inputs.append(
-                        {k: v[i].unsqueeze(dim=0) for k, v in inputs.items()}
-                    )
-                inputs = new_inputs
-
-            if isinstance(inputs, torch.Tensor):
-                if (
-                    batch_dim == 0
-                    and inputs.shape[0] != targets.shape[0]
-                    and inputs.shape[1] == targets.shape[0]
-                ):
-                    batch_dim = 1
-                if batch_dim != 0:
-                    inputs = inputs.permute(batch_dim, 0)
-            if batch_dim != 0 and isinstance(input_features, torch.Tensor):
-                input_features = input_features.permute(batch_dim, 0, 2)
-        return inputs, batch_dim, input_features
-
     def get_optimizer(self) -> Any:
         return None
 
@@ -307,22 +281,15 @@ class Executor(HookCollection):
                     forward_result = self.__model_evaluator(**kwargs)
 
                 get_logger().debug("use dataset size %s", self._data["dataset_size"])
-                if forward_result["is_averaged_loss"]:
-                    assert self._data["dataset_size"] > 1
-                    normalized_batch_loss = (
-                        forward_result["loss"]
-                        * batch["batch_size"]
-                        / self._data["dataset_size"]
-                    )
-                else:
-                    raise NotImplementedError()
-                    # normalized_batch_loss = forward_result["loss"] / self._data["dataset_size"]
+                assert forward_result["is_averaged_loss"]
+                assert self._data["dataset_size"] > 1
+                normalized_batch_loss = (
+                    forward_result["loss"]
+                    * batch["batch_size"]
+                    / self._data["dataset_size"]
+                )
                 forward_result["normalized_batch_loss"] = normalized_batch_loss
                 batch |= forward_result
-                # batch["cpu_inputs"] = forward_result["cpu_inputs"]
-                # batch["inputs"] = forward_result["inputs"]
-                # batch["targets"] = forward_result["targets"]
-                # batch["input_features"] = forward_result["input_features"]
                 self.exec_hooks(
                     hook_point=ExecutorHookPoint.AFTER_FORWARD,
                     epoch=epoch,

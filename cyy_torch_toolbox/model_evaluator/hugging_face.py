@@ -15,6 +15,18 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
                 model_type = ModelType.TextGeneration
         super().__init__(model=model, model_type=model_type, **kwargs)
 
+    def split_batch_input(self, inputs, targets, input_features=None) -> tuple:
+        batch_dim = 0
+        new_inputs = []
+        first_value = next(iter(inputs.values()))
+        assert isinstance(first_value, torch.Tensor)
+        for i in range(first_value.size(dim=0)):
+            new_inputs.append(
+                {k: v[i].unsqueeze(dim=0) for k, v in inputs.items()}
+            )
+        inputs = new_inputs
+        return inputs, batch_dim, input_features
+
     def get_input_feature(self, inputs) -> torch.Tensor:
         match inputs:
             case transformers.tokenization_utils_base.BatchEncoding() | dict():

@@ -36,7 +36,6 @@ class ModelEvaluator:
             model_type = ModelType.Classification
         self.__model_type = model_type
         self.need_input_features = False
-        self.need_cpu_inputs = False
 
     @property
     def model_name(self) -> str | None:
@@ -80,6 +79,10 @@ class ModelEvaluator:
             return self.model.get_input_feature(inputs)
         return None
 
+    def split_batch_input(self, inputs, targets, input_features=None) -> tuple:
+        batch_dim = 0
+        return inputs, batch_dim, input_features
+
     def __call__(
         self,
         inputs: Any,
@@ -103,10 +106,7 @@ class ModelEvaluator:
         ):
             targets = targets.view(-1)
 
-        cpu_inputs = None
         if device is not None:
-            if self.need_cpu_inputs:
-                cpu_inputs = tensor_to(inputs, device="cpu", non_blocking=non_blocking)
             if input_features is not None:
                 input_features = tensor_to(
                     input_features, device=device, non_blocking=non_blocking
@@ -127,7 +127,6 @@ class ModelEvaluator:
             **kwargs,
         ) | {
             "inputs": inputs,
-            "cpu_inputs": cpu_inputs,
             "input_features": input_features,
             "targets": targets,
         }
