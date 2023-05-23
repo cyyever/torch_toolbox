@@ -5,7 +5,6 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-import torch
 from cyy_naive_lib.log import get_logger, set_level
 from omegaconf import OmegaConf
 
@@ -14,8 +13,7 @@ from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
 from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
-from cyy_torch_toolbox.model_evaluator import (ModelEvaluator,
-                                               get_model_evaluator)
+from cyy_torch_toolbox.model_evaluator import ModelEvaluator
 from cyy_torch_toolbox.model_factory import ModelConfig
 from cyy_torch_toolbox.reproducible_env import global_reproducible_env
 from cyy_torch_toolbox.trainer import Trainer, TrainerConfig
