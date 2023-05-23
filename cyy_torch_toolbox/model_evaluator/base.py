@@ -79,9 +79,9 @@ class ModelEvaluator:
             return self.model.get_input_feature(inputs)
         return None
 
-    def split_batch_input(self, inputs, targets, input_features=None) -> tuple:
+    def split_batch_input(self, inputs, targets) -> tuple:
         batch_dim = 0
-        return inputs, batch_dim, input_features
+        return inputs, batch_dim
 
     def __call__(
         self,
@@ -90,7 +90,7 @@ class ModelEvaluator:
         phase: MachineLearningPhase | None = None,
         device: None | torch.device = None,
         non_blocking: bool = False,
-        input_features: None | Any = None,
+        is_input_feature: bool = False,
         need_backward: bool = False,
         **kwargs: Any,
     ) -> dict:
@@ -107,21 +107,16 @@ class ModelEvaluator:
             targets = targets.view(-1)
 
         if device is not None:
-            if input_features is not None:
-                input_features = tensor_to(
-                    input_features, device=device, non_blocking=non_blocking
-                )
-            else:
-                inputs = tensor_to(inputs, device=device, non_blocking=non_blocking)
+            inputs = tensor_to(inputs, device=device, non_blocking=non_blocking)
             targets = tensor_to(targets, device=device, non_blocking=non_blocking)
             self.to(device=device, non_blocking=non_blocking)
 
-        if input_features is None and self.need_input_features:
+        input_features = inputs
+        if not is_input_feature and self.need_input_features:
             input_features = self.get_input_feature(inputs)
-            assert input_features is not None
         return self._forward_model(
             inputs=inputs,
-            input_features=input_features,
+            is_input_feature=is_input_feature,
             targets=targets,
             non_blocking=non_blocking,
             **kwargs,
@@ -131,22 +126,21 @@ class ModelEvaluator:
             "targets": targets,
         }
 
-    def _forward_model(self, inputs: Any, input_features: Any, **kwargs: Any) -> dict:
+    def _forward_model(
+        self, inputs: Any, is_input_feature: bool, **kwargs: Any
+    ) -> dict:
         fun: Callable = self.model
-        if hasattr(self.model, "forward_input_feature") and input_features is not None:
+        if hasattr(self.model, "forward_input_feature") and is_input_feature:
             fun = self.model.forward_input_feature
-            real_inputs = input_features
-        else:
-            real_inputs = inputs
-        match real_inputs:
+        match inputs:
             case torch.Tensor():
-                output = fun(real_inputs)
+                output = fun(inputs)
             case tuple():
-                output = fun(*real_inputs)
+                output = fun(*inputs)
             case dict():
-                output = fun(**real_inputs)
+                output = fun(**inputs)
             case _:
-                raise NotImplementedError(type(real_inputs))
+                raise NotImplementedError(type(inputs))
         return self._compute_loss(output=output, **kwargs)
 
     def _compute_loss(

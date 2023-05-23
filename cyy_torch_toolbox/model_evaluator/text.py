@@ -2,7 +2,7 @@ from .base import ModelEvaluator
 
 
 class TextModelEvaluator(ModelEvaluator):
-    def split_batch_input(self, inputs, targets, input_features=None) -> tuple:
+    def split_batch_input(self, inputs, targets) -> tuple:
         batch_dim = 0
         if isinstance(inputs, torch.Tensor):
             if (
@@ -13,6 +13,4 @@ class TextModelEvaluator(ModelEvaluator):
                 batch_dim = 1
             if batch_dim != 0:
                 inputs = inputs.permute(batch_dim, 0)
-        if batch_dim != 0 and isinstance(input_features, torch.Tensor):
-            input_features = input_features.permute(batch_dim, 0, 2)
-        return inputs, batch_dim, input_features
+        return inputs, batch_dim
