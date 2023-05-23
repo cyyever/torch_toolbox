@@ -102,8 +102,6 @@ class ModelEvaluator:
             targets, torch.Tensor
         ):
             targets = targets.view(-1)
-            # if targets.dtype == torch.int:
-            #     targets = targets.long()
 
         cpu_inputs = None
         if device is not None:
@@ -188,7 +186,7 @@ class ModelEvaluator:
                 self.model.to(device=device, non_blocking=non_blocking)
             return
 
-    def __choose_loss_function(self) -> torch.nn.modules.loss._Loss:
+    def __choose_loss_function(self) -> Callable:
         layers = [
             m
             for _, m in self.model_util.get_modules()

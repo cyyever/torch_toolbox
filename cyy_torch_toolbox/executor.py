@@ -318,10 +318,11 @@ class Executor(HookCollection):
                     raise NotImplementedError()
                     # normalized_batch_loss = forward_result["loss"] / self._data["dataset_size"]
                 forward_result["normalized_batch_loss"] = normalized_batch_loss
-                batch["cpu_inputs"] = forward_result["cpu_inputs"]
-                batch["inputs"] = forward_result["inputs"]
-                batch["targets"] = forward_result["targets"]
-                batch["input_features"] = forward_result["input_features"]
+                batch |= forward_result
+                # batch["cpu_inputs"] = forward_result["cpu_inputs"]
+                # batch["inputs"] = forward_result["inputs"]
+                # batch["targets"] = forward_result["targets"]
+                # batch["input_features"] = forward_result["input_features"]
                 self.exec_hooks(
                     hook_point=ExecutorHookPoint.AFTER_FORWARD,
                     epoch=epoch,
