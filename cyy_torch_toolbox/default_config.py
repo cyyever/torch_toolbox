@@ -65,7 +65,7 @@ class DefaultConfig:
             )
         if hasattr(obj, "trainer_config"):
             conf_container = cls.__load_config(
-                obj.hook_config, conf_container, check_config=False
+                obj.trainer_config, conf_container, check_config=False
             )
         if hasattr(obj, "hook_config"):
             conf_container = cls.__load_config(
