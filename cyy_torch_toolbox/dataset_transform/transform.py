@@ -1,4 +1,5 @@
 import copy
+from collections.abc import Iterable
 from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
@@ -93,8 +94,6 @@ class Transforms:
         if other_info:
             other_info = default_collate(other_info)
             assert isinstance(other_info, dict)
-            if "index" in other_info:
-                other_info["sample_indices"] = other_info.pop("index")
         else:
             other_info = {}
         batch_size = len(batch)
@@ -113,7 +112,7 @@ class Transforms:
         } | other_info
 
     def cache_transforms(
-        self, dataset: Any, device: Any | None = None
+        self, dataset: Iterable, device: Any | None = None
     ) -> tuple[dict, Any]:
         if device is not None:
             get_logger().warning("cache dataset to device memory: %s", device)

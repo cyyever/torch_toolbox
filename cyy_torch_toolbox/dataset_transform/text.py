@@ -26,20 +26,15 @@ def add_text_extraction(dc: DatasetCollection) -> None:
     assert dc.dataset_type == DatasetType.Text
     assert has_torchtext
     # ExtractData
-    if dc.name is not None:
-        match dc.name.lower():
-            case "imdb":
-                dc.append_transform(
-                    swap_input_and_target, key=TransformType.ExtractData
-                )
+    match dc.name.lower():
+        case "imdb":
+            dc.append_transform(swap_input_and_target, key=TransformType.ExtractData)
 
 
 def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) -> None:
     assert dc.dataset_type == DatasetType.Text
     assert has_torchtext
-    dataset_name: str = ""
-    if dc.name is not None:
-        dataset_name = dc.name.lower()
+    dataset_name: str = dc.name.lower()
     # InputText
     if dataset_name == "imdb":
         dc.append_transform(
@@ -69,6 +64,8 @@ def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) 
 
     # Input && InputBatch
     max_len = dc.dataset_kwargs.get("max_len", None)
+    if max_len is None:
+        max_len = dc.dataset_kwargs.get("input_max_len", None)
     get_logger().info("use text max_len %s", max_len)
     match dc.tokenizer:
         case SpacyTokenizer():
@@ -101,10 +98,24 @@ def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) 
             raise NotImplementedError(str(type(dc.tokenizer)))
 
     # Target
-    if has_hugging_face:
-        match model_evaluator.model_type:
-            case ModelType.TextGeneration:
-                dc.append_transform(int_target_to_text, key=TransformType.Target)
+    match model_evaluator.model_type:
+        case ModelType.TextGeneration:
+            if has_hugging_face:
+                if dataset_name == "multi_nli":
+                    dc.append_transform(
+                        functools.partial(
+                            int_target_to_text,
+                            mapping={0: "entailment", 1: "neutral", 2: "contradiction"},
+                        ),
+                        key=TransformType.Target,
+                    )
+                elif isinstance(
+                    dc.get_dataset_util(
+                        phase=MachineLearningPhase.Training
+                    ).get_sample_label(0),
+                    int,
+                ):
+                    dc.append_transform(int_target_to_text, key=TransformType.Target)
                 dc.append_transform(
                     functools.partial(
                         dc.tokenizer,
@@ -115,16 +126,15 @@ def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) 
                     ),
                     key=TransformType.TargetBatch,
                 )
-    # Target
-    if model_evaluator.model_type == ModelType.Classification:
-        assert isinstance(dc, ClassificationDatasetCollection)
-        if isinstance(
-            dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(
-                0
-            ),
-            str,
-        ):
-            label_names = dc.get_label_names()
-            dc.append_transform(
-                str_target_to_int(label_names), key=TransformType.Target
-            )
+        case ModelType.Classification:
+            assert isinstance(dc, ClassificationDatasetCollection)
+            if isinstance(
+                dc.get_dataset_util(
+                    phase=MachineLearningPhase.Training
+                ).get_sample_label(0),
+                str,
+            ):
+                label_names = dc.get_label_names()
+                dc.append_transform(
+                    str_target_to_int(label_names), key=TransformType.Target
+                )

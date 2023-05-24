@@ -1,3 +1,4 @@
+import abc
 import os
 from typing import Any, Callable
 
@@ -24,7 +25,7 @@ from .model_util import ModelUtil
 #     MetricTensorBoard
 
 
-class Executor(HookCollection):
+class Executor(HookCollection, abc.ABC):
     def __init__(
         self,
         model_evaluator: ModelEvaluator,
@@ -142,6 +143,9 @@ class Executor(HookCollection):
     def model(self) -> torch.nn.Module:
         return self.model_evaluator.model
 
+    def replace_model_evaluator(self, fun: Callable) -> None:
+        self.__model_evaluator = fun(self.model_evaluator)
+
     def replace_model(self, fun: Callable) -> None:
         self.__model_evaluator = self.model_evaluator.replace_model(fun(self.model))
 
@@ -219,11 +223,13 @@ class Executor(HookCollection):
         self.__model_evaluator.offload_from_memory()
         torch.cuda.empty_cache()
 
+    @abc.abstractmethod
     def get_optimizer(self) -> Any:
-        return None
+        pass
 
+    @abc.abstractmethod
     def get_lr_scheduler(self) -> Any:
-        return None
+        pass
 
     def _execute_epoch(
         self, epoch: int, in_training: bool, need_backward: bool = False

@@ -20,18 +20,20 @@ class DatasetCollection:
     def __init__(
         self,
         datasets: dict[MachineLearningPhase, torch.utils.data.Dataset],
-        dataset_type: DatasetType | None = None,
+        dataset_type: DatasetType,
         name: str | None = None,
         dataset_kwargs: dict | None = None,
     ) -> None:
-        self.__name: str | None = name
+        self.__name: str = ""
+        if name is not None:
+            self.__name = name
         self.__raw_datasets: dict[
             MachineLearningPhase, torch.utils.data.Dataset
         ] = datasets
         self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
         for k, v in self.__raw_datasets.items():
             self.__datasets[k] = dataset_with_indices(v)
-        self.__dataset_type: DatasetType | None = dataset_type
+        self.__dataset_type: DatasetType = dataset_type
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
@@ -42,7 +44,7 @@ class DatasetCollection:
         add_data_extraction(self)
 
     @property
-    def name(self) -> str | None:
+    def name(self) -> str:
         return self.__name
 
     @property
@@ -71,7 +73,7 @@ class DatasetCollection:
         return new_obj
 
     @property
-    def dataset_type(self) -> None | DatasetType:
+    def dataset_type(self) -> DatasetType:
         return self.__dataset_type
 
     def foreach_raw_dataset(self) -> Generator:
@@ -126,7 +128,9 @@ class DatasetCollection:
         self, phase: MachineLearningPhase
     ) -> torch.utils.data.Dataset:
         dataset_util = self.get_dataset_util(phase=phase)
-        dataset_util.dataset = self.__raw_datasets.get(phase)
+        raw_dataset = self.__raw_datasets.get(phase)
+        assert raw_dataset is not None
+        dataset_util.dataset = raw_dataset
         return dataset_util.get_original_dataset()
 
     def append_transform(self, transform, key, phases=None):
@@ -242,6 +246,7 @@ class DatasetCollection:
             dataset_util.iid_split_indices([part for (_, part) in part_list])
         )
         raw_dataset = self.__raw_datasets.get(from_phase)
+        assert raw_dataset is not None
         for phase, dataset in zip([phase for (phase, _) in part_list], datasets):
             self.__datasets[phase] = dataset
             self.__raw_datasets[phase] = raw_dataset

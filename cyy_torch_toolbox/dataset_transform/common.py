@@ -52,7 +52,9 @@ def str_target_to_int(label_names: dict) -> Callable:
     return functools.partial(__get_int_target, reversed_label_names)
 
 
-def int_target_to_text(target, index):
+def int_target_to_text(target: int, index: int, mapping: dict | None = None) -> str:
+    if mapping is not None:
+        return mapping[target]
     match target:
         case 0:
             return "zero"
@@ -62,9 +64,7 @@ def int_target_to_text(target, index):
             return "two"
         case 3:
             return "three"
-        case int():
-            raise NotImplementedError()
-    return target
+    raise NotImplementedError()
 
 
 def __replace_target(label_map, target, index):
