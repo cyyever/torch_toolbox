@@ -54,7 +54,7 @@ class Transforms:
             sample_input = f(sample_input)
         return sample_input
 
-    def transform_inputs(self, inputs: list) -> list:
+    def transform_inputs(self, inputs: Iterable) -> Any:
         batch_transforms = self.get(TransformType.InputBatch)
         if not batch_transforms:
             batch_transforms.append(default_collate)
@@ -67,7 +67,7 @@ class Transforms:
             target = f(target, index)
         return target
 
-    def transform_targets(self, targets: Any) -> Any:
+    def transform_targets(self, targets: Iterable) -> Any:
         batch_transforms = self.get(TransformType.TargetBatch)
         if not batch_transforms:
             batch_transforms.append(default_collate)
@@ -75,10 +75,10 @@ class Transforms:
             targets = f(targets)
         return targets
 
-    def collate_batch(self, batch: Any) -> dict:
+    def collate_batch(self, batch: Iterable) -> dict:
         inputs = []
         targets = []
-        other_info: list | dict = []
+        other_info: list = []
         for data in batch:
             data = copy.copy(self.extract_data(data))
             sample_input = self.transform_input(data.pop("input"))
@@ -89,27 +89,28 @@ class Transforms:
                 )
             )
             other_info.append(data)
+        batch_size = len(inputs)
         inputs = self.transform_inputs(inputs)
         targets = self.transform_targets(targets)
-        if other_info:
-            other_info = default_collate(other_info)
-            assert isinstance(other_info, dict)
-        else:
-            other_info = {}
-        batch_size = len(batch)
-
-        if (
-            hasattr(inputs, "device")
-            and hasattr(targets, "device")
-            and targets.device != inputs.device
-        ):
-            targets = tensor_to(targets, device=inputs.device, non_blocking=False)
-        assert "batch_size" not in other_info
-        return {
+        res = {
             "batch_size": batch_size,
             "inputs": inputs,
             "targets": targets,
-        } | other_info
+        }
+        if other_info:
+            tmp: dict = default_collate(other_info)
+            assert isinstance(tmp, dict)
+            if "index" in tmp:
+                tmp["sample_indices"] = tmp.pop("index")
+            res |= tmp
+
+        # if (
+        #     hasattr(inputs, "device")
+        #     and hasattr(targets, "device")
+        #     and targets.device != inputs.device
+        # ):
+        #     targets = tensor_to(targets, device=inputs.device, non_blocking=False)
+        return res
 
     def cache_transforms(
         self, dataset: Iterable, device: Any | None = None

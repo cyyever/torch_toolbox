@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from typing import Generator
 
 import torch
 import torchdata
@@ -73,10 +72,8 @@ def dataset_with_indices(
 
 
 def select_item(
-    dataset: torch.utils.data.Dataset,
-    indices: None | Iterable = None,
-    mask: None | torch.Tensor = None,
-) -> Generator:
+    dataset: Iterable, indices: None | Iterable = None, mask: None | torch.Tensor = None
+) -> Iterable:
     if indices is not None:
         indices = set(indices)
     if has_torch_geometric:
