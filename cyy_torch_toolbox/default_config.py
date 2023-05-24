@@ -21,7 +21,7 @@ from cyy_torch_toolbox.trainer import Trainer, TrainerConfig
 
 @dataclass
 class DefaultConfig:
-    def __init__(self, dataset_name: str, model_name: str) -> None:
+    def __init__(self, dataset_name: str = "", model_name: str = "") -> None:
         self.make_reproducible_env = False
         self.reproducible_env_load_path = None
         self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
@@ -31,8 +31,13 @@ class DefaultConfig:
         self.save_dir: str | None = None
         self.log_level = None
 
-    def load_config(self, conf: Any, check_config: bool = True) -> dict:
-        return DefaultConfig.__load_config(self, conf, check_config)
+    @classmethod
+    def load_config(cls, conf: Any, check_config: bool = True) -> Any:
+        config = cls()
+        remain_cfg = cls.__load_config(config, conf, check_config)
+        if check_config:
+            return config
+        return config, remain_cfg
 
     @classmethod
     def __load_config(cls, obj: Any, conf: Any, check_config: bool = True) -> dict:

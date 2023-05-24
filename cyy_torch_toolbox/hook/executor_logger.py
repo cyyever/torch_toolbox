@@ -41,7 +41,7 @@ class ExecutorLogger(Hook):
                 )
         if executor.dataset_collection.tokenizer is not None:
             get_logger().info(
-                "tokenizer is %s", type(executor.dataset_collection.tokenizer)
+                "tokenizer is %s", executor.dataset_collection.tokenizer
             )
         # if os.getenv("draw_torch_model") is not None:
         #     executor._model_with_loss.trace_input = True

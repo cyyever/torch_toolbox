@@ -30,6 +30,12 @@ class Inferencer(Executor):
             self.wait_stream()
         return not has_failure
 
+    def get_optimizer(self) -> Any:
+        return None
+
+    def get_lr_scheduler(self) -> Any:
+        return None
+
     def _get_backward_loss(self, result):
         return result["normalized_batch_loss"]
 
