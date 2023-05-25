@@ -122,6 +122,14 @@ def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) 
                     ),
                     key=TransformType.Target,
                 )
+            elif dataset_name == "imdb":
+                dc.append_transform(
+                    functools.partial(
+                        int_target_to_text,
+                        mapping={1: "positive", 0: "negative"},
+                    ),
+                    key=TransformType.Target,
+                )
             elif isinstance(
                 dc.get_dataset_util(
                     phase=MachineLearningPhase.Training

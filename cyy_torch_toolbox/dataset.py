@@ -1,12 +1,15 @@
 from collections.abc import Iterable
+from typing import Any
 
 import torch
 import torchdata
 
-from cyy_torch_toolbox.dependency import has_torch_geometric
+from cyy_torch_toolbox.dependency import has_hugging_face, has_torch_geometric
 
 if has_torch_geometric:
     import torch_geometric.data
+if has_hugging_face:
+    import datasets as hugging_face_datasets
 
 
 def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:
@@ -21,6 +24,9 @@ def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:
                 cnt += 1
             return cnt
         case torchdata.datapipes.map.MapDataPipe():
+            return len(dataset)
+    if has_hugging_face:
+        if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
             return len(dataset)
     raise NotImplementedError(dataset)
 
@@ -59,6 +65,10 @@ def dataset_with_indices(
             return dataset
         case torch.utils.data.IterableDataset():
             dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
+    # if has_hugging_face:
+    #     if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
+    #         return dataset
+    # dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
     match dataset:
         case torchdata.datapipes.iter.IterDataPipe():
             dataset = dataset.enumerate()
@@ -72,7 +82,7 @@ def dataset_with_indices(
 
 
 def select_item(
-    dataset: Iterable, indices: None | Iterable = None, mask: None | torch.Tensor = None
+    dataset: Any, indices: None | Iterable = None, mask: None | torch.Tensor = None
 ) -> Iterable:
     if indices is not None:
         indices = set(indices)
@@ -126,6 +136,12 @@ def select_item(
 def subset_dp(
     dataset: torch.utils.data.Dataset, indices: None | Iterable = None
 ) -> torch.utils.data.MapDataPipe:
+    original_dataset = getattr(dataset, "dataset", None)
+    # if has_hugging_face:
+    #     match original_dataset:
+    #         case hugging_face_datasets.arrow_dataset.Dataset():
+    #             pass
+
     return torchdata.datapipes.map.SequenceWrapper(
         list(dict(select_item(dataset, indices)).values()), deepcopy=False
     )

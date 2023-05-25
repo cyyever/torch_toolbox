@@ -18,6 +18,7 @@ class DatasetType(IntEnum):
     Text = auto()
     Graph = auto()
     Audio = auto()
+    Unknown = auto()
 
 
 class TransformType(IntEnum):
