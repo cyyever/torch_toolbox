@@ -102,6 +102,9 @@ class DefaultConfig:
             save_dir=self.get_save_dir(),
         )
 
+    def create_model(self, dc: DatasetCollection) -> ModelEvaluator:
+        return self.model_config.get_model(dc)
+
     def create_trainer(
         self,
         dc: DatasetCollection | None = None,
@@ -110,7 +113,7 @@ class DefaultConfig:
         if dc is None:
             dc = self.create_dataset_collection()
         if model_evaluator is None:
-            model_evaluator = self.model_config.get_model(dc)
+            model_evaluator = self.create_model(dc)
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
             self.dc_config.dataset_name, self.model_config.model_name
         )

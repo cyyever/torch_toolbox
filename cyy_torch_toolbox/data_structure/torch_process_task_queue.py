@@ -42,6 +42,9 @@ class TorchProcessTaskQueue(TorchTaskQueue):
 
     def get_data(self, **kwargs):
         data = super().get_data(**kwargs)
+        if data is None:
+            return data
+        data = data[0]
         if self.__assemble_tensor:
             data = disassemble_tensor(*data)
         return data

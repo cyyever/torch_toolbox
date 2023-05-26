@@ -169,14 +169,17 @@ class ModelEvaluator:
             model_type=self.model_type,
         )
 
-    def to(self, device, non_blocking=False):
-        for param in self.model.parameters():
+    def to(self, device, non_blocking=False, model=None) -> None:
+        if model is None:
+            model = self.model
+
+        for param in model.parameters():
             if param.device != device:
-                self.model.to(device=device, non_blocking=non_blocking)
+                model.to(device=device, non_blocking=non_blocking)
             break
-        for buffer in self.model.buffers():
+        for buffer in model.buffers():
             if buffer.device != device:
-                self.model.to(device=device, non_blocking=non_blocking)
+                model.to(device=device, non_blocking=non_blocking)
             return
 
     def __choose_loss_function(self) -> Callable:
