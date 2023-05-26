@@ -80,6 +80,10 @@ def replace_target(label_map: dict) -> Callable:
     return functools.partial(__replace_target, label_map)
 
 
+def backup_target(data):
+    data["original_target"] = data["target"]
+
+
 def swap_input_and_target(data):
     data["input"], data["target"] = data["target"], data["input"]
     return data

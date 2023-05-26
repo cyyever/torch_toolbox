@@ -9,8 +9,8 @@ from ..dependency import has_hugging_face, has_spacy, has_torchtext
 from ..ml_type import (DatasetType, MachineLearningPhase, ModelType,
                        TransformType)
 from ..model_evaluator import ModelEvaluator
-from .common import (int_target_to_text, replace_str, str_target_to_int,
-                     swap_input_and_target, target_offset)
+from .common import (backup_target, int_target_to_text, replace_str,
+                     str_target_to_int, swap_input_and_target, target_offset)
 from .template import get_text_template, interpret_template
 
 if has_torchtext:
@@ -29,6 +29,7 @@ def add_text_extraction(dc: DatasetCollection) -> None:
     match dc.name.lower():
         case "imdb":
             dc.append_transform(swap_input_and_target, key=TransformType.ExtractData)
+    dc.append_transform(backup_target, key=TransformType.ExtractData)
 
 
 def __apply_tokenizer_transforms(
