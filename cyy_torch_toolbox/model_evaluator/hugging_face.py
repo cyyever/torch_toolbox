@@ -7,11 +7,12 @@ from .text import TextModelEvaluator
 
 
 class HuggingFaceModelEvaluator(TextModelEvaluator):
-    def __init__(self, model, model_type, **kwargs: Any) -> None:
+    def __init__(self, model, **kwargs: Any) -> None:
+        model_type = kwargs.get("model_type", None)
         if model_type is None:
             if "ConditionalGeneration" in model.__class__.__name__:
-                model_type = ModelType.TextGeneration
-        super().__init__(model=model, model_type=model_type, **kwargs)
+                kwargs["model_type"] = ModelType.TextGeneration
+        super().__init__(model=model, **kwargs)
 
     def split_batch_input(self, inputs, targets) -> tuple:
         batch_dim = 0
