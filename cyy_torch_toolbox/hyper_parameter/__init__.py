@@ -46,7 +46,7 @@ class HyperParameter:
             device = trainer.device
             trainer.offload_from_gpu()
             task_queue.add_task((copy.deepcopy(trainer), device))
-            self.learning_rate = task_queue.get_data()
+            self.learning_rate = task_queue.get_data()[0]
             trainer.set_device(device)
             task_queue.stop()
         return self.learning_rate

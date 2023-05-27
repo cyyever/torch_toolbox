@@ -12,7 +12,7 @@ def test_process_task_queue():
     queue = TorchProcessTaskQueue(
         worker_fun=hello,
         send_tensor_in_cpu=True,
-        assemble_tensor=True,
+        assemble_tensor=False,
         batch_process=True,
     )
     queue.start()

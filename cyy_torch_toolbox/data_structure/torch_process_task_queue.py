@@ -24,27 +24,3 @@ class TorchProcessTaskQueue(TorchTaskQueue):
             assert send_tensor_in_cpu
         self.__assemble_tensor = assemble_tensor
         super().__init__(mp_ctx=TorchProcessContext(use_manager=use_manager), **kwargs)
-
-    # def __getstate__(self):
-    #     state = super().__getstate__()
-    #     state["_TorchProcessTaskQueue__manager"] = None
-    #     return state
-
-    def __process_tensor(self, data):
-        if self.__send_tensor_in_cpu:
-            data = tensor_to(data, device=get_cpu_device())
-            if self.__assemble_tensor:
-                data = assemble_tensors(data)
-        return data
-
-    def put_data(self, data, **kwargs):
-        return super().put_data(data=self.__process_tensor(data), **kwargs)
-
-    def get_data(self, **kwargs):
-        data = super().get_data(**kwargs)
-        if data is None:
-            return data
-        data = data[0]
-        if self.__assemble_tensor:
-            data = disassemble_tensor(*data)
-        return data
