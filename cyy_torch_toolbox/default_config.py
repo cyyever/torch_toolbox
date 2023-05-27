@@ -8,8 +8,10 @@ from typing import Any
 from cyy_naive_lib.log import get_logger, set_level
 from omegaconf import OmegaConf
 
-from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
-                                                  DatasetCollectionConfig)
+from cyy_torch_toolbox.dataset_collection import (
+    DatasetCollection,
+    DatasetCollectionConfig,
+)
 from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
@@ -31,13 +33,8 @@ class DefaultConfig:
         self.save_dir: str | None = None
         self.log_level = None
 
-    @classmethod
-    def load_config(cls, conf: Any, check_config: bool = True) -> Any:
-        config = cls()
-        remain_cfg = cls.__load_config(config, conf, check_config)
-        if check_config:
-            return config
-        return config, remain_cfg
+    def load_config(self, conf: Any, check_config: bool = True) -> dict:
+        return self.__load_config(self, conf, check_config)
 
     @classmethod
     def __load_config(cls, obj: Any, conf: Any, check_config: bool = True) -> dict:
