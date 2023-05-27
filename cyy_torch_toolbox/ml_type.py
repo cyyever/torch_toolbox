@@ -1,4 +1,4 @@
-from enum import IntEnum, auto
+from enum import IntEnum, auto, StrEnum
 
 
 class MachineLearningPhase(IntEnum):
@@ -31,7 +31,7 @@ class TransformType(IntEnum):
     TargetBatch = auto()
 
 
-class ExecutorHookPoint(IntEnum):
+class ExecutorHookPoint(StrEnum):
     BEFORE_EXECUTE = auto()
     AFTER_EXECUTE = auto()
     BEFORE_EPOCH = auto()
