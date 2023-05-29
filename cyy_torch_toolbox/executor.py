@@ -275,7 +275,7 @@ class Executor(HookCollection, abc.ABC):
             forward_result: dict = {}
 
             while True:
-                if in_training:
+                if in_training or need_backward:
                     optimizer.zero_grad(set_to_none=True)
                 if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
                     self.exec_hooks(
