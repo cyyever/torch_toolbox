@@ -214,5 +214,3 @@ class DatasetCollection:
             dc=self,
             model_evaluator=model_evaluator,
         )
-
-
