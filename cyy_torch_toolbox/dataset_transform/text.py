@@ -29,6 +29,10 @@ def add_text_extraction(dc: DatasetCollection) -> None:
     match dc.name.lower():
         case "imdb":
             dc.append_transform(swap_input_and_target, key=TransformType.ExtractData)
+            dc.append_transform(
+                functools.partial(target_offset, offset=-1),
+                key=TransformType.ExtractData,
+            )
     dc.append_transform(backup_target, key=TransformType.ExtractData)
 
 
@@ -83,10 +87,6 @@ def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) 
         dc.append_transform(
             functools.partial(replace_str, old="<br />", new=""),
             key=TransformType.InputText,
-        )
-        dc.append_transform(
-            functools.partial(target_offset, offset=-1),
-            key=TransformType.Target,
         )
 
     text_transforms = dc.dataset_kwargs.get("text_transforms", {})

@@ -94,5 +94,6 @@ def replace_str(string: str, old: str, new: str) -> str:
     return string.replace(old, new)
 
 
-def target_offset(target, index: int, offset: int):
-    return target + offset
+def target_offset(data: dict, offset: int) -> dict:
+    data["target"] = data["target"] + offset
+    return data
