@@ -21,6 +21,6 @@ class TextDatasetCollection(DatasetCollection):
         return self.__tokenizer
 
     def __copy__(self):
-        new_obj = super().__copy__(self)
+        new_obj = super().__copy__()
         new_obj.__tokenizer = copy.copy(self.__tokenizer)
         return new_obj
