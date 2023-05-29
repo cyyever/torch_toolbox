@@ -1,12 +1,13 @@
 from enum import IntEnum, auto
-from typing import Type
+from typing import TypeAlias
 
+_StrEnum: TypeAlias = IntEnum
 try:
     from enum import StrEnum
 
-    _StrEnum: Type = StrEnum
+    _StrEnum = StrEnum
 except BaseException:
-    _StrEnum = IntEnum
+    pass
 
 
 class MachineLearningPhase(_StrEnum):
