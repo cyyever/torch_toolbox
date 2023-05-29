@@ -13,12 +13,21 @@ if has_torchvision:
 
 
 class ClassificationDatasetCollection(DatasetCollection):
-    @classmethod
-    def create(cls, *args, **kwargs):
-        dc: ClassificationDatasetCollection = DatasetCollection.create(*args, **kwargs)
-        dc.__class__ = ClassificationDatasetCollection
-        assert isinstance(dc, ClassificationDatasetCollection)
-        return dc
+    def __init__(self, dc: DatasetCollection):
+        self.__dc = dc
+
+    def __getattr__(self, name: str):
+        if not name.startswith("_") and hasattr(self, name):
+            return getattr(self, name)
+        return getattr(self.__dc, name)
+
+    # def __init__()
+    # @classmethod
+    # def create(cls, *args, **kwargs):
+    #     dc: ClassificationDatasetCollection = DatasetCollection.create(*args, **kwargs)
+    #     dc.__class__ = ClassificationDatasetCollection
+    #     assert isinstance(dc, ClassificationDatasetCollection)
+    #     return dc
 
     def get_labels(self, use_cache: bool = True) -> set:
         def computation_fun() -> set:

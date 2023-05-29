@@ -4,18 +4,52 @@ import os
 from cyy_naive_lib.log import get_logger
 
 from ..dataset_transform.common import replace_target
-from ..ml_type import MachineLearningPhase, TransformType
+from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 from .classification import ClassificationDatasetCollection
 from .dataset_collection import DatasetCollection
+from .dataset_repository import get_dataset
+from .text import TextDatasetCollection
 
 
 def create_dataset_collection(
-    cls, name: str, dataset_kwargs: dict | None = None
+    name: str, dataset_kwargs: dict | None = None
 ) -> DatasetCollection:
     if dataset_kwargs is None:
         dataset_kwargs = {}
-    with cls.lock:
-        return cls.create(name=name, dataset_kwargs=dataset_kwargs)
+    with DatasetCollection.lock:
+        if "root" not in dataset_kwargs:
+            dataset_kwargs["root"] = DatasetCollection.get_dataset_dir(name)
+        if "download" not in dataset_kwargs:
+            dataset_kwargs["download"] = True
+        res = get_dataset(name=name, dataset_kwargs=dataset_kwargs)
+        if res is None:
+            raise NotImplementedError(name)
+        dataset_type, datasets = res
+
+        dc: DatasetCollection = DatasetCollection(
+            datasets=datasets,
+            dataset_type=dataset_type,
+            name=name,
+            dataset_kwargs=dataset_kwargs,
+        )
+        if not dc.has_dataset(MachineLearningPhase.Validation):
+            dc.iid_split(
+                from_phase=MachineLearningPhase.Training,
+                parts={
+                    MachineLearningPhase.Training: 8,
+                    MachineLearningPhase.Validation: 1,
+                    MachineLearningPhase.Test: 1,
+                },
+            )
+        if not dc.has_dataset(MachineLearningPhase.Test):
+            dc.iid_split(
+                from_phase=MachineLearningPhase.Validation,
+                parts={
+                    MachineLearningPhase.Validation: 1,
+                    MachineLearningPhase.Test: 1,
+                },
+            )
+        return dc
 
 
 class DatasetCollectionConfig:
@@ -33,16 +67,14 @@ class DatasetCollectionConfig:
             raise RuntimeError("dataset_name is None")
 
         dc = create_dataset_collection(
-            cls=ClassificationDatasetCollection,
             name=self.dataset_name,
             dataset_kwargs=self.dataset_kwargs,
         )
-        if not dc.is_classification_dataset():
-            dc = create_dataset_collection(
-                cls=DatasetCollection,
-                name=self.dataset_name,
-                dataset_kwargs=self.dataset_kwargs,
-            )
+        if dc.dataset_type == DatasetType.Text:
+            dc = TextDatasetCollection(dc=dc)
+
+        if dc.is_classification_dataset():
+            dc = ClassificationDatasetCollection(dc=dc)
 
         self.__transform_training_dataset(dc=dc, save_dir=save_dir)
         return dc
