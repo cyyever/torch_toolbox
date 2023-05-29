@@ -54,6 +54,9 @@ class ModelEvaluator:
     def model_type(self) -> ModelType:
         return self.__model_type
 
+    def get_underlying_model_type(self) -> ModelType:
+        return self.model_type
+
     @property
     def loss_fun(self) -> Callable:
         if self.__loss_fun is None:
@@ -101,31 +104,24 @@ class ModelEvaluator:
                 need_backward=need_backward,
             )
 
-        # deal with nested targets
-        if self.model_type == ModelType.Classification and isinstance(
-            targets, torch.Tensor
-        ):
-            targets = targets.view(-1)
-
         if device is not None:
             inputs = tensor_to(inputs, device=device, non_blocking=non_blocking)
-            targets = tensor_to(targets, device=device, non_blocking=non_blocking)
             self.to(device=device, non_blocking=non_blocking)
 
         input_features = inputs
         if not is_input_feature and self.need_input_features:
             input_features = self.get_input_feature(inputs)
-        return self._forward_model(
+        return {
+            "inputs": inputs,
+            "input_features": input_features,
+        } | self._forward_model(
             inputs=inputs,
             is_input_feature=is_input_feature,
             targets=targets,
             non_blocking=non_blocking,
+            device=device,
             **kwargs,
-        ) | {
-            "inputs": inputs,
-            "input_features": input_features,
-            "targets": targets,
-        }
+        )
 
     def _forward_model(
         self, inputs: Any, is_input_feature: bool, **kwargs: Any
@@ -147,17 +143,20 @@ class ModelEvaluator:
     def _compute_loss(
         self, output: Any, targets: Any, non_blocking: bool, **kwargs: Any
     ) -> dict:
+        convert_kwargs = {"device": output.device}
         match output:
             case torch.Tensor():
                 match self.loss_fun:
                     case nn.BCEWithLogitsLoss():
                         output = output.view(-1)
-                        targets = targets.to(
-                            dtype=output.dtype, non_blocking=non_blocking
-                        )
+                        convert_kwargs["dtype"] = output.dtype
+                targets = targets.to(**convert_kwargs, non_blocking=non_blocking).view(
+                    -1
+                )
                 loss = self.loss_fun(output, targets)
                 return {
                     "loss": loss,
+                    "targets": targets,
                     "model_output": output,
                     "is_averaged_loss": self.__is_averaged_loss(),
                 }

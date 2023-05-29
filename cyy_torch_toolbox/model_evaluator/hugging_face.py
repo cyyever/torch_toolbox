@@ -3,6 +3,7 @@ from typing import Any
 import torch
 
 from ..ml_type import ModelType
+from ..tensor import tensor_to
 from .text import TextModelEvaluator
 
 
@@ -10,9 +11,22 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
     def __init__(self, model, **kwargs: Any) -> None:
         model_type = kwargs.get("model_type", None)
         if model_type is None:
-            if "ConditionalGeneration" in model.__class__.__name__:
-                kwargs["model_type"] = ModelType.TextGeneration
+            kwargs["model_type"] = HuggingFaceModelEvaluator._get_underlying_model_type(
+                model
+            )
         super().__init__(model=model, **kwargs)
+
+    def get_underlying_model_type(self) -> ModelType:
+        model_type = self._get_underlying_model_type(model=self.model)
+        if model_type is not None:
+            return model_type
+        return super().get_underlying_model_type()
+
+    @classmethod
+    def _get_underlying_model_type(cls, model) -> ModelType | None:
+        if "ConditionalGeneration" in model.__class__.__name__:
+            return ModelType.TextGeneration
+        return None
 
     def split_batch_input(self, inputs, targets) -> tuple:
         batch_dim = 0
@@ -38,16 +52,15 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
         inputs["inputs_embeds"] = embeddings
         return inputs
 
-    def _create_input(
-        self, inputs: dict, targets, is_input_feature: bool, **kwargs: Any
-    ) -> dict:
+    def _create_input(self, inputs: dict, targets, **kwargs: Any) -> dict:
         if hasattr(targets, "input_ids"):
             targets = targets.input_ids
         inputs["labels"] = targets
         return inputs
 
-    def _forward_model(self, **kwargs: Any) -> dict:
+    def _forward_model(self, device, non_blocking, **kwargs: Any) -> dict:
         model_input = self._create_input(**kwargs)
+        model_input = tensor_to(model_input, device=device, non_blocking=non_blocking)
         output = self.model(**model_input)
         return {
             "model_input": model_input,
