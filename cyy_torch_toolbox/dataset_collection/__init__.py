@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Type
 
 from cyy_naive_lib.log import get_logger
 
@@ -26,12 +27,18 @@ def create_dataset_collection(
             raise NotImplementedError(name)
         dataset_type, datasets = res
 
-        dc: DatasetCollection = DatasetCollection(
+        cls: Type = DatasetCollection
+        if dataset_type == DatasetType.Text:
+            cls = TextDatasetCollection
+        dc: DatasetCollection = cls(
             datasets=datasets,
             dataset_type=dataset_type,
             name=name,
             dataset_kwargs=dataset_kwargs,
         )
+        if dc.is_classification_dataset():
+            dc = ClassificationDatasetCollection(dc=dc)
+
         if not dc.has_dataset(MachineLearningPhase.Validation):
             dc.iid_split(
                 from_phase=MachineLearningPhase.Training,
@@ -65,16 +72,6 @@ class DatasetCollectionConfig:
     def create_dataset_collection(self, save_dir=None):
         if self.dataset_name is None:
             raise RuntimeError("dataset_name is None")
-
-        dc = create_dataset_collection(
-            name=self.dataset_name,
-            dataset_kwargs=self.dataset_kwargs,
-        )
-        if dc.dataset_type == DatasetType.Text:
-            dc = TextDatasetCollection(dc=dc)
-
-        if dc.is_classification_dataset():
-            dc = ClassificationDatasetCollection(dc=dc)
 
         self.__transform_training_dataset(dc=dc, save_dir=save_dir)
         return dc

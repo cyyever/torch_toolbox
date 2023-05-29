@@ -7,15 +7,10 @@ from .dataset_collection import DatasetCollection
 
 
 class TextDatasetCollection(DatasetCollection):
-    def __init__(self, dc: DatasetCollection) -> None:
-        assert dc.dataset_type == DatasetType.Text
-        self.__dc = dc
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        assert self.dataset_type == DatasetType.Text
         self.__tokenizer: Any | None = None
-
-    def __getattr__(self, name: str):
-        if name == "__copy__" or (not name.startswith("_") and hasattr(self, name)):
-            return getattr(self, name)
-        return getattr(self.__dc, name)
 
     @property
     def tokenizer(self) -> Any | None:
