@@ -13,7 +13,6 @@ from ..dataset_transform.transform import Transforms
 from ..dataset_util import DatasetSplitter, get_dataset_util_cls
 from ..ml_type import DatasetType, MachineLearningPhase
 from ..tokenizer import get_tokenizer
-from .dataset_repository import get_dataset
 
 
 class DatasetCollection:
@@ -68,7 +67,6 @@ class DatasetCollection:
         new_obj.__raw_datasets = copy.copy(self.__raw_datasets)
         new_obj.__datasets = copy.copy(self.__datasets)
         new_obj.__transforms = copy.copy(self.__transforms)
-        new_obj.__tokenizer = copy.copy(self.__tokenizer)
         new_obj.__dataset_kwargs = copy.deepcopy(self.__dataset_kwargs)
         return new_obj
 
@@ -153,7 +151,7 @@ class DatasetCollection:
             cls._dataset_root_dir = root_dir
 
     @classmethod
-    def __get_dataset_dir(cls, name: str) -> str:
+    def get_dataset_dir(cls, name: str) -> str:
         dataset_dir = os.path.join(cls.get_dataset_root_dir(), name)
         if not os.path.isdir(dataset_dir):
             os.makedirs(dataset_dir, exist_ok=True)
@@ -169,52 +167,12 @@ class DatasetCollection:
         name: str,
         phase: MachineLearningPhase | None = None,
     ) -> str:
-        cache_dir = os.path.join(cls.__get_dataset_dir(name), ".cache")
+        cache_dir = os.path.join(cls.get_dataset_dir(name), ".cache")
         if phase is not None:
             cache_dir = os.path.join(cache_dir, str(phase))
         if not os.path.isdir(cache_dir):
             os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
-
-    @classmethod
-    def create(
-        cls,
-        name: str,
-        dataset_kwargs: dict,
-    ) -> Any:
-        if "root" not in dataset_kwargs:
-            dataset_kwargs["root"] = cls.__get_dataset_dir(name)
-        if "download" not in dataset_kwargs:
-            dataset_kwargs["download"] = True
-        res = get_dataset(name=name, dataset_kwargs=dataset_kwargs)
-        if res is None:
-            raise NotImplementedError(name)
-        dataset_type, datasets = res
-
-        dc = DatasetCollection(
-            datasets=datasets,
-            dataset_type=dataset_type,
-            name=name,
-            dataset_kwargs=dataset_kwargs,
-        )
-        if not dc.has_dataset(MachineLearningPhase.Validation):
-            dc.__iid_split(
-                from_phase=MachineLearningPhase.Training,
-                parts={
-                    MachineLearningPhase.Training: 8,
-                    MachineLearningPhase.Validation: 1,
-                    MachineLearningPhase.Test: 1,
-                },
-            )
-        if not dc.has_dataset(MachineLearningPhase.Test):
-            dc.__iid_split(
-                from_phase=MachineLearningPhase.Validation,
-                parts={
-                    MachineLearningPhase.Validation: 1,
-                    MachineLearningPhase.Test: 1,
-                },
-            )
-        return dc
 
     def is_classification_dataset(self) -> bool:
         if self.dataset_type == DatasetType.Graph:
@@ -231,7 +189,7 @@ class DatasetCollection:
                 return True
         return False
 
-    def __iid_split(
+    def iid_split(
         self,
         from_phase: MachineLearningPhase,
         parts: dict[MachineLearningPhase, float],
@@ -256,3 +214,5 @@ class DatasetCollection:
             dc=self,
             model_evaluator=model_evaluator,
         )
+
+

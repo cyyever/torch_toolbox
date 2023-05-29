@@ -33,8 +33,9 @@ class ModelEvaluator:
         if loss_fun is not None:
             self.set_loss_fun(loss_fun)
         if model_type is None:
-            model_type = ModelType.Classification
-        self.__model_type = model_type
+            self.__model_type: ModelType = ModelType.Classification
+        else:
+            self.__model_type = model_type
         self.need_input_features = False
 
     @property
@@ -50,7 +51,7 @@ class ModelEvaluator:
         return ModelUtil(self.model)
 
     @property
-    def model_type(self) -> ModelType | None:
+    def model_type(self) -> ModelType:
         return self.__model_type
 
     @property
@@ -169,10 +170,12 @@ class ModelEvaluator:
             model_type=self.model_type,
         )
 
-    def to(self, device, non_blocking=False, model=None) -> None:
-        if model is None:
-            model = self.model
+    def to(self, device: torch.device, non_blocking: bool = False) -> None:
+        self._to(model=self.model, device=device, non_blocking=non_blocking)
 
+    def _to(
+        self, model: torch.nn.Module, device: torch.device, non_blocking: bool
+    ) -> None:
         for param in model.parameters():
             if param.device != device:
                 model.to(device=device, non_blocking=non_blocking)
