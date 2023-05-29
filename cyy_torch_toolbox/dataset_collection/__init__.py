@@ -69,9 +69,13 @@ class DatasetCollectionConfig:
         self.training_dataset_label_map = None
         self.training_dataset_label_noise_percentage = None
 
-    def create_dataset_collection(self, save_dir=None):
-        if self.dataset_name is None:
-            raise RuntimeError("dataset_name is None")
+    def create_dataset_collection(
+        self, save_dir: str | None = None
+    ) -> DatasetCollection:
+        assert self.dataset_name is not None
+        dc = create_dataset_collection(
+            name=self.dataset_name, dataset_kwargs=self.dataset_kwargs
+        )
 
         self.__transform_training_dataset(dc=dc, save_dir=save_dir)
         return dc
