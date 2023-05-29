@@ -78,6 +78,15 @@ def __apply_tokenizer_transforms(
             raise NotImplementedError(type(dc.tokenizer))
 
 
+def get_label_to_text_mapping(dataset_name: str) -> dict | None:
+    match dataset_name.lower():
+        case "multi_nli":
+            return {0: "entailment", 1: "neutral", 2: "contradiction"}
+        case "imdb":
+            return {0: "negative", 1: "positive"}
+    return None
+
+
 def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) -> None:
     assert dc.dataset_type == DatasetType.Text
     assert has_torchtext
@@ -88,12 +97,6 @@ def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) 
             functools.partial(replace_str, old="<br />", new=""),
             key=TransformType.InputText,
         )
-
-    text_transforms = dc.dataset_kwargs.get("text_transforms", {})
-    assert not text_transforms
-    # for phase, transforms in text_transforms.items():
-    #     for f in transforms:
-    #         dc.append_transform(f, key=TransformType.InputText, phases=[phase])
 
     assert model_evaluator.model_type is not None
     text_template = get_text_template(
@@ -113,43 +116,35 @@ def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) 
     __apply_tokenizer_transforms(dc=dc, max_len=input_max_len, for_input=True)
 
     # Target
-    match model_evaluator.model_type:
-        case ModelType.TextGeneration:
-            if dataset_name == "multi_nli":
-                dc.append_transform(
-                    functools.partial(
-                        int_target_to_text,
-                        mapping={0: "entailment", 1: "neutral", 2: "contradiction"},
-                    ),
-                    key=TransformType.Target,
-                )
-            elif dataset_name == "imdb":
-                dc.append_transform(
-                    functools.partial(
-                        int_target_to_text,
-                        mapping={1: "positive", 0: "negative"},
-                    ),
-                    key=TransformType.Target,
-                )
-            elif isinstance(
-                dc.get_dataset_util(
-                    phase=MachineLearningPhase.Training
-                ).get_sample_label(0),
-                int,
-            ):
-                dc.append_transform(int_target_to_text, key=TransformType.Target)
-            max_len = dc.dataset_kwargs.get("output_max_len", None)
-            get_logger().info("use output text max len %s", max_len)
-            __apply_tokenizer_transforms(dc=dc, max_len=max_len, for_input=False)
-        case ModelType.Classification:
-            assert isinstance(dc, ClassificationDatasetCollection)
-            if isinstance(
-                dc.get_dataset_util(
-                    phase=MachineLearningPhase.Training
-                ).get_sample_label(0),
-                str,
-            ):
-                label_names = dc.get_label_names()
-                dc.append_transform(
-                    str_target_to_int(label_names), key=TransformType.Target
-                )
+    if (
+        model_evaluator.model_type == ModelType.TextGeneration
+        or model_evaluator.get_underlying_model_type() == ModelType.TextGeneration
+    ):
+        mapping = get_label_to_text_mapping(dataset_name)
+        if mapping is not None:
+            dc.append_transform(
+                functools.partial(int_target_to_text, mapping=mapping),
+                key=TransformType.Target,
+            )
+        elif isinstance(
+            dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(
+                0
+            ),
+            int,
+        ):
+            dc.append_transform(int_target_to_text, key=TransformType.Target)
+        max_len = dc.dataset_kwargs.get("output_max_len", None)
+        get_logger().info("use output text max len %s", max_len)
+        __apply_tokenizer_transforms(dc=dc, max_len=max_len, for_input=False)
+    elif model_evaluator.model_type == ModelType.Classification:
+        assert isinstance(dc, ClassificationDatasetCollection)
+        if isinstance(
+            dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(
+                0
+            ),
+            str,
+        ):
+            label_names = dc.get_label_names()
+            dc.append_transform(
+                str_target_to_int(label_names), key=TransformType.Target
+            )
