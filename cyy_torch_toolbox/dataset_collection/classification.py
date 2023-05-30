@@ -17,8 +17,6 @@ class ClassificationDatasetCollection(DatasetCollection):
         self.__dc = dc
 
     def __getattr__(self, name: str):
-        if not name.startswith("_") and hasattr(self, name):
-            return getattr(self, name)
         return getattr(self.__dc, name)
 
     # def __init__()
