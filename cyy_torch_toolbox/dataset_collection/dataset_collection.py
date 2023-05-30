@@ -1,7 +1,7 @@
 import copy
 import os
 import threading
-from typing import Any, Callable, Generator
+from typing import Callable, Generator
 
 import torch
 from cyy_naive_lib.fs.ssd import is_ssd
@@ -12,7 +12,6 @@ from ..dataset_transform import add_data_extraction, add_transforms
 from ..dataset_transform.transform import Transforms
 from ..dataset_util import DatasetSplitter, get_dataset_util_cls
 from ..ml_type import DatasetType, MachineLearningPhase
-from ..tokenizer import get_tokenizer
 
 
 class DatasetCollection:
@@ -36,7 +35,6 @@ class DatasetCollection:
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
-        self.__tokenizer: Any | None = None
         if not dataset_kwargs:
             dataset_kwargs = {}
         self.__dataset_kwargs: dict = copy.deepcopy(dataset_kwargs)
@@ -49,14 +47,6 @@ class DatasetCollection:
     @property
     def dataset_kwargs(self) -> dict:
         return self.__dataset_kwargs
-
-    @property
-    def tokenizer(self) -> Any | None:
-        if self.__tokenizer is None and self.dataset_type == DatasetType.Text:
-            self.__tokenizer = get_tokenizer(
-                self, self.__dataset_kwargs.get("tokenizer", {})
-            )
-        return self.__tokenizer
 
     def __copy__(self):
         new_obj = type(self)(
