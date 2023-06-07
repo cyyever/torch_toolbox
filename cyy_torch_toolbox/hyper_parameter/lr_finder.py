@@ -7,7 +7,7 @@ from ..ml_type import StopExecutingException
 class LRFinder(Hook):
     "Training with exponentially growing learning rate, coped from fastai"
 
-    def __init__(self, start_lr=1e-7, end_lr=10, epoch=2, stop_div=True):
+    def __init__(self, start_lr=1e-7, end_lr=10, epoch=2, stop_div: bool=True) -> None:
         super().__init__()
         self.lr_getter = lambda idx: start_lr * (end_lr / start_lr) ** idx
         self.epoch = epoch
@@ -19,7 +19,7 @@ class LRFinder(Hook):
         self.total_batch_num = None
         self.suggested_learning_rate = None
 
-    def _before_execute(self, **kwargs):
+    def _before_execute(self, **kwargs) -> None:
         trainer = kwargs["executor"]
         trainer.remove_optimizer()
         trainer.remove_lr_scheduler()
@@ -30,7 +30,7 @@ class LRFinder(Hook):
             // trainer.hyper_parameter.batch_size
         )
 
-    def _before_batch(self, **kwargs):
+    def _before_batch(self, **kwargs) -> None:
         trainer = kwargs["executor"]
         learning_rate = self.lr_getter(self.batch_index / (self.total_batch_num - 1))
         self.learning_rates.append(learning_rate)

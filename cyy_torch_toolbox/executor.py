@@ -212,10 +212,10 @@ class Executor(HookCollection, abc.ABC):
         self.wait_stream()
         self.__model_evaluator = model_evaluator
 
-    def load_model(self, model_path):
+    def load_model(self, model_path) -> None:
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
 
-    def save_model(self, model_path):
+    def save_model(self, model_path) -> None:
         torch.save(self.model.state_dict(), model_path)
 
     def offload_from_gpu(self) -> None:

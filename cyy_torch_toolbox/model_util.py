@@ -126,7 +126,7 @@ class ModelUtil:
         }
 
     def disable_running_stats(self) -> None:
-        def impl(_, module, __):
+        def impl(_, module, __) -> None:
             module.track_running_stats = False
             module.register_buffer("running_mean", None)
             module.register_buffer("running_var", None)
@@ -208,7 +208,7 @@ class ModelUtil:
         return self.__cached_buffer_names
 
     def freeze_modules(self, **kwargs) -> None:
-        def freeze(name, module, model_util):
+        def freeze(name, module, model_util) -> None:
             get_logger().info("freeze %s", name)
             parameter_dict = {}
             for param_name, parameter in module.named_parameters():
@@ -219,7 +219,7 @@ class ModelUtil:
         self.change_modules(f=freeze, **kwargs)
 
     def unfreeze_modules(self, **kwargs) -> None:
-        def unfreeze(name, module, model_util):
+        def unfreeze(name, module, model_util) -> None:
             get_logger().info("unfreeze %s", name)
             parameter_dict = {}
             for param_name, parameter in module.named_parameters():

@@ -8,7 +8,7 @@ def hello(tasks, **kwargs):
     return {"1": torch.Tensor([1, 2, 3])}
 
 
-def test_process_task_queue():
+def test_process_task_queue() -> None:
     queue = TorchProcessTaskQueue(
         worker_fun=hello,
         send_tensor_in_cpu=True,

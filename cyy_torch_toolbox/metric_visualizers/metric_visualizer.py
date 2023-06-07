@@ -2,7 +2,7 @@ from cyy_torch_toolbox.hook import Hook
 
 
 class MetricVisualizer(Hook):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(stripable=True, **kwargs)
         self._prefix = ""
         self._data_dir = None

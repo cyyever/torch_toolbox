@@ -4,7 +4,7 @@ from cyy_torch_toolbox.hook import Hook
 
 
 class CUDNNHook(Hook):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         assert torch.cuda.is_available()
 

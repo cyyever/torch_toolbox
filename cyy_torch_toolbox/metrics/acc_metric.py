@@ -10,11 +10,11 @@ class AccuracyMetric(Metric):
     def get_accuracy(self, epoch):
         return self.get_epoch_metric(epoch, "accuracy").cpu()
 
-    def _before_epoch(self, **kwargs):
+    def _before_epoch(self, **kwargs) -> None:
         self.__dataset_size = 0
         self.__correct_count = None
 
-    def _after_batch(self, result, **kwargs):
+    def _after_batch(self, result, **kwargs) -> None:
         output = result["model_output"]
         logits = result.get("logits", None)
         targets = result["targets"]
@@ -34,7 +34,7 @@ class AccuracyMetric(Metric):
             self.__correct_count += correct_count
         self.__dataset_size += targets.shape[0]
 
-    def _after_epoch(self, **kwargs):
+    def _after_epoch(self, **kwargs) -> None:
         epoch = kwargs["epoch"]
         accuracy = self.__correct_count / self.__dataset_size
         self._set_epoch_metric(epoch, "accuracy", accuracy)

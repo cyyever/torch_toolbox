@@ -6,13 +6,13 @@ from cyy_naive_lib.reproducible_random_env import ReproducibleRandomEnv
 
 
 class ReproducibleEnv(ReproducibleRandomEnv):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.__torch_seed = None
         self.__torch_rng_state = None
         self.__torch_cuda_rng_state = None
 
-    def enable(self):
+    def enable(self) -> None:
         """
         https://pytorch.org/docs/stable/notes/randomness.html
         """
@@ -45,7 +45,7 @@ class ReproducibleEnv(ReproducibleRandomEnv):
                 self.__torch_rng_state = torch.get_rng_state()
             super().enable()
 
-    def disable(self):
+    def disable(self) -> None:
         with ReproducibleEnv.lock:
             torch.use_deterministic_algorithms(False)
             torch.set_deterministic_debug_mode(0)
