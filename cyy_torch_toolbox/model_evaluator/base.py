@@ -74,11 +74,11 @@ class ModelEvaluator:
             case _:
                 self.__loss_fun = loss_fun
 
-    def offload_from_memory(self):
+    def offload_from_memory(self) -> None:
         self.model.zero_grad(set_to_none=True)
-        self.to(device="cpu")
+        self.to(device=torch.device("cpu"))
 
-    def get_input_feature(self, inputs):
+    def get_input_feature(self, inputs) -> None | Any:
         if hasattr(self.model, "get_input_feature"):
             return self.model.get_input_feature(inputs)
         return None

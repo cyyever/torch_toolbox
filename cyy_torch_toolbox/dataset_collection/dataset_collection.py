@@ -1,11 +1,12 @@
 import copy
 import os
 import threading
-from typing import Callable, Generator
+from typing import Any, Callable, Generator
 
 import torch
 from cyy_naive_lib.fs.ssd import is_ssd
 from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.storage import get_cached_data
 
 from ..dataset import dataset_with_indices
 from ..dataset_transform import add_data_extraction, add_transforms
@@ -204,3 +205,9 @@ class DatasetCollection:
             dc=self,
             model_evaluator=model_evaluator,
         )
+
+    def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
+        with DatasetCollection.lock:
+            assert self.name is not None
+            cache_dir = DatasetCollection._get_dataset_cache_dir(self.name)
+            return get_cached_data(os.path.join(cache_dir, file), computation_fun)

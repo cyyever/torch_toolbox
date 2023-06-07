@@ -2,7 +2,6 @@ import os
 from typing import Any, Callable, Generator
 
 from cyy_naive_lib.log import get_logger
-from cyy_naive_lib.storage import get_cached_data
 
 from ..dependency import has_torchvision
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
@@ -86,8 +85,3 @@ class ClassificationDatasetCollection(DatasetCollection):
             str(self.get_transforms(MachineLearningPhase.Training)),
         )
 
-    def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
-        with DatasetCollection.lock:
-            assert self.name is not None
-            cache_dir = DatasetCollection._get_dataset_cache_dir(self.name)
-            return get_cached_data(os.path.join(cache_dir, file), computation_fun)

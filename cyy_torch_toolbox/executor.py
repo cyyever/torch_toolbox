@@ -246,6 +246,7 @@ class Executor(HookCollection, abc.ABC):
                 batch_index=batch_index,
             )
             batch["batch_index"] = batch_index
+            optimizer = None
             if in_training:
                 if (
                     self._get_batch_size() != 1
@@ -275,8 +276,11 @@ class Executor(HookCollection, abc.ABC):
             forward_result: dict = {}
 
             while True:
-                if in_training or need_backward:
-                    optimizer.zero_grad(set_to_none=True)
+                if need_backward:
+                    if optimizer is not None:
+                        optimizer.zero_grad(set_to_none=True)
+                    else:
+                        self.running_model_evaluator.model.zero_grad(set_to_none=True)
                 if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
                     self.exec_hooks(
                         hook_point=ExecutorHookPoint.MODEL_FORWARD,

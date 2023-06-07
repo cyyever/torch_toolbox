@@ -1,9 +1,11 @@
+import torch
+
 from .base import ModelEvaluator
 
 
 class TextModelEvaluator(ModelEvaluator):
     def split_batch_input(self, inputs, targets) -> tuple:
-        batch_dim = 0
+        batch_dim: int = 0
         if isinstance(inputs, torch.Tensor):
             if (
                 batch_dim == 0

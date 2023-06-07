@@ -138,6 +138,8 @@ class ModelConfig:
         if self.model_path is not None:
             assert "model_path" not in model_kwargs
             model_kwargs["model_path"] = self.model_path
+        if hasattr(dc, "set_model_kwargs"):
+            dc.set_model_kwargs(self.model_kwargs | {"name": self.model_name})
         model = get_model(
             name=self.model_name,
             dataset_collection=dc,

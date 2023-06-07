@@ -7,12 +7,10 @@ import numpy
 import torch
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 
-try:
-    import transformers
+from .dependency import has_hugging_face
 
-    has_hugging_face = True
-except ModuleNotFoundError:
-    has_hugging_face = False
+if has_hugging_face:
+    import transformers
 
 
 def cat_tensors_to_vector(tensors: Iterable) -> torch.Tensor:
@@ -24,7 +22,7 @@ def cat_tensor_dict(tensor_dict: dict) -> torch.Tensor:
 
 
 def load_tensor_dict_from_seq(shapes: dict, tensor_seq: list) -> dict:
-    result = {}
+    result: dict = {}
     for name in sorted(shapes.keys()):
         shape = shapes[name]
         assert tensor_seq[0].shape == shape

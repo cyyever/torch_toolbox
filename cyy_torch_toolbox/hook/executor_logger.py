@@ -1,6 +1,6 @@
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.hook import Hook
-from cyy_torch_toolbox.ml_type import MachineLearningPhase
+from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 
 # import os
 
@@ -39,10 +39,6 @@ class ExecutorLogger(Hook):
                     phase,
                     len(executor.dataset_collection.get_dataset_util(phase=phase)),
                 )
-        if executor.dataset_collection.tokenizer is not None:
-            get_logger().info(
-                "tokenizer is %s", executor.dataset_collection.tokenizer
-            )
         # if os.getenv("draw_torch_model") is not None:
         #     executor._model_with_loss.trace_input = True
 
