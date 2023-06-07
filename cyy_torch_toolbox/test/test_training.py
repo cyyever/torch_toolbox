@@ -36,6 +36,7 @@ def test_text_training():
     config = DefaultConfig(dataset_name="IMDB", model_name="simplelstm")
     config.hyper_parameter_config.epoch = 1
     config.hyper_parameter_config.learning_rate = 0.01
+    config.dc_config.dataset_kwargs["tokenizer"] = {"type": "spacy"}
     trainer = config.create_trainer()
     # trainer.model_with_loss.compile_model()
     trainer.append_named_hook(
