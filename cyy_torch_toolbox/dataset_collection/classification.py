@@ -13,7 +13,7 @@ if has_torchvision:
 
 
 class ClassificationDatasetCollection(DatasetCollection):
-    def __init__(self, dc: DatasetCollection):
+    def __init__(self, dc: DatasetCollection) -> None:
         self.__dc = dc
 
     def __getattr__(self, name: str):
@@ -69,7 +69,7 @@ class ClassificationDatasetCollection(DatasetCollection):
         reversed_label_names = {v: k for k, v in label_names.items()}
         return reversed_label_names[label_name]
 
-    def add_transforms(self, model_evaluator):
+    def add_transforms(self, model_evaluator) -> None:
         super().add_transforms(model_evaluator=model_evaluator)
         # add more transformers for model
         if self.dataset_type == DatasetType.Vision:

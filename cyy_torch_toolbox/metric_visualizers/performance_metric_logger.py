@@ -6,7 +6,7 @@ from .metric_visualizer import MetricVisualizer
 
 
 class PerformanceMetricLogger(MetricVisualizer):
-    def _after_epoch(self, executor, epoch, **kwargs):
+    def _after_epoch(self, executor, epoch, **kwargs) -> None:
         phase_str = "training"
         if executor.phase == MachineLearningPhase.Validation:
             phase_str = "validation"

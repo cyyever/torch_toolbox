@@ -6,11 +6,11 @@ from .metric import Metric
 class GradMetric(Metric):
     __prev_parameter_list = None
 
-    def _before_epoch(self, executor, **kwargs):
+    def _before_epoch(self, executor, **kwargs) -> None:
         if self.__prev_parameter_list is None:
             self.__prev_parameter_list = executor.model_util.get_parameter_list()
 
-    def _after_epoch(self, epoch, executor, **kwargs):
+    def _after_epoch(self, epoch, executor, **kwargs) -> None:
         parameter_list = executor.model_util.get_parameter_list()
         self._set_epoch_metric(
             epoch,

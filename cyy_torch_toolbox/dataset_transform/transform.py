@@ -142,7 +142,7 @@ class Transforms:
         new_transforms.clear(TransformType.Target)
         return transformed_dataset, new_transforms
 
-    def __str__(self):
+    def __str__(self) -> str:
         desc = []
         for k in (
             TransformType.ExtractData,

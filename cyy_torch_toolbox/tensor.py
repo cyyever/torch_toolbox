@@ -66,7 +66,7 @@ def get_tensor_serialization_size(data):
 
 
 class __RecursiveCheckPoint:
-    def __init__(self, data):
+    def __init__(self, data) -> None:
         self.data = data
 
 
@@ -109,7 +109,7 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
     return data
 
 
-def tensor_to(data, non_blocking=False, check_slowdown=False, **kwargs):
+def tensor_to(data, non_blocking: bool=False, check_slowdown: bool=False, **kwargs):
     def fun(data, check_slowdown, **kwargs):
         if check_slowdown:
             device = kwargs.get("device", None)
@@ -137,7 +137,7 @@ def tensor_to(data, non_blocking=False, check_slowdown=False, **kwargs):
     )
 
 
-def tensor_clone(data, detach=True):
+def tensor_clone(data, detach: bool=True):
     def fun(data, detach):
         new_data = data.clone()
         if detach:

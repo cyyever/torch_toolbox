@@ -60,7 +60,7 @@ def create_dataset_collection(
 
 
 class DatasetCollectionConfig:
-    def __init__(self, dataset_name=None):
+    def __init__(self, dataset_name=None) -> None:
         self.dataset_name = dataset_name
         self.dataset_kwargs = {}
         self.training_dataset_percentage = None
