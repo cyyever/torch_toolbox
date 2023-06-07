@@ -12,7 +12,7 @@ class Hook:
         self._sub_hooks: list = []
         self._enabled: bool = True
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name, value) -> None:
         if (
             hasattr(value, "is_cyy_torch_toolbox_hook")
             and self.is_cyy_torch_toolbox_hook
@@ -20,17 +20,17 @@ class Hook:
             self._sub_hooks.append(value)
         super().__setattr__(name, value)
 
-    def enable(self):
+    def enable(self) -> None:
         self._enabled = True
 
-    def disable(self):
+    def disable(self) -> None:
         self._enabled = False
 
     @property
     def stripable(self):
         return self.__stripable
 
-    def set_stripable(self):
+    def set_stripable(self) -> None:
         self.__stripable = True
 
     def yield_hook_names(self) -> Generator:

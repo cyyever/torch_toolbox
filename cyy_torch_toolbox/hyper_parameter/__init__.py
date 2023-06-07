@@ -216,7 +216,7 @@ def get_recommended_hyper_parameter(
 
 
 class HyperParameterConfig:
-    def __init__(self):
+    def __init__(self) -> None:
         self.epoch = None
         self.batch_size = None
         self.find_learning_rate = True

@@ -10,7 +10,7 @@ from ..reproducible_env import global_reproducible_env
 
 
 class _CheckPointBlock(nn.Module):
-    def __init__(self, block):
+    def __init__(self, block) -> None:
         super().__init__()
         self.block = nn.Sequential(*[m[1] for m in block])
         self.__block_names = [m[0] for m in block]

@@ -24,7 +24,7 @@ class ESC50(Dataset):
             downloaded again.
     """
 
-    def __init__(self, root: str, split: str, download: bool):
+    def __init__(self, root: str, split: str, download: bool) -> None:
         self.root = root
         # check arguments
         self.split = verify_str_arg(split, "split", ("train", "val", "test"))
@@ -69,7 +69,7 @@ class ESC50(Dataset):
         tensor, sample_rate = torchaudio.load(filename)
         return (tensor, sample_rate, int(label))
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.length
 
     def download(self) -> None:

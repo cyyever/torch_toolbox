@@ -124,7 +124,7 @@ def get_model(
 
 
 class ModelConfig:
-    def __init__(self, model_name: str):
+    def __init__(self, model_name: str) -> None:
         self.model_name: str = model_name
         self.model_path = None
         self.pretrained: bool = False

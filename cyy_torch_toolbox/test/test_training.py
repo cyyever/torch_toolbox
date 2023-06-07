@@ -10,7 +10,7 @@ def stop_training(*args, **kwargs):
     raise StopExecutingException()
 
 
-def test_vision_training():
+def test_vision_training() -> None:
     if not has_torchvision:
         return
     config = DefaultConfig(dataset_name="MNIST", model_name="LeNet5")
@@ -24,7 +24,7 @@ def test_vision_training():
     trainer.train()
 
 
-def test_text_training():
+def test_text_training() -> None:
     if not has_torchtext:
         return
     if torch.cuda.is_available():

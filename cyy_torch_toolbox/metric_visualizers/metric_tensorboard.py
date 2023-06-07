@@ -13,7 +13,7 @@ from .metric_visualizer import MetricVisualizer
 
 
 class MetricTensorBoard(MetricVisualizer):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.__writer = None
 
@@ -34,7 +34,7 @@ class MetricTensorBoard(MetricVisualizer):
             )
         return self.__writer
 
-    def _before_execute(self, executor, **kwargs):
+    def _before_execute(self, executor, **kwargs) -> None:
         if self.prefix is None:
             self.set_prefix(
                 "training_"
@@ -47,10 +47,10 @@ class MetricTensorBoard(MetricVisualizer):
     def get_tag_name(self, title: str) -> str:
         return self.prefix + "/" + title
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.close()
 
-    def _after_validation(self, executor, epoch, **kwargs):
+    def _after_validation(self, executor, epoch, **kwargs) -> None:
         trainer = executor
 
         # if "cur_learning_rates" not in trainer._data:

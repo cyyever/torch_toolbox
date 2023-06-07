@@ -26,7 +26,7 @@ class CUDABatchPolicy(BatchPolicy):
 
 
 class TorchTaskQueue(TaskQueue):
-    def __init__(self, worker_num: int | None = None, **kwargs):
+    def __init__(self, worker_num: int | None = None, **kwargs) -> None:
         self._devices: list = get_devices()
         if worker_num is None:
             if torch.cuda.is_available():

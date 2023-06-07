@@ -2,7 +2,7 @@ from .metric import Metric
 
 
 class LearningRateMetric(Metric):
-    def _before_batch(self, executor, batch_index, **kwargs):
+    def _before_batch(self, executor, batch_index, **kwargs) -> None:
         optimizer = executor.get_optimizer()
         if optimizer is not None:
             self._set_batch_metric(

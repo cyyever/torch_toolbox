@@ -6,10 +6,10 @@ from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 
 
 class ExecutorLogger(Hook):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(stripable=True)
 
-    def _before_execute(self, executor, **kwargs):
+    def _before_execute(self, executor, **kwargs) -> None:
         model_util = executor.model_util
         get_logger().info(
             "dataset type is %s",

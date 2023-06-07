@@ -32,7 +32,7 @@ def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:
 
 
 class KeyPipe(torch.utils.data.MapDataPipe):
-    def __init__(self, dp: torch.utils.data.MapDataPipe):
+    def __init__(self, dp: torch.utils.data.MapDataPipe) -> None:
         super().__init__()
         self.__dp = dp
 

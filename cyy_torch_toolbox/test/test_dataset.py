@@ -8,7 +8,7 @@ from cyy_torch_toolbox.dependency import (has_hugging_face,
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
-def test_dataset():
+def test_dataset() -> None:
     if has_torchvision:
         mnist = create_dataset_collection("MNIST")
         mnist_training = mnist.get_dataset(MachineLearningPhase.Training)
@@ -44,7 +44,7 @@ def test_dataset():
     #     )
 
 
-def test_dataset_labels():
+def test_dataset_labels() -> None:
     if has_torchvision:
         for name in ("MNIST", "CIFAR10"):
             dc = create_dataset_collection(name)

@@ -12,7 +12,7 @@ from .metric import Metric
 
 
 class PerformanceMetric(Metric):
-    def __init__(self, model_type, profile: bool = False, **kwargs):
+    def __init__(self, model_type, profile: bool = False, **kwargs) -> None:
         super().__init__(**kwargs)
         self.__loss_metric = LossMetric()
         self.__accuracy_metric = None
@@ -26,10 +26,10 @@ class PerformanceMetric(Metric):
             self.__dataloader_profiler = DataloaderProfiler()
         self.__lr_metric = LearningRateMetric()
 
-    def _before_epoch(self, **kwargs):
+    def _before_epoch(self, **kwargs) -> None:
         self.__epoch_time_point = time.time()
 
-    def _after_epoch(self, epoch, **kwargs):
+    def _after_epoch(self, epoch, **kwargs) -> None:
         self.__last_epoch = epoch
         self._set_epoch_metric(epoch, "duration", time.time() - self.__epoch_time_point)
 

@@ -11,7 +11,7 @@ from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
 class HookConfig:
-    def __init__(self):
+    def __init__(self) -> None:
         self.debug = False
         self.profile = False
         self.use_amp = torch.cuda.is_available()

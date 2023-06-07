@@ -133,7 +133,7 @@ class Trainer(Executor):
                 inferencer.set_visualizer_prefix(self._visualizer_prefix)
         super()._prepare_execution(**kwargs)
 
-    def train(self, run_validation=True, **kwargs: Any) -> None:
+    def train(self, run_validation: bool=True, **kwargs: Any) -> None:
         try:
             with (
                 torch.cuda.device(self.device)

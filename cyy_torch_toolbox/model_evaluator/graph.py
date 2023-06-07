@@ -10,7 +10,7 @@ if has_torch_geometric:
 
 
 class GraphModelEvaluator(ModelEvaluator):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         edge_dict = kwargs.pop("edge_dict")
         super().__init__(*args, **kwargs)
         # self.node_index_map = {}

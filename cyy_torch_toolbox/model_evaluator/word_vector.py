@@ -16,7 +16,7 @@ class PretrainedWordVector:
     )
     __word_vector_cache: dict[str, dict] = {}
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         self.__name = name
 
     @property
@@ -31,7 +31,7 @@ class PretrainedWordVector:
         assert isinstance(tokenizer, SpacyTokenizer)
         itos = tokenizer.vocab.get_itos()
 
-        def __load_embedding(name, module, module_util):
+        def __load_embedding(name, module, module_util) -> None:
             unknown_token_cnt = 0
             embeddings = module.weight.tolist()
             for idx, token in enumerate(itos):
