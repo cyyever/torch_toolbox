@@ -5,13 +5,13 @@ from ..hook import Hook
 
 
 class AMP(Hook):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         assert torch.cuda.is_available()
         super().__init__(*args, **kwargs)
         self.__ctx = None
         self.__scaler = None
 
-    def _model_forward(self, executor, model_kwargs, **kwargs):
+    def _model_forward(self, executor, model_kwargs, **kwargs) -> None:
         assert self._enabled
         device = model_kwargs.get("device", None)
         if device is not None and "cuda" in str(device).lower():
@@ -24,7 +24,7 @@ class AMP(Hook):
             result = executor.running_model_evaluator(**model_kwargs)
             executor._data["forward_result"] = result
 
-    def _model_backward(self, loss, **kwargs):
+    def _model_backward(self, loss, **kwargs) -> None:
         assert self._enabled
         if (
             self.__scaler is None
@@ -37,7 +37,7 @@ class AMP(Hook):
         else:
             loss.backward()
 
-    def _optimizer_step(self, executor, **kwargs):
+    def _optimizer_step(self, executor, **kwargs) -> None:
         assert self._enabled
         optimizer = executor.get_optimizer()
         if self.__scaler is None:

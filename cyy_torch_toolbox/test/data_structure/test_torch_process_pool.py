@@ -10,7 +10,7 @@ def stop_training(*args, **kwargs):
     raise StopExecutingException()
 
 
-def train(worker_id):
+def train(worker_id) -> None:
     if has_torchvision:
         get_logger().info("worker_id is %s", worker_id)
         trainer = DefaultConfig("MNIST", "LeNet5").create_trainer()
@@ -22,7 +22,7 @@ def train(worker_id):
         trainer.train()
 
 
-def test_process_pool():
+def test_process_pool() -> None:
     pool = TorchProcessPool()
     for worker_id in range(2):
         pool.submit(train, worker_id)

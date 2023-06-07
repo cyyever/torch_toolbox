@@ -121,7 +121,7 @@ class DatasetCollection:
         dataset_util.dataset = raw_dataset
         return dataset_util.get_original_dataset()
 
-    def append_transform(self, transform, key, phases=None):
+    def append_transform(self, transform, key, phases=None) -> None:
         for phase in MachineLearningPhase:
             if phases is not None and phase not in phases:
                 continue

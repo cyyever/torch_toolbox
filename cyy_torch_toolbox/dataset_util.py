@@ -228,7 +228,7 @@ class DatasetSplitter(DatasetUtil):
 
 
 class VisionDatasetUtil(DatasetSplitter):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.__channel = None
 

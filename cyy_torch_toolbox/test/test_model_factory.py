@@ -4,7 +4,7 @@ from cyy_torch_toolbox.dependency import has_torchvision
 from cyy_torch_toolbox.model_factory import get_model
 
 
-def test_model():
+def test_model() -> None:
     # for dataset_name, model_name in [("IMDB", "aaa"), ("MNIST", "LeNet5")]:
     if has_torchvision:
         for dataset_name, model_name in [

@@ -26,7 +26,7 @@ class ModelEvaluator:
         model_name: str | None = None,
         model_type: None | ModelType = None,
         loss_fun: str | Callable | None = None,
-    ):
+    ) -> None:
         self._model: torch.nn.Module = model
         self.__name = model_name
         self.__loss_fun: Callable | None = None
@@ -74,7 +74,7 @@ class ModelEvaluator:
             case _:
                 self.__loss_fun = loss_fun
 
-    def offload_from_memory(self):
+    def offload_from_memory(self) -> None:
         self.model.zero_grad(set_to_none=True)
         self.to(device="cpu")
 
@@ -231,7 +231,7 @@ class ModelEvaluator:
             return False
         return None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"model: {self._model.__class__.__name__}, loss_fun: {self.loss_fun}"
 
     def __set_model_mode(self, is_training: bool, need_backward: bool = False) -> None:

@@ -24,13 +24,13 @@ class KeepModelHook(Hook):
         os.makedirs(model_dir, exist_ok=True)
         return model_dir
 
-    def _before_execute(self, **kwargs):
+    def _before_execute(self, **kwargs) -> None:
         self.clear()
 
-    def clear(self):
+    def clear(self) -> None:
         self.__best_model = DataStorage(data=None)
 
-    def _after_validation(self, executor, epoch, **kwargs):
+    def _after_validation(self, executor, epoch, **kwargs) -> None:
         trainer = executor
         if self.save_epoch_model:
             model_path = os.path.join(
@@ -63,7 +63,7 @@ class KeepModelHook(Hook):
                     )
                     self.__best_model.save()
 
-    def _after_execute(self, executor, **kwargs):
+    def _after_execute(self, executor, **kwargs) -> None:
         trainer = executor
         if self.save_last_model:
             trainer.save_model(

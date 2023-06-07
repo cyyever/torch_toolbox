@@ -7,7 +7,7 @@ from torch.nn.modules.activation import ReLU
 
 
 class CUDAMemoryProfiler(Hook):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.__hooks = []
         self.__used_memory = None
@@ -24,7 +24,7 @@ class CUDAMemoryProfiler(Hook):
                 )
             )
 
-    def __compute_gpu_memory_assumption(self, module_name, module, _, __):
+    def __compute_gpu_memory_assumption(self, module_name, module, _, __) -> None:
         if not module_name:
             return
         if isinstance(module, ReLU):
@@ -45,7 +45,7 @@ class CUDAMemoryProfiler(Hook):
             )
         self.__used_memory = cur_used_memory
 
-    def _after_batch(self, **kwargs):
+    def _after_batch(self, **kwargs) -> None:
         for h in self.__hooks:
             h.remove()
         self.__hooks = []
