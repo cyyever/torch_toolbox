@@ -64,8 +64,8 @@ def get_tensor_serialization_size(data):
 
 
 class __RecursiveCheckPoint:
-    def __init__(self, data) -> None:
-        self.data = data
+    def __init__(self, data: Any) -> None:
+        self.data: Any = data
 
 
 def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
@@ -95,7 +95,7 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
             return functools.partial(
                 data.func,
                 *recursive_tensor_op(data.args, fun, **kwargs),
-                **recursive_tensor_op(data.keywords, fun, **kwargs)
+                **recursive_tensor_op(data.keywords, fun, **kwargs),
             )
         # case _:
         #     print("unsupported tensor type", type(data))
@@ -107,7 +107,9 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
     return data
 
 
-def tensor_to(data, non_blocking: bool=False, check_slowdown: bool=False, **kwargs):
+def tensor_to(
+    data: Any, non_blocking: bool = False, check_slowdown: bool = False, **kwargs: Any
+) -> Any:
     def fun(data, check_slowdown, **kwargs):
         if check_slowdown:
             device = kwargs.get("device", None)
@@ -135,7 +137,7 @@ def tensor_to(data, non_blocking: bool=False, check_slowdown: bool=False, **kwar
     )
 
 
-def tensor_clone(data, detach: bool=True):
+def tensor_clone(data: Any, detach: bool = True) -> Any:
     def fun(data, detach):
         new_data = data.clone()
         if detach:
