@@ -1,7 +1,7 @@
 import copy
 import os
 import threading
-from typing import Any, Callable, Generator
+from typing import Any, Callable, Generator, Iterable
 
 import torch
 from cyy_naive_lib.fs.ssd import is_ssd
@@ -57,7 +57,7 @@ class DatasetCollection:
         )
         new_obj.__raw_datasets = copy.copy(self.__raw_datasets)
         new_obj.__datasets = copy.copy(self.__datasets)
-        new_obj.__transforms = copy.copy(self.__transforms)
+        new_obj.__transforms = copy.deepcopy(self.__transforms)
         new_obj.__dataset_kwargs = copy.deepcopy(self.__dataset_kwargs)
         return new_obj
 
@@ -122,7 +122,9 @@ class DatasetCollection:
         dataset_util.dataset = raw_dataset
         return dataset_util.get_original_dataset()
 
-    def append_transform(self, transform, key, phases=None) -> None:
+    def append_transform(
+        self, transform: Callable, key: MachineLearningPhase, phases=None | Iterable
+    ) -> None:
         for phase in MachineLearningPhase:
             if phases is not None and phase not in phases:
                 continue
