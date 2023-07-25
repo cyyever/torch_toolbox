@@ -5,7 +5,6 @@ import random
 from collections.abc import Iterable
 from typing import Any, Generator, Type
 
-import PIL
 import torch
 import torch.utils
 
@@ -15,6 +14,7 @@ from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 
 if has_torchvision:
+    import PIL
     import torchvision
 if has_torch_geometric:
     import torch_geometric.data
