@@ -1,5 +1,4 @@
-import os
-from typing import Any, Callable, Generator
+from typing import Any, Generator
 
 from cyy_naive_lib.log import get_logger
 
@@ -11,20 +10,12 @@ if has_torchvision:
     import torchvision
 
 
-class ClassificationDatasetCollection(DatasetCollection):
+class ClassificationDatasetCollection:
     def __init__(self, dc: DatasetCollection) -> None:
         self.__dc = dc
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         return getattr(self.__dc, name)
-
-    # def __init__()
-    # @classmethod
-    # def create(cls, *args, **kwargs):
-    #     dc: ClassificationDatasetCollection = DatasetCollection.create(*args, **kwargs)
-    #     dc.__class__ = ClassificationDatasetCollection
-    #     assert isinstance(dc, ClassificationDatasetCollection)
-    #     return dc
 
     def get_labels(self, use_cache: bool = True) -> set:
         def computation_fun() -> set:
@@ -69,7 +60,7 @@ class ClassificationDatasetCollection(DatasetCollection):
         return reversed_label_names[label_name]
 
     def add_transforms(self, model_evaluator) -> None:
-        super().add_transforms(model_evaluator=model_evaluator)
+        self.__dc.add_transforms(model_evaluator=model_evaluator)
         # add more transformers for model
         if self.dataset_type == DatasetType.Vision:
             input_size = getattr(
@@ -78,10 +69,10 @@ class ClassificationDatasetCollection(DatasetCollection):
             if input_size is not None:
                 get_logger().debug("resize input to %s", input_size)
                 self.append_transform(
-                    torchvision.transforms.Resize(input_size), key=TransformType.Input
+                    transform=torchvision.transforms.Resize(input_size),
+                    key=TransformType.Input,
                 )
         get_logger().debug(
             "use transformers for training => \n %s",
             str(self.get_transforms(MachineLearningPhase.Training)),
         )
-

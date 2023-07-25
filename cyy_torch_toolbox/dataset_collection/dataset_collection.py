@@ -12,7 +12,7 @@ from ..dataset import dataset_with_indices
 from ..dataset_transform import add_data_extraction, add_transforms
 from ..dataset_transform.transform import Transforms
 from ..dataset_util import DatasetSplitter, get_dataset_util_cls
-from ..ml_type import DatasetType, MachineLearningPhase
+from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 
 
 class DatasetCollection:
@@ -57,8 +57,8 @@ class DatasetCollection:
         )
         new_obj.__raw_datasets = copy.copy(self.__raw_datasets)
         new_obj.__datasets = copy.copy(self.__datasets)
-        new_obj.__transforms = copy.deepcopy(self.__transforms)
-        new_obj.__dataset_kwargs = copy.deepcopy(self.__dataset_kwargs)
+        new_obj.__transforms = copy.copy(self.__transforms)
+        new_obj.__dataset_kwargs = copy.copy(self.__dataset_kwargs)
         return new_obj
 
     @property
@@ -123,7 +123,7 @@ class DatasetCollection:
         return dataset_util.get_original_dataset()
 
     def append_transform(
-        self, transform: Callable, key: MachineLearningPhase, phases=None | Iterable
+        self, transform: Callable, key: TransformType, phases: None | Iterable = None
     ) -> None:
         for phase in MachineLearningPhase:
             if phases is not None and phase not in phases:
