@@ -21,33 +21,6 @@ def cat_tensor_dict(tensor_dict: dict) -> torch.Tensor:
     return cat_tensors_to_vector(get_mapping_values_by_key_order(tensor_dict))
 
 
-def load_tensor_dict_from_seq(shapes: dict, tensor_seq: list) -> dict:
-    result: dict = {}
-    for name in sorted(shapes.keys()):
-        shape = shapes[name]
-        assert tensor_seq[0].shape == shape
-        result[name] = tensor_seq[0]
-        tensor_seq = tensor_seq[1:]
-    return result
-
-
-def load_tensor_dict(shapes: dict, tensor: torch.Tensor) -> dict:
-    bias = 0
-    result = {}
-    total_size = tensor.numel()
-    for name in sorted(shapes.keys()):
-        shape = shapes[name]
-        param_element_num = numpy.prod(shape)
-        result[name] = tensor[bias: bias + param_element_num].view(*shape)
-        bias += param_element_num
-    assert bias == total_size
-    return result
-
-
-def decompose_tensor_to_dict(shapes: dict, tensor: torch.Tensor) -> dict:
-    return load_tensor_dict(shapes, tensor)
-
-
 def decompose_tensor_to_list(shapes: list, tensor: torch.Tensor) -> list:
     result = []
     bias = 0

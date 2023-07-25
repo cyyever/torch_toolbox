@@ -33,9 +33,8 @@ class ModelEvaluator:
         if loss_fun is not None:
             self.set_loss_fun(loss_fun)
         if model_type is None:
-            self.__model_type: ModelType = ModelType.Classification
-        else:
-            self.__model_type = model_type
+            model_type = ModelType.Classification
+        self.__model_type: ModelType = model_type
         self.need_input_features = False
 
     @property
@@ -78,14 +77,13 @@ class ModelEvaluator:
         self.model.zero_grad(set_to_none=True)
         self.to(device=torch.device("cpu"))
 
-    def get_input_feature(self, inputs) -> None | Any:
+    def get_input_feature(self, inputs: Any) -> None | Any:
         if hasattr(self.model, "get_input_feature"):
             return self.model.get_input_feature(inputs)
         return None
 
-    def split_batch_input(self, inputs, targets) -> tuple:
-        batch_dim = 0
-        return inputs, batch_dim
+    def split_batch_input(self, inputs: Any, targets: Any) -> tuple:
+        return inputs, 0
 
     def __call__(
         self,

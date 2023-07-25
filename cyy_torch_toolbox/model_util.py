@@ -1,80 +1,37 @@
+import functools
 from typing import Any, Callable, Generator, Type
 
 import torch
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 from cyy_naive_lib.log import get_logger
 
-from .tensor import (cat_tensors_to_vector, load_tensor_dict,
-                     load_tensor_dict_from_seq)
+from .tensor import cat_tensors_to_vector
 
 
 class ModelUtil:
     def __init__(self, model: torch.nn.Module) -> None:
         self.__model = model
-        self.__parameter_shapes: dict | None = None
-        self.__cached_buffer_names: set | None = None
 
     @property
     def model(self):
         return self.__model
 
-    def get_parameter_seq(self, detach: bool = True) -> Generator:
-        res = self.get_parameter_dict(detach=detach)
-        return get_mapping_values_by_key_order(res)
+    def get_parameter_seq(self, **kwargs: Any) -> Generator:
+        return get_mapping_values_by_key_order(self.get_parameter_dict(**kwargs))
 
-    def get_parameter_list(self, detach: bool = True) -> torch.Tensor:
-        return cat_tensors_to_vector(self.get_parameter_seq(detach=detach))
-
-    def load_parameter_seq(
-        self,
-        parameter_seq: list,
-        check_parameter: bool = False,
-        as_parameter: bool = True,
-        parameter_shapes: None | dict = None,
-    ) -> None:
-        if parameter_shapes is None:
-            parameter_shapes = self.get_parameter_shapes()
-        assert parameter_shapes
-        parameter_dict = load_tensor_dict_from_seq(parameter_shapes, parameter_seq)
-        self.load_parameter_dict(
-            parameter_dict,
-            check_parameter=check_parameter,
-            as_parameter=as_parameter,
-            update_parameter_shapes=False,
-        )
-
-    def load_parameter_list(
-        self,
-        parameter_list: torch.Tensor,
-        check_parameter: bool = False,
-        as_parameter: bool = True,
-        parameter_shapes: None | dict = None,
-    ) -> None:
-        if parameter_shapes is None:
-            parameter_shapes = self.get_parameter_shapes()
-        assert parameter_shapes
-        parameter_dict = load_tensor_dict(parameter_shapes, parameter_list)
-        self.load_parameter_dict(
-            parameter_dict,
-            check_parameter=check_parameter,
-            as_parameter=as_parameter,
-            update_parameter_shapes=False,
-        )
+    def get_parameter_list(self, **kwargs: Any) -> torch.Tensor:
+        return cat_tensors_to_vector(self.get_parameter_seq(**kwargs))
 
     def load_parameter_dict(
         self,
         parameter_dict: dict,
         check_parameter: bool = False,
-        as_parameter: bool = True,
-        update_parameter_shapes: bool = True,
     ) -> None:
         assert parameter_dict
         for name, parameter in parameter_dict.items():
             if check_parameter:
                 assert self.has_attr(name)
-            self.set_attr(name, parameter, as_parameter=as_parameter)
-        if update_parameter_shapes:
-            self.__parameter_shapes = None
+            self.set_attr(name, parameter, as_parameter=True)
 
     def get_buffer_dict(self) -> dict:
         return dict(self.model.named_buffers())
@@ -84,7 +41,7 @@ class ModelUtil:
             self.set_attr(name, parameter, as_parameter=False)
 
     def clear_parameters(self) -> None:
-        def clear(module) -> None:
+        def clear(module: torch.nn.Module) -> None:
             module._parameters = {k: None for k in module._parameters}
 
         for _, module in self.get_modules():
@@ -97,26 +54,6 @@ class ModelUtil:
                 parameter = parameter.detach()
             res[name] = parameter
         return res
-
-    def get_parameter_shapes(self) -> dict:
-        if self.__parameter_shapes is not None:
-            return self.__parameter_shapes
-        res: dict = {}
-        for name, parameter in self.model.named_parameters():
-            res[name] = parameter.shape
-        self.__parameter_shapes = res
-        return self.__parameter_shapes
-
-    def get_gradient_list(self):
-        try:
-            return cat_tensors_to_vector(
-                (parameter.grad for parameter in self.get_parameter_seq(detach=False))
-            )
-        except BaseException as e:
-            for k, v in self.get_parameter_dict(detach=False).items():
-                if v.grad is None:
-                    raise NotImplementedError(k) from e
-            raise e
 
     def get_gradient_dict(self) -> dict:
         return {
@@ -198,16 +135,14 @@ class ModelUtil:
             ):
                 f(name, module, self)
 
-    def cache_buffer_names(self) -> None:
-        self.__cached_buffer_names = set()
-        for param_name, _ in self.__model.named_buffers():
-            self.__cached_buffer_names.add(param_name)
-
-    @property
+    @functools.cached_property
     def cached_buffer_names(self):
-        return self.__cached_buffer_names
+        res = set()
+        for param_name, _ in self.__model.named_buffers():
+            res.add(param_name)
+        return res
 
-    def freeze_modules(self, **kwargs) -> None:
+    def freeze_modules(self, **kwargs: Any) -> None:
         def freeze(name, module, model_util) -> None:
             get_logger().info("freeze %s", name)
             parameter_dict = {}
@@ -218,7 +153,7 @@ class ModelUtil:
 
         self.change_modules(f=freeze, **kwargs)
 
-    def unfreeze_modules(self, **kwargs) -> None:
+    def unfreeze_modules(self, **kwargs: Any) -> None:
         def unfreeze(name, module, model_util) -> None:
             get_logger().info("unfreeze %s", name)
             parameter_dict = {}
