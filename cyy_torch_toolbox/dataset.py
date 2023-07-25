@@ -102,6 +102,9 @@ def select_item(
                         if indices is None or idx in indices:
                             yield idx, {"target": dataset.data.y[idx], "index": idx}
                 else:
+                    if isinstance(mask, list):
+                        assert len(mask) == 1
+                        mask = mask[0]
                     for idx, flag in enumerate(mask.tolist()):
                         if not flag:
                             continue
