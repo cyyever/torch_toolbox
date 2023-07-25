@@ -20,14 +20,15 @@ if has_hugging_face:
 @functools.cache
 def __get_model_info() -> dict:
     model_info = get_torch_model_info()
-    for dataset_type, info in get_hugging_face_model_info().items():
-        if dataset_type not in model_info:
-            model_info[dataset_type] = info
-        else:
-            for model_name, res in info.items():
-                if model_name in model_info[dataset_type]:
-                    raise RuntimeError(f"model {model_name} from multiple sources")
-                model_info[dataset_type][model_name] = res
+    if has_hugging_face:
+        for dataset_type, info in get_hugging_face_model_info().items():
+            if dataset_type not in model_info:
+                model_info[dataset_type] = info
+            else:
+                for model_name, res in info.items():
+                    if model_name in model_info[dataset_type]:
+                        raise RuntimeError(f"model {model_name} from multiple sources")
+                    model_info[dataset_type][model_name] = res
     return model_info
 
 
