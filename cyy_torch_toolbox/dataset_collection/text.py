@@ -9,7 +9,7 @@ from .dataset_collection import DatasetCollection
 
 
 class TextDatasetCollection(DatasetCollection):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         assert self.dataset_type == DatasetType.Text
         self.__tokenizer: Any | None = None

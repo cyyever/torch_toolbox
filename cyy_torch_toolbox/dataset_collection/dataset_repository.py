@@ -53,7 +53,7 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
     dataset_constructors: dict = {}
     for repository in repositories:
         if hasattr(repository, "DATASETS"):
-            for name, dataset_constructor in getattr(repository, "DATASETS").items():
+            for name, dataset_constructor in repository.DATASETS.items():
                 if dataset_type == DatasetType.Text:
                     dataset_constructors[name] = dataset_constructor
             continue
@@ -73,7 +73,7 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
         INFO = medmnist.info.INFO
         for name, item in INFO.items():
             medmnist_cls = getattr(medmnist, item["python_class"])
-            setattr(medmnist_cls, "targets", item["label"])
+            medmnist_cls.targets = item["label"]
             dataset_constructors[name] = functools.partial(
                 medmnist_cls, target_transform=lambda x: x[0]
             )
