@@ -37,15 +37,15 @@ class Trainer(Executor):
             inferencer.set_device(device)
 
     @property
-    def best_model(self):
-        keep_model_hook = self.get_hook("keep_model_hook")
+    def best_model(self) -> Any:
+        keep_model_hook: KeepModelHook = self.get_hook("keep_model_hook")
         if keep_model_hook.best_model is None:
             return None
         return keep_model_hook.best_model[0]
 
     @property
     def best_epoch(self) -> int | None:
-        keep_model_hook = self.get_hook("keep_model_hook")
+        keep_model_hook: KeepModelHook = self.get_hook("keep_model_hook")
         if keep_model_hook.best_model is None:
             return None
         return keep_model_hook.best_model[2]
@@ -133,7 +133,7 @@ class Trainer(Executor):
                 inferencer.set_visualizer_prefix(self._visualizer_prefix)
         super()._prepare_execution(**kwargs)
 
-    def train(self, run_validation: bool=True, **kwargs: Any) -> None:
+    def train(self, run_validation: bool = True, **kwargs: Any) -> None:
         try:
             with (
                 torch.cuda.device(self.device)
@@ -175,7 +175,7 @@ class Trainer(Executor):
         finally:
             self.wait_stream()
         self.exec_hooks(
-            ExecutorHookPoint.AFTER_EXECUTE,
+            hook_point=ExecutorHookPoint.AFTER_EXECUTE,
             epoch=self.hyper_parameter.epoch,
         )
 

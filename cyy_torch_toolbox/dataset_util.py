@@ -43,15 +43,16 @@ class DatasetUtil:
     def decompose(self) -> None | dict:
         return None
 
-    def get_samples(self, indices: Iterable | None = None) -> Generator:
+    def get_samples(self, indices: Iterable | None = None) -> Iterable:
         items = select_item(dataset=self.dataset, indices=indices, mask=self.get_mask())
         if self.__transforms is None:
             return items
         for idx, sample in items:
             sample = self.__transforms.extract_data(sample)
             yield idx, sample
+        return
 
-    def get_mask(self):
+    def get_mask(self) -> None:
         return None
 
     def get_sample(self, index: int) -> Any:
@@ -228,7 +229,7 @@ class DatasetSplitter(DatasetUtil):
 
 
 class VisionDatasetUtil(DatasetSplitter):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__channel = None
 
@@ -304,12 +305,12 @@ class TextDatasetUtil(DatasetSplitter):
 
 
 class GraphDatasetUtil(DatasetSplitter):
-    def get_mask(self):
+    def get_mask(self) -> list | torch.Tensor:
         assert len(self.dataset) == 1
         if isinstance(self.dataset[0], dict):
-            return self.dataset[0]["subset_mask"]
+            return [dataset["subset_mask"] for dataset in self.dataset]
         if hasattr(self.dataset[0], "mask"):
-            return self.dataset[0].mask
+            return [dataset["mask"] for dataset in self.dataset]
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
         return mask
 
@@ -341,7 +342,7 @@ class GraphDatasetUtil(DatasetSplitter):
         setattr(graph, key, edge_dict)
         return edge_dict
 
-    def get_boundary(self, node_indices: list) -> dict:
+    def get_boundary(self, node_indices: Iterable) -> dict:
         assert len(self.dataset) == 1
         res = {}
         edge_dict = self.get_edge_dict()
@@ -375,7 +376,7 @@ class GraphDatasetUtil(DatasetSplitter):
             node_indices=node_indices, edge_dict=self.get_edge_dict(), hop=hop
         )
 
-    def get_subset(self, indices: list) -> list:
+    def get_subset(self, indices: Iterable) -> list:
         assert indices
         mask = copy.deepcopy(self.get_mask())
         mask.fill_(False)
@@ -418,6 +419,7 @@ class GraphDatasetUtil(DatasetSplitter):
 
 
 def get_dataset_util_cls(dataset_type: DatasetType) -> Type:
+    class_name: Type = DatasetSplitter
     match dataset_type:
         case DatasetType.Vision:
             class_name = VisionDatasetUtil
@@ -425,6 +427,4 @@ def get_dataset_util_cls(dataset_type: DatasetType) -> Type:
             class_name = TextDatasetUtil
         case DatasetType.Graph:
             class_name = GraphDatasetUtil
-        case _:
-            class_name = DatasetSplitter
     return class_name

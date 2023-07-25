@@ -136,7 +136,7 @@ def select_item(
 def subset_dp(
     dataset: torch.utils.data.Dataset, indices: None | Iterable = None
 ) -> torch.utils.data.MapDataPipe:
-    original_dataset = getattr(dataset, "dataset", None)
+    # original_dataset = getattr(dataset, "dataset", None)
     # if has_hugging_face:
     #     match original_dataset:
     #         case hugging_face_datasets.arrow_dataset.Dataset():
