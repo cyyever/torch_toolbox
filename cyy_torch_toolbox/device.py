@@ -43,6 +43,26 @@ def get_cuda_devices() -> list[torch.device]:
     ]
 
 
+def get_device(
+    max_needed_bytes: None | int = None, use_cuda_only: bool = False
+) -> torch.device:
+    if torch.cuda.is_available():
+        device = CUDADeviceGreedyAllocator().get_device(
+            max_needed_bytes=max_needed_bytes
+        )
+        if device is not None:
+            return device
+        if use_cuda_only:
+            raise RuntimeError("no cuda device avaiable")
+        get_logger().warning(
+            "cuda device is unavailable, max_needed_bytes is %s, switch to CPU",
+            max_needed_bytes,
+        )
+    # if torch.backends.mps.is_available():
+    #     return torch.device("mps")
+    return get_cpu_device()
+
+
 def get_devices() -> list[torch.device]:
     if torch.cuda.is_available():
         return get_cuda_devices()
@@ -84,23 +104,3 @@ class CUDADeviceGreedyAllocator:
         if not devices:
             return None
         return devices[0]
-
-
-def get_device(
-    max_needed_bytes: None | int = None, use_cuda_only: bool = False
-) -> torch.device:
-    if torch.cuda.is_available():
-        device = CUDADeviceGreedyAllocator().get_device(
-            max_needed_bytes=max_needed_bytes
-        )
-        if device is not None:
-            return device
-        if use_cuda_only:
-            raise RuntimeError("no cuda device avaiable")
-        get_logger().warning(
-            "cuda device is unavailable, max_needed_bytes is %s, switch to CPU",
-            max_needed_bytes,
-        )
-    # if torch.backends.mps.is_available():
-    #     return torch.device("mps")
-    return get_cpu_device()
