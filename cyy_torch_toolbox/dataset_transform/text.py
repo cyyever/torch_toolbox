@@ -137,7 +137,6 @@ def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) 
         get_logger().info("use output text max len %s", max_len)
         __apply_tokenizer_transforms(dc=dc, max_len=max_len, for_input=False)
     elif model_evaluator.model_type == ModelType.Classification:
-        assert isinstance(dc, ClassificationDatasetCollection)
         if isinstance(
             dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(
                 0
