@@ -37,8 +37,8 @@ class HyperParameter:
     batch_size: int = 8
     weight_decay: float = 0
     momentum: float = 0.9
-    __lr_scheduler_factory: None | Callable = None
-    __optimizer_factory: None | Callable = None
+    _lr_scheduler_factory: None | Callable = None
+    _optimizer_factory: None | Callable = None
 
     def get_learning_rate(self, trainer: Any) -> float:
         if isinstance(self.learning_rate, HyperParameterAction):
@@ -54,7 +54,7 @@ class HyperParameter:
     def set_lr_scheduler_factory(
         self, name: str, dataset_name: None | str = None, **kwargs: Any
     ) -> None:
-        self.__lr_scheduler_factory = functools.partial(
+        self._lr_scheduler_factory = functools.partial(
             self.__get_lr_scheduler_factory,
             name=name,
             dataset_name=dataset_name,
@@ -67,8 +67,8 @@ class HyperParameter:
         return (training_dataset_size + self.batch_size - 1) // self.batch_size
 
     def get_lr_scheduler(self, trainer):
-        assert self.__lr_scheduler_factory is not None
-        return self.__lr_scheduler_factory(trainer)
+        assert self._lr_scheduler_factory is not None
+        return self._lr_scheduler_factory(trainer)
 
     @staticmethod
     def lr_scheduler_step_after_batch(lr_scheduler):
@@ -126,7 +126,7 @@ class HyperParameter:
                 f"unknown optimizer:{name}, supported names are:"
                 + str(HyperParameter.get_optimizer_names())
             )
-        self.__optimizer_factory = optimizer_class
+        self._optimizer_factory = optimizer_class
 
     @staticmethod
     def get_optimizer_names():
@@ -137,7 +137,7 @@ class HyperParameter:
         return ["ReduceLROnPlateau", "OneCycleLR", "CosineAnnealingLR", "MultiStepLR"]
 
     def get_optimizer(self, trainer: Any) -> Any:
-        assert self.__optimizer_factory is not None
+        assert self._optimizer_factory is not None
         foreach = not torch.backends.mps.is_available()
         kwargs: dict = {
             "params": trainer.model.parameters(),
@@ -146,7 +146,7 @@ class HyperParameter:
             "weight_decay": self.weight_decay / trainer.dataset_size,
             "foreach": foreach,
         }
-        return call_fun(self.__optimizer_factory, kwargs)
+        return call_fun(self._optimizer_factory, kwargs)
 
     @staticmethod
     def __get_optimizer_classes():

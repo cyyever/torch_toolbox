@@ -7,7 +7,13 @@ from ..ml_type import StopExecutingException
 class LRFinder(Hook):
     "Training with exponentially growing learning rate, coped from fastai"
 
-    def __init__(self, start_lr=1e-7, end_lr=10, epoch=2, stop_div: bool=True) -> None:
+    def __init__(
+        self,
+        start_lr: float = 1e-7,
+        end_lr: float = 10,
+        epoch: int = 2,
+        stop_div: bool = True,
+    ) -> None:
         super().__init__()
         self.lr_getter = lambda idx: start_lr * (end_lr / start_lr) ** idx
         self.epoch = epoch
