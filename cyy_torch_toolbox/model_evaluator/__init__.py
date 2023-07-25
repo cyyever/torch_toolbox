@@ -1,4 +1,5 @@
 import functools
+from typing import Callable
 
 import torch
 
@@ -22,7 +23,7 @@ def get_model_evaluator(
     model_type: None | ModelType = None,
     model_kwargs: dict | None = None,
 ) -> ModelEvaluator:
-    model_evaluator_fun = ModelEvaluator
+    model_evaluator_fun: Callable = ModelEvaluator
     if dataset_collection.dataset_type == DatasetType.Vision:
         model_evaluator_fun = VisionModelEvaluator
     elif dataset_collection.dataset_type == DatasetType.Text:
@@ -34,7 +35,7 @@ def get_model_evaluator(
         model_evaluator_fun = functools.partial(
             GraphModelEvaluator,
             edge_dict=dataset_collection.get_dataset_util(
-                MachineLearningPhase.Training
+                phase=MachineLearningPhase.Training
             ).get_edge_dict(),
         )
     if model_kwargs is None:

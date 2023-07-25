@@ -1,3 +1,5 @@
+from typing import Any
+
 import torch
 
 from ..dataset_util import GraphDatasetUtil
@@ -10,14 +12,13 @@ if has_torch_geometric:
 
 
 class GraphModelEvaluator(ModelEvaluator):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         edge_dict = kwargs.pop("edge_dict")
         super().__init__(*args, **kwargs)
-        # self.node_index_map = {}
-        self.node_and_neighbour_index_map = {}
-        self.edge_index_map = {}
-        self.node_and_neighbour_mask = {}
-        self.node_mask = {}
+        self.node_and_neighbour_index_map: dict = {}
+        self.edge_index_map: dict = {}
+        self.node_and_neighbour_mask: dict = {}
+        self.node_mask: dict = {}
         self.edge_dict = edge_dict
         self.neighbour_hop = sum(
             1
@@ -25,7 +26,7 @@ class GraphModelEvaluator(ModelEvaluator):
             if isinstance(module, torch_geometric.nn.MessagePassing)
         )
 
-    def __call__(self, **kwargs) -> dict:
+    def __call__(self, **kwargs: Any) -> dict:
         inputs = kwargs["inputs"]
         inputs["x"] = inputs["x"][0]
         inputs["edge_index"] = inputs["edge_index"][0]
@@ -37,16 +38,14 @@ class GraphModelEvaluator(ModelEvaluator):
         if phase not in self.edge_index_map:
             edge_index = inputs["edge_index"]
             node_indices = set(torch_geometric.utils.mask_to_index(mask).tolist())
-            # self.node_index_map[phase] = node_indices
-            node_and_neighbours = GraphDatasetUtil.get_neighbors_from_edges(
+            tmp: dict = GraphDatasetUtil.get_neighbors_from_edges(
                 node_indices=node_indices,
                 edge_dict=self.edge_dict,
                 hop=self.neighbour_hop,
             )
-            tmp = set(node_and_neighbours.keys())
-            for value in node_and_neighbours.values():
-                tmp |= value
-            node_and_neighbours = tmp
+            node_and_neighbours = set(tmp.keys())
+            for value in tmp.values():
+                node_and_neighbours |= value
             node_and_neighbour_index_map = {
                 node_index: idx
                 for idx, node_index in enumerate(sorted(node_and_neighbours))
@@ -77,7 +76,7 @@ class GraphModelEvaluator(ModelEvaluator):
         kwargs["mask"] = self.node_mask[phase]
         return super().__call__(**kwargs)
 
-    def _compute_loss(self, output, **kwargs):
-        mask = kwargs.pop("mask")
+    def _compute_loss(self, output: torch.Tensor, **kwargs: Any) -> dict:
+        mask: torch.Tensor = kwargs.pop("mask")
         output = output[mask]
         return super()._compute_loss(output=output, **kwargs)
