@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any
 
 import psutil
@@ -10,9 +11,16 @@ if has_pynvml:
     import pynvml
 
 
+@dataclass(kw_only=True)
+class MemoryInfo:
+    total: int
+    free: int
+    used: int
+
+
 def _get_cuda_memory_info(
     device_idx: int | None = None, consider_cache: bool = True
-) -> dict[torch.device, dict]:
+) -> dict[torch.device, MemoryInfo]:
     assert torch.cuda.is_available()
     assert has_pynvml
     result = {}
@@ -35,18 +43,18 @@ def _get_cuda_memory_info(
             cache_size = torch.cuda.memory_reserved(device=device_idx)
             info.used -= cache_size
             info.free += cache_size
-        result[torch.device(f"cuda:{device_idx}")] = {
-            "used": info.used,
-            "free": info.free,
-            "total": info.total,
-        }
+        result[torch.device(f"cuda:{device_idx}")] = MemoryInfo(
+            used=info.used,
+            free=info.free,
+            total=info.total,
+        )
     pynvml.nvmlShutdown()
     return result
 
 
 def get_device_memory_info(
     device: torch.device | None = None, consider_cache: bool = True
-) -> dict[torch.device, dict]:
+) -> dict[torch.device, MemoryInfo]:
     device_type: str = ""
     device_idx: int | None = None
     if device is not None:
@@ -65,11 +73,11 @@ def get_device_memory_info(
         case "cpu":
             vm = psutil.virtual_memory()
             return {
-                torch.device("cpu"): {
-                    "free": vm.available,
-                    "total": vm.total,
-                    "used": vm.used,
-                }
+                torch.device("cpu"): MemoryInfo(
+                    free=vm.available,
+                    total=vm.total,
+                    used=vm.used,
+                )
             }
     raise NotImplementedError()
 
@@ -84,11 +92,11 @@ class DeviceGreedyAllocator:
         memory_info = get_device_memory_info()
         memory_to_device: dict = {}
         for device, info in memory_info.items():
-            if max_needed_bytes is not None and info["free"] < max_needed_bytes:
+            if max_needed_bytes is not None and info.free < max_needed_bytes:
                 continue
-            if info["free"] not in memory_to_device:
-                memory_to_device[info["free"]] = []
-            memory_to_device[info["free"]].append(device)
+            if info.free not in memory_to_device:
+                memory_to_device[info.free] = []
+            memory_to_device[info.free].append(device)
         devices = []
         for k in sorted(memory_to_device.keys(), reverse=True):
             devices += memory_to_device[k]
