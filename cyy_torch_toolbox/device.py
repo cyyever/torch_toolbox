@@ -29,21 +29,19 @@ def _get_cuda_memory_info(
         device_indices = [device_idx]
     else:
         device_indices = list(range(torch.cuda.device_count()))
-    for device_idx in device_indices:
-        handle = pynvml.nvmlDeviceGetHandleByIndex(device_idx)
+    for d_idx in device_indices:
+        handle = pynvml.nvmlDeviceGetHandleByIndex(d_idx)
         mode = pynvml.nvmlDeviceGetComputeMode(handle)
         if mode == pynvml.NVML_COMPUTEMODE_EXCLUSIVE_PROCESS:
             processes = pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
             if processes:
                 continue
-                # if processes[0].pid != os.getpid():
-                #     continue
         info = pynvml.nvmlDeviceGetMemoryInfo(handle)
         if consider_cache:
-            cache_size = torch.cuda.memory_reserved(device=device_idx)
+            cache_size = torch.cuda.memory_reserved(device=d_idx)
             info.used -= cache_size
             info.free += cache_size
-        result[torch.device(f"cuda:{device_idx}")] = MemoryInfo(
+        result[torch.device(f"cuda:{d_idx}")] = MemoryInfo(
             used=info.used,
             free=info.free,
             total=info.total,
