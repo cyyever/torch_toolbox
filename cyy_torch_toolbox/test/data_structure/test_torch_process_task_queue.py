@@ -11,8 +11,6 @@ def hello(tasks, **kwargs):
 def test_process_task_queue() -> None:
     queue = TorchProcessTaskQueue(
         worker_fun=hello,
-        send_tensor_in_cpu=True,
-        assemble_tensor=False,
         batch_process=True,
     )
     queue.start()

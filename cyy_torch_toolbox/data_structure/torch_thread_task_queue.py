@@ -1,7 +1,9 @@
+from typing import Any
+
 from cyy_naive_lib.data_structure.thread_context import ThreadContext
 from cyy_torch_toolbox.data_structure.torch_task_queue import TorchTaskQueue
 
 
 class TorchThreadTaskQueue(TorchTaskQueue):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(mp_ctx=ThreadContext(), **kwargs)
