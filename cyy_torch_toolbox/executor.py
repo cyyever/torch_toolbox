@@ -59,11 +59,19 @@ class Executor(HookCollection, abc.ABC):
         self.cache_transforms: None | str = None
 
     @property
+    def dataset_collection(self) -> DatasetCollection:
+        return self.__dataset_collection
+
+    @property
+    def device(self) -> torch.device:
+        if self.__device is None:
+            self.set_device(get_device())
+        assert self.__device is not None
+        return self.__device
+
+    @property
     def hyper_parameter(self) -> HyperParameter:
         return self.__hyper_parameter
-
-    def _get_batch_size(self) -> int:
-        return self.hyper_parameter.batch_size
 
     @property
     def performance_metric(self):
@@ -115,7 +123,7 @@ class Executor(HookCollection, abc.ABC):
             self.__dataloader = get_dataloader(
                 dc=self.dataset_collection,
                 phase=self.__phase,
-                batch_size=self._get_batch_size(),
+                batch_size=self.hyper_parameter.batch_size,
                 device=self.device,
                 model_type=self.__model_evaluator.model_type,
                 cache_transforms=self.cache_transforms,
@@ -165,17 +173,6 @@ class Executor(HookCollection, abc.ABC):
         self._data["dataset_size"] = self.dataset_size
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_EXECUTE)
 
-    @property
-    def dataset_collection(self) -> DatasetCollection:
-        return self.__dataset_collection
-
-    @property
-    def device(self) -> torch.device:
-        if self.__device is None:
-            self.set_device(get_device())
-        assert self.__device is not None
-        return self.__device
-
     def set_device(self, device: torch.device) -> None:
         if self.__device == device:
             return
@@ -193,7 +190,7 @@ class Executor(HookCollection, abc.ABC):
         return state
 
     @property
-    def cuda_stream(self):
+    def cuda_stream(self)->None|torch.cuda.Stream:
         if self.__cuda_stream is None and "cuda" in self.device.type.lower():
             self.__cuda_stream = torch.cuda.Stream(device=self.device)
             self.__cuda_stream.wait_stream(torch.cuda.current_stream())
@@ -212,10 +209,10 @@ class Executor(HookCollection, abc.ABC):
         self.wait_stream()
         self.__model_evaluator = model_evaluator
 
-    def load_model(self, model_path) -> None:
+    def load_model(self, model_path: str) -> None:
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
 
-    def save_model(self, model_path) -> None:
+    def save_model(self, model_path: str) -> None:
         torch.save(self.model.state_dict(), model_path)
 
     def offload_from_gpu(self) -> None:
@@ -249,7 +246,7 @@ class Executor(HookCollection, abc.ABC):
             optimizer = None
             if in_training:
                 if (
-                    self._get_batch_size() != 1
+                    self.hyper_parameter.batch_size != 1
                     and batch["batch_size"] == 1
                     and self.__model_evaluator.model_util.have_module(
                         module_type=torch.nn.BatchNorm2d

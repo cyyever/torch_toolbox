@@ -1,4 +1,3 @@
-import contextlib
 from typing import Any
 
 import torch
@@ -15,9 +14,7 @@ class Inferencer(Executor):
             self._prepare_execution(**kwargs)
             with (
                 torch.set_grad_enabled(use_grad),
-                torch.cuda.device(self.device)
-                if self.cuda_stream is not None
-                else contextlib.nullcontext(),
+                self.device,
                 torch.cuda.stream(self.cuda_stream),
             ):
                 self.model.zero_grad(set_to_none=True)
