@@ -94,6 +94,8 @@ class DeviceGreedyAllocator:
         for device, info in memory_info.items():
             if max_needed_bytes is not None and info.free < max_needed_bytes:
                 continue
+            if info.used / info.total > 0.95:
+                continue
             if info.free not in memory_to_device:
                 memory_to_device[info.free] = []
             memory_to_device[info.free].append(device)
