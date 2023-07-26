@@ -16,7 +16,7 @@ class CUDABatchPolicy(BatchPolicy):
             < self._processing_times[batch_size]
         ):
             memory_info = get_device_memory_info(device=device, consider_cache=True)
-            if memory_info[device.index].free / memory_info[device.index].total > 0.2:
+            if memory_info[device].free / memory_info[device].total > 0.2:
                 return batch_size + 1
         return batch_size
 
