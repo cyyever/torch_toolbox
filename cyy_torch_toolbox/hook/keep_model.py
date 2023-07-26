@@ -1,11 +1,10 @@
-import copy
 import os
 
 from cyy_naive_lib.storage import DataStorage
 from cyy_torch_toolbox.device import get_cpu_device
 from cyy_torch_toolbox.hook import Hook
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
-from cyy_torch_toolbox.tensor import tensor_to
+from cyy_torch_toolbox.tensor import tensor_clone, tensor_to
 
 
 class KeepModelHook(Hook):
@@ -45,10 +44,12 @@ class KeepModelHook(Hook):
             if self.best_model is None or acc > self.best_model[1]:
                 self.__best_model.set_data(
                     (
-                        tensor_to(
-                            data=copy.deepcopy(trainer.model_util.get_parameter_dict()),
-                            non_blocking=True,
-                            device=get_cpu_device(),
+                        tensor_clone(
+                            tensor_to(
+                                data=trainer.model_util.get_parameter_dict(detach=True),
+                                non_blocking=True,
+                                device=get_cpu_device(),
+                            ),
                         ),
                         acc,
                         epoch,
