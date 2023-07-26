@@ -8,7 +8,7 @@ from cyy_torch_toolbox.device import get_device_memory_info, get_devices
 
 
 class CUDABatchPolicy(BatchPolicy):
-    def adjust_batch_size(self, batch_size: int, **kwargs) -> int:
+    def adjust_batch_size(self, batch_size: int, **kwargs: Any) -> int:
         device = kwargs["device"]
         if (
             batch_size + 1 not in self._processing_times
