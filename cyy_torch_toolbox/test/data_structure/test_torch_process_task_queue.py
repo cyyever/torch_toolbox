@@ -12,6 +12,7 @@ def test_process_task_queue() -> None:
     queue = TorchProcessTaskQueue(
         worker_fun=hello,
         batch_process=True,
+        use_manager=False,
     )
     queue.start()
     queue.add_task(())
