@@ -1,8 +1,6 @@
-#!/usr/bin/env python3
-import torch
 from cyy_torch_toolbox.default_config import DefaultConfig
 from cyy_torch_toolbox.dependency import has_torchtext, has_torchvision
-from cyy_torch_toolbox.device import CUDADeviceGreedyAllocator
+from cyy_torch_toolbox.device import DeviceGreedyAllocator
 from cyy_torch_toolbox.ml_type import ExecutorHookPoint, StopExecutingException
 
 
@@ -27,12 +25,9 @@ def test_vision_training() -> None:
 def test_text_training() -> None:
     if not has_torchtext:
         return
-    if torch.cuda.is_available():
-        device = CUDADeviceGreedyAllocator().get_device(
-            max_needed_bytes=9 * 1024 * 1024 * 1024
-        )
-        if device is None:
-            return
+    device = DeviceGreedyAllocator().get_device(max_needed_bytes=9 * 1024 * 1024 * 1024)
+    if device is None:
+        return
     config = DefaultConfig(dataset_name="IMDB", model_name="simplelstm")
     config.hyper_parameter_config.epoch = 1
     config.hyper_parameter_config.learning_rate = 0.01

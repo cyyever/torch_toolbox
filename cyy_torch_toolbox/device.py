@@ -1,5 +1,6 @@
 from typing import Any
 
+import psutil
 import torch
 from cyy_naive_lib.log import get_logger
 
@@ -10,8 +11,8 @@ if has_pynvml:
 
 
 def _get_cuda_memory_info(
-    device_idx: int | None = None, consider_cache: bool = False
-) -> dict:
+    device_idx: int | None = None, consider_cache: bool = True
+) -> dict[torch.device, dict]:
     assert torch.cuda.is_available()
     assert has_pynvml
     result = {}
@@ -34,17 +35,42 @@ def _get_cuda_memory_info(
             cache_size = torch.cuda.memory_reserved(device=device_idx)
             info.used -= cache_size
             info.free += cache_size
-        result[device_idx] = info
+        result[torch.device(f"cuda:{device_idx}")] = {
+            "used": info.used,
+            "free": info.free,
+            "total": info.total,
+        }
     pynvml.nvmlShutdown()
     return result
 
 
-def get_device_memory_info(device: torch.device, consider_cache: bool = False) -> dict:
-    match device.type.lower():
+def get_device_memory_info(
+    device: torch.device | None = None, consider_cache: bool = True
+) -> dict[torch.device, dict]:
+    device_type: str = ""
+    device_idx: int | None = None
+    if device is not None:
+        device_type = device.type.lower()
+        device_idx = device.index
+    else:
+        if torch.cuda.is_available():
+            device_type = "cuda"
+        if torch.backends.mps.is_available():
+            device_type = "mps"
+    match device_type:
         case "cuda":
             return _get_cuda_memory_info(
-                device_idx=device.index, consider_cache=consider_cache
+                device_idx=device_idx, consider_cache=consider_cache
             )
+        case "cpu":
+            vm = psutil.virtual_memory()
+            return {
+                torch.device("cpu"): {
+                    "free": vm.available,
+                    "total": vm.total,
+                    "used": vm.used,
+                }
+            }
     raise NotImplementedError()
 
 
@@ -52,65 +78,38 @@ def get_cpu_device() -> torch.device:
     return torch.device("cpu")
 
 
-def __get_cuda_devices() -> list[torch.device]:
-    device_count = torch.cuda.device_count()
-    assert device_count > 0
-    return [torch.device(f"cuda:{device_id}") for device_id in _get_cuda_memory_info()]
-
-
-def get_devices(
-    max_needed_bytes: None | int = None, disable_cpu: bool = False
-) -> list[torch.device]:
-    if torch.cuda.is_available():
-        devices = CUDADeviceGreedyAllocator.get_devices(
-            max_needed_bytes=max_needed_bytes
-        )
-        if devices:
-            return devices
-    # if torch.backends.mps.is_available():
-    #     return torch.device("mps")
-    if disable_cpu:
-        raise RuntimeError("only CPU device is available")
-    get_logger().warning("max_needed_bytes is %s, switch to CPU", max_needed_bytes)
-    return [get_cpu_device()]
-
-
-def get_device(**kwargs: Any) -> torch.device:
-    return get_devices(**kwargs)[0]
-
-
-class CUDADeviceRoundRobinAllocator:
-    def __init__(self) -> None:
-        self.__devices = __get_cuda_devices()
-        self.__idx = 0
-
-    def get_device(self) -> torch.device:
-        device = self.__devices[self.__idx]
-        self.__idx += 1
-        if self.__idx >= len(self.__devices):
-            self.__idx = 0
-        return device
-
-
-class CUDADeviceGreedyAllocator:
+class DeviceGreedyAllocator:
     @classmethod
     def get_devices(cls, max_needed_bytes: int | None) -> list[torch.device]:
-        memory_info = _get_cuda_memory_info(consider_cache=True)
+        memory_info = get_device_memory_info()
         memory_to_device: dict = {}
-        for device_id, info in memory_info.items():
-            if max_needed_bytes is not None and info.free < max_needed_bytes:
+        for device, info in memory_info.items():
+            if max_needed_bytes is not None and info["free"] < max_needed_bytes:
                 continue
-            if info.free not in memory_to_device:
-                memory_to_device[info.free] = []
-            memory_to_device[info.free].append(torch.device(f"cuda:{device_id}"))
+            if info["free"] not in memory_to_device:
+                memory_to_device[info["free"]] = []
+            memory_to_device[info["free"]].append(device)
         devices = []
         for k in sorted(memory_to_device.keys(), reverse=True):
             devices += memory_to_device[k]
         return devices
 
     @classmethod
-    def get_device(cls, max_needed_bytes: int | None = None) -> None | torch.device:
-        devices = cls.get_devices(max_needed_bytes=max_needed_bytes)
-        if not devices:
-            return None
-        return devices[0]
+    def get_device(cls, **kwargs: Any) -> torch.device:
+        return cls.get_devices(**kwargs)[0]
+
+
+def get_devices(
+    max_needed_bytes: None | int = None, disable_cpu: bool = False
+) -> list[torch.device]:
+    devices = DeviceGreedyAllocator.get_devices(max_needed_bytes=max_needed_bytes)
+    if "cpu" not in devices[0].type.lower():
+        return devices
+    if disable_cpu:
+        raise RuntimeError("only CPU device is available")
+    get_logger().warning("max_needed_bytes is %s, switch to CPU", max_needed_bytes)
+    return devices
+
+
+def get_device(**kwargs: Any) -> torch.device:
+    return get_devices(**kwargs)[0]
