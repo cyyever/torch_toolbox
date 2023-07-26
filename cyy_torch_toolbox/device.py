@@ -9,7 +9,7 @@ if has_pynvml:
     import pynvml
 
 
-def get_cuda_memory_info(
+def _get_cuda_memory_info(
     device_idx: int | None = None, consider_cache: bool = False
 ) -> dict:
     assert torch.cuda.is_available()
@@ -42,7 +42,7 @@ def get_cuda_memory_info(
 def get_device_memory_info(device: torch.device, consider_cache: bool = False) -> dict:
     match device.type.lower():
         case "cuda":
-            return get_cuda_memory_info(
+            return _get_cuda_memory_info(
                 device_idx=device.index, consider_cache=consider_cache
             )
     raise NotImplementedError()
@@ -55,7 +55,7 @@ def get_cpu_device() -> torch.device:
 def __get_cuda_devices() -> list[torch.device]:
     device_count = torch.cuda.device_count()
     assert device_count > 0
-    return [torch.device(f"cuda:{device_id}") for device_id in get_cuda_memory_info()]
+    return [torch.device(f"cuda:{device_id}") for device_id in _get_cuda_memory_info()]
 
 
 def get_devices(
@@ -95,7 +95,7 @@ class CUDADeviceRoundRobinAllocator:
 class CUDADeviceGreedyAllocator:
     @classmethod
     def get_devices(cls, max_needed_bytes: int | None) -> list[torch.device]:
-        memory_info = get_cuda_memory_info(consider_cache=True)
+        memory_info = _get_cuda_memory_info(consider_cache=True)
         memory_to_device: dict = {}
         for device_id, info in memory_info.items():
             if max_needed_bytes is not None and info.free < max_needed_bytes:
