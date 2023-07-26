@@ -110,15 +110,14 @@ class DeviceGreedyAllocator:
         return cls.get_devices(**kwargs)[0]
 
 
-def get_devices(
-    max_needed_bytes: None | int = None, disable_cpu: bool = False
-) -> list[torch.device]:
+def get_devices(max_needed_bytes: None | int = None) -> list[torch.device]:
     devices = DeviceGreedyAllocator.get_devices(max_needed_bytes=max_needed_bytes)
     if "cpu" not in devices[0].type.lower():
         return devices
-    if disable_cpu:
-        raise RuntimeError("only CPU device is available")
-    get_logger().warning("max_needed_bytes is %s, switch to CPU", max_needed_bytes)
+    get_logger().error(
+        "max_needed_bytes is %s, only CPU device is available, which we don't want",
+        max_needed_bytes,
+    )
     return devices
 
 
