@@ -106,12 +106,8 @@ class ModelEvaluator:
             inputs = tensor_to(inputs, device=device, non_blocking=non_blocking)
             self.to(device=device, non_blocking=non_blocking)
 
-        input_features = inputs
-        if not is_input_feature and self.need_input_features:
-            input_features = self.get_input_feature(inputs)
         return {
             "inputs": inputs,
-            "input_features": input_features,
         } | self._forward_model(
             inputs=inputs,
             is_input_feature=is_input_feature,
@@ -258,9 +254,6 @@ class ModelEvaluator:
 #     def __call__(self, **kwargs) -> dict:
 #         phase = kwargs["phase"]
 #         if phase == MachineLearningPhase.Training:
-#             input_features = kwargs.get("input_features", None)
-#             if input_features is not None:
-#                 input_features.requires_grad_()
 #             inputs = kwargs.get("inputs", None)
 #             if inputs is not None:
 #                 inputs.requires_grad_()

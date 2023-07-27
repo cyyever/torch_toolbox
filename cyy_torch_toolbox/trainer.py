@@ -135,7 +135,9 @@ class Trainer(Executor):
     def train(self, run_validation: bool = True, **kwargs: Any) -> None:
         try:
             with (
-                self.device,
+                self.device
+                if "cuda" not in self.device.type.lower()
+                else torch.cuda.device(self.device),
                 torch.cuda.stream(self.cuda_stream),
             ):
                 self._prepare_execution(**kwargs)
