@@ -71,7 +71,7 @@ def get_device_memory_info(
                 device_idx=device_idx, consider_cache=consider_cache
             )
         case "cpu" | "mps":
-            device = torch.device(f"{device_type}:0")
+            device = torch.device(type=device_type, index=0)
             vm = psutil.virtual_memory()
             return {
                 device: MemoryInfo(
