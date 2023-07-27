@@ -203,10 +203,7 @@ class DatasetCollection:
             self.__raw_datasets[phase] = raw_dataset
 
     def add_transforms(self, model_evaluator) -> None:
-        add_transforms(
-            dc=self,
-            model_evaluator=model_evaluator,
-        )
+        add_transforms(dc=self, model_evaluator=model_evaluator)
 
     def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
         with DatasetCollection.lock:

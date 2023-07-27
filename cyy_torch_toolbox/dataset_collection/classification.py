@@ -1,12 +1,6 @@
 from typing import Generator
 
-from cyy_naive_lib.log import get_logger
-
-from ..dependency import has_torchvision
-from ..ml_type import DatasetType, MachineLearningPhase, TransformType
-
-if has_torchvision:
-    import torchvision
+from ..ml_type import MachineLearningPhase
 
 
 class ClassificationDatasetCollection:
@@ -57,21 +51,3 @@ class ClassificationDatasetCollection:
     def get_label(cls, label_name, label_names):
         reversed_label_names = {v: k for k, v in label_names.items()}
         return reversed_label_names[label_name]
-
-    def add_transforms(self, model_evaluator) -> None:
-        self.__dc.add_transforms(model_evaluator=model_evaluator)
-        # add more transformers for model
-        if self.dataset_type == DatasetType.Vision:
-            input_size = getattr(
-                model_evaluator.get_underlying_model().__class__, "input_size", None
-            )
-            if input_size is not None:
-                get_logger().debug("resize input to %s", input_size)
-                self.append_transform(
-                    transform=torchvision.transforms.Resize(input_size),
-                    key=TransformType.Input,
-                )
-        get_logger().debug(
-            "use transformers for training => \n %s",
-            str(self.get_transforms(MachineLearningPhase.Training)),
-        )
