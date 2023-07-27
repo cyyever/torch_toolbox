@@ -65,5 +65,6 @@ def get_dataloader(
         shuffle=(phase == MachineLearningPhase.Training),
         pin_memory=False,
         collate_fn=collate_fn,
+        generator=torch.Generator(device=device),
         **kwargs,
     )
