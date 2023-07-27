@@ -1,21 +1,20 @@
-from typing import Any, Generator
+from typing import Generator
 
 from cyy_naive_lib.log import get_logger
 
 from ..dependency import has_torchvision
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
-from .dataset_collection import DatasetCollection
 
 if has_torchvision:
     import torchvision
 
 
 class ClassificationDatasetCollection:
-    def __init__(self, dc: DatasetCollection) -> None:
-        self.__dc = dc
+    # def __init__(self, dc: DatasetCollection) -> None:
+    #     self.__dc = dc
 
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self.__dc, name)
+    # def __getattr__(self, name: str) -> Any:
+    #     return getattr(self.__dc, name)
 
     def get_labels(self, use_cache: bool = True) -> set:
         def computation_fun() -> set:

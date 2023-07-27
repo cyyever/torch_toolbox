@@ -1,3 +1,4 @@
+import contextlib
 import copy
 from typing import Any
 
@@ -135,7 +136,7 @@ class Trainer(Executor):
     def train(self, run_validation: bool = True, **kwargs: Any) -> None:
         try:
             with (
-                self.device
+                contextlib.nullcontext()
                 if "cuda" not in self.device.type.lower()
                 else torch.cuda.device(self.device),
                 torch.cuda.stream(self.cuda_stream),
