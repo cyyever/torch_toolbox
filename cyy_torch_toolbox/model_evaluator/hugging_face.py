@@ -16,12 +16,6 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
             )
         super().__init__(model=model, **kwargs)
 
-    def get_underlying_model_type(self) -> ModelType:
-        model_type = self._get_underlying_model_type(model=self.model)
-        if model_type is not None:
-            return model_type
-        return super().get_underlying_model_type()
-
     @classmethod
     def _get_underlying_model_type(cls, model) -> ModelType | None:
         if "ConditionalGeneration" in model.__class__.__name__:
