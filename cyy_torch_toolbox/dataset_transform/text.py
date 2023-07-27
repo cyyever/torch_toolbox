@@ -3,8 +3,7 @@ import functools
 import torch
 from cyy_naive_lib.log import get_logger
 
-from ..dataset_collection import (ClassificationDatasetCollection,
-                                  DatasetCollection)
+from ..dataset_collection import DatasetCollection
 from ..dependency import has_hugging_face, has_spacy, has_torchtext
 from ..ml_type import (DatasetType, MachineLearningPhase, ModelType,
                        TransformType)

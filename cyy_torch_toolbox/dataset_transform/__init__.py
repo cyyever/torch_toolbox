@@ -18,7 +18,7 @@ def add_transforms(dc, model_evaluator) -> None:
     if dc.dataset_type == DatasetType.Vision:
         from .vision import add_vision_transforms
 
-        add_vision_transforms(dc=dc)
+        add_vision_transforms(dc=dc, model_evaluator=model_evaluator)
         return
     if dc.dataset_type == DatasetType.Text:
         from .text import add_text_transforms

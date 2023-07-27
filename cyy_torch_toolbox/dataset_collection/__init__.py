@@ -43,7 +43,6 @@ def create_dataset_collection(
                 (cls, ClassificationDatasetCollection),
                 {},
             )
-            # dc = ClassificationDatasetCollection(dc=dc)
 
         if not dc.has_dataset(MachineLearningPhase.Validation):
             dc.iid_split(

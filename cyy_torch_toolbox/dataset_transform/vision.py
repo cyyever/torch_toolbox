@@ -1,4 +1,5 @@
 import torch
+from cyy_naive_lib.log import get_logger
 
 from ..dataset_collection import DatasetCollection
 from ..dataset_util import VisionDatasetUtil
@@ -33,13 +34,22 @@ def add_vision_extraction(dc: DatasetCollection) -> None:
     dc.append_transform(torchvision.transforms.ToTensor(), key=TransformType.Input)
 
 
-def add_vision_transforms(dc) -> None:
+def add_vision_transforms(dc, model_evaluator) -> None:
     assert dc.dataset_type == DatasetType.Vision
     mean, std = get_mean_and_std(dc)
     dc.append_transform(
         torchvision.transforms.Normalize(mean=mean, std=std),
         key=TransformType.Input,
     )
+    input_size = getattr(
+        model_evaluator.get_underlying_model().__class__, "input_size", None
+    )
+    if input_size is not None:
+        get_logger().debug("resize input to %s", input_size)
+        dc.append_transform(
+            transform=torchvision.transforms.Resize(input_size),
+            key=TransformType.Input,
+        )
     if dc.name.upper() not in ("SVHN", "MNIST"):
         dc.append_transform(
             torchvision.transforms.RandomHorizontalFlip(),
