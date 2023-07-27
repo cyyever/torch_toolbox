@@ -52,15 +52,21 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
         inputs["inputs_embeds"] = embeddings
         return inputs
 
-    def _create_input(self, inputs: dict, targets, **kwargs: Any) -> dict:
+    def _create_input(
+        self,
+        inputs: dict,
+        targets: dict,
+        device: torch.device,
+        non_blocking: bool,
+        **kwargs: Any
+    ) -> dict:
         if hasattr(targets, "input_ids"):
             targets = targets.input_ids
         inputs["labels"] = targets
-        return inputs
+        return tensor_to(inputs, device=device, non_blocking=non_blocking)
 
-    def _forward_model(self, device, non_blocking, **kwargs: Any) -> dict:
+    def _forward_model(self, **kwargs: Any) -> dict:
         model_input = self._create_input(**kwargs)
-        model_input = tensor_to(model_input, device=device, non_blocking=non_blocking)
         output = self.model(**model_input)
         return {
             "model_input": model_input,
