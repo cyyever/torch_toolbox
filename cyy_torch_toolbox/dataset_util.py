@@ -305,14 +305,14 @@ class TextDatasetUtil(DatasetSplitter):
 
 
 class GraphDatasetUtil(DatasetSplitter):
-    def get_mask(self) -> list | torch.Tensor:
+    def get_mask(self) -> list[torch.Tensor]:
         assert len(self.dataset) == 1
         if isinstance(self.dataset[0], dict):
             return [dataset["subset_mask"] for dataset in self.dataset]
         if hasattr(self.dataset[0], "mask"):
             return [dataset["mask"] for dataset in self.dataset]
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
-        return mask
+        return [mask]
 
     @classmethod
     def foreach_edge(cls, edge_index: torch.Tensor) -> list:
@@ -376,16 +376,18 @@ class GraphDatasetUtil(DatasetSplitter):
             node_indices=node_indices, edge_dict=self.get_edge_dict(), hop=hop
         )
 
-    def get_subset(self, indices: Iterable) -> list:
+    def get_subset(self, indices: Iterable) -> list[dict]:
         assert indices
-        mask = copy.deepcopy(self.get_mask())
-        mask.fill_(False)
-        for index in indices:
-            mask[index] = True
-        graph = self.dataset[0]
-        if isinstance(graph, dict):
-            graph = graph["graph"]
-        return [{"subset_mask": mask, "graph": graph}]
+        result = []
+        for idx, mask in enumerate(self.get_mask()):
+            mask = torch.zeros_like(mask)
+            for index in indices:
+                mask[index] = True
+            graph = self.dataset[idx]
+            if isinstance(graph, dict):
+                graph = graph["graph"]
+            result.append({"subset_mask": mask, "graph": graph})
+        return result
 
     def decompose(self) -> None | dict:
         mapping = {
