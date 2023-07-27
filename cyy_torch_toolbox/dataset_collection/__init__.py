@@ -37,7 +37,13 @@ def create_dataset_collection(
             dataset_kwargs=dataset_kwargs,
         )
         if dc.is_classification_dataset():
-            dc = ClassificationDatasetCollection(dc=dc)
+            cls = dc.__class__
+            dc.__class__ = cls.__class__(
+                cls.__name__ + "WithClassification",
+                (cls, ClassificationDatasetCollection),
+                {},
+            )
+            # dc = ClassificationDatasetCollection(dc=dc)
 
         if not dc.has_dataset(MachineLearningPhase.Validation):
             dc.iid_split(
