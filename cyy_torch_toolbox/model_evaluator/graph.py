@@ -12,14 +12,13 @@ if has_torch_geometric:
 
 
 class GraphModelEvaluator(ModelEvaluator):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        edge_dict = kwargs.pop("edge_dict")
-        super().__init__(*args, **kwargs)
+    def __init__(self, edge_dict: dict, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
         self.node_and_neighbour_index_map: dict = {}
         self.edge_index_map: dict = {}
         self.node_and_neighbour_mask: dict = {}
         self.node_mask: dict = {}
-        self.edge_dict = edge_dict
+        self.edge_dict: dict = edge_dict
         self.neighbour_hop = sum(
             1
             for _, module in self.model_util.get_modules()
@@ -76,7 +75,8 @@ class GraphModelEvaluator(ModelEvaluator):
         kwargs["mask"] = self.node_mask[phase]
         return super().__call__(**kwargs)
 
-    def _compute_loss(self, output: torch.Tensor, **kwargs: Any) -> dict:
-        mask: torch.Tensor = kwargs.pop("mask")
+    def _compute_loss(
+        self, output: torch.Tensor, mask: torch.Tensor, **kwargs: Any
+    ) -> dict:
         output = output[mask]
         return super()._compute_loss(output=output, **kwargs)
