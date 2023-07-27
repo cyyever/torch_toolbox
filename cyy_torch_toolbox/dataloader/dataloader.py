@@ -65,6 +65,8 @@ def get_dataloader(
         shuffle=(phase == MachineLearningPhase.Training),
         pin_memory=False,
         collate_fn=collate_fn,
-        generator=torch.Generator(device=device),
+        generator=torch.Generator(
+            device=None if "cuda" in device.type.lower() else device
+        ),
         **kwargs,
     )
