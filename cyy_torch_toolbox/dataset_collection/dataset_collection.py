@@ -49,17 +49,17 @@ class DatasetCollection:
     def dataset_kwargs(self) -> dict:
         return self.__dataset_kwargs
 
-    def __copy__(self):
-        new_obj = type(self)(
-            datasets={},
-            dataset_type=self.__dataset_type,
-            name=self.__name,
-        )
-        new_obj.__raw_datasets = copy.copy(self.__raw_datasets)
-        new_obj.__datasets = copy.copy(self.__datasets)
-        new_obj.__transforms = copy.copy(self.__transforms)
-        new_obj.__dataset_kwargs = copy.copy(self.__dataset_kwargs)
-        return new_obj
+    # def __copy__(self):
+    #     new_obj = type(self)(
+    #         datasets={},
+    #         dataset_type=self.__dataset_type,
+    #         name=self.__name,
+    #     )
+    #     new_obj.__raw_datasets = copy.copy(self.__raw_datasets)
+    #     new_obj.__datasets = copy.copy(self.__datasets)
+    #     new_obj.__transforms = copy.copy(self.__transforms)
+    #     new_obj.__dataset_kwargs = copy.copy(self.__dataset_kwargs)
+    #     return new_obj
 
     @property
     def dataset_type(self) -> DatasetType:

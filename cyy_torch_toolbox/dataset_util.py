@@ -10,15 +10,12 @@ import torch.utils
 
 from cyy_torch_toolbox.dataset import get_dataset_size, select_item, subset_dp
 from cyy_torch_toolbox.dataset_transform.transform import Transforms
-from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
+from cyy_torch_toolbox.dependency import has_torchvision
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 
 if has_torchvision:
     import PIL
     import torchvision
-if has_torch_geometric:
-    import torch_geometric.data
-    import torch_geometric.utils
 
 
 class DatasetUtil:
@@ -315,14 +312,15 @@ class GraphDatasetUtil(DatasetSplitter):
         return [mask]
 
     @classmethod
-    def foreach_edge(cls, edge_index: torch.Tensor) -> list:
-        edge_index = torch_geometric.utils.sort_edge_index(edge_index)
-        return edge_index.transpose(0, 1).tolist()
+    def foreach_edge(cls, edge_index: torch.Tensor) -> torch.Tensor:
+        return edge_index.transpose(0, 1)
 
     @classmethod
     def edge_to_dict(cls, edge_index: torch.Tensor) -> dict:
         res: dict = {}
-        for a, b in cls.foreach_edge(edge_index):
+        for edge in cls.foreach_edge(edge_index):
+            a = edge[0]
+            b = edge[1]
             if a not in res:
                 res[a] = set()
             res[a].add(b)
@@ -338,7 +336,7 @@ class GraphDatasetUtil(DatasetSplitter):
         graph = graph_dict["graph"]
         if hasattr(graph, key):
             return getattr(graph, key)
-        edge_dict = GraphDatasetUtil.edge_to_dict(edge_index=graph.edge_index)
+        edge_dict = self.edge_to_dict(edge_index=graph.edge_index)
         setattr(graph, key, edge_dict)
         return edge_dict
 
