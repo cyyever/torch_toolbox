@@ -144,7 +144,11 @@ def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> C
     return get_dataset_kwargs_per_phase
 
 
+__dataset_cache = dict()
+
+
 def __create_dataset(
+    dataset_name: str,
     dataset_type: DatasetType,
     dataset_constructor: Callable,
     dataset_kwargs: dict,
@@ -167,11 +171,18 @@ def __create_dataset(
                 )
                 if processed_dataset_kwargs is None:
                     break
-                dataset = dataset_constructor(**processed_dataset_kwargs)
-                if has_torch_geometric and isinstance(
-                    dataset, torch_geometric.data.dataset.Dataset
-                ):
-                    assert len(dataset) == 1
+                dataset = None
+                if dataset_type == DatasetType.Graph:
+                    dataset = __dataset_cache.get((dataset_name, phase), None)
+                if dataset is None:
+                    dataset = dataset_constructor(**processed_dataset_kwargs)
+                    if dataset_type == DatasetType.Graph:
+                        get_logger().info(
+                            "use cached dataset %s, %s",
+                            dataset_name,
+                            processed_dataset_kwargs,
+                        )
+                        __dataset_cache[(dataset_name, phase)] = dataset
                 if phase == MachineLearningPhase.Training:
                     training_dataset = dataset
                 elif phase == MachineLearningPhase.Validation:
@@ -219,6 +230,7 @@ def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, di
         )
         if name in dataset_constructors:
             return __create_dataset(
+                dataset_name=name,
                 dataset_type=dataset_type,
                 dataset_constructor=dataset_constructors[name],
                 dataset_kwargs=dataset_kwargs,
