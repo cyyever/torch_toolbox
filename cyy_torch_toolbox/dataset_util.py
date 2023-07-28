@@ -313,7 +313,7 @@ class GraphDatasetUtil(DatasetSplitter):
 
     @classmethod
     def foreach_edge(cls, edge_index: torch.Tensor) -> list:
-        return edge_index.transpose(0, 1).tolist()
+        return edge_index.transpose(0, 1).numpy()
 
     @classmethod
     def edge_to_dict(cls, edge_index: torch.Tensor) -> dict:
