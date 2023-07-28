@@ -1,28 +1,19 @@
-from enum import IntEnum, auto
-from typing import TypeAlias
-
-_StrEnum: TypeAlias = IntEnum
-try:
-    from enum import StrEnum
-
-    _StrEnum = StrEnum
-except BaseException:
-    pass
+from enum import StrEnum, auto
 
 
-class MachineLearningPhase(_StrEnum):
+class MachineLearningPhase(StrEnum):
     Training = auto()
     Validation = auto()
     Test = auto()
 
 
-class ModelType(_StrEnum):
+class ModelType(StrEnum):
     Classification = auto()
     Detection = auto()
     TextGeneration = auto()
 
 
-class DatasetType(_StrEnum):
+class DatasetType(StrEnum):
     Vision = auto()
     Text = auto()
     Graph = auto()
@@ -30,7 +21,7 @@ class DatasetType(_StrEnum):
     Unknown = auto()
 
 
-class TransformType(_StrEnum):
+class TransformType(StrEnum):
     ExtractData = auto()
     InputText = auto()
     Input = auto()
@@ -40,7 +31,7 @@ class TransformType(_StrEnum):
     TargetBatch = auto()
 
 
-class ExecutorHookPoint(_StrEnum):
+class ExecutorHookPoint(StrEnum):
     BEFORE_EXECUTE = auto()
     AFTER_EXECUTE = auto()
     BEFORE_EPOCH = auto()
