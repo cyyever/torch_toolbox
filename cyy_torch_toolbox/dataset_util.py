@@ -312,8 +312,8 @@ class GraphDatasetUtil(DatasetSplitter):
         return [mask]
 
     @classmethod
-    def foreach_edge(cls, edge_index: torch.Tensor) -> torch.Tensor:
-        return edge_index.transpose(0, 1)
+    def foreach_edge(cls, edge_index: torch.Tensor) -> list:
+        return edge_index.transpose(0, 1).tolist()
 
     @classmethod
     def edge_to_dict(cls, edge_index: torch.Tensor) -> dict:

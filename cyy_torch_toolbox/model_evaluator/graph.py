@@ -52,10 +52,12 @@ class GraphModelEvaluator(ModelEvaluator):
             self.node_and_neighbour_index_map[phase] = node_and_neighbour_index_map
             new_source_list = []
             new_target_list = []
-            for source, target in GraphDatasetUtil.foreach_edge(edge_index):
-                if source in node_indices or target in node_indices:
-                    new_source_list.append(node_and_neighbour_index_map[source])
-                    new_target_list.append(node_and_neighbour_index_map[target])
+            assert torch_geometric.utils.is_undirected(edge_index=edge_index)
+            for source in node_and_neighbour_index_map:
+                for target in self.edge_dict[source]:
+                    if target >= source and target in node_and_neighbour_index_map:
+                        new_source_list.append(node_and_neighbour_index_map[source])
+                        new_target_list.append(node_and_neighbour_index_map[target])
             edge_index = torch.tensor(
                 data=[new_source_list, new_target_list], dtype=edge_index.dtype
             )
