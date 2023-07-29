@@ -57,9 +57,9 @@ def get_model(
                         k: dataset_util.channel,
                     }
         case DatasetType.Text:
-            for k in ("num_embeddings", "token_num"):
-                if k not in model_kwargs:
-                    if dataset_collection.tokenizer is not None:
+            if dataset_collection.tokenizer is not None:
+                for k in ("num_embeddings", "token_num"):
+                    if k not in model_kwargs:
                         final_model_kwargs[k] = len(dataset_collection.tokenizer.vocab)
         case DatasetType.Graph:
             if "num_features" not in model_kwargs:

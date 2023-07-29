@@ -105,8 +105,8 @@ class DatasetUtil:
 
     def get_original_dataset(self) -> torch.utils.data.Dataset:
         dataset = self.dataset
-        if hasattr(dataset, "dataset"):
-            dataset = dataset.dataset
+        if hasattr(dataset, "original_dataset"):
+            dataset = dataset.original_dataset
         return dataset
 
     def get_label_names(self) -> dict:
