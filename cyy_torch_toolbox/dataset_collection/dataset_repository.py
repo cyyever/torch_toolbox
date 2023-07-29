@@ -144,7 +144,7 @@ def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> C
     return get_dataset_kwargs_per_phase
 
 
-__dataset_cache = dict()
+__dataset_cache = {}
 
 
 def __create_dataset(
@@ -171,18 +171,24 @@ def __create_dataset(
                 )
                 if processed_dataset_kwargs is None:
                     break
-                dataset = None
-                if dataset_type == DatasetType.Graph:
-                    dataset = __dataset_cache.get((dataset_name, phase), None)
+                dataset = __dataset_cache.get((dataset_name, dataset_type, phase), None)
                 if dataset is None:
                     dataset = dataset_constructor(**processed_dataset_kwargs)
                     if dataset_type == DatasetType.Graph:
-                        get_logger().info(
-                            "use cached dataset %s, %s",
+                        __dataset_cache[(dataset_name, dataset_type, phase)] = dataset
+                        get_logger().error(
+                            "cache dataset %s, id %s with kwargs %s",
                             dataset_name,
+                            id(dataset),
                             processed_dataset_kwargs,
                         )
-                        __dataset_cache[(dataset_name, phase)] = dataset
+                else:
+                    get_logger().error(
+                        "use cached dataset %s, id %s with kwargs %s",
+                        dataset_name,
+                        id(dataset),
+                        processed_dataset_kwargs,
+                    )
                 if phase == MachineLearningPhase.Training:
                     training_dataset = dataset
                 elif phase == MachineLearningPhase.Validation:

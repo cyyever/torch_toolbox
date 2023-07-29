@@ -81,12 +81,12 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
 
 
 def tensor_to(
-    data: Any, non_blocking: bool = False, check_slowdown: bool = False, **kwargs: Any
+    data: Any, non_blocking: bool = True, check_slowdown: bool = False, **kwargs: Any
 ) -> Any:
     def fun(data, check_slowdown, **kwargs):
         if check_slowdown:
             device = kwargs.get("device", None)
-            non_blocking = kwargs.get("non_blocking", False)
+            non_blocking = kwargs.get("non_blocking", True)
             if (
                 str(data.device) == "cpu"
                 and device is not None
@@ -99,7 +99,7 @@ def tensor_to(
                         "copy is blocking",
                     )
             else:
-                if device is not None and not kwargs.get("non_blocking", False):
+                if device is not None and not kwargs.get("non_blocking", True):
                     raise RuntimeError(
                         "device to device copy is blocking",
                     )
