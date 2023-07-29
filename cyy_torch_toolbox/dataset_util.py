@@ -7,6 +7,7 @@ from typing import Any, Generator, Type
 
 import torch
 import torch.utils
+from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset import get_dataset_size, select_item, subset_dp
 from cyy_torch_toolbox.dataset_transform.transform import Transforms
@@ -49,7 +50,7 @@ class DatasetUtil:
             yield idx, sample
         return
 
-    def get_mask(self) -> None:
+    def get_mask(self) -> None | list:
         return None
 
     def get_sample(self, index: int) -> Any:
@@ -331,22 +332,30 @@ class GraphDatasetUtil(DatasetSplitter):
 
     def get_edge_dict(self) -> dict:
         assert len(self.dataset) == 1
-        key: str = "__torch_toolbox_edge_dict"
         graph_dict = self.dataset[0]
         graph = graph_dict["graph"]
-        if hasattr(graph, key):
-            return getattr(graph, key)
+        original_dataset = graph_dict["original_dataset"]
+        graph_index = graph_dict["graph_index"]
+        key: str = f"__torch_toolbox_edge_dict_{graph_index}"
+        if hasattr(original_dataset, key):
+            get_logger().warn(
+                "get cached edge_dict from graph %s %s",
+                id(original_dataset),
+                graph_index,
+            )
+            return getattr(original_dataset, key)
         edge_dict = self.edge_to_dict(edge_index=graph.edge_index)
-        setattr(graph, key, edge_dict)
+        setattr(original_dataset, key, edge_dict)
         return edge_dict
 
     def get_boundary(self, node_indices: Iterable) -> dict:
-        assert len(self.dataset) == 1
-        res = {}
+        res: dict = {}
         edge_dict = self.get_edge_dict()
         node_indices = set(node_indices)
         for node_idx in node_indices:
-            res[node_idx] = edge_dict.get(node_idx, set()) - node_indices
+            boundary = edge_dict[node_idx] - node_indices
+            if boundary:
+                res[node_idx] = boundary
         return res
 
     @classmethod
@@ -369,7 +378,6 @@ class GraphDatasetUtil(DatasetSplitter):
         return res
 
     def get_neighbors(self, node_indices: Iterable, hop: int) -> dict:
-        assert len(self.dataset) == 1
         return GraphDatasetUtil.get_neighbors_from_edges(
             node_indices=node_indices, edge_dict=self.get_edge_dict(), hop=hop
         )
@@ -383,8 +391,17 @@ class GraphDatasetUtil(DatasetSplitter):
                 mask[index] = True
             graph = self.dataset[idx]
             if isinstance(graph, dict):
-                graph = graph["graph"]
-            result.append({"subset_mask": mask, "graph": graph})
+                assert graph["graph_index"] == idx
+                graph = graph.copy()
+                graph["subset_mask"] = mask
+            else:
+                graph = {
+                    "subset_mask": mask,
+                    "graph": graph,
+                    "graph_index": idx,
+                    "original_dataset": self.dataset,
+                }
+            result.append(graph)
         return result
 
     def decompose(self) -> None | dict:
@@ -398,7 +415,7 @@ class GraphDatasetUtil(DatasetSplitter):
         ):
             return None
         datasets: dict = {}
-        for graph in self.dataset:
+        for idx, graph in enumerate(self.dataset):
             for phase, mask_name in mapping.items():
                 if phase not in datasets:
                     datasets[phase] = []
@@ -406,6 +423,7 @@ class GraphDatasetUtil(DatasetSplitter):
                     {
                         "subset_mask": getattr(graph, mask_name),
                         "graph": graph,
+                        "graph_index": idx,
                         "original_dataset": self.dataset,
                     }
                 )

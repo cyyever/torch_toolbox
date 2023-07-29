@@ -65,9 +65,6 @@ class DatasetCollection:
     def dataset_type(self) -> DatasetType:
         return self.__dataset_type
 
-    def foreach_raw_dataset(self) -> Generator:
-        yield from self.__raw_datasets.values()
-
     def foreach_dataset(self) -> Generator:
         yield from self.__datasets.values()
 
@@ -202,7 +199,7 @@ class DatasetCollection:
             self.__datasets[phase] = dataset
             self.__raw_datasets[phase] = raw_dataset
 
-    def add_transforms(self, model_evaluator) -> None:
+    def add_transforms(self, model_evaluator: Any) -> None:
         add_transforms(dc=self, model_evaluator=model_evaluator)
 
     def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
