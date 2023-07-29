@@ -23,9 +23,7 @@ class DatasetCollection:
         name: str | None = None,
         dataset_kwargs: dict | None = None,
     ) -> None:
-        self.__name: str = ""
-        if name is not None:
-            self.__name = name
+        self.__name: str = "" if name is None else name
         self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = datasets
         for k, v in self.__datasets.items():
             self.__datasets[k] = dataset_with_indices(v)
@@ -33,9 +31,9 @@ class DatasetCollection:
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
-        if not dataset_kwargs:
-            dataset_kwargs = {}
-        self.__dataset_kwargs: dict = copy.deepcopy(dataset_kwargs)
+        self.__dataset_kwargs: dict = (
+            copy.deepcopy(dataset_kwargs) if dataset_kwargs else {}
+        )
         add_data_extraction(self)
 
     @property
