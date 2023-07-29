@@ -26,11 +26,8 @@ class DatasetCollection:
         self.__name: str = ""
         if name is not None:
             self.__name = name
-        self.__raw_datasets: dict[
-            MachineLearningPhase, torch.utils.data.Dataset
-        ] = datasets
-        self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = {}
-        for k, v in self.__raw_datasets.items():
+        self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = datasets
+        for k, v in self.__datasets.items():
             self.__datasets[k] = dataset_with_indices(v)
         self.__dataset_type: DatasetType = dataset_type
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
@@ -55,7 +52,6 @@ class DatasetCollection:
     #         dataset_type=self.__dataset_type,
     #         name=self.__name,
     #     )
-    #     new_obj.__raw_datasets = copy.copy(self.__raw_datasets)
     #     new_obj.__datasets = copy.copy(self.__datasets)
     #     new_obj.__transforms = copy.copy(self.__transforms)
     #     new_obj.__dataset_kwargs = copy.copy(self.__dataset_kwargs)
@@ -114,9 +110,6 @@ class DatasetCollection:
         self, phase: MachineLearningPhase
     ) -> torch.utils.data.Dataset:
         dataset_util = self.get_dataset_util(phase=phase)
-        raw_dataset = self.__raw_datasets.get(phase)
-        assert raw_dataset is not None
-        dataset_util.dataset = raw_dataset
         return dataset_util.get_original_dataset()
 
     def append_transform(
@@ -193,11 +186,8 @@ class DatasetCollection:
         datasets = dataset_util.split_by_indices(
             dataset_util.iid_split_indices([part for (_, part) in part_list])
         )
-        raw_dataset = self.__raw_datasets.get(from_phase)
-        assert raw_dataset is not None
         for phase, dataset in zip([phase for (phase, _) in part_list], datasets):
             self.__datasets[phase] = dataset
-            self.__raw_datasets[phase] = raw_dataset
 
     def add_transforms(self, model_evaluator: Any) -> None:
         add_transforms(dc=self, model_evaluator=model_evaluator)

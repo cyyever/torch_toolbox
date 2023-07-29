@@ -76,8 +76,8 @@ def dataset_with_indices(
             dataset = torchdata.datapipes.map.Mapper(
                 KeyPipe(dataset), __add_index_to_map_item
             )
-    assert not hasattr(dataset, "dataset")
-    setattr(dataset, "dataset", old_dataset)
+    assert not hasattr(dataset, "original_dataset")
+    setattr(dataset, "original_dataset", old_dataset)
     return dataset
 
 
