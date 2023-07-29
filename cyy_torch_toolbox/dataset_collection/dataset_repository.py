@@ -134,9 +134,7 @@ def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> C
             if k not in constructor_kwargs:
                 discarded_dataset_kwargs.add(k)
         if discarded_dataset_kwargs:
-            get_logger().warning(
-                "discarded_dataset_kwargs %s", discarded_dataset_kwargs
-            )
+            get_logger().debug("discarded_dataset_kwargs %s", discarded_dataset_kwargs)
             for k in discarded_dataset_kwargs:
                 new_dataset_kwargs.pop(k)
         return new_dataset_kwargs
@@ -176,14 +174,14 @@ def __create_dataset(
                     dataset = dataset_constructor(**processed_dataset_kwargs)
                     if dataset_type == DatasetType.Graph:
                         __dataset_cache[(dataset_name, dataset_type, phase)] = dataset
-                        get_logger().error(
+                        get_logger().debug(
                             "cache dataset %s, id %s with kwargs %s",
                             dataset_name,
                             id(dataset),
                             processed_dataset_kwargs,
                         )
                 else:
-                    get_logger().error(
+                    get_logger().warning(
                         "use cached dataset %s, id %s with kwargs %s",
                         dataset_name,
                         id(dataset),
