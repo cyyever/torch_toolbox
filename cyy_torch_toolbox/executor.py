@@ -227,9 +227,9 @@ class Executor(HookCollection, abc.ABC):
     def save_model(self, model_path: str) -> None:
         torch.save(self.model.state_dict(), model_path)
 
-    def offload_from_gpu(self) -> None:
+    def offload_from_device(self) -> None:
         self.wait_stream()
-        self.__model_evaluator.offload_from_memory()
+        self.__model_evaluator.offload_from_device()
         torch.cuda.empty_cache()
 
     @abc.abstractmethod

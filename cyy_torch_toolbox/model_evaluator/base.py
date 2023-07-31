@@ -73,7 +73,7 @@ class ModelEvaluator:
             case _:
                 self.__loss_fun = loss_fun
 
-    def offload_from_memory(self) -> None:
+    def offload_from_device(self) -> None:
         self.model.zero_grad(set_to_none=True)
         self.to(device=torch.device("cpu"))
 
