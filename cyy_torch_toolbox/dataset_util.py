@@ -359,30 +359,19 @@ class GraphDatasetUtil(DatasetSplitter):
         return res
 
     @classmethod
-    def __get_neighbors_from_edges(
-        cls, node_indices: Iterable, edge_dict: dict, hop: int
-    ) -> dict:
-        res: dict = {}
-        node_indices = set(node_indices)
+    def get_neighbors(cls, node_indices: Iterable, edge_dict: dict, hop: int) -> set:
         assert hop > 0
-        for node_idx in node_indices:
-            new_neighbors: set = {node_idx}
-            neighbors: set = {node_idx}
-            for _ in range(hop):
-                unchecked_nodes = set()
-                for node in new_neighbors:
-                    for new_node in edge_dict[node]:
-                        if new_node not in neighbors:
-                            unchecked_nodes.add(new_node)
-                            neighbors.add(new_node)
-                new_neighbors = unchecked_nodes
-            res[node_idx] = neighbors
-        return res
-
-    def get_neighbors(self, node_indices: Iterable, hop: int) -> dict:
-        return GraphDatasetUtil.__get_neighbors_from_edges(
-            node_indices=node_indices, edge_dict=self.get_edge_dict(), hop=hop
-        )
+        neighbors: set = set(node_indices)
+        new_neighbors: set = copy.deepcopy(neighbors)
+        for _ in range(hop):
+            unchecked_nodes = set()
+            for node in new_neighbors:
+                for new_node in edge_dict[node]:
+                    if new_node not in neighbors:
+                        unchecked_nodes.add(new_node)
+                        neighbors.add(new_node)
+            new_neighbors = unchecked_nodes
+        return neighbors
 
     def get_subset(self, indices: Iterable) -> list[dict]:
         assert indices
