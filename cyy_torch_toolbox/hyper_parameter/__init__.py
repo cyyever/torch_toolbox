@@ -44,7 +44,7 @@ class HyperParameter:
         if isinstance(self.learning_rate, HyperParameterAction):
             task_queue = TorchThreadTaskQueue(worker_fun=determine_learning_rate)
             device = trainer.device
-            trainer.offload_from_gpu()
+            trainer.offload_from_device()
             task_queue.add_task((copy.deepcopy(trainer), device))
             self.learning_rate = task_queue.get_data()[0]
             trainer.set_device(device)

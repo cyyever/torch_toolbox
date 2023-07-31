@@ -105,11 +105,11 @@ class Trainer(Executor):
         self.model_util.load_parameter_dict(parameter_dict)
         self.remove_optimizer()
 
-    def offload_from_gpu(self) -> None:
+    def offload_from_device(self) -> None:
         if self.__inferencers:
             for inferencer in self.__inferencers.values():
-                inferencer.offload_from_gpu()
-        super().offload_from_gpu()
+                inferencer.offload_from_device()
+        super().offload_from_device()
 
     def _prepare_execution(
         self,
