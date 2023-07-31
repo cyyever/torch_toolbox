@@ -1,4 +1,5 @@
 import abc
+import contextlib
 import os
 from typing import Any, Callable
 
@@ -43,7 +44,7 @@ class Executor(HookCollection, abc.ABC):
         self._hook_config = hook_config
         self.__device: None | torch.device = None
         self.__dataloader = None
-        self.__cuda_stream = None
+        self.__device_stream: None | torch.cuda.Stream = None
         self.append_hook(ExecutorLogger(), "logger")
         self.append_hook(
             PerformanceMetric(
@@ -179,27 +180,38 @@ class Executor(HookCollection, abc.ABC):
         self.wait_stream()
         self.__device = device
         get_logger().info("%s use device %s", str(self.__phase), self.__device)
-        self.__cuda_stream = None
+        self.__device_stream = None
         self.__dataloader = None
 
     def __getstate__(self):
         # capture what is normally pickled
         state = self.__dict__.copy()
-        state["_Executor__cuda_stream"] = None
+        state["_Executor__device"] = None
+        state["_Executor__device_stream"] = None
         state["_Executor__dataloader"] = None
         return state
 
     @property
-    def cuda_stream(self) -> None | torch.cuda.Stream:
-        if self.__cuda_stream is None and "cuda" in self.device.type.lower():
-            self.__cuda_stream = torch.cuda.Stream(device=self.device)
-            self.__cuda_stream.wait_stream(torch.cuda.current_stream())
-        return self.__cuda_stream
+    def device_context(self) -> Any:
+        return (
+            contextlib.nullcontext()
+            if "cuda" not in self.device.type.lower()
+            else torch.cuda.device(self.device)
+        )
+
+    @property
+    def device_stream_context(self) -> torch.cuda.StreamContext:
+        if self.__device_stream is None:
+            if "cuda" in self.device.type.lower():
+                self.__device_stream = torch.cuda.Stream(device=self.device)
+                self.__device_stream.wait_stream(torch.cuda.current_stream())
+            return torch.cuda.stream(self.__device_stream)
+        raise NotImplementedError()
 
     def wait_stream(self) -> None:
-        if self.__cuda_stream is not None:
-            self.__cuda_stream.synchronize()
-            assert self.__cuda_stream.query()
+        if self.__device_stream is not None:
+            self.__device_stream.synchronize()
+            assert self.__device_stream.query()
 
     def set_dataset_collection(self, dc: DatasetCollection) -> None:
         self.wait_stream()

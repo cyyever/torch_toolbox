@@ -15,10 +15,8 @@ class Inferencer(Executor):
             self._prepare_execution(**kwargs)
             with (
                 torch.set_grad_enabled(use_grad),
-                contextlib.nullcontext()
-                if "cuda" not in self.device.type.lower()
-                else torch.cuda.device(self.device),
-                torch.cuda.stream(self.cuda_stream),
+                self.device_context,
+                self.device_stream_context,
             ):
                 self._execute_epoch(epoch=1, need_backward=use_grad, in_training=False)
             self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)

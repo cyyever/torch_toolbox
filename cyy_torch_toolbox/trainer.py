@@ -1,4 +1,3 @@
-import contextlib
 import copy
 from typing import Any
 
@@ -136,10 +135,8 @@ class Trainer(Executor):
     def train(self, run_validation: bool = True, **kwargs: Any) -> None:
         try:
             with (
-                contextlib.nullcontext()
-                if "cuda" not in self.device.type.lower()
-                else torch.cuda.device(self.device),
-                torch.cuda.stream(self.cuda_stream),
+                self.device_context,
+                self.device_stream_context,
             ):
                 self._prepare_execution(**kwargs)
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
