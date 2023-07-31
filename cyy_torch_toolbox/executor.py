@@ -190,7 +190,7 @@ class Executor(HookCollection, abc.ABC):
         return state
 
     @property
-    def cuda_stream(self)->None|torch.cuda.Stream:
+    def cuda_stream(self) -> None | torch.cuda.Stream:
         if self.__cuda_stream is None and "cuda" in self.device.type.lower():
             self.__cuda_stream = torch.cuda.Stream(device=self.device)
             self.__cuda_stream.wait_stream(torch.cuda.current_stream())
