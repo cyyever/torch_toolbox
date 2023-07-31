@@ -37,14 +37,11 @@ class GraphModelEvaluator(ModelEvaluator):
         if phase not in self.edge_index_map:
             edge_index = inputs["edge_index"]
             node_indices = set(torch_geometric.utils.mask_to_index(mask).tolist())
-            tmp: dict = GraphDatasetUtil.get_neighbors_from_edges(
+            node_and_neighbours: set = GraphDatasetUtil.get_neighbors(
                 node_indices=node_indices,
                 edge_dict=self.edge_dict,
                 hop=self.neighbour_hop,
             )
-            node_and_neighbours = set(tmp.keys())
-            for value in tmp.values():
-                node_and_neighbours |= value
             node_and_neighbour_index_map = {
                 node_index: idx
                 for idx, node_index in enumerate(sorted(node_and_neighbours))
