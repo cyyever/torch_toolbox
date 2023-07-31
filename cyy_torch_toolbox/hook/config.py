@@ -1,12 +1,13 @@
 import torch
 import torch.cuda
-from cyy_torch_toolbox.hook.amp import AMP
-from cyy_torch_toolbox.hook.cudnn import CUDNNHook
-from cyy_torch_toolbox.hook.debugger import Debugger
-from cyy_torch_toolbox.hook.profiler import Profiler
-from cyy_torch_toolbox.metric_visualizers.performance_metric_recorder import \
+
+from ..metric_visualizers.performance_metric_recorder import \
     PerformanceMetricRecorder
-from cyy_torch_toolbox.ml_type import MachineLearningPhase
+from ..ml_type import MachineLearningPhase
+from .amp import AMP
+from .cudnn import CUDNNHook
+from .debugger import Debugger
+from .profiler import Profiler
 
 
 class HookConfig:
