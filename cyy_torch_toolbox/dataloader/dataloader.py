@@ -26,7 +26,7 @@ def get_dataloader(
     match cache_transforms:
         case "cpu" | True:
             dataset, transforms = transforms.cache_transforms(dataset=dataset)
-        case "gpu" | "cuda":
+        case "gpu" | "cuda" | "device":
             data_in_cpu = False
             dataset, transforms = transforms.cache_transforms(
                 dataset=dataset, device=device
@@ -43,7 +43,6 @@ def get_dataloader(
         if dataloader is not None:
             return dataloader
 
-    collate_fn = transforms.collate_batch
     kwargs: dict = {}
     use_process: bool = "USE_THREAD_DATALOADER" not in os.environ
     if use_process:
@@ -64,6 +63,6 @@ def get_dataloader(
         batch_size=batch_size,
         shuffle=(phase == MachineLearningPhase.Training),
         pin_memory=False,
-        collate_fn=collate_fn,
+        collate_fn=transforms.collate_batch,
         **kwargs,
     )
