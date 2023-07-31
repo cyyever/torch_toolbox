@@ -359,26 +359,28 @@ class GraphDatasetUtil(DatasetSplitter):
         return res
 
     @classmethod
-    def get_neighbors_from_edges(
+    def __get_neighbors_from_edges(
         cls, node_indices: Iterable, edge_dict: dict, hop: int
     ) -> dict:
         res: dict = {}
         node_indices = set(node_indices)
         assert hop > 0
         for node_idx in node_indices:
-            unchecked_nodes = {node_idx}
-            neighbors = unchecked_nodes
+            new_neighbors: set = {node_idx}
+            neighbors: set = {node_idx}
             for _ in range(hop):
-                new_neighbors: set = set()
-                for node in unchecked_nodes:
-                    new_neighbors = new_neighbors | edge_dict[node]
-                unchecked_nodes = new_neighbors - neighbors
-                neighbors |= new_neighbors
+                unchecked_nodes = set()
+                for node in new_neighbors:
+                    for new_node in edge_dict[node]:
+                        if new_node not in neighbors:
+                            unchecked_nodes.add(new_node)
+                            neighbors.add(new_node)
+                new_neighbors = unchecked_nodes
             res[node_idx] = neighbors
         return res
 
     def get_neighbors(self, node_indices: Iterable, hop: int) -> dict:
-        return GraphDatasetUtil.get_neighbors_from_edges(
+        return GraphDatasetUtil.__get_neighbors_from_edges(
             node_indices=node_indices, edge_dict=self.get_edge_dict(), hop=hop
         )
 
