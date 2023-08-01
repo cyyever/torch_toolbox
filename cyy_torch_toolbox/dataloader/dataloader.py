@@ -5,10 +5,10 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from ..dataset_collection import DatasetCollection
+from ..dataset_util import GraphDatasetUtil
 from ..dependency import has_dali, has_torch_geometric, has_torchvision
 from ..ml_type import DatasetType, MachineLearningPhase, ModelType
 
-from ..dataset_util import GraphDatasetUtil
 if has_torch_geometric:
     from .pyg_dataloader import RandomNodeLoader
 
@@ -64,7 +64,6 @@ def get_dataloader(
         kwargs["persistent_workers"] = False
 
     if has_torch_geometric and dc.dataset_type == DatasetType.Graph:
-        assert not transforms
         return RandomNodeLoader(GraphDatasetUtil(dataset), **kwargs)
     return torch.utils.data.DataLoader(
         dataset,

@@ -14,11 +14,10 @@ if has_torch_geometric:
 class GraphModelEvaluator(ModelEvaluator):
     def __init__(self, edge_dict: dict, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        self.edge_dict: dict = edge_dict
         self.node_and_neighbour_index_map: dict = {}
         self.edge_index_map: dict = {}
         self.node_and_neighbour_mask: dict = {}
-        self.node_mask: dict = {}
-        self.edge_dict: dict = edge_dict
         self.neighbour_hop = sum(
             1
             for _, module in self.model_util.get_modules()
@@ -26,12 +25,12 @@ class GraphModelEvaluator(ModelEvaluator):
         )
 
     def __call__(self, **kwargs: Any) -> dict:
+        print(kwargs)
         inputs = kwargs["inputs"]
-        inputs["x"] = inputs["x"][0]
-        mask = kwargs["mask"].view(-1)
+        mask = kwargs["mask"]
         phase = kwargs["phase"]
         if phase not in self.edge_index_map:
-            edge_index = inputs["edge_index"][0]
+            edge_index = inputs["edge_index"]
             node_indices = set(torch_geometric.utils.mask_to_index(mask).tolist())
             node_and_neighbours: set = GraphDatasetUtil.get_neighbors(
                 node_indices=node_indices,
@@ -59,15 +58,21 @@ class GraphModelEvaluator(ModelEvaluator):
             for idx in node_and_neighbours:
                 node_and_neighbour_mask[idx] = True
             self.node_and_neighbour_mask[phase] = node_and_neighbour_mask
-            node_mask = torch.zeros((len(node_and_neighbours),), dtype=torch.bool)
-            for idx in node_indices:
-                node_mask[node_and_neighbour_index_map[idx]] = True
-            self.node_mask[phase] = node_mask
 
         inputs["edge_index"] = self.edge_index_map[phase]
-        kwargs["targets"] = kwargs["targets"].view(-1)[mask]
+        print(inputs["x"].shape, mask.shape)
         inputs["x"] = inputs["x"][self.node_and_neighbour_mask[phase]]
-        kwargs["mask"] = self.node_mask[phase]
+
+        batch_mask = torch_geometric.utils.index_to_mask(
+            torch.tensor(kwargs["batch_node_indices"]), kwargs["targets"].shape[0]
+        )
+        kwargs["targets"] = kwargs["targets"][batch_mask]
+        batch_mask = torch.zeros(
+            (len(self.node_and_neighbour_index_map[phase]),), dtype=torch.bool
+        )
+        for idx in kwargs["batch_node_indices"]:
+            batch_mask[self.node_and_neighbour_index_map[phase][idx]] = True
+        kwargs["mask"] = batch_mask
         return super().__call__(**kwargs)
 
     def _compute_loss(

@@ -42,11 +42,10 @@ class RandomNodeLoader(torch.utils.data.DataLoader):
         )
 
     def __collate_fn(self, indices):
-        data = self.dataset_util.dataset[0]
-        graph = data["graph"]
-        return {
-            "input": {"x": graph.x, "edge_index": graph.edge_index},
-            "target": graph.y,
-            "mask": data["mask"],
+        batch = self.dataset_util.dataset[0] | {
             "batch_node_indices": indices,
+            "batch_size": len(indices),
         }
+        batch["inputs"] = batch["input"]
+        batch["targets"] = batch["target"]
+        return batch
