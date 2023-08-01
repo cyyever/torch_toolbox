@@ -305,8 +305,6 @@ class TextDatasetUtil(DatasetSplitter):
 class GraphDatasetUtil(DatasetSplitter):
     def get_mask(self) -> list[torch.Tensor]:
         assert len(self.dataset) == 1
-        if isinstance(self.dataset[0], dict):
-            return [dataset["subset_mask"] for dataset in self.dataset]
         if hasattr(self.dataset[0], "mask"):
             return [dataset["mask"] for dataset in self.dataset]
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
@@ -382,12 +380,13 @@ class GraphDatasetUtil(DatasetSplitter):
                 mask[index] = True
             graph = self.dataset[idx]
             if isinstance(graph, dict):
+                assert "original_dataset" in graph
                 assert graph["graph_index"] == idx
                 graph = graph.copy()
-                graph["subset_mask"] = mask
+                graph["mask"] = mask
             else:
                 graph = {
-                    "subset_mask": mask,
+                    "mask": mask,
                     "graph": graph,
                     "graph_index": idx,
                     "original_dataset": self.dataset,
@@ -396,7 +395,7 @@ class GraphDatasetUtil(DatasetSplitter):
         return result
 
     def decompose(self) -> None | dict:
-        mapping = {
+        mapping: dict = {
             MachineLearningPhase.Training: "train_mask",
             MachineLearningPhase.Validation: "val_mask",
             MachineLearningPhase.Test: "test_mask",
@@ -412,7 +411,7 @@ class GraphDatasetUtil(DatasetSplitter):
                     datasets[phase] = []
                 datasets[phase].append(
                     {
-                        "subset_mask": getattr(graph, mask_name),
+                        "mask": getattr(graph, mask_name),
                         "graph": graph,
                         "graph_index": idx,
                         "original_dataset": self.dataset,

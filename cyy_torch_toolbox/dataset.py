@@ -14,8 +14,8 @@ if has_hugging_face:
 
 def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:
     match dataset:
-        case [{"subset_mask": subset_mask, "graph": _}]:
-            return subset_mask.sum()
+        case [{"mask": mask, **__}]:
+            return mask.sum()
         case torch.utils.data.dataset.ConcatDataset():
             return sum(get_dataset_size(d) for d in dataset.datasets)
         case torch.utils.data.IterableDataset():
