@@ -5,8 +5,12 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from ..dataset_collection import DatasetCollection
-from ..dependency import has_dali, has_torchvision
+from ..dependency import has_dali, has_torch_geometric, has_torchvision
 from ..ml_type import DatasetType, MachineLearningPhase, ModelType
+
+from ..dataset_util import GraphDatasetUtil
+if has_torch_geometric:
+    from .pyg_dataloader import RandomNodeLoader
 
 if has_dali and has_torchvision:
     from .dali_dataloader import get_dali_dataloader
@@ -58,6 +62,10 @@ def get_dataloader(
         kwargs["num_workers"] = 0
         kwargs["prefetch_factor"] = None
         kwargs["persistent_workers"] = False
+
+    if has_torch_geometric and dc.dataset_type == DatasetType.Graph:
+        assert not transforms
+        return RandomNodeLoader(GraphDatasetUtil(dataset), **kwargs)
     return torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,

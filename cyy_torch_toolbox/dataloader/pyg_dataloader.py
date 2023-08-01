@@ -1,9 +1,9 @@
-from typing import Any, Union
+from typing import Any
 
 import torch
 import torch.utils.data
-from torch import Tensor
-from torch_geometric.data import Data, HeteroData
+
+from ..dataset_util import GraphDatasetUtil
 
 
 class RandomNodeLoader(torch.utils.data.DataLoader):
@@ -28,22 +28,25 @@ class RandomNodeLoader(torch.utils.data.DataLoader):
 
     def __init__(
         self,
-        data: Union[Data, HeteroData],
+        dataset_util: GraphDatasetUtil,
         **kwargs: Any,
     ) -> None:
-        self.data = data
-        assert isinstance(data, Data)
-        self.num_nodes = data.num_nodes
+        assert len(dataset_util.dataset) == 1
+        self.dataset_util = dataset_util
 
         assert "collate_fn" not in kwargs
         super().__init__(
-            list(range(self.num_nodes)),
+            list(range(len(self.dataset_util))),
             collate_fn=self.__collate_fn,
             **kwargs,
         )
 
-    def __collate_fn(self, index):
-        if not isinstance(index, Tensor):
-            index = torch.tensor(index)
-
-        return self.data.subgraph(index)
+    def __collate_fn(self, indices):
+        data = self.dataset_util.dataset[0]
+        graph = data["graph"]
+        return {
+            "input": {"x": graph.x, "edge_index": graph.edge_index},
+            "target": graph.y,
+            "mask": data["mask"],
+            "batch_node_indices": indices,
+        }

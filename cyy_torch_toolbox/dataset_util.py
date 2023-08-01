@@ -227,18 +227,11 @@ class DatasetSplitter(DatasetUtil):
 
 
 class VisionDatasetUtil(DatasetSplitter):
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.__channel = None
-
-    @property
+    @functools.cached_property
     def channel(self):
-        if self.__channel is not None:
-            return self.__channel
         x = self._get_sample_input(0)
-        self.__channel = x.shape[0]
-        assert self.__channel <= 3
-        return self.__channel
+        assert x.shape[0] <= 3
+        return x.shape[0]
 
     def get_mean_and_std(self):
         if self._name is not None and self._name.lower() == "imagenet":

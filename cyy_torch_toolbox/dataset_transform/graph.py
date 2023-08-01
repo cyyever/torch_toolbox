@@ -3,7 +3,12 @@ from typing import Any
 
 def pyg_data_extraction(data: Any, extract_index: bool = True) -> dict | None:
     match data:
-        case {"mask": mask, "graph": graph, "original_dataset": _}:
+        case {
+            "mask": mask,
+            "graph": graph,
+            "graph_index": _,
+            "original_dataset": __,
+        }:
             return {
                 "input": {"x": graph.x, "edge_index": graph.edge_index},
                 "target": graph.y,
