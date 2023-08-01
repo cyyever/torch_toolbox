@@ -28,14 +28,10 @@ class GraphModelEvaluator(ModelEvaluator):
     def __call__(self, **kwargs: Any) -> dict:
         inputs = kwargs["inputs"]
         inputs["x"] = inputs["x"][0]
-        inputs["edge_index"] = inputs["edge_index"][0]
-        mask = kwargs.pop("mask", None)
-        if mask is None:
-            return super().__call__(**kwargs)
+        mask = kwargs["mask"].view(-1)
         phase = kwargs["phase"]
-        mask = mask.view(-1)
         if phase not in self.edge_index_map:
-            edge_index = inputs["edge_index"]
+            edge_index = inputs["edge_index"][0]
             node_indices = set(torch_geometric.utils.mask_to_index(mask).tolist())
             node_and_neighbours: set = GraphDatasetUtil.get_neighbors(
                 node_indices=node_indices,
