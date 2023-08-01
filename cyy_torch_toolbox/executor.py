@@ -206,7 +206,7 @@ class Executor(HookCollection, abc.ABC):
                 self.__device_stream = torch.cuda.Stream(device=self.device)
                 self.__device_stream.wait_stream(torch.cuda.current_stream())
             return torch.cuda.stream(self.__device_stream)
-        raise NotImplementedError(self.__device)
+        return torch.cuda.stream(None)
 
     def wait_stream(self) -> None:
         if self.__device_stream is not None:
