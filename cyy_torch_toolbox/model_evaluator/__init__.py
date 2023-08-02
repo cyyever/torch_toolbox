@@ -1,11 +1,10 @@
-import functools
 from typing import Callable
 
 import torch
 
 from ..dataset_collection import DatasetCollection
 from ..dependency import has_hugging_face
-from ..ml_type import DatasetType, MachineLearningPhase, ModelType
+from ..ml_type import DatasetType, ModelType
 from .base import ModelEvaluator, VisionModelEvaluator
 from .graph import GraphModelEvaluator
 from .text import TextModelEvaluator
@@ -32,12 +31,7 @@ def get_model_evaluator(
         else:
             model_evaluator_fun = TextModelEvaluator
     elif dataset_collection.dataset_type == DatasetType.Graph:
-        model_evaluator_fun = functools.partial(
-            GraphModelEvaluator,
-            edge_dict=dataset_collection.get_dataset_util(
-                phase=MachineLearningPhase.Training
-            ).get_edge_dict(),
-        )
+        model_evaluator_fun = GraphModelEvaluator
     if model_kwargs is None:
         model_kwargs = {}
     loss_fun_name = model_kwargs.get("loss_fun_name", None)
