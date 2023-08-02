@@ -25,7 +25,6 @@ class GraphModelEvaluator(ModelEvaluator):
         )
 
     def __call__(self, **kwargs: Any) -> dict:
-        print(kwargs)
         inputs = kwargs["inputs"]
         mask = kwargs["mask"]
         phase = kwargs["phase"]
@@ -58,10 +57,10 @@ class GraphModelEvaluator(ModelEvaluator):
             for idx in node_and_neighbours:
                 node_and_neighbour_mask[idx] = True
             self.node_and_neighbour_mask[phase] = node_and_neighbour_mask
-
-        inputs["edge_index"] = self.edge_index_map[phase]
-        print(inputs["x"].shape, mask.shape)
-        inputs["x"] = inputs["x"][self.node_and_neighbour_mask[phase]]
+        masked = inputs["x"].shape[0] < mask.shape[0]
+        if not masked:
+            inputs["edge_index"] = self.edge_index_map[phase]
+            inputs["x"] = inputs["x"][self.node_and_neighbour_mask[phase]]
 
         batch_mask = torch_geometric.utils.index_to_mask(
             torch.tensor(kwargs["batch_node_indices"]), kwargs["targets"].shape[0]
@@ -72,11 +71,11 @@ class GraphModelEvaluator(ModelEvaluator):
         )
         for idx in kwargs["batch_node_indices"]:
             batch_mask[self.node_and_neighbour_index_map[phase][idx]] = True
-        kwargs["mask"] = batch_mask
+        kwargs["batch_mask"] = batch_mask
         return super().__call__(**kwargs)
 
     def _compute_loss(
-        self, output: torch.Tensor, mask: torch.Tensor, **kwargs: Any
+        self, output: torch.Tensor, batch_mask: torch.Tensor, **kwargs: Any
     ) -> dict:
-        output = output[mask]
+        output = output[batch_mask]
         return super()._compute_loss(output=output, **kwargs)
