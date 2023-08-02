@@ -61,10 +61,10 @@ class HyperParameter:
             kwargs=kwargs,
         )
 
-    def get_iterations_per_epoch(self, training_dataset_size):
+    def get_iterations_per_epoch(self, dataset_size: int) -> int:
         if self.batch_size == 1:
-            return training_dataset_size
-        return (training_dataset_size + self.batch_size - 1) // self.batch_size
+            return dataset_size
+        return (dataset_size + self.batch_size - 1) // self.batch_size
 
     def get_lr_scheduler(self, trainer):
         assert self._lr_scheduler_factory is not None
