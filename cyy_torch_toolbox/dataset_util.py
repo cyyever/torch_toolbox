@@ -324,7 +324,6 @@ class GraphDatasetUtil(DatasetSplitter):
     def get_edge_dict(self) -> dict:
         assert len(self.dataset) == 1
         graph_dict = self.dataset[0]
-        graph = graph_dict["graph"]
         original_dataset = graph_dict["original_dataset"]
         graph_index = graph_dict["graph_index"]
         key: str = f"__torch_toolbox_edge_dict_{graph_index}"
@@ -335,6 +334,7 @@ class GraphDatasetUtil(DatasetSplitter):
                 graph_index,
             )
             return getattr(original_dataset, key)
+        graph = graph_dict["graph"]
         edge_dict = self.edge_to_dict(edge_index=graph.edge_index)
         setattr(original_dataset, key, edge_dict)
         return edge_dict
