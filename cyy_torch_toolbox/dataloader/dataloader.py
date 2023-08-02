@@ -62,14 +62,14 @@ def get_dataloader(
         kwargs["num_workers"] = 0
         kwargs["prefetch_factor"] = None
         kwargs["persistent_workers"] = False
+    kwargs["batch_size"] = batch_size
+    kwargs["shuffle"] = phase == MachineLearningPhase.Training
+    kwargs["pin_memory"] = False
 
     if has_torch_geometric and dc.dataset_type == DatasetType.Graph:
         return RandomNodeLoader(GraphDatasetUtil(dataset), **kwargs)
     return torch.utils.data.DataLoader(
         dataset,
-        batch_size=batch_size,
-        shuffle=(phase == MachineLearningPhase.Training),
-        pin_memory=False,
         collate_fn=transforms.collate_batch,
         **kwargs,
     )

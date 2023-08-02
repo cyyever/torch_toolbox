@@ -2,6 +2,7 @@ from typing import Any
 
 import torch
 import torch.utils.data
+import torch_geometric
 
 from ..dataset_util import GraphDatasetUtil
 
@@ -33,10 +34,13 @@ class RandomNodeLoader(torch.utils.data.DataLoader):
     ) -> None:
         assert len(dataset_util.dataset) == 1
         self.dataset_util = dataset_util
+        self.node_indices = torch_geometric.utils.mask_to_index(
+            self.dataset_util.dataset[0]["mask"]
+        ).tolist()
 
         assert "collate_fn" not in kwargs
         super().__init__(
-            list(range(len(self.dataset_util))),
+            self.node_indices,
             collate_fn=self.__collate_fn,
             **kwargs,
         )
