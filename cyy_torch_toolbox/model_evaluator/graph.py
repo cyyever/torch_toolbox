@@ -12,9 +12,9 @@ if has_torch_geometric:
 
 
 class GraphModelEvaluator(ModelEvaluator):
-    def __init__(self, edge_dict: dict, **kwargs: Any) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.edge_dict: dict = edge_dict
+        self.edge_dict: dict = {}
         self.node_and_neighbour_index_map: dict = {}
         self.edge_index_map: dict = {}
         self.node_and_neighbour_mask: dict = {}
@@ -28,6 +28,8 @@ class GraphModelEvaluator(ModelEvaluator):
         inputs = kwargs["inputs"]
         mask = kwargs["mask"]
         phase = kwargs["phase"]
+        if not self.edge_dict:
+            self.edge_dict = kwargs["edge_dict"]
         if phase not in self.edge_index_map:
             edge_index = inputs["edge_index"]
             node_indices = set(torch_geometric.utils.mask_to_index(mask).tolist())
