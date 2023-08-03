@@ -102,7 +102,7 @@ def select_item(
                         if not flag:
                             continue
                         if indices is None or idx in indices:
-                            yield idx, {"target": dataset.data.y[idx], "index": idx}
+                            yield idx, {"target": dataset[0].y[idx], "index": idx}
                 else:
                     for idx, flag in enumerate(mask.tolist()):
                         if not flag:

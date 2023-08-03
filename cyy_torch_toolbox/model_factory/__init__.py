@@ -84,7 +84,7 @@ def get_model(
     while True:
         try:
             model = model_constructor_info["constructor"](**final_model_kwargs)
-            get_logger().warning(
+            get_logger().debug(
                 "use model arguments %s for model %s",
                 final_model_kwargs,
                 model_constructor_info["name"],
