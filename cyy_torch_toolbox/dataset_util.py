@@ -298,7 +298,7 @@ class TextDatasetUtil(DatasetSplitter):
 class GraphDatasetUtil(DatasetSplitter):
     def get_mask(self) -> list[torch.Tensor]:
         assert len(self.dataset) == 1
-        if hasattr(self.dataset[0], "mask"):
+        if hasattr(self.dataset[0], "mask") or "mask" in self.dataset[0]:
             return [dataset["mask"] for dataset in self.dataset]
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
         return [mask]
