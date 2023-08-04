@@ -328,13 +328,14 @@ class GraphDatasetUtil(DatasetSplitter):
         graph_index = graph_dict["graph_index"]
         key: str = f"__torch_toolbox_edge_dict_{graph_index}"
         if hasattr(original_dataset, key):
-            get_logger().warn(
+            get_logger().warning(
                 "get cached edge_dict from graph %s %s",
                 id(original_dataset),
                 graph_index,
             )
             return getattr(original_dataset, key)
         graph = graph_dict["graph"]
+        assert not graph.is_directed()
         edge_dict = self.edge_to_dict(edge_index=graph.edge_index)
         setattr(original_dataset, key, edge_dict)
         return edge_dict
@@ -350,19 +351,26 @@ class GraphDatasetUtil(DatasetSplitter):
         return res
 
     @classmethod
-    def get_neighbors(cls, node_indices: Iterable, edge_dict: dict, hop: int) -> set:
+    def get_neighbors(
+        cls, node_indices: Iterable, edge_dict: dict, hop: int
+    ) -> tuple[set, set]:
         assert hop > 0
         neighbors: set = set(node_indices)
-        new_neighbors: set = copy.deepcopy(neighbors)
+        unchecked_nodes = set(neighbors)
+        edges = set()
         for _ in range(hop):
-            unchecked_nodes = set()
-            for node in new_neighbors:
+            tmp: set = set()
+            for node in unchecked_nodes:
                 for new_node in edge_dict[node]:
+                    if node <= new_node:
+                        edges.add((node, new_node))
+                    else:
+                        edges.add((new_node, node))
                     if new_node not in neighbors:
-                        unchecked_nodes.add(new_node)
+                        tmp.add(new_node)
                         neighbors.add(new_node)
-            new_neighbors = unchecked_nodes
-        return neighbors
+            unchecked_nodes = tmp
+        return neighbors, edges
 
     def get_subset(self, indices: Iterable) -> list[dict]:
         assert indices
@@ -413,7 +421,6 @@ class GraphDatasetUtil(DatasetSplitter):
         return datasets
 
     def get_original_dataset(self) -> torch.utils.data.Dataset:
-        assert len(self.dataset) == 1
         if "original_dataset" in self.dataset[0]:
             return self.dataset[0]["original_dataset"]
         return super().get_original_dataset()

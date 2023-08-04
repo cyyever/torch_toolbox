@@ -49,6 +49,9 @@ def get_dataloader(
 
     kwargs: dict = {}
     use_process: bool = "USE_THREAD_DATALOADER" not in os.environ
+    if dc.dataset_type == DatasetType.Graph:
+        # don't pass large graphs around processes
+        use_process = False
     if use_process:
         kwargs["prefetch_factor"] = 2
         kwargs["num_workers"] = 1
