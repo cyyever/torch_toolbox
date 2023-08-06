@@ -355,7 +355,7 @@ class GraphDatasetUtil(DatasetSplitter):
         return edge_dict
 
     def get_boundary(self, node_indices: Iterable) -> dict:
-        assert len(dataset_util.dataset) == 1
+        assert len(self.dataset) == 1
         res: dict = {}
         edge_dict = self.get_edge_dict(graph_dict=self.dataset[0])
         node_indices = set(node_indices)
