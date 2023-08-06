@@ -15,17 +15,16 @@ from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 from cyy_torch_toolbox.model_evaluator import ModelEvaluator
 from cyy_torch_toolbox.model_factory import ModelConfig
-from cyy_torch_toolbox.reproducible_env import global_reproducible_env
+from cyy_torch_toolbox.reproducible_env import ReproducibleEnvConfig
 from cyy_torch_toolbox.trainer import Trainer, TrainerConfig
 
 
 @dataclass
 class DefaultConfig:
     def __init__(self, dataset_name: str = "", model_name: str = "") -> None:
-        self.make_reproducible_env: bool = False
-        self.reproducible_env_load_path: str | None = None
         self.save_dir: str | None = None
         self.log_level = None
+        self.reproducible_env_config = ReproducibleEnvConfig()
         self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
         self.model_config = ModelConfig(model_name=model_name)
         self.hyper_parameter_config: HyperParameterConfig = HyperParameterConfig()
@@ -69,18 +68,7 @@ class DefaultConfig:
     def apply_global_config(self) -> None:
         if self.log_level is not None:
             set_level(self.log_level)
-        self.__set_reproducible_env()
-
-    def __set_reproducible_env(self) -> None:
-        if self.reproducible_env_load_path is not None:
-            assert not global_reproducible_env.enabled
-            global_reproducible_env.load(self.reproducible_env_load_path)
-            self.make_reproducible_env = True
-
-        if self.make_reproducible_env:
-            global_reproducible_env.enable()
-            if self.reproducible_env_load_path is None:
-                global_reproducible_env.save(self.__get_save_dir())
+        self.reproducible_env_config.set_reproducible_env(self.__get_save_dir())
 
     def __create_model(self, dc: DatasetCollection) -> ModelEvaluator:
         return self.model_config.get_model(dc)
@@ -102,26 +90,18 @@ class DefaultConfig:
                         setattr(obj, attr, value | getattr(obj, attr))
                     case _:
                         setattr(obj, attr, value)
-        if hasattr(obj, "dc_config"):
-            conf_container = cls.__load_config(
-                obj.dc_config, conf_container, check_config=False
-            )
-        if hasattr(obj, "hyper_parameter_config"):
-            conf_container = cls.__load_config(
-                obj.hyper_parameter_config, conf_container, check_config=False
-            )
-        if hasattr(obj, "model_config"):
-            conf_container = cls.__load_config(
-                obj.model_config, conf_container, check_config=False
-            )
-        if hasattr(obj, "trainer_config"):
-            conf_container = cls.__load_config(
-                obj.trainer_config, conf_container, check_config=False
-            )
-        if hasattr(obj, "hook_config"):
-            conf_container = cls.__load_config(
-                obj.hook_config, conf_container, check_config=False
-            )
+        for attr in (
+            "dc_config",
+            "hyper_parameter_config",
+            "model_config",
+            "trainer_config",
+            "hook_config",
+            "reproducible_env_config",
+        ):
+            if hasattr(obj, attr):
+                conf_container = cls.__load_config(
+                    getattr(obj, attr), conf_container, check_config=False
+                )
         if check_config:
             if conf_container:
                 get_logger().error("remain config %s", conf_container)
