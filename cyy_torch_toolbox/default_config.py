@@ -8,10 +8,8 @@ from typing import Any
 from cyy_naive_lib.log import get_logger, set_level
 from omegaconf import OmegaConf
 
-from cyy_torch_toolbox.dataset_collection import (
-    DatasetCollection,
-    DatasetCollectionConfig,
-)
+from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
+                                                  DatasetCollectionConfig)
 from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
@@ -24,17 +22,68 @@ from cyy_torch_toolbox.trainer import Trainer, TrainerConfig
 @dataclass
 class DefaultConfig:
     def __init__(self, dataset_name: str = "", model_name: str = "") -> None:
-        self.make_reproducible_env = False
-        self.reproducible_env_load_path = None
-        self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
-        self.hyper_parameter_config: HyperParameterConfig = HyperParameterConfig()
-        self.model_config = ModelConfig(model_name=model_name)
-        self.trainer_config = TrainerConfig()
+        self.make_reproducible_env: bool = False
+        self.reproducible_env_load_path: str | None = None
         self.save_dir: str | None = None
         self.log_level = None
+        self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
+        self.model_config = ModelConfig(model_name=model_name)
+        self.hyper_parameter_config: HyperParameterConfig = HyperParameterConfig()
+        self.trainer_config = TrainerConfig()
 
     def load_config(self, conf: Any, check_config: bool = True) -> dict:
         return self.__load_config(self, conf, check_config)
+
+    def create_dataset_collection(self) -> DatasetCollection:
+        get_logger().debug("use dataset %s", self.dc_config.dataset_name)
+        return self.dc_config.create_dataset_collection(
+            save_dir=self.__get_save_dir(),
+        )
+
+    def create_trainer(
+        self,
+        dc: DatasetCollection | None = None,
+        model_evaluator: ModelEvaluator | None = None,
+    ) -> Trainer:
+        if dc is None:
+            dc = self.create_dataset_collection()
+        if model_evaluator is None:
+            model_evaluator = self.__create_model(dc)
+        hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
+            self.dc_config.dataset_name, self.model_config.model_name
+        )
+        trainer: Trainer = self.trainer_config.create_trainer(
+            dataset_collection=dc,
+            model_evaluator=model_evaluator,
+            hyper_parameter=hyper_parameter,
+        )
+        trainer.set_save_dir(self.__get_save_dir())
+        return trainer
+
+    def create_inferencer(
+        self, phase: MachineLearningPhase = MachineLearningPhase.Test
+    ) -> Inferencer:
+        trainer = self.create_trainer()
+        return trainer.get_inferencer(phase)
+
+    def apply_global_config(self) -> None:
+        if self.log_level is not None:
+            set_level(self.log_level)
+        self.__set_reproducible_env()
+
+    def __set_reproducible_env(self) -> None:
+        if self.reproducible_env_load_path is not None:
+            assert not global_reproducible_env.enabled
+            global_reproducible_env.load(self.reproducible_env_load_path)
+            self.make_reproducible_env = True
+
+        if self.make_reproducible_env:
+            global_reproducible_env.enable()
+            if self.reproducible_env_load_path is None:
+                global_reproducible_env.save(self.__get_save_dir())
+
+    def __create_model(self, dc: DatasetCollection) -> ModelEvaluator:
+        return self.model_config.get_model(dc)
 
     @classmethod
     def __load_config(cls, obj: Any, conf: Any, check_config: bool = True) -> dict:
@@ -79,67 +128,17 @@ class DefaultConfig:
             assert not conf_container
         return conf_container
 
-    def get_save_dir(self) -> str:
-        model_name = self.model_config.model_name
-        if model_name is None:
-            model_name = "custom_model"
+    def __get_save_dir(self) -> str:
         if self.save_dir is None:
+            model_name = self.model_config.model_name
+            if not model_name:
+                model_name = "custom_model"
+            date = datetime.datetime.now()
             self.save_dir = os.path.join(
                 "session",
                 self.dc_config.dataset_name,
                 model_name,
-                "{date:%Y-%m-%d_%H_%M_%S}".format(date=datetime.datetime.now()),
+                f"{date:%Y-%m-%d_%H_%M_%S}",
                 str(uuid.uuid4()),
             )
         return self.save_dir
-
-    def create_dataset_collection(self) -> DatasetCollection:
-        get_logger().debug("use dataset %s", self.dc_config.dataset_name)
-        return self.dc_config.create_dataset_collection(
-            save_dir=self.get_save_dir(),
-        )
-
-    def create_model(self, dc: DatasetCollection) -> ModelEvaluator:
-        return self.model_config.get_model(dc)
-
-    def create_trainer(
-        self,
-        dc: DatasetCollection | None = None,
-        model_evaluator: ModelEvaluator | None = None,
-    ) -> Trainer:
-        if dc is None:
-            dc = self.create_dataset_collection()
-        if model_evaluator is None:
-            model_evaluator = self.create_model(dc)
-        hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
-            self.dc_config.dataset_name, self.model_config.model_name
-        )
-        trainer: Trainer = self.trainer_config.create_trainer(
-            dataset_collection=dc,
-            model_evaluator=model_evaluator,
-            hyper_parameter=hyper_parameter,
-        )
-        trainer.set_save_dir(self.get_save_dir())
-        return trainer
-
-    def create_inferencer(
-        self, phase: MachineLearningPhase = MachineLearningPhase.Test
-    ) -> Inferencer:
-        trainer = self.create_trainer()
-        return trainer.get_inferencer(phase)
-
-    def apply_global_config(self) -> None:
-        if self.log_level is not None:
-            set_level(self.log_level)
-        self.__set_reproducible_env()
-
-    def __set_reproducible_env(self) -> None:
-        if self.reproducible_env_load_path is not None:
-            assert not global_reproducible_env.enabled
-            global_reproducible_env.load(self.reproducible_env_load_path)
-            self.make_reproducible_env = True
-
-        if self.make_reproducible_env:
-            global_reproducible_env.enable()
-            if self.reproducible_env_load_path is None:
-                global_reproducible_env.save(self.get_save_dir())

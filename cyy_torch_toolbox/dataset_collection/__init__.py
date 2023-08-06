@@ -65,9 +65,9 @@ def create_dataset_collection(
 
 
 class DatasetCollectionConfig:
-    def __init__(self, dataset_name=None) -> None:
-        self.dataset_name = dataset_name
-        self.dataset_kwargs = {}
+    def __init__(self, dataset_name: str = "") -> None:
+        self.dataset_name: str = dataset_name
+        self.dataset_kwargs: dict = {}
         self.training_dataset_percentage = None
         self.training_dataset_indices_path = None
         self.training_dataset_label_map_path = None
@@ -85,12 +85,13 @@ class DatasetCollectionConfig:
         self.__transform_training_dataset(dc=dc, save_dir=save_dir)
         return dc
 
-    def __transform_training_dataset(self, dc, save_dir=None) -> None:
+    def __transform_training_dataset(self, dc, save_dir: str | None = None) -> None:
         subset_indices = None
         dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
         if self.training_dataset_percentage is not None:
             subset_dict = dataset_util.iid_sample(self.training_dataset_percentage)
             subset_indices = sum(subset_dict.values(), [])
+            assert save_dir is not None
             with open(
                 os.path.join(save_dir, "training_dataset_indices.json"),
                 mode="wt",
@@ -114,6 +115,7 @@ class DatasetCollectionConfig:
             label_map = dataset_util.randomize_subset_label(
                 self.training_dataset_label_noise_percentage
             )
+            assert save_dir is not None
             with open(
                 os.path.join(
                     save_dir,
