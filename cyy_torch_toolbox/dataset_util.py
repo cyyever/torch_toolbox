@@ -328,12 +328,16 @@ class GraphDatasetUtil(DatasetSplitter):
         for edge in edge_index:
             a = edge[0]
             b = edge[1]
-            if a not in res:
+            tmp = res.get(a, None)
+            if tmp is None:
                 res[a] = set()
-            res[a].add(b)
-            if b not in res:
+                tmp = res[a]
+            tmp.add(b)
+            tmp = res.get(b, None)
+            if tmp is None:
                 res[b] = set()
-            res[b].add(a)
+                tmp = res[b]
+            tmp.add(a)
         return res
 
     @classmethod
@@ -372,20 +376,20 @@ class GraphDatasetUtil(DatasetSplitter):
         assert hop > 0
         neighbors: set = set(node_indices)
         unchecked_nodes = set(neighbors)
-        edges = set()
+        edges = []
         for _ in range(hop):
             tmp: set = set()
             for node in unchecked_nodes:
                 for new_node in edge_dict[node]:
                     if node <= new_node:
-                        edges.add((node, new_node))
+                        edges.append((node, new_node))
                     else:
-                        edges.add((new_node, node))
+                        edges.append((new_node, node))
                     if new_node not in neighbors:
                         tmp.add(new_node)
                         neighbors.add(new_node)
             unchecked_nodes = tmp
-        return neighbors, edges
+        return neighbors, set(edges)
 
     def get_subset(self, indices: Iterable) -> list[dict]:
         assert indices

@@ -1,6 +1,6 @@
 import copy
 import functools
-from typing import Callable
+from typing import Callable, Iterable
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -27,6 +27,13 @@ if has_medmnist:
     import medmnist
 if has_hugging_face:
     import datasets as hugging_face_datasets
+
+
+@functools.cache
+def get_hungging_face_datasets() -> Iterable:
+    return hugging_face_datasets.list_datasets(
+        with_community_datasets=False, with_details=False
+    )
 
 
 def get_dataset_constructors(dataset_type: DatasetType) -> dict:
@@ -79,9 +86,7 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
             )
     if has_hugging_face and dataset_type == DatasetType.Text:
         dataset_names = {a.lower() for a in dataset_constructors.keys()}
-        for name in hugging_face_datasets.list_datasets(
-            with_community_datasets=False, with_details=False
-        ):
+        for name in get_hungging_face_datasets():
             if name.lower() not in dataset_names:
                 dataset_constructors[name] = functools.partial(
                     hugging_face_datasets.load_dataset, name
