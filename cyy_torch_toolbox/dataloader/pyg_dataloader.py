@@ -34,7 +34,6 @@ class RandomNodeLoader(torch.utils.data.DataLoader):
     ) -> None:
         assert len(dataset_util.dataset) == 1
         self.dataset_util = dataset_util
-        self.edge_dict = self.dataset_util.get_edge_dict()
         self.node_indices = torch_geometric.utils.mask_to_index(
             self.dataset_util.dataset[0]["mask"]
         ).tolist()
@@ -50,6 +49,5 @@ class RandomNodeLoader(torch.utils.data.DataLoader):
         batch = self.dataset_util.dataset[0] | {
             "batch_node_indices": indices,
             "batch_size": len(indices),
-            "edge_dict": self.edge_dict,
         }
         return batch
