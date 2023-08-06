@@ -320,9 +320,12 @@ class GraphDatasetUtil(DatasetSplitter):
         return edge_index.transpose(0, 1).numpy()
 
     @classmethod
-    def edge_to_dict(cls, edge_index: torch.Tensor) -> dict:
+    def edge_to_dict(cls, edge_index: torch.Tensor | Iterable) -> dict:
+        if isinstance(edge_index, torch.Tensor):
+            edge_index = cls.foreach_edge(edge_index)
+
         res: dict = {}
-        for edge in cls.foreach_edge(edge_index):
+        for edge in edge_index:
             a = edge[0]
             b = edge[1]
             if a not in res:
