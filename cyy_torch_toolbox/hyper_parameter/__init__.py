@@ -23,6 +23,7 @@ def determine_learning_rate(task: Any, **kwargs: Any) -> float:
     get_logger().warning(
         "suggested_learning_rate is %s", lr_finder.suggested_learning_rate
     )
+    assert lr_finder.suggested_learning_rate is not None
     return lr_finder.suggested_learning_rate
 
 
@@ -46,13 +47,15 @@ class HyperParameter:
             device = trainer.device
             trainer.offload_from_device()
             task_queue.add_task((copy.deepcopy(trainer), device))
-            self.learning_rate = task_queue.get_data()[0]
+            data = task_queue.get_data()
+            assert data is not None
+            self.learning_rate = data[0]
             trainer.set_device(device)
             task_queue.stop()
         return self.learning_rate
 
     def set_lr_scheduler_factory(
-        self, name: str, dataset_name: None | str = None, **kwargs: Any
+        self, name: str, dataset_name: str, **kwargs: Any
     ) -> None:
         self._lr_scheduler_factory = functools.partial(
             self.__get_lr_scheduler_factory,
@@ -171,7 +174,7 @@ class HyperParameter:
 
 def get_recommended_hyper_parameter(
     dataset_name: str, model_name: str
-) -> None | HyperParameter:
+) -> HyperParameter:
     """
     Given dataset and model, return a set of recommended hyper parameters
     """
@@ -222,12 +225,12 @@ class HyperParameterConfig:
         self.find_learning_rate = True
         self.learning_rate = None
         self.learning_rate_scheduler = None
-        self.learning_rate_scheduler_kwargs = {}
+        self.learning_rate_scheduler_kwargs: dict = {}
         self.momentum = None
         self.weight_decay = None
         self.optimizer_name = None
 
-    def create_hyper_parameter(self, dataset_name, model_name):
+    def create_hyper_parameter(self, dataset_name, model_name) -> HyperParameter:
         hyper_parameter = get_recommended_hyper_parameter(dataset_name, model_name)
 
         if self.epoch is not None:
