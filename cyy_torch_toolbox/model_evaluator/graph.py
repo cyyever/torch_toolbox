@@ -26,7 +26,7 @@ class GraphModelEvaluator(ModelEvaluator):
         )
 
     def __call__(self, **kwargs: Any) -> dict:
-        graph = kwargs.pop("graph")
+        graph = kwargs["original_dataset"][kwargs["graph_index"]]
         x = kwargs["input"]["x"]
         mask = kwargs["mask"]
         phase = kwargs["phase"]

@@ -403,7 +403,6 @@ class GraphDatasetUtil(DatasetSplitter):
             else:
                 graph = {
                     "mask": mask,
-                    "graph": graph,
                     "graph_index": idx,
                     "original_dataset": self.dataset,
                 }
@@ -428,7 +427,6 @@ class GraphDatasetUtil(DatasetSplitter):
                 datasets[phase].append(
                     {
                         "mask": getattr(graph, mask_name),
-                        "graph": graph,
                         "graph_index": idx,
                         "original_dataset": self.dataset,
                     }
