@@ -1,4 +1,5 @@
 import os
+from dataclasses import dataclass
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -8,9 +9,9 @@ from cyy_naive_lib.reproducible_random_env import ReproducibleRandomEnv
 class ReproducibleEnv(ReproducibleRandomEnv):
     def __init__(self) -> None:
         super().__init__()
-        self.__torch_seed = None
-        self.__torch_rng_state = None
-        self.__torch_cuda_rng_state = None
+        self.__torch_seed: None | int = None
+        self.__torch_rng_state: None | torch.Tensor = None
+        self.__torch_cuda_rng_state: None | list = None
 
     def enable(self) -> None:
         """
@@ -66,3 +67,21 @@ class ReproducibleEnv(ReproducibleRandomEnv):
 
 
 global_reproducible_env: ReproducibleEnv = ReproducibleEnv()
+
+
+@dataclass
+class ReproducibleEnvConfig:
+    make_reproducible_env: bool = False
+    reproducible_env_load_path: str | None = None
+
+    def set_reproducible_env(self, save_dir: str | None = None) -> None:
+        if self.reproducible_env_load_path is not None:
+            assert not global_reproducible_env.enabled
+            global_reproducible_env.load(self.reproducible_env_load_path)
+            self.make_reproducible_env = True
+
+        if self.make_reproducible_env:
+            global_reproducible_env.enable()
+            if self.reproducible_env_load_path is None:
+                assert save_dir is not None
+                global_reproducible_env.save(save_dir)
