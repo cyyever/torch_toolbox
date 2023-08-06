@@ -176,15 +176,27 @@ class DatasetSplitter(DatasetUtil):
 
         def split_index_impl(indices_list: list) -> list[list]:
             part_lens = []
+            first_assert = False
+
             for part in parts:
+                assert part > 0
                 part_len = int(len(indices_list) * part / sum(parts))
-                assert part_len != 0
+                if part_len == 0 and first_assert:
+                    first_assert = False
+                    get_logger().warning(
+                        "has zero part when splitting list, %s %s",
+                        len(indices_list),
+                        parts,
+                    )
                 part_lens.append(part_len)
             part_lens[-1] += len(indices_list) - sum(part_lens)
             part_indices = []
             for part_len in part_lens:
-                part_indices.append(indices_list[0:part_len])
-                indices_list = indices_list[part_len:]
+                if part_len != 0:
+                    part_indices.append(indices_list[0:part_len])
+                    indices_list = indices_list[part_len:]
+                else:
+                    part_indices.append([])
             return part_indices
 
         if not iid:
