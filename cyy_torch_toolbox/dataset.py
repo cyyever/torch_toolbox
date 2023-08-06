@@ -104,12 +104,13 @@ def select_item(
                         if indices is None or idx in indices:
                             yield idx, {"target": dataset[0].y[idx], "index": idx}
                 else:
+                    graph = dataset[0]["original_dataset"][dataset[0]["graph_index"]]
                     for idx, flag in enumerate(mask.tolist()):
                         if not flag:
                             continue
                         if indices is None or idx in indices:
                             yield idx, {
-                                "target": dataset[0]["graph"]["y"][idx],
+                                "target": graph.y[idx],
                                 "index": idx,
                             }
                 return
