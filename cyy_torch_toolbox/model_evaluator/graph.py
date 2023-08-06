@@ -26,29 +26,33 @@ class GraphModelEvaluator(ModelEvaluator):
         )
 
     def __call__(self, **kwargs: Any) -> dict:
-        inputs = kwargs["inputs"]
+        graph = kwargs.pop("graph")
+        x = kwargs["input"]["x"]
         mask = kwargs["mask"]
         phase = kwargs["phase"]
-        # get_logger().error("old edge shape is %s", inputs["edge_index"].shape)
-        masked = inputs["x"].shape[0] < mask.shape[0]
-        if not masked:
-            self.__narrow_batch(
-                mask=mask,
-                phase=phase,
-                batch_node_indices=kwargs["batch_node_indices"],
-                edge_dict=kwargs["edge_dict"],
-                edge_dtype=inputs["edge_index"].dtype,
-            )
-            inputs["edge_index"] = self.edge_index_map[phase]
-            inputs["x"] = inputs["x"][self.batch_neighbour_mask[phase]]
+        get_logger().error("old edge shape is %s", graph.edge_index.shape)
+        get_logger().error("shape1 is %s shape 2 %s", x.shape, mask.shape)
+
+        self.__narrow_batch(
+            mask=mask,
+            phase=phase,
+            batch_node_indices=kwargs["batch_node_indices"],
+            edge_dict=kwargs["edge_dict"],
+            edge_dtype=graph.edge_index.dtype,
+        )
+        inputs = {
+            "edge_index": self.edge_index_map[phase],
+            "x": x[self.batch_neighbour_mask[phase]],
+        }
 
         batch_mask = torch_geometric.utils.index_to_mask(
-            torch.tensor(kwargs["batch_node_indices"]), kwargs["targets"].shape[0]
+            torch.tensor(kwargs["batch_node_indices"]), kwargs["target"].shape[0]
         )
-        kwargs["targets"] = kwargs["targets"][batch_mask]
+        kwargs["targets"] = kwargs["target"][batch_mask]
         batch_mask = torch.zeros(
             (len(self.batch_neighbour_index_map[phase]),), dtype=torch.bool
         )
+        assert phase in self.batch_neighbour_index_map
         for idx in kwargs["batch_node_indices"]:
             batch_mask[self.batch_neighbour_index_map[phase][idx]] = True
         kwargs["batch_mask"] = batch_mask
@@ -57,7 +61,7 @@ class GraphModelEvaluator(ModelEvaluator):
             batch_mask.sum().item(),
             self.edge_index_map[phase].shape,
         )
-        return super().__call__(**kwargs)
+        return super().__call__(inputs=inputs, **kwargs)
 
     def _compute_loss(
         self, output: torch.Tensor, batch_mask: torch.Tensor, **kwargs: Any
@@ -87,9 +91,12 @@ class GraphModelEvaluator(ModelEvaluator):
             edge_dict=self.__neighbour_edge_dicts[phase],
             hop=self.neighbour_hop,
         )
+        for a in batch_node_indices:
+            assert a in batch_neighbour
         batch_neighbour_index_map = {
             node_index: idx for idx, node_index in enumerate(sorted(batch_neighbour))
         }
+        print("set batch_neighbour_index_map")
         self.batch_neighbour_index_map[phase] = batch_neighbour_index_map
         new_source_list = []
         new_target_list = []

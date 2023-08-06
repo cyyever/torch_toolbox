@@ -52,6 +52,4 @@ class RandomNodeLoader(torch.utils.data.DataLoader):
             "batch_size": len(indices),
             "edge_dict": self.edge_dict,
         }
-        batch["inputs"] = batch["input"]
-        batch["targets"] = batch["target"]
         return batch
