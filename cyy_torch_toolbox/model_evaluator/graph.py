@@ -24,13 +24,14 @@ class GraphModelEvaluator(ModelEvaluator):
             for _, module in self.model_util.get_modules()
             if isinstance(module, torch_geometric.nn.MessagePassing)
         )
+        get_logger().info("use neighbour_hop %s", self.neighbour_hop)
 
     def __call__(self, **kwargs: Any) -> dict:
         graph = kwargs["original_dataset"][kwargs["graph_index"]]
         x = kwargs["input"]["x"]
         mask = kwargs["mask"]
         phase = kwargs["phase"]
-        get_logger().error("old edge shape is %s", graph.edge_index.shape)
+        # get_logger().error("old edge shape is %s", graph.edge_index.shape)
         # get_logger().error("shape1 is %s shape 2 %s", x.shape, mask.shape)
 
         self.__narrow_batch(
@@ -55,13 +56,13 @@ class GraphModelEvaluator(ModelEvaluator):
         for idx in kwargs["batch_node_indices"]:
             batch_mask[self.batch_neighbour_index_map[phase][idx]] = True
         kwargs["batch_mask"] = batch_mask
-        get_logger().error(
-            "batch size is %s %s edge shape is %s new x shape is %s",
-            batch_mask.sum().item(),
-            len(kwargs["batch_node_indices"]),
-            self.edge_index_map[phase].shape,
-            inputs["x"].shape,
-        )
+        # get_logger().error(
+        #     "batch size is %s %s edge shape is %s new x shape is %s",
+        #     batch_mask.sum().item(),
+        #     len(kwargs["batch_node_indices"]),
+        #     self.edge_index_map[phase].shape,
+        #     inputs["x"].shape,
+        # )
         return super().__call__(inputs=inputs, **kwargs)
 
     def _compute_loss(
