@@ -375,19 +375,21 @@ class GraphDatasetUtil(DatasetSplitter):
     ) -> tuple[set, set]:
         assert hop > 0
         neighbors: set = set(node_indices)
-        unchecked_nodes = set(neighbors)
+        unchecked_nodes = copy.deepcopy(neighbors)
         edges = []
-        for _ in range(hop):
+        for i in range(hop):
             tmp: set = set()
             for node in unchecked_nodes:
                 for new_node in edge_dict[node]:
-                    if node <= new_node:
+                    if i == 0:
                         edges.append((node, new_node))
-                    else:
                         edges.append((new_node, node))
                     if new_node not in neighbors:
                         tmp.add(new_node)
                         neighbors.add(new_node)
+                        if i > 0:
+                            edges.append((node, new_node))
+                            edges.append((new_node, node))
             unchecked_nodes = tmp
         return neighbors, set(edges)
 
