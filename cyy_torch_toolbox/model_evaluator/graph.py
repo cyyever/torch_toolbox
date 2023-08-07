@@ -15,7 +15,6 @@ if has_torch_geometric:
 class GraphModelEvaluator(ModelEvaluator):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.__edge_dict: dict = {}
         self.__neighbour_edge_dicts: dict = {}
         self.batch_neighbour_index_map: dict = {}
         self.edge_index_map: dict = {}
@@ -31,7 +30,7 @@ class GraphModelEvaluator(ModelEvaluator):
         x = kwargs["input"]["x"]
         mask = kwargs["mask"]
         phase = kwargs["phase"]
-        # get_logger().error("old edge shape is %s", graph.edge_index.shape)
+        get_logger().error("old edge shape is %s", graph.edge_index.shape)
         # get_logger().error("shape1 is %s shape 2 %s", x.shape, mask.shape)
 
         self.__narrow_batch(
@@ -57,8 +56,9 @@ class GraphModelEvaluator(ModelEvaluator):
             batch_mask[self.batch_neighbour_index_map[phase][idx]] = True
         kwargs["batch_mask"] = batch_mask
         get_logger().error(
-            "batch size is %s edge shape is %s new x shape is %s",
+            "batch size is %s %s edge shape is %s new x shape is %s",
             batch_mask.sum().item(),
+            len(kwargs["batch_node_indices"]),
             self.edge_index_map[phase].shape,
             inputs["x"].shape,
         )
@@ -72,12 +72,10 @@ class GraphModelEvaluator(ModelEvaluator):
     def __narrow_graph(self, mask, phase, graph_dict) -> None:
         if phase in self.__neighbour_edge_dicts:
             return
-        if not self.__edge_dict:
-            self.__edge_dict = GraphDatasetUtil.get_edge_dict(graph_dict=graph_dict)
-        node_indices = set(torch_geometric.utils.mask_to_index(mask).tolist())
+        edge_dict = GraphDatasetUtil.get_edge_dict(graph_dict=graph_dict)
         _, neighbour_edges = GraphDatasetUtil.get_neighbors(
-            node_indices=node_indices,
-            edge_dict=self.__edge_dict,
+            node_indices=torch_geometric.utils.mask_to_index(mask).tolist(),
+            edge_dict=edge_dict,
             hop=self.neighbour_hop,
         )
         self.__neighbour_edge_dicts[phase] = GraphDatasetUtil.edge_to_dict(
@@ -92,6 +90,11 @@ class GraphModelEvaluator(ModelEvaluator):
             node_indices=batch_node_indices,
             edge_dict=self.__neighbour_edge_dicts[phase],
             hop=self.neighbour_hop,
+        )
+        get_logger().error(
+            "batch_neighbour len %s batch_neighbour_edges len %s",
+            len(batch_neighbour),
+            len(batch_neighbour_edges),
         )
         batch_neighbour_index_map = {
             node_index: idx for idx, node_index in enumerate(sorted(batch_neighbour))
