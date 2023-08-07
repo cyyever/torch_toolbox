@@ -15,15 +15,14 @@ if has_torch_geometric:
 class GraphModelEvaluator(ModelEvaluator):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.__neighbour_edge_dicts: dict = {}
-        self.batch_neighbour_index_map: dict = {}
-        self.edge_index_map: dict = {}
-        self.batch_neighbour_mask: dict = {}
         self.neighbour_hop = sum(
             1
             for _, module in self.model_util.get_modules()
             if isinstance(module, torch_geometric.nn.MessagePassing)
         )
+        self.batch_neighbour_index_map: dict = {}
+        self.__subset_edge_dict: dict = {}
+        self.__batch_neighbour_edge_index: dict = {}
         get_logger().info("use neighbour_hop %s", self.neighbour_hop)
 
     def __call__(self, **kwargs: Any) -> dict:
@@ -34,7 +33,7 @@ class GraphModelEvaluator(ModelEvaluator):
         # get_logger().error("old edge shape is %s", graph.edge_index.shape)
         # get_logger().error("shape1 is %s shape 2 %s", x.shape, mask.shape)
 
-        self.__narrow_batch(
+        batch_neighbour_mask = self.__narrow_batch(
             mask=mask,
             phase=phase,
             batch_node_indices=kwargs["batch_node_indices"],
@@ -42,8 +41,8 @@ class GraphModelEvaluator(ModelEvaluator):
             edge_dtype=graph.edge_index.dtype,
         )
         inputs = {
-            "edge_index": self.edge_index_map[phase],
-            "x": x[self.batch_neighbour_mask[phase]],
+            "edge_index": self.__batch_neighbour_edge_index[phase],
+            "x": x[batch_neighbour_mask],
         }
 
         batch_mask = torch_geometric.utils.index_to_mask(
@@ -71,7 +70,7 @@ class GraphModelEvaluator(ModelEvaluator):
         return super()._compute_loss(output=output[batch_mask], **kwargs)
 
     def __narrow_graph(self, mask, phase, graph_dict) -> None:
-        if phase in self.__neighbour_edge_dicts:
+        if phase in self.__subset_edge_dict:
             return
         edge_dict = GraphDatasetUtil.get_edge_dict(graph_dict=graph_dict)
         _, neighbour_edges = GraphDatasetUtil.get_neighbors(
@@ -79,9 +78,7 @@ class GraphModelEvaluator(ModelEvaluator):
             edge_dict=edge_dict,
             hop=self.neighbour_hop,
         )
-        self.__neighbour_edge_dicts[phase] = GraphDatasetUtil.edge_to_dict(
-            neighbour_edges
-        )
+        self.__subset_edge_dict[phase] = GraphDatasetUtil.edge_to_dict(neighbour_edges)
 
     def __narrow_batch(
         self, mask, phase, graph_dict, batch_node_indices, edge_dtype
@@ -89,14 +86,14 @@ class GraphModelEvaluator(ModelEvaluator):
         self.__narrow_graph(mask=mask, phase=phase, graph_dict=graph_dict)
         batch_neighbour, batch_neighbour_edges = GraphDatasetUtil.get_neighbors(
             node_indices=batch_node_indices,
-            edge_dict=self.__neighbour_edge_dicts[phase],
+            edge_dict=self.__subset_edge_dict[phase],
             hop=self.neighbour_hop,
         )
-        get_logger().error(
-            "batch_neighbour len %s batch_neighbour_edges len %s",
-            len(batch_neighbour),
-            len(batch_neighbour_edges),
-        )
+        # get_logger().error(
+        #     "batch_neighbour len %s batch_neighbour_edges len %s",
+        #     len(batch_neighbour),
+        #     len(batch_neighbour_edges),
+        # )
         batch_neighbour_index_map = {
             node_index: idx for idx, node_index in enumerate(sorted(batch_neighbour))
         }
@@ -106,9 +103,9 @@ class GraphModelEvaluator(ModelEvaluator):
         for source, target in batch_neighbour_edges:
             new_source_list.append(batch_neighbour_index_map[source])
             new_target_list.append(batch_neighbour_index_map[target])
-        self.edge_index_map[phase] = torch.tensor(
+        self.__batch_neighbour_edge_index[phase] = torch.tensor(
             data=[new_source_list, new_target_list], dtype=edge_dtype
         )
-        self.batch_neighbour_mask[phase] = torch_geometric.utils.index_to_mask(
+        return torch_geometric.utils.index_to_mask(
             torch.tensor(list(batch_neighbour)), size=mask.shape[0]
         )
