@@ -345,18 +345,24 @@ class GraphDatasetUtil(DatasetSplitter):
         graph_dict = self.dataset[graph_index]
         original_dataset = graph_dict["original_dataset"]
         graph_index = graph_dict["graph_index"]
-        key: str = f"__torch_toolbox_edge_dict_{graph_index}"
-        if hasattr(original_dataset, key):
-            get_logger().warning(
-                "get cached edge_dict from graph %s %s",
-                id(original_dataset),
-                graph_index,
-            )
-            return getattr(original_dataset, key)
         graph = original_dataset[graph_index]
         assert not graph.is_directed()
-        edge_dict = self.edge_to_dict(edge_index=graph.edge_index)
-        setattr(original_dataset, key, edge_dict)
+        edge_mask = graph_dict.get("edge_mask", None)
+        edge_index = graph.edge_index
+        if edge_mask is None:
+            key: str = f"__torch_toolbox_edge_dict_{graph_index}"
+            if hasattr(original_dataset, key):
+                get_logger().warning(
+                    "get cached edge_dict from graph %s %s",
+                    id(original_dataset),
+                    graph_index,
+                )
+                return getattr(original_dataset, key)
+            edge_dict = self.edge_to_dict(edge_index=edge_index)
+            setattr(original_dataset, key, edge_dict)
+        else:
+            edge_index = edge_index[:, edge_mask]
+            edge_dict = self.edge_to_dict(edge_index=edge_index)
         return edge_dict
 
     def get_boundary(self, node_indices: Iterable) -> dict:
