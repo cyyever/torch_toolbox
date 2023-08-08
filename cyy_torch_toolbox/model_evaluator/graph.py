@@ -73,7 +73,8 @@ class GraphModelEvaluator(ModelEvaluator):
     ) -> None:
         if phase in self.__subset_edge_dict:
             return
-        edge_dict = GraphDatasetUtil.get_edge_dict(graph_dict=graph_dict)
+        dataset_util = GraphDatasetUtil(dataset=[graph_dict])
+        edge_dict = dataset_util.get_edge_dict(0)
         _, neighbour_edges = GraphDatasetUtil.get_neighbors(
             node_indices=torch_geometric.utils.mask_to_index(mask).tolist(),
             edge_dict=edge_dict,
