@@ -11,12 +11,14 @@ from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.dataset import get_dataset_size, select_item, subset_dp
 from cyy_torch_toolbox.dataset_transform.transform import Transforms
-from cyy_torch_toolbox.dependency import has_torchvision
+from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
 from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
 
 if has_torchvision:
     import PIL
     import torchvision
+if has_torch_geometric:
+    import torch_geometric.utils
 
 
 class DatasetUtil:
@@ -393,7 +395,28 @@ class GraphDatasetUtil(DatasetSplitter):
             unchecked_nodes = tmp
         return neighbors, set(edges)
 
-    def get_subset(self, indices: Iterable) -> list[dict]:
+    def get_subset(self, node_indices: Iterable | torch.Tensor) -> list[dict]:
+        assert node_indices
+        node_indices = torch.tensor(list(node_indices))
+        result = []
+        for idx, mask in enumerate(self.get_mask()):
+            mask = torch_geometric.utils.index_to_mask(node_indices, size=mask.shape[0])
+            graph = self.dataset[idx]
+            if isinstance(graph, dict):
+                assert "original_dataset" in graph
+                assert graph["graph_index"] == idx
+                graph = graph.copy()
+                graph["mask"] = mask
+            else:
+                graph = {
+                    "mask": mask,
+                    "graph_index": idx,
+                    "original_dataset": self.dataset,
+                }
+            result.append(graph)
+        return result
+
+    def get_edge_subset(self, indices: Iterable) -> list[dict]:
         assert indices
         result = []
         for idx, mask in enumerate(self.get_mask()):
