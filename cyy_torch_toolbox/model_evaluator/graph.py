@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Iterable
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -82,7 +82,12 @@ class GraphModelEvaluator(ModelEvaluator):
         )
         self.__subset_edge_dict[phase] = GraphDatasetUtil.edge_to_dict(neighbour_edges)
 
-    def __narrow_batch(self, phase, batch_node_indices, graph_dict) -> torch.Tensor:
+    def __narrow_batch(
+        self,
+        phase: MachineLearningPhase,
+        batch_node_indices: Iterable,
+        graph_dict: dict,
+    ) -> torch.Tensor:
         graph = graph_dict["original_dataset"][graph_dict["graph_index"]]
         batch_neighbour, batch_neighbour_edges = GraphDatasetUtil.get_neighbors(
             node_indices=batch_node_indices,
