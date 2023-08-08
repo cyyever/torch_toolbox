@@ -22,8 +22,13 @@ class GraphModelEvaluator(ModelEvaluator):
         )
         self.batch_neighbour_index_map: dict = {}
         self.__subset_edge_dict: dict = {}
+        self.__edge_mask: None | torch.Tensor = None
         self.__batch_neighbour_edge_index: dict = {}
         get_logger().info("use neighbour_hop %s", self.neighbour_hop)
+
+    def set_edge_mask(self, edge_mask) -> None:
+        assert not self.__subset_edge_dict
+        self.__edge_mask = edge_mask
 
     def __call__(self, **kwargs: Any) -> dict:
         graph = kwargs["original_dataset"][kwargs["graph_index"]]
