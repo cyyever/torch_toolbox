@@ -427,7 +427,7 @@ class GraphDatasetUtil(DatasetSplitter):
             tmp = graph_dict.copy()
             graph = self.get_graph(graph_idx)
             tmp["edge_mask"] = torch_geometric.utils.index_to_mask(
-                edge_indices, size=graph.edge_index.shape[0]
+                edge_indices, size=graph.edge_index.shape[1]
             )
             result.append(tmp)
         return result
