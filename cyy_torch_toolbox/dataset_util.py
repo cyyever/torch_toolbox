@@ -395,7 +395,10 @@ class GraphDatasetUtil(DatasetSplitter):
             unchecked_nodes = tmp
         return neighbors, set(edges)
 
-    def get_subset(self, node_indices: Iterable | torch.Tensor) -> list[dict]:
+    def get_subset(self, indices: Iterable) -> list[dict]:
+        return self.get_node_subset(indices)
+
+    def get_node_subset(self, node_indices: Iterable | torch.Tensor) -> list[dict]:
         assert node_indices
         node_indices = torch.tensor(list(node_indices))
         result = []
