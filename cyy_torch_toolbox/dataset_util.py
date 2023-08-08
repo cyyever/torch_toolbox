@@ -319,15 +319,14 @@ class GraphDatasetUtil(DatasetSplitter):
 
     @classmethod
     def foreach_edge(cls, edge_index: torch.Tensor) -> list:
-        return edge_index.transpose(0, 1).numpy()
+        if isinstance(edge_index, torch.Tensor):
+            return edge_index.transpose(0, 1).numpy()
+        return edge_index
 
     @classmethod
     def edge_to_dict(cls, edge_index: torch.Tensor | Iterable) -> dict:
-        if isinstance(edge_index, torch.Tensor):
-            edge_index = cls.foreach_edge(edge_index)
-
         res: dict = {}
-        for edge in edge_index:
+        for edge in cls.foreach_edge(edge_index):
             a = edge[0]
             b = edge[1]
             tmp = res.get(a, None)
@@ -342,10 +341,9 @@ class GraphDatasetUtil(DatasetSplitter):
             tmp.add(a)
         return res
 
-    @classmethod
-    def get_edge_dict(cls, graph_dict) -> dict:
+    def get_edge_dict(self, graph_index=0) -> dict:
+        graph_dict = self.dataset[graph_index]
         original_dataset = graph_dict["original_dataset"]
-        graph_index = graph_dict["graph_index"]
         key: str = f"__torch_toolbox_edge_dict_{graph_index}"
         if hasattr(original_dataset, key):
             get_logger().warning(
@@ -356,14 +354,14 @@ class GraphDatasetUtil(DatasetSplitter):
             return getattr(original_dataset, key)
         graph = original_dataset[graph_index]
         assert not graph.is_directed()
-        edge_dict = cls.edge_to_dict(edge_index=graph.edge_index)
+        edge_dict = self.edge_to_dict(edge_index=graph.edge_index)
         setattr(original_dataset, key, edge_dict)
         return edge_dict
 
     def get_boundary(self, node_indices: Iterable) -> dict:
         assert len(self.dataset) == 1
         res: dict = {}
-        edge_dict = self.get_edge_dict(graph_dict=self.dataset[0])
+        edge_dict = self.get_edge_dict(graph_idx=0)
         node_indices = set(node_indices)
         for node_idx in node_indices:
             boundary = edge_dict[node_idx] - node_indices
@@ -403,33 +401,35 @@ class GraphDatasetUtil(DatasetSplitter):
         node_indices = torch.tensor(list(node_indices))
         result = []
         for idx, graph in enumerate(self.dataset):
-            mask = torch_geometric.utils.index_to_mask(
-                node_indices, size=graph.x.shape[0]
-            )
             if isinstance(graph, dict):
-                graph = graph.copy()
-                graph["mask"] = mask
+                tmp = graph.copy()
+                graph = tmp["original_dataset"][tmp["graph_index"]]
             else:
-                graph = {
-                    "mask": mask,
+                tmp = {
                     "graph_index": idx,
                     "original_dataset": self.dataset,
                 }
-            result.append(graph)
+            tmp["mask"] = torch_geometric.utils.index_to_mask(
+                node_indices, size=graph.x.shape[0]
+            )
+            result.append(tmp)
         return result
+
+    def get_graph(self, graph_idx) -> Any:
+        return self.dataset[graph_idx]["original_dataset"][graph_idx]
 
     def get_edge_subset(self, edge_indices: Iterable | torch.Tensor) -> list[dict]:
         assert edge_indices
         edge_indices = torch.tensor(list(edge_indices))
         result = []
-        for graph in self.dataset:
-            mask = torch_geometric.utils.index_to_mask(
+        for graph_idx, graph_dict in enumerate(self.dataset):
+            assert isinstance(graph_dict, dict)
+            tmp = graph_dict.copy()
+            graph = self.get_graph(graph_idx)
+            tmp["edge_mask"] = torch_geometric.utils.index_to_mask(
                 edge_indices, size=graph.edge_index.shape[0]
             )
-            assert isinstance(graph, dict)
-            graph = graph.copy()
-            graph["edge_mask"] = mask
-            result.append(graph)
+            result.append(tmp)
         return result
 
     def decompose(self) -> None | dict:
