@@ -27,7 +27,7 @@ class GraphModelEvaluator(ModelEvaluator):
         get_logger().info("use neighbour_hop %s", self.neighbour_hop)
 
     def __call__(self, **kwargs: Any) -> dict:
-        x = kwargs["input"]["x"]
+        x = kwargs["input"].x
         mask = kwargs["mask"]
         phase = kwargs["phase"]
         # get_logger().error("old edge shape is %s", graph.edge_index.shape)
@@ -88,7 +88,6 @@ class GraphModelEvaluator(ModelEvaluator):
         batch_node_indices: Iterable,
         graph_dict: dict,
     ) -> torch.Tensor:
-        graph = graph_dict["original_dataset"][graph_dict["graph_index"]]
         batch_neighbour, batch_neighbour_edges = GraphDatasetUtil.get_neighbors(
             node_indices=batch_node_indices,
             edge_dict=self.__subset_edge_dict[phase],
@@ -103,6 +102,7 @@ class GraphModelEvaluator(ModelEvaluator):
         for source, target in batch_neighbour_edges:
             new_source_list.append(batch_neighbour_index_map[source])
             new_target_list.append(batch_neighbour_index_map[target])
+        graph = graph_dict["input"]
         self.__batch_neighbour_edge_index[phase] = torch.tensor(
             data=[new_source_list, new_target_list], dtype=graph.edge_index.dtype
         )
