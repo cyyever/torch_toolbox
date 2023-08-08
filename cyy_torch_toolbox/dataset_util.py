@@ -344,6 +344,7 @@ class GraphDatasetUtil(DatasetSplitter):
     def get_edge_dict(self, graph_index=0) -> dict:
         graph_dict = self.dataset[graph_index]
         original_dataset = graph_dict["original_dataset"]
+        graph_index = graph_dict["graph_index"]
         key: str = f"__torch_toolbox_edge_dict_{graph_index}"
         if hasattr(original_dataset, key):
             get_logger().warning(
