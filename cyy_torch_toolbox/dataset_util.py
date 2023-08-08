@@ -403,10 +403,7 @@ class GraphDatasetUtil(DatasetSplitter):
             mask = torch_geometric.utils.index_to_mask(
                 node_indices, size=graph.x.shape[0]
             )
-            graph = self.dataset[idx]
             if isinstance(graph, dict):
-                assert "original_dataset" in graph
-                assert graph["graph_index"] == idx
                 graph = graph.copy()
                 graph["mask"] = mask
             else:
@@ -415,6 +412,20 @@ class GraphDatasetUtil(DatasetSplitter):
                     "graph_index": idx,
                     "original_dataset": self.dataset,
                 }
+            result.append(graph)
+        return result
+
+    def get_edge_subset(self, edge_indices: Iterable | torch.Tensor) -> list[dict]:
+        assert edge_indices
+        edge_indices = torch.tensor(list(edge_indices))
+        result = []
+        for graph in self.dataset:
+            mask = torch_geometric.utils.index_to_mask(
+                edge_indices, size=graph.edge_index.shape[0]
+            )
+            assert isinstance(graph, dict)
+            graph = graph.copy()
+            graph["edge_mask"] = mask
             result.append(graph)
         return result
 
