@@ -54,13 +54,10 @@ class HyperParameter:
             task_queue.stop()
         return self.learning_rate
 
-    def set_lr_scheduler_factory(
-        self, name: str, dataset_name: str, **kwargs: Any
-    ) -> None:
+    def set_lr_scheduler_factory(self, name: str, **kwargs: Any) -> None:
         self._lr_scheduler_factory = functools.partial(
             self.__get_lr_scheduler_factory,
             name=name,
-            dataset_name=dataset_name,
             kwargs=kwargs,
         )
 
@@ -77,17 +74,13 @@ class HyperParameter:
     def lr_scheduler_step_after_batch(lr_scheduler):
         return isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR)
 
-    def __get_lr_scheduler_factory(
-        self, trainer: Any, name: str, dataset_name: str, kwargs: dict
-    ) -> Any:
+    def __get_lr_scheduler_factory(self, trainer: Any, name: str, kwargs: dict) -> Any:
         optimizer = trainer.get_optimizer()
         training_dataset_size = trainer.dataset_size
         full_kwargs: dict = {}
         full_kwargs["optimizer"] = optimizer
         if name == "ReduceLROnPlateau":
             patience = min(10, self.epoch + 9 // 10)
-            if dataset_name == "CIFAR10":
-                patience = 2
             full_kwargs["patience"] = patience
             full_kwargs["factor"] = 0.1
             full_kwargs["verbose"] = True
@@ -211,9 +204,7 @@ def get_recommended_hyper_parameter(
             learning_rate=HyperParameterAction.FIND_LR,
             weight_decay=0,
         )
-    hyper_parameter.set_lr_scheduler_factory(
-        name="ReduceLROnPlateau", dataset_name=dataset_name
-    )
+    hyper_parameter.set_lr_scheduler_factory(name="ReduceLROnPlateau")
     hyper_parameter.set_optimizer_factory("Adam")
     return hyper_parameter
 
