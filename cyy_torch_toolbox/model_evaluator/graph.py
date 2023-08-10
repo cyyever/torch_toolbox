@@ -74,7 +74,7 @@ class GraphModelEvaluator(ModelEvaluator):
         if phase in self.__subset_edge_dict:
             return
         dataset_util = GraphDatasetUtil(dataset=[graph_dict])
-        edge_dict = dataset_util.get_edge_dict(0)
+        edge_dict = dataset_util.get_edge_dict()
         _, neighbour_edges = GraphDatasetUtil.get_neighbors(
             node_indices=torch_geometric.utils.mask_to_index(mask).tolist(),
             edge_dict=edge_dict,
@@ -102,9 +102,8 @@ class GraphModelEvaluator(ModelEvaluator):
         for source, target in batch_neighbour_edges:
             new_source_list.append(batch_neighbour_index_map[source])
             new_target_list.append(batch_neighbour_index_map[target])
-        graph = graph_dict["input"]
-        self.__batch_neighbour_edge_index[phase] = torch.tensor(
-            data=[new_source_list, new_target_list], dtype=graph.edge_index.dtype
+        self.__batch_neighbour_edge_index[phase] = GraphDatasetUtil.create_edge_index(
+            new_source_list, new_target_list
         )
         return torch_geometric.utils.index_to_mask(
             torch.tensor(list(batch_neighbour)), size=graph_dict["mask"].shape[0]
