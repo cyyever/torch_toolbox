@@ -69,7 +69,11 @@ class DatasetUtil:
             case list():
                 return set(target)
             case torch.Tensor():
-                return cls.__decode_target(target.tolist())
+                target_list = target.tolist()
+                if all(a == 1 or a == 0 for a in target_list):
+                    # one hot vector
+                    return {idx for idx, elm in enumerate(target_list) if elm}
+                return cls.__decode_target(target_list)
             case dict():
                 if "labels" in target:
                     return set(target["labels"].tolist())
