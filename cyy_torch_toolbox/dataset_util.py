@@ -18,6 +18,7 @@ if has_torchvision:
     import PIL
     import torchvision
 if has_torch_geometric:
+    import torch_geometric.data
     import torch_geometric.utils
 
 
@@ -349,14 +350,15 @@ class GraphDatasetUtil(DatasetSplitter):
         graph_dict = self.dataset[graph_index]
         if "edge_index" in graph_dict:
             return graph_dict["edge_index"]
+        graph = self.get_graph(graph_index)
+        return graph.edge_index
+
+    def get_graph(self, graph_index) -> Any:
+        graph_dict = self.dataset[graph_index]
         original_dataset = graph_dict["original_dataset"]
         graph_index = graph_dict["graph_index"]
         graph = original_dataset[graph_index]
-        edge_mask = graph_dict.get("edge_mask", None)
-        edge_index = graph.edge_index
-        if edge_mask is not None:
-            edge_index = edge_index[:, edge_mask]
-        return edge_index
+        return graph
 
     def get_edge_dict(self, graph_index=0) -> dict:
         graph_dict = self.dataset[graph_index]
@@ -365,8 +367,8 @@ class GraphDatasetUtil(DatasetSplitter):
         graph_index = graph_dict["graph_index"]
         graph = original_dataset[graph_index]
         assert not graph.is_directed()
-        has_edge_mask = "edge_mask" in graph_dict
-        if has_edge_mask:
+        has_custom_edge = "edge_index" in graph_dict
+        if not has_custom_edge:
             key: str = f"__torch_toolbox_edge_dict_{graph_index}"
             if hasattr(original_dataset, key):
                 get_logger().warning(
@@ -426,7 +428,7 @@ class GraphDatasetUtil(DatasetSplitter):
         for idx, graph in enumerate(self.dataset):
             if isinstance(graph, dict):
                 tmp = graph.copy()
-                graph = tmp["original_dataset"][tmp["graph_index"]]
+                graph = self.get_graph(idx)
             else:
                 tmp = {
                     "graph_index": idx,
@@ -438,26 +440,7 @@ class GraphDatasetUtil(DatasetSplitter):
             result.append(tmp)
         return result
 
-    def get_graph(self, graph_idx) -> Any:
-        return self.dataset[graph_idx]["original_dataset"][graph_idx]
-
-    def get_edge_subset(self, edge_indices: Iterable | torch.Tensor) -> list[dict]:
-        assert edge_indices
-        edge_indices = torch.tensor(list(edge_indices))
-        result = []
-        for graph_idx, graph_dict in enumerate(self.dataset):
-            assert isinstance(graph_dict, dict)
-            tmp = graph_dict.copy()
-            graph = self.get_graph(graph_idx)
-            tmp["edge_mask"] = torch_geometric.utils.index_to_mask(
-                edge_indices, size=graph.edge_index.shape[1]
-            )
-            result.append(tmp)
-        return result
-
-    def get_edge_subset_new(
-        self, graph_idx: int, edge_index: torch.Tensor
-    ) -> list[dict]:
+    def get_edge_subset(self, graph_idx: int, edge_index: torch.Tensor) -> list[dict]:
         dataset = copy.copy(self.dataset)
         dataset[graph_idx]["edge_index"] = edge_index
         return dataset
