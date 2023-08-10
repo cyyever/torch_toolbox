@@ -74,7 +74,7 @@ def get_model(
         model_type = ModelType.Detection
     if "num_classes" not in model_kwargs:
         final_model_kwargs["num_classes"] = len(
-            dataset_collection.get_labels(use_cache=True)
+            dataset_collection.get_labels(use_cache=False)
         )
         if model_type == ModelType.Detection:
             final_model_kwargs["num_classes"] += 1

@@ -178,6 +178,8 @@ def __create_dataset(
                 dataset = __dataset_cache.get(cache_key, None)
                 if dataset is None:
                     dataset = dataset_constructor(**processed_dataset_kwargs)
+                    if dataset_type == DatasetType.Graph:
+                        assert len(dataset) == 1
                     __dataset_cache[cache_key] = dataset
                     get_logger().warning(
                         "create and cache dataset %s, id %s with kwargs %s",
