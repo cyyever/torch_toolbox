@@ -174,21 +174,21 @@ def __create_dataset(
                 )
                 if processed_dataset_kwargs is None:
                     break
-                dataset = __dataset_cache.get((dataset_name, dataset_type, phase), None)
+                cache_key = (dataset_name, dataset_type, phase)
+                dataset = __dataset_cache.get(cache_key, None)
                 if dataset is None:
                     dataset = dataset_constructor(**processed_dataset_kwargs)
-                    if dataset_type == DatasetType.Graph:
-                        __dataset_cache[(dataset_name, dataset_type, phase)] = dataset
-                        get_logger().warning(
-                            "create and cache dataset %s, id %s with kwargs %s",
-                            dataset_name,
-                            id(dataset),
-                            processed_dataset_kwargs,
-                        )
+                    __dataset_cache[cache_key] = dataset
+                    get_logger().warning(
+                        "create and cache dataset %s, id %s with kwargs %s",
+                        cache_key,
+                        id(dataset),
+                        processed_dataset_kwargs,
+                    )
                 else:
                     get_logger().debug(
                         "use cached dataset %s, id %s with kwargs %s",
-                        dataset_name,
+                        cache_key,
                         id(dataset),
                         processed_dataset_kwargs,
                     )
