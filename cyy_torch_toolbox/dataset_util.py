@@ -343,6 +343,8 @@ class GraphDatasetUtil(DatasetSplitter):
 
     def get_edge_index(self, graph_index) -> torch.Tensor:
         graph_dict = self.dataset[graph_index]
+        if "edge_index" in graph_dict:
+            return graph_dict["edge_index"]
         original_dataset = graph_dict["original_dataset"]
         graph_index = graph_dict["graph_index"]
         graph = original_dataset[graph_index]
@@ -359,8 +361,8 @@ class GraphDatasetUtil(DatasetSplitter):
         graph_index = graph_dict["graph_index"]
         graph = original_dataset[graph_index]
         assert not graph.is_directed()
-        edge_mask = graph_dict.get("edge_mask", None)
-        if edge_mask is None:
+        has_edge_mask = "edge_mask" in graph_dict
+        if has_edge_mask:
             key: str = f"__torch_toolbox_edge_dict_{graph_index}"
             if hasattr(original_dataset, key):
                 get_logger().warning(
@@ -448,6 +450,13 @@ class GraphDatasetUtil(DatasetSplitter):
             )
             result.append(tmp)
         return result
+
+    def get_edge_subset_new(
+        self, graph_idx: int, edge_index: torch.Tensor
+    ) -> list[dict]:
+        dataset = copy.copy(self.dataset)
+        dataset[graph_idx]["edge_index"] = edge_index
+        return dataset
 
     def decompose(self) -> None | dict:
         mapping: dict = {
