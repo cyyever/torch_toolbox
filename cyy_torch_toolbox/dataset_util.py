@@ -324,6 +324,10 @@ class GraphDatasetUtil(DatasetSplitter):
         return edge_index
 
     @classmethod
+    def create_edge_index(cls, source_node_list, target_node_list) -> torch.Tensor:
+        return torch.tensor(data=[source_node_list, target_node_list], dtype=torch.long)
+
+    @classmethod
     def edge_to_dict(cls, edge_index: torch.Tensor | Iterable) -> dict:
         res: dict = {}
         for edge in cls.foreach_edge(edge_index):
