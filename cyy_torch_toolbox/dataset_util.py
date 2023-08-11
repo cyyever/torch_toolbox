@@ -51,7 +51,6 @@ class DatasetUtil:
         for idx, sample in items:
             sample = self.__transforms.extract_data(sample)
             yield idx, sample
-        return
 
     def get_mask(self) -> None | list:
         return None
@@ -70,10 +69,10 @@ class DatasetUtil:
                 return set(target)
             case torch.Tensor():
                 target_list = target.tolist()
-                if all(a == 1 or a == 0 for a in target_list):
+                if all(a in (0, 1) for a in target_list):
                     # one hot vector
                     return {idx for idx, elm in enumerate(target_list) if elm}
-                return cls.__decode_target(target_list)
+                raise NotImplementedError(f"Unsupported target {target_list}")
             case dict():
                 if "labels" in target:
                     return set(target["labels"].tolist())
@@ -351,9 +350,7 @@ class GraphDatasetUtil(DatasetSplitter):
         return res
 
     def get_edge_index(self, graph_index) -> torch.Tensor:
-        self.dataset[graph_index]
-        graph = self.get_graph(graph_index)
-        return graph.edge_index
+        return self.get_graph(graph_index).edge_index
 
     def get_graph(self, graph_index) -> Any:
         graph_dict = self.dataset[graph_index]
