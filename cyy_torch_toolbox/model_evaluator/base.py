@@ -141,16 +141,16 @@ class ModelEvaluator:
         match output:
             case torch.Tensor():
                 match self.loss_fun:
-                    case nn.BCEWithLogitsLoss():
-                        output = output.view(-1)
-                        convert_kwargs["dtype"] = output.dtype
-                        targets = targets.to(
-                            **convert_kwargs, non_blocking=non_blocking
-                        ).view(-1)
                     case nn.CrossEntropyLoss():
                         targets = targets.to(
                             **convert_kwargs, non_blocking=non_blocking
-                        ).view(-1)
+                        )
+                    # case nn.BCEWithLogitsLoss():
+                    #     output = output.view(-1)
+                    #     convert_kwargs["dtype"] = output.dtype
+                    #     targets = targets.to(
+                    #         **convert_kwargs, non_blocking=non_blocking
+                    #     ).view(-1)
                 loss = self.loss_fun(output, targets)
                 return {
                     "loss": loss,
@@ -207,8 +207,8 @@ class ModelEvaluator:
             get_logger().debug("choose loss function NLLLoss")
             return nn.NLLLoss()
         if isinstance(last_layer, nn.Linear):
-            get_logger().debug("choose loss function BCEWithLogitsLoss")
-            return nn.BCEWithLogitsLoss()
+            get_logger().debug("choose loss function CrossEntropyLoss")
+            return nn.CrossEntropyLoss()
         get_logger().error("can't choose a loss function, model is %s", self._model)
         raise NotImplementedError(type(last_layer))
 
