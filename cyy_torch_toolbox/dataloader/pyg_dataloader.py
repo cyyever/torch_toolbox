@@ -4,8 +4,6 @@ import torch
 import torch.utils.data
 import torch_geometric
 
-from ..dataset_util import GraphDatasetUtil
-
 
 class RandomNodeLoader(torch.utils.data.DataLoader):
     r"""A data loader that randomly samples nodes within a graph and returns
@@ -29,24 +27,20 @@ class RandomNodeLoader(torch.utils.data.DataLoader):
 
     def __init__(
         self,
-        dataset_util: GraphDatasetUtil,
+        dataset: list,
         **kwargs: Any,
     ) -> None:
-        assert len(dataset_util.dataset) == 1
-        self.dataset_util = dataset_util
-        self.node_indices = torch_geometric.utils.mask_to_index(
-            self.dataset_util.dataset[0]["mask"]
-        ).tolist()
-
+        assert len(dataset) == 1
         assert "collate_fn" not in kwargs
         super().__init__(
-            self.node_indices,
+            dataset=torch_geometric.utils.mask_to_index(dataset[0]["mask"]).tolist(),
             collate_fn=self.__collate_fn,
             **kwargs,
         )
+        self.graph_dataset = dataset
 
     def __collate_fn(self, indices):
-        batch = self.dataset_util.dataset[0] | {
+        batch = self.graph_dataset[0] | {
             "batch_node_indices": indices,
             "batch_size": len(indices),
         }
