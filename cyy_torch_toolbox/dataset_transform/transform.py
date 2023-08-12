@@ -112,13 +112,8 @@ class Transforms:
         #     targets = tensor_to(targets, device=inputs.device, non_blocking=False)
         return res
 
-    def cache_transforms(
-        self, dataset: Iterable, device: Any | None = None
-    ) -> tuple[dict, Any]:
-        if device is not None:
-            get_logger().warning("cache dataset to device memory: %s", device)
-        else:
-            get_logger().warning("cache dataset to main memory")
+    def cache_transforms(self, dataset: Iterable, device) -> tuple[dict, Any]:
+        get_logger().warning("cache dataset to device: %s", device)
         transformed_dataset: dict = {}
         for k, item in select_item(dataset):
             item = self.extract_data(item)

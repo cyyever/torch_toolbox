@@ -5,7 +5,6 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from ..dataset_collection import DatasetCollection
-from ..dataset_util import GraphDatasetUtil
 from ..dependency import has_dali, has_torch_geometric, has_torchvision
 from ..ml_type import DatasetType, MachineLearningPhase, ModelType
 
@@ -27,9 +26,14 @@ def get_dataloader(
     dataset = dc.get_dataset(phase=phase)
     transforms = dc.get_transforms(phase=phase)
     data_in_cpu: bool = True
+    if dc.dataset_type == DatasetType.Graph:
+        cache_transforms = "cpu"
     match cache_transforms:
-        case "cpu" | True:
-            dataset, transforms = transforms.cache_transforms(dataset=dataset)
+        case "cpu":
+            device = torch.device("cpu")
+            dataset, transforms = transforms.cache_transforms(
+                dataset=dataset, device=device
+            )
         case "gpu" | "cuda" | "device":
             data_in_cpu = False
             dataset, transforms = transforms.cache_transforms(
@@ -70,7 +74,7 @@ def get_dataloader(
     kwargs["pin_memory"] = False
 
     if has_torch_geometric and dc.dataset_type == DatasetType.Graph:
-        return RandomNodeLoader(GraphDatasetUtil(dataset), **kwargs)
+        return RandomNodeLoader(dataset, **kwargs)
     return torch.utils.data.DataLoader(
         dataset,
         collate_fn=transforms.collate_batch,
