@@ -20,10 +20,17 @@ class AccuracyMetric(Metric):
         targets = result["targets"]
         if logits is not None:
             output = logits
+        correct_count = 0
         if output.shape == targets.shape:
-            correct_count = (
-                torch.eq(torch.round(output.sigmoid()), targets).view(-1).sum()
-            )
+            if len(targets.shape) == 2:
+                for idx, maxidx in enumerate(torch.argmax(output, dim=1)):
+                    if targets[idx][maxidx] == 1:
+                        correct_count += 1
+            else:
+                raise NotImplementedError()
+            # correct_count = (
+            #     torch.eq(torch.round(output.sigmoid()), targets).view(-1).sum()
+            # )
         else:
             correct_count = (
                 torch.eq(torch.max(output, dim=1)[1], targets).view(-1).sum()
