@@ -30,7 +30,7 @@ class DatasetUtil:
         transforms: Transforms | None = None,
         phase: MachineLearningPhase | None = None,
     ) -> None:
-        self.dataset: torch.utils.data.Dataset = dataset
+        self.dataset: torch.utils.data.Dataset | list = dataset
         self.__len: None | int = None
         self._name: str | None = name
         self.__transforms: Transforms | None = transforms
@@ -102,9 +102,6 @@ class DatasetUtil:
             assert len(labels) == 1
             return next(iter(labels))
         return None
-
-    def get_sample_raw_input(self, index: int) -> Any:
-        raise NotImplementedError()
 
     def get_labels(self) -> set:
         return set().union(*tuple(set(labels) for _, labels in self.get_batch_labels()))

@@ -12,7 +12,7 @@ if has_hugging_face:
     import datasets as hugging_face_datasets
 
 
-def get_dataset_size(dataset: torch.utils.data.Dataset) -> int:
+def get_dataset_size(dataset: Any) -> int:
     match dataset:
         case {0: {"mask": mask, **__}} | [{"mask": mask, **__}]:
             return mask.sum()
