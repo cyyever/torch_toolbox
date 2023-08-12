@@ -30,9 +30,8 @@ def get_dataloader(
         cache_transforms = "cpu"
     match cache_transforms:
         case "cpu":
-            device = torch.device("cpu")
             dataset, transforms = transforms.cache_transforms(
-                dataset=dataset, device=device
+                dataset=dataset, device=torch.device("cpu")
             )
         case "gpu" | "cuda" | "device":
             data_in_cpu = False
