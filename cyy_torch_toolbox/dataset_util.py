@@ -330,6 +330,8 @@ class GraphDatasetUtil(DatasetSplitter):
 
     @classmethod
     def edge_to_dict(cls, edge_index: torch.Tensor | Iterable) -> dict:
+        if isinstance(edge_index, torch.Tensor):
+            return cls.__edge_to_dict(edge_index)
         res: dict = {}
         for edge in cls.foreach_edge(edge_index):
             a = edge[0]
@@ -346,6 +348,28 @@ class GraphDatasetUtil(DatasetSplitter):
             tmp.add(a)
         return res
 
+    @classmethod
+    def __edge_to_dict(cls, edge_index: torch.Tensor) -> dict:
+        res: dict = {}
+        edge_index = torch_geometric.utils.coalesce(edge_index)
+        last_a = None
+        neighbor_list = []
+        for edge in cls.foreach_edge(edge_index):
+            a = edge[0]
+            b = edge[1]
+            if last_a is None:
+                last_a = a
+            if a == last_a:
+                neighbor_list.append(b)
+            elif a > last_a:
+                res[last_a] = neighbor_list
+                last_a = a
+                neighbor_list = [b]
+        assert last_a is not None and last_a not in res
+        assert neighbor_list
+        res[last_a] = neighbor_list
+        return res
+
     def get_edge_index(self, graph_index) -> torch.Tensor:
         return self.get_graph(graph_index).edge_index
 
@@ -359,7 +383,7 @@ class GraphDatasetUtil(DatasetSplitter):
     def get_edge_dict(self, graph_index=0) -> dict:
         graph_dict = self.dataset[graph_index]
         edge_dict = graph_dict.get("edge_dict", None)
-        # assert not graph.is_directed()
+        assert not self.get_graph(graph_index).is_directed()
         if edge_dict is not None:
             get_logger().info("use custom edge dict")
             return edge_dict
@@ -392,11 +416,12 @@ class GraphDatasetUtil(DatasetSplitter):
     @classmethod
     def get_neighbors(
         cls, node_indices: Iterable, edge_dict: dict, hop: int
-    ) -> tuple[set, set]:
+    ) -> tuple[set, torch.Tensor]:
         assert hop > 0
         neighbors: set = set(node_indices)
         unchecked_nodes = copy.deepcopy(neighbors)
-        edges = []
+        source_node_list = []
+        target_node_list = []
         for i in range(hop):
             tmp: set = set()
             for node in unchecked_nodes:
@@ -404,16 +429,20 @@ class GraphDatasetUtil(DatasetSplitter):
                     continue
                 for new_node in edge_dict[node]:
                     if i == 0:
-                        edges.append((node, new_node))
-                        edges.append((new_node, node))
+                        source_node_list.append(node)
+                        target_node_list.append(new_node)
+                        source_node_list.append(new_node)
+                        target_node_list.append(node)
                     if new_node not in neighbors:
                         tmp.add(new_node)
                         neighbors.add(new_node)
                         if i > 0:
-                            edges.append((node, new_node))
-                            edges.append((new_node, node))
+                            source_node_list.append(node)
+                            target_node_list.append(new_node)
+                            source_node_list.append(new_node)
+                            target_node_list.append(node)
             unchecked_nodes = tmp
-        return neighbors, set(edges)
+        return neighbors, cls.create_edge_index(source_node_list, target_node_list)
 
     def get_subset(self, indices: Iterable) -> list[dict]:
         return self.get_node_subset(indices)

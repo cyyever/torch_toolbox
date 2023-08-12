@@ -142,6 +142,8 @@ class ModelEvaluator:
             case torch.Tensor():
                 match self.loss_fun:
                     case nn.CrossEntropyLoss():
+                        if len(targets.shape) > 1:
+                            convert_kwargs["dtype"] = torch.float
                         targets = targets.to(
                             **convert_kwargs, non_blocking=non_blocking
                         )
