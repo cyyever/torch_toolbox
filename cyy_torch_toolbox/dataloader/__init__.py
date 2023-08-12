@@ -4,6 +4,7 @@ from typing import Any
 import torch
 from cyy_naive_lib.log import get_logger
 
+from ..data_structure.torch_process_context import TorchProcessContext
 from ..dataset_collection import DatasetCollection
 from ..dependency import has_dali, has_torch_geometric, has_torchvision
 from ..ml_type import DatasetType, MachineLearningPhase, ModelType
@@ -59,9 +60,7 @@ def get_dataloader(
         kwargs["prefetch_factor"] = 2
         kwargs["num_workers"] = 1
         if not data_in_cpu:
-            kwargs["multiprocessing_context"] = torch.multiprocessing.get_context(
-                "spawn"
-            )
+            kwargs["multiprocessing_context"] = TorchProcessContext().get_ctx()
         kwargs["persistent_workers"] = True
     else:
         get_logger().debug("use threads")
