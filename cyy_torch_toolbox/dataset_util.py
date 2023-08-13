@@ -71,7 +71,7 @@ class DatasetUtil:
                 target_list = target.tolist()
                 if all(a in (0, 1) for a in target_list):
                     # one hot vector
-                    return {idx for idx, elm in enumerate(target_list) if elm}
+                    return set(target.nonzero().view(-1).tolist())
                 raise NotImplementedError(f"Unsupported target {target_list}")
             case dict():
                 if "labels" in target:
@@ -319,7 +319,7 @@ class GraphDatasetUtil(DatasetSplitter):
         return [mask]
 
     @classmethod
-    def foreach_edge(cls, edge_index: torch.Tensor) -> list:
+    def to_edge_list(cls, edge_index: torch.Tensor) -> list:
         if isinstance(edge_index, torch.Tensor):
             return edge_index.transpose(0, 1).numpy()
         return edge_index
@@ -329,42 +329,24 @@ class GraphDatasetUtil(DatasetSplitter):
         return torch.tensor(data=[source_node_list, target_node_list], dtype=torch.long)
 
     @classmethod
-    def edge_to_dict(cls, edge_index: torch.Tensor | Iterable) -> dict:
-        if isinstance(edge_index, torch.Tensor):
-            return cls.__edge_to_dict(edge_index)
-        res: dict = {}
-        for edge in cls.foreach_edge(edge_index):
-            a = edge[0]
-            b = edge[1]
-            tmp = res.get(a, None)
-            if tmp is None:
-                res[a] = set()
-                tmp = res[a]
-            tmp.add(b)
-            tmp = res.get(b, None)
-            if tmp is None:
-                res[b] = set()
-                tmp = res[b]
-            tmp.add(a)
-        return res
-
-    @classmethod
-    def __edge_to_dict(cls, edge_index: torch.Tensor) -> dict:
+    def edge_to_dict(cls, edge_index: torch.Tensor | Iterable) -> dict[int, list]:
+        assert isinstance(edge_index, torch.Tensor)
         res: dict = {}
         edge_index = torch_geometric.utils.coalesce(edge_index)
-        last_a = None
         neighbor_list = []
-        for edge in cls.foreach_edge(edge_index):
+        edge_list = cls.to_edge_list(edge_index)
+        last_a = edge_list[0][0]
+        for edge in edge_list:
             a = edge[0]
             b = edge[1]
-            if last_a is None:
-                last_a = a
             if a == last_a:
                 neighbor_list.append(b)
             elif a > last_a:
                 res[last_a] = neighbor_list
                 last_a = a
                 neighbor_list = [b]
+            else:
+                raise RuntimeError()
         assert last_a is not None and last_a not in res
         assert neighbor_list
         res[last_a] = neighbor_list
@@ -418,30 +400,26 @@ class GraphDatasetUtil(DatasetSplitter):
         cls, node_indices: Iterable, edge_dict: dict, hop: int
     ) -> tuple[set, torch.Tensor]:
         assert hop > 0
+        # old_neighbors: set = set(node_indices)
         neighbors: set = set(node_indices)
-        unchecked_nodes = copy.deepcopy(neighbors)
         source_node_list = []
         target_node_list = []
+        unchecked_nodes: set = set()
         for i in range(hop):
-            tmp: set = set()
+            old_neighbors = copy.copy(neighbors)
+            if i == 0:
+                unchecked_nodes = old_neighbors
             for node in unchecked_nodes:
-                if node not in edge_dict:
+                edge_neighbor = edge_dict.get(node, None)
+                if edge_neighbor is None:
                     continue
-                for new_node in edge_dict[node]:
-                    if i == 0:
-                        source_node_list.append(node)
-                        target_node_list.append(new_node)
-                        source_node_list.append(new_node)
-                        target_node_list.append(node)
-                    if new_node not in neighbors:
-                        tmp.add(new_node)
-                        neighbors.add(new_node)
-                        if i > 0:
-                            source_node_list.append(node)
-                            target_node_list.append(new_node)
-                            source_node_list.append(new_node)
-                            target_node_list.append(node)
-            unchecked_nodes = tmp
+                source_node_list += [node] * len(edge_neighbor)
+                target_node_list += edge_neighbor
+                target_node_list += [node] * len(edge_neighbor)
+                source_node_list += edge_neighbor
+                neighbors |= set(edge_neighbor)
+            unchecked_nodes = neighbors - old_neighbors
+
         return neighbors, cls.create_edge_index(source_node_list, target_node_list)
 
     def get_subset(self, indices: Iterable) -> list[dict]:
