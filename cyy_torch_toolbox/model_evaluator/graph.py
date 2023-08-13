@@ -55,13 +55,12 @@ class GraphModelEvaluator(ModelEvaluator):
         for idx in kwargs["batch_node_indices"]:
             batch_mask[self.batch_neighbour_index_map[phase][idx]] = True
         kwargs["batch_mask"] = batch_mask
-        # get_logger().error(
-        #     "batch size is %s %s edge shape is %s new x shape is %s",
-        #     batch_mask.sum().item(),
-        #     len(kwargs["batch_node_indices"]),
-        #     self.edge_index_map[phase].shape,
-        #     inputs["x"].shape,
-        # )
+        get_logger().error(
+            "batch size is %s edge shape is %s new x shape is %s",
+            batch_mask.sum().item(),
+            self.__batch_neighbour_edge_index[phase].shape,
+            inputs["x"].shape,
+        )
         return super().__call__(inputs=inputs, **kwargs)
 
     def _compute_loss(
