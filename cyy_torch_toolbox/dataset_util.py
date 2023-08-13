@@ -389,7 +389,7 @@ class GraphDatasetUtil(DatasetSplitter):
             return edge_dict
         original_dataset = graph_dict["original_dataset"]
         graph_index = graph_dict["graph_index"]
-        key: str = f"__torch_toolbox_edge_dict_{graph_index}"
+        key: str = f"torch_toolbox_edge_dict_{graph_index}"
         if hasattr(original_dataset, key):
             get_logger().warning(
                 "get cached edge_dict from graph %s %s",
