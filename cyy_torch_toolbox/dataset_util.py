@@ -69,6 +69,8 @@ class DatasetUtil:
                 return set(target)
             case torch.Tensor():
                 target_list = target.tolist()
+                if not isinstance(target_list, list):
+                    return cls.__decode_target(target_list)
                 if all(a in (0, 1) for a in target_list):
                     # one hot vector
                     return set(target.nonzero().view(-1).tolist())
