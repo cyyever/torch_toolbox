@@ -7,8 +7,11 @@ class AccuracyMetric(Metric):
     __correct_count = None
     __dataset_size = None
 
-    def get_accuracy(self, epoch):
-        return self.get_epoch_metric(epoch, "accuracy").cpu()
+    def get_accuracy(self, epoch: int) -> float:
+        acc = self.get_epoch_metric(epoch, "accuracy")
+        if isinstance(acc, torch.Tensor):
+            return acc.cpu().item()
+        return acc
 
     def _before_epoch(self, **kwargs) -> None:
         self.__dataset_size = 0
