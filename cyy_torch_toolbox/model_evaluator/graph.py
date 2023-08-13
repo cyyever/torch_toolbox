@@ -24,6 +24,7 @@ class GraphModelEvaluator(ModelEvaluator):
         self.batch_neighbour_index_map: dict = {}
         self.__subset_edge_dict: dict = {}
         self.__batch_neighbour_edge_index: dict = {}
+        assert self.neighbour_hop == torch_geometric.utils.get_num_hops(self.model)
         get_logger().info("use neighbour_hop %s", self.neighbour_hop)
 
     def __call__(self, **kwargs: Any) -> dict:
