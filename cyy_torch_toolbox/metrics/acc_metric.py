@@ -29,11 +29,12 @@ class AccuracyMetric(Metric):
                 for idx, maxidx in enumerate(torch.argmax(output, dim=1)):
                     if targets[idx][maxidx] == 1:
                         correct_count += 1
+            elif len(targets.shape) <= 1:
+                correct_count = (
+                    torch.eq(torch.round(output.sigmoid()), targets).view(-1).sum()
+                )
             else:
                 raise NotImplementedError()
-            # correct_count = (
-            #     torch.eq(torch.round(output.sigmoid()), targets).view(-1).sum()
-            # )
         else:
             correct_count = (
                 torch.eq(torch.max(output, dim=1)[1], targets).view(-1).sum()

@@ -101,7 +101,7 @@ class GraphModelEvaluator(ModelEvaluator):
         new_source_list = []
         new_target_list = []
         batch_neighbour_edges = torch_geometric.utils.coalesce(batch_neighbour_edges)
-        for source, target in GraphDatasetUtil.foreach_edge(batch_neighbour_edges):
+        for source, target in GraphDatasetUtil.to_edge_list(batch_neighbour_edges):
             new_source_list.append(batch_neighbour_index_map[source])
             new_target_list.append(batch_neighbour_index_map[target])
         self.__batch_neighbour_edge_index[phase] = GraphDatasetUtil.create_edge_index(
