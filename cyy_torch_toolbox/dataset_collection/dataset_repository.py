@@ -147,7 +147,7 @@ def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> C
     return get_dataset_kwargs_per_phase
 
 
-__dataset_cache = {}
+__dataset_cache: dict = {}
 
 
 def __create_dataset(
