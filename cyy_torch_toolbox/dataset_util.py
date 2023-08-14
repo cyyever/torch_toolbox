@@ -68,13 +68,12 @@ class DatasetUtil:
             case list():
                 return set(target)
             case torch.Tensor():
-                target_list = target.tolist()
-                if not isinstance(target_list, list):
-                    return cls.__decode_target(target_list)
-                if all(a in (0, 1) for a in target_list):
+                if target.numel() == 1:
+                    return set([target.item()])
+                if (target <= 1).all().item() and (target >= 0).all().item():
                     # one hot vector
                     return set(target.nonzero().view(-1).tolist())
-                raise NotImplementedError(f"Unsupported target {target_list}")
+                raise NotImplementedError(f"Unsupported target {target}")
             case dict():
                 if "labels" in target:
                     return set(target["labels"].tolist())
