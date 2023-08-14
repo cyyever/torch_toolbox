@@ -69,7 +69,7 @@ class DatasetUtil:
                 return set(target)
             case torch.Tensor():
                 if target.numel() == 1:
-                    return set([target.item()])
+                    return {target.item()}
                 if (target <= 1).all().item() and (target >= 0).all().item():
                     # one hot vector
                     return set(target.nonzero().view(-1).tolist())
@@ -107,7 +107,7 @@ class DatasetUtil:
     def get_labels(self) -> set:
         return set().union(*tuple(set(labels) for _, labels in self.get_batch_labels()))
 
-    def get_original_dataset(self) -> torch.utils.data.Dataset:
+    def get_original_dataset(self) -> torch.utils.data.Dataset | list:
         dataset = self.dataset
         if hasattr(dataset, "original_dataset"):
             dataset = dataset.original_dataset
