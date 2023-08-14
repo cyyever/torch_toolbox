@@ -1,3 +1,4 @@
+import array
 import copy
 import functools
 import os
@@ -328,14 +329,16 @@ class GraphDatasetUtil(DatasetSplitter):
 
     @classmethod
     def create_edge_index(cls, source_node_list, target_node_list) -> torch.Tensor:
-        return torch.tensor(data=[source_node_list, target_node_list], dtype=torch.long)
+        return torch_geometric.utils.to_undirected(
+            torch.tensor(data=[source_node_list, target_node_list], dtype=torch.long)
+        )
 
     @classmethod
     def edge_to_dict(cls, edge_index: torch.Tensor | Iterable) -> dict[int, list]:
         assert isinstance(edge_index, torch.Tensor)
         res: dict = {}
         edge_index = torch_geometric.utils.coalesce(edge_index)
-        neighbor_list = []
+        neighbor_list = array.array("Q")
         edge_list = cls.to_edge_list(edge_index)
         last_a = edge_list[0][0]
         for edge in edge_list:
@@ -346,7 +349,7 @@ class GraphDatasetUtil(DatasetSplitter):
             elif a > last_a:
                 res[last_a] = neighbor_list
                 last_a = a
-                neighbor_list = [b]
+                neighbor_list = array.array("Q", [b])
             else:
                 raise RuntimeError()
         assert last_a is not None and last_a not in res
@@ -388,7 +391,9 @@ class GraphDatasetUtil(DatasetSplitter):
             )
 
         if self._cache_dir:
-            edge_dict = get_cached_data(os.path.join(self._cache_dir, key), compute_fun)
+            path = os.path.join(self._cache_dir, key)
+            get_logger().warning("get cached edge_dict from graph %s", path)
+            edge_dict = get_cached_data(path, compute_fun)
         else:
             edge_dict = compute_fun()
         setattr(original_dataset, key, edge_dict)
@@ -411,7 +416,6 @@ class GraphDatasetUtil(DatasetSplitter):
         cls, node_indices: Iterable, edge_dict: dict, hop: int
     ) -> tuple[set, torch.Tensor]:
         assert hop > 0
-        # old_neighbors: set = set(node_indices)
         neighbors: set = set(node_indices)
         source_node_list = []
         target_node_list = []
@@ -426,8 +430,6 @@ class GraphDatasetUtil(DatasetSplitter):
                     continue
                 source_node_list += [node] * len(edge_neighbor)
                 target_node_list += edge_neighbor
-                target_node_list += [node] * len(edge_neighbor)
-                source_node_list += edge_neighbor
                 neighbors |= set(edge_neighbor)
             unchecked_nodes = neighbors - old_neighbors
 

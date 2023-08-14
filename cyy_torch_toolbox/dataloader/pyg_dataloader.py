@@ -2,7 +2,6 @@ from typing import Any
 
 import torch
 import torch.utils.data
-import torch_geometric
 
 
 class RandomNodeLoader(torch.utils.data.DataLoader):
@@ -27,20 +26,18 @@ class RandomNodeLoader(torch.utils.data.DataLoader):
 
     def __init__(
         self,
-        dataset: list,
+        node_indices: list,
         **kwargs: Any,
     ) -> None:
-        assert len(dataset) == 1
         assert "collate_fn" not in kwargs
         super().__init__(
-            dataset=torch_geometric.utils.mask_to_index(dataset[0]["mask"]).tolist(),
+            dataset=node_indices,
             collate_fn=self.__collate_fn,
             **kwargs,
         )
-        self.graph_dataset = dataset
 
     def __collate_fn(self, indices):
-        batch = self.graph_dataset[0] | {
+        batch = {
             "batch_node_indices": indices,
             "batch_size": len(indices),
         }
