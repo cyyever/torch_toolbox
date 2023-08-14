@@ -30,27 +30,28 @@ class GraphModelEvaluator(ModelEvaluator):
         get_logger().info("use neighbour_hop %s", self.neighbour_hop)
 
     def __call__(self, **kwargs: Any) -> dict:
-        x = kwargs["input"].x
-        mask = kwargs["mask"]
+        # kwargs["input"].x
+        # mask = kwargs["mask"]
         phase = kwargs["phase"]
-        # get_logger().error("old edge shape is %s", graph.edge_index.shape)
-        # get_logger().error("shape1 is %s shape 2 %s", x.shape, mask.shape)
+        graph_dict = self.__dc.get_dataset(phase=phase)[0]
+        dataset_util = self.__dc.get_dataset_util(phase=phase)
+        graph = self.__dc.get_dataset_util(phase=phase).get_graph(0)
 
-        self.__narrow_graph(mask=mask, phase=phase, graph_dict=kwargs)
+        self.__narrow_graph(phase=phase, dataset_util=dataset_util)
         batch_neighbour_mask = self.__narrow_batch(
             phase=phase,
             batch_node_indices=kwargs["batch_node_indices"],
-            graph_dict=kwargs,
+            graph_dict=graph_dict,
         )
         inputs = {
             "edge_index": self.__batch_neighbour_edge_index[phase],
-            "x": x[batch_neighbour_mask],
+            "x": graph.x[batch_neighbour_mask],
         }
 
         batch_mask = torch_geometric.utils.index_to_mask(
-            torch.tensor(kwargs["batch_node_indices"]), kwargs["target"].shape[0]
+            torch.tensor(kwargs["batch_node_indices"]), graph.y.shape[0]
         )
-        kwargs["targets"] = kwargs["target"][batch_mask]
+        kwargs["targets"] = graph.y[batch_mask]
         batch_mask = torch.zeros(
             (len(self.batch_neighbour_index_map[phase]),), dtype=torch.bool
         )
@@ -71,12 +72,12 @@ class GraphModelEvaluator(ModelEvaluator):
         return super()._compute_loss(output=output[batch_mask], **kwargs)
 
     def __narrow_graph(
-        self, mask: torch.Tensor, phase: MachineLearningPhase, graph_dict: dict
+        self, phase: MachineLearningPhase, dataset_util: GraphDatasetUtil
     ) -> None:
         if phase in self.__subset_edge_dict:
             return
-        dataset_util = GraphDatasetUtil(dataset=[graph_dict])
         edge_dict = dataset_util.get_edge_dict()
+        mask = dataset_util.get_mask()[0]
         _, neighbour_edges = GraphDatasetUtil.get_neighbors(
             node_indices=torch_geometric.utils.mask_to_index(mask).tolist(),
             edge_dict=edge_dict,
@@ -95,19 +96,13 @@ class GraphModelEvaluator(ModelEvaluator):
             edge_dict=self.__subset_edge_dict[phase],
             hop=self.neighbour_hop,
         )
+        batch_neighbour = list(sorted(batch_neighbour))
         batch_neighbour_index_map = {
-            node_index: idx for idx, node_index in enumerate(sorted(batch_neighbour))
+            node_index: idx for idx, node_index in enumerate(batch_neighbour)
         }
         self.batch_neighbour_index_map[phase] = batch_neighbour_index_map
-        new_source_list = []
-        new_target_list = []
-        batch_neighbour_edges = torch_geometric.utils.coalesce(batch_neighbour_edges)
-        for source, target in GraphDatasetUtil.to_edge_list(batch_neighbour_edges):
-            new_source_list.append(batch_neighbour_index_map[source])
-            new_target_list.append(batch_neighbour_index_map[target])
-        self.__batch_neighbour_edge_index[phase] = GraphDatasetUtil.create_edge_index(
-            new_source_list, new_target_list
-        )
+        batch_neighbour_edges.apply_(lambda x: batch_neighbour_index_map[x])
+        self.__batch_neighbour_edge_index[phase] = batch_neighbour_edges
         return torch_geometric.utils.index_to_mask(
-            torch.tensor(list(batch_neighbour)), size=graph_dict["mask"].shape[0]
+            torch.tensor(batch_neighbour), size=graph_dict["mask"].shape[0]
         )
