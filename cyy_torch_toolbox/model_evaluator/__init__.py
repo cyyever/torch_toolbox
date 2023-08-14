@@ -1,3 +1,4 @@
+import functools
 from typing import Callable
 
 import torch
@@ -31,7 +32,9 @@ def get_model_evaluator(
         else:
             model_evaluator_fun = TextModelEvaluator
     elif dataset_collection.dataset_type == DatasetType.Graph:
-        model_evaluator_fun = GraphModelEvaluator
+        model_evaluator_fun = functools.partial(
+            GraphModelEvaluator, dataset_collection
+        )
     if model_kwargs is None:
         model_kwargs = {}
     loss_fun_name = model_kwargs.get("loss_fun_name", None)

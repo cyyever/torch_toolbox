@@ -101,7 +101,7 @@ class DatasetCollection:
             dataset=self.get_dataset(phase),
             transforms=self.__transforms[phase],
             name=self.name,
-            phase=phase,
+            cache_dir=self._get_dataset_cache_dir(),
         )
 
     def get_original_dataset(
@@ -142,15 +142,8 @@ class DatasetCollection:
             )
         return dataset_dir
 
-    @classmethod
-    def _get_dataset_cache_dir(
-        cls,
-        name: str,
-        phase: MachineLearningPhase | None = None,
-    ) -> str:
-        cache_dir = os.path.join(cls.get_dataset_dir(name), ".cache")
-        if phase is not None:
-            cache_dir = os.path.join(cache_dir, str(phase))
+    def _get_dataset_cache_dir(self) -> str:
+        cache_dir = os.path.join(self.get_dataset_dir(self.name), ".cache")
         if not os.path.isdir(cache_dir):
             os.makedirs(cache_dir, exist_ok=True)
         return cache_dir
@@ -193,5 +186,5 @@ class DatasetCollection:
     def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
         with DatasetCollection.lock:
             assert self.name is not None
-            cache_dir = DatasetCollection._get_dataset_cache_dir(self.name)
+            cache_dir = self._get_dataset_cache_dir()
             return get_cached_data(os.path.join(cache_dir, file), computation_fun)

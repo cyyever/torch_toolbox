@@ -8,6 +8,7 @@ from typing import Any, Generator, Type
 import torch
 import torch.utils
 from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.storage import get_cached_data
 
 from cyy_torch_toolbox.dataset import get_dataset_size, select_item, subset_dp
 from cyy_torch_toolbox.dataset_transform.transform import Transforms
@@ -28,13 +29,13 @@ class DatasetUtil:
         dataset: torch.utils.data.Dataset,
         name: None | str = None,
         transforms: Transforms | None = None,
-        phase: MachineLearningPhase | None = None,
+        cache_dir: None | str = None,
     ) -> None:
         self.dataset: torch.utils.data.Dataset | list = dataset
         self.__len: None | int = None
-        self._name: str | None = name
+        self._name: str = name if name else ""
         self.__transforms: Transforms | None = transforms
-        self._phase = phase
+        self._cache_dir = cache_dir
 
     def __len__(self) -> int:
         if self.__len is None:
@@ -250,7 +251,7 @@ class VisionDatasetUtil(DatasetSplitter):
         return x.shape[0]
 
     def get_mean_and_std(self):
-        if self._name is not None and self._name.lower() == "imagenet":
+        if self._name.lower() == "imagenet":
             mean = torch.tensor([0.485, 0.456, 0.406])
             std = torch.tensor([0.229, 0.224, 0.225])
             return (mean, std)
@@ -372,7 +373,7 @@ class GraphDatasetUtil(DatasetSplitter):
             return edge_dict
         original_dataset = graph_dict["original_dataset"]
         graph_index = graph_dict["graph_index"]
-        key: str = f"torch_toolbox_edge_dict_{graph_index}"
+        key: str = f"torch_toolbox_{self._name}_edge_dict_{graph_index}"
         if hasattr(original_dataset, key):
             get_logger().warning(
                 "get cached edge_dict from graph %s %s",
@@ -380,15 +381,24 @@ class GraphDatasetUtil(DatasetSplitter):
                 graph_index,
             )
             return getattr(original_dataset, key)
-        edge_index = self.get_edge_index(graph_index=graph_index)
-        edge_dict = self.edge_to_dict(edge_index=edge_index)
+
+        def compute_fun():
+            return self.edge_to_dict(
+                edge_index=self.get_edge_index(graph_index=graph_index)
+            )
+
+        if self._cache_dir:
+            edge_dict = get_cached_data(os.path.join(self._cache_dir, key), compute_fun)
+        else:
+            edge_dict = compute_fun()
         setattr(original_dataset, key, edge_dict)
+
         return edge_dict
 
     def get_boundary(self, node_indices: Iterable) -> dict:
         assert len(self.dataset) == 1
         res: dict = {}
-        edge_dict = self.get_edge_dict(graph_index=0)
+        edge_dict = self.get_edge_dict(graph_index=0)[0]
         node_indices = set(node_indices)
         for node_idx in node_indices:
             boundary = edge_dict[node_idx] - node_indices
