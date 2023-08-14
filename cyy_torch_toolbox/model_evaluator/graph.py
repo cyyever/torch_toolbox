@@ -3,6 +3,7 @@ from typing import Any, Iterable
 import torch
 from cyy_naive_lib.log import get_logger
 
+from ..dataset_collection import DatasetCollection
 from ..dataset_util import GraphDatasetUtil
 from ..dependency import has_torch_geometric
 from ..ml_type import MachineLearningPhase
@@ -14,8 +15,9 @@ if has_torch_geometric:
 
 
 class GraphModelEvaluator(ModelEvaluator):
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, dataset_collection: DatasetCollection, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        self.__dc = dataset_collection
         self.neighbour_hop = sum(
             1
             for _, module in self.model_util.get_modules()
@@ -55,7 +57,7 @@ class GraphModelEvaluator(ModelEvaluator):
         for idx in kwargs["batch_node_indices"]:
             batch_mask[self.batch_neighbour_index_map[phase][idx]] = True
         kwargs["batch_mask"] = batch_mask
-        get_logger().error(
+        get_logger().debug(
             "batch size is %s edge shape is %s new x shape is %s",
             batch_mask.sum().item(),
             self.__batch_neighbour_edge_index[phase].shape,
