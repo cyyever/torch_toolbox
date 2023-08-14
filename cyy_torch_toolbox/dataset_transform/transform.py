@@ -2,6 +2,7 @@ import copy
 from collections.abc import Iterable
 from typing import Any, Callable
 
+import torch
 from cyy_naive_lib.log import get_logger
 from torch.utils.data import default_collate
 
@@ -62,7 +63,7 @@ class Transforms:
             inputs = f(inputs)
         return inputs
 
-    def transform_target(self, target: Any, index=None) -> Any:
+    def transform_target(self, target: Any, index: int | None = None) -> Any:
         for f in self.get(TransformType.Target):
             target = f(target, index)
         return target
@@ -112,7 +113,9 @@ class Transforms:
         #     targets = tensor_to(targets, device=inputs.device, non_blocking=False)
         return res
 
-    def cache_transforms(self, dataset: Iterable, device) -> tuple[dict, Any]:
+    def cache_transforms(
+        self, dataset: Iterable, device: torch.device
+    ) -> tuple[dict, Any]:
         get_logger().warning("cache dataset to device: %s", device)
         transformed_dataset: dict = {}
         for k, item in select_item(dataset):
