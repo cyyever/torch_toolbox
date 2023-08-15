@@ -25,6 +25,19 @@ class GraphModelEvaluator(ModelEvaluator):
         get_logger().info("use neighbour_hop %s", self.neighbour_hop)
 
     def __call__(self, **kwargs: Any) -> dict:
+        if "batch_node_indices" in kwargs:
+            return self.__from_node_loader(**kwargs)
+        return self.__from_neighbor_loader(**kwargs)
+
+    def __from_neighbor_loader(self, **kwargs: Any) -> dict:
+        inputs = {"edge_index": kwargs["edge_index"], "x": kwargs["x"]}
+        batch_size = kwargs["batch_size"]
+        kwargs["targets"] = kwargs["y"][:batch_size]
+        kwargs["batch_mask"] = slice(0, batch_size)
+
+        return super().__call__(inputs=inputs, **kwargs)
+
+    def __from_node_loader(self, **kwargs: Any) -> dict:
         phase = kwargs["phase"]
         graph_dict = self.__dc.get_dataset(phase=phase)[0]
         graph = self.__dc.get_dataset_util(phase=phase).get_graph(0)
@@ -62,6 +75,8 @@ class GraphModelEvaluator(ModelEvaluator):
     def _compute_loss(
         self, output: torch.Tensor, batch_mask: torch.Tensor, **kwargs: Any
     ) -> dict:
+        if kwargs.pop("from_neighbor_loader", 0):
+            pass
         return super()._compute_loss(output=output[batch_mask], **kwargs)
 
     def __narrow_graph(
@@ -84,7 +99,7 @@ class GraphModelEvaluator(ModelEvaluator):
         batch_node_indices: Iterable,
         graph_dict: dict,
     ) -> tuple[torch.Tensor, int]:
-        batch_node_indices = torch.tensor(list(sorted(batch_node_indices)))
+        batch_node_indices = torch.tensor(sorted(batch_node_indices))
         (
             batch_neighbour,
             batch_neighbour_edge_index,
