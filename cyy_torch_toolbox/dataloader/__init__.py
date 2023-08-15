@@ -10,8 +10,10 @@ from ..dependency import has_dali, has_torch_geometric, has_torchvision
 from ..ml_type import DatasetType, MachineLearningPhase, ModelType
 
 if has_torch_geometric:
+    import torch_geometric
+    from torch_geometric.loader import NeighborLoader
+
     from .pyg_dataloader import RandomNodeLoader
-    pass
 
 
 if has_dali and has_torchvision:
@@ -74,12 +76,12 @@ def get_dataloader(
     kwargs["pin_memory"] = False
 
     if has_torch_geometric and dc.dataset_type == DatasetType.Graph:
+        graph = dc.get_dataset_util().get_graph(0)
+        return NeighborLoader(
+            data=graph, num_neighbors=[10] * 2, input_nodes=dataset[0]["mask"], **kwargs
+        )
         node_indices = torch_geometric.utils.mask_to_index(dataset[0]["mask"]).tolist()
         return RandomNodeLoader(node_indices, **kwargs)
-        # graph = dc.get_dataset_util().get_dataset_util().get_graph(0)
-        # return NeighborLoader(
-        #     data=graph, num_neighbors=[30] * 100, input_nodes=dataset[0]["mask"]
-        # )
     return torch.utils.data.DataLoader(
         dataset,
         collate_fn=transforms.collate_batch,
