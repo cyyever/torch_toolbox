@@ -254,6 +254,9 @@ class Executor(HookCollection, abc.ABC):
                 hook_point=ExecutorHookPoint.AFTER_FETCH_BATCH,
                 batch_index=batch_index,
             )
+            if hasattr(batch, "to_dict"):
+                batch = batch.to_dict()
+            print("batch is", batch)
             batch["batch_index"] = batch_index
             optimizer = None
             if in_training:
