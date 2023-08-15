@@ -259,7 +259,7 @@ class Executor(HookCollection, abc.ABC):
             if in_training:
                 if (
                     self.hyper_parameter.batch_size != 1
-                    and batch["batch_size"] == 1
+                    and batch.get("batch_size", None) == 1
                     and self.__model_evaluator.model_util.have_module(
                         module_type=torch.nn.BatchNorm2d
                     )
