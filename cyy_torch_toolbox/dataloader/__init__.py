@@ -87,7 +87,8 @@ def get_dataloader(
             sub_graph = type(graph)(**graph_dict)
             return NeighborLoader(
                 data=sub_graph,
-                num_neighbors=[10] * model_evaluator.neighbour_hop,
+                num_neighbors=[hyper_parameter.extra_parameters.get("num_neighbor", 10)]
+                * model_evaluator.neighbour_hop,
                 input_nodes=dataset[0]["mask"],
                 transform=lambda data: data.to_dict(),
                 **kwargs,

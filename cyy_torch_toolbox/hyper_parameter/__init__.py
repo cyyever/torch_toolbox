@@ -1,6 +1,6 @@
 import copy
 import functools
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from typing import Any, Callable
 
@@ -40,6 +40,7 @@ class HyperParameter:
     momentum: float = 0.9
     _lr_scheduler_factory: None | Callable = None
     _optimizer_factory: None | Callable = None
+    extra_parameters: dict = field(default_factory=lambda: {})
 
     def get_learning_rate(self, trainer: Any) -> float:
         if isinstance(self.learning_rate, HyperParameterAction):
@@ -209,17 +210,18 @@ def get_recommended_hyper_parameter(
     return hyper_parameter
 
 
+@dataclass(kw_only=True)
 class HyperParameterConfig:
-    def __init__(self) -> None:
-        self.epoch = None
-        self.batch_size = None
-        self.find_learning_rate = True
-        self.learning_rate = None
-        self.learning_rate_scheduler = None
-        self.learning_rate_scheduler_kwargs: dict = {}
-        self.momentum = None
-        self.weight_decay = None
-        self.optimizer_name = None
+    epoch = None
+    batch_size = None
+    find_learning_rate = True
+    learning_rate = None
+    learning_rate_scheduler_name = None
+    learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
+    momentum = None
+    weight_decay = None
+    optimizer_name = None
+    extra_hyper_parameters: dict = field(default_factory=lambda: {})
 
     def create_hyper_parameter(self, dataset_name, model_name) -> HyperParameter:
         hyper_parameter = get_recommended_hyper_parameter(dataset_name, model_name)
@@ -239,9 +241,10 @@ class HyperParameterConfig:
             hyper_parameter.weight_decay = self.weight_decay
         if self.optimizer_name is not None:
             hyper_parameter.set_optimizer_factory(self.optimizer_name)
-        if self.learning_rate_scheduler is not None:
+        if self.learning_rate_scheduler_name is not None:
             hyper_parameter.set_lr_scheduler_factory(
-                name=self.learning_rate_scheduler,
+                name=self.learning_rate_scheduler_name,
                 **self.learning_rate_scheduler_kwargs,
             )
+        hyper_parameter.extra_parameters = self.extra_hyper_parameters
         return hyper_parameter
