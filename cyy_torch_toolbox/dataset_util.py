@@ -1,4 +1,3 @@
-import array
 import copy
 import functools
 import os
@@ -9,7 +8,6 @@ from typing import Any, Generator, Type
 import torch
 import torch.utils
 from cyy_naive_lib.log import get_logger
-from cyy_naive_lib.storage import get_cached_data
 
 from cyy_torch_toolbox.dataset import get_dataset_size, select_item, subset_dp
 from cyy_torch_toolbox.dataset_transform.transform import Transforms
@@ -321,86 +319,22 @@ class GraphDatasetUtil(DatasetSplitter):
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
         return [mask]
 
-    @classmethod
-    def to_edge_list(cls, edge_index: torch.Tensor) -> list:
-        if isinstance(edge_index, torch.Tensor):
-            return edge_index.transpose(0, 1).numpy()
-        return edge_index
-
-    @classmethod
-    def create_edge_index(cls, source_node_list, target_node_list) -> torch.Tensor:
-        return torch_geometric.utils.to_undirected(
-            torch.tensor(data=[source_node_list, target_node_list], dtype=torch.long)
-        )
-
-    @classmethod
-    def edge_to_dict(cls, edge_index: torch.Tensor | Iterable) -> dict[int, list]:
-        assert isinstance(edge_index, torch.Tensor)
-        res: dict = {}
-        edge_index = torch_geometric.utils.coalesce(edge_index)
-        neighbor_list = array.array("Q")
-        edge_list = cls.to_edge_list(edge_index)
-        last_a = edge_list[0][0]
-        for edge in edge_list:
-            a = edge[0]
-            b = edge[1]
-            if a == last_a:
-                neighbor_list.append(b)
-            elif a > last_a:
-                res[last_a] = neighbor_list
-                last_a = a
-                neighbor_list = array.array("Q", [b])
-            else:
-                raise RuntimeError()
-        assert last_a is not None and last_a not in res
-        assert neighbor_list
-        res[last_a] = neighbor_list
-        return res
-
-    def get_edge_index(self, graph_index) -> torch.Tensor:
+    def get_edge_index(self, graph_index: int) -> torch.Tensor:
+        graph_dict = self.dataset[graph_index]
+        if "edge_index" in graph_dict:
+            return graph_dict["edge_index"]
         return self.get_graph(graph_index).edge_index
 
-    def get_graph(self, graph_index) -> Any:
+    def get_graph(self, graph_index: int) -> Any:
         graph_dict = self.dataset[graph_index]
         original_dataset = graph_dict["original_dataset"]
         graph_index = graph_dict["graph_index"]
         graph = original_dataset[graph_index]
         return graph
 
-    def get_edge_dict(self, graph_index=0) -> dict:
-        graph_dict = self.dataset[graph_index]
-        edge_dict = graph_dict.get("edge_dict", None)
-        assert not self.get_graph(graph_index).is_directed()
-        if edge_dict is not None:
-            get_logger().info("use custom edge dict")
-            return edge_dict
-        original_dataset = graph_dict["original_dataset"]
-        graph_index = graph_dict["graph_index"]
-        key: str = f"torch_toolbox_{self._name}_edge_dict_{graph_index}"
-        if hasattr(original_dataset, key):
-            get_logger().warning(
-                "get cached edge_dict from graph %s %s",
-                id(original_dataset),
-                graph_index,
-            )
-            return getattr(original_dataset, key)
-
-        def compute_fun():
-            return self.edge_to_dict(
-                edge_index=self.get_edge_index(graph_index=graph_index)
-            )
-
-        if self._cache_dir:
-            path = os.path.join(self._cache_dir, key)
-            get_logger().warning("get cached edge_dict from graph %s", path)
-            edge_dict = get_cached_data(path, compute_fun)
-        else:
-            edge_dict = compute_fun()
-        setattr(original_dataset, key, edge_dict)
-
-        return edge_dict
-
     def get_boundary(self, node_indices: Iterable) -> dict:
+        raise NotImplementedError()
+
         assert len(self.dataset) == 1
         res: dict = {}
         edge_dict = self.get_edge_dict(graph_index=0)[0]
@@ -411,30 +345,6 @@ class GraphDatasetUtil(DatasetSplitter):
                 res[node_idx] = boundary
         return res
 
-    @classmethod
-    def get_neighbors(
-        cls, node_indices: Iterable, edge_dict: dict, hop: int
-    ) -> tuple[set, torch.Tensor]:
-        assert hop > 0
-        neighbors: set = set(node_indices)
-        source_node_list = []
-        target_node_list = []
-        unchecked_nodes: set = set()
-        for i in range(hop):
-            old_neighbors = copy.copy(neighbors)
-            if i == 0:
-                unchecked_nodes = old_neighbors
-            for node in unchecked_nodes:
-                edge_neighbor = edge_dict.get(node, None)
-                if edge_neighbor is None:
-                    continue
-                source_node_list += [node] * len(edge_neighbor)
-                target_node_list += edge_neighbor
-                neighbors |= set(edge_neighbor)
-            unchecked_nodes = neighbors - old_neighbors
-
-        return neighbors, cls.create_edge_index(source_node_list, target_node_list)
-
     def get_subset(self, indices: Iterable) -> list[dict]:
         return self.get_node_subset(indices)
 
@@ -442,10 +352,10 @@ class GraphDatasetUtil(DatasetSplitter):
         assert node_indices
         node_indices = torch.tensor(list(node_indices))
         result = []
-        for idx, graph in enumerate(self.dataset):
-            if isinstance(graph, dict):
-                tmp = graph.copy()
-                graph = self.get_graph(idx)
+        for idx, graph_dict in enumerate(self.dataset):
+            graph = self.get_graph(idx)
+            if isinstance(graph_dict, dict):
+                tmp = graph_dict.copy()
             else:
                 tmp = {
                     "graph_index": idx,
@@ -457,9 +367,9 @@ class GraphDatasetUtil(DatasetSplitter):
             result.append(tmp)
         return result
 
-    def get_edge_subset(self, graph_idx: int, edge_dict: dict) -> list[dict]:
+    def get_edge_subset(self, graph_idx: int, edge_index: torch.Tensor) -> list[dict]:
         dataset = copy.copy(self.dataset)
-        dataset[graph_idx]["edge_dict"] = edge_dict
+        dataset[graph_idx]["edge_index"] = edge_index
         return dataset
 
     def decompose(self) -> None | dict:
