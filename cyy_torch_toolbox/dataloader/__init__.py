@@ -78,9 +78,13 @@ def get_dataloader(
 
     if has_torch_geometric and dc.dataset_type == DatasetType.Graph:
         if phase == MachineLearningPhase.Training:
-            graph = dc.get_dataset_util(phase=phase).get_graph(0)
+            util = dc.get_dataset_util(phase=phase)
+            graph = util.get_graph(0)
+            graph_dict = graph.to_dict()
+            graph_dict["edge_index"] = util.get_edge_index(0)
+            sub_graph = type(graph)(**graph_dict)
             return NeighborLoader(
-                data=graph,
+                data=sub_graph,
                 num_neighbors=[10] * model_evaluator.neighbour_hop,
                 input_nodes=dataset[0]["mask"],
                 transform=lambda data: data.to_dict(),
