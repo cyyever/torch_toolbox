@@ -7,6 +7,7 @@ from cyy_naive_lib.log import get_logger
 from ..data_structure.torch_process_context import TorchProcessContext
 from ..dataset_collection import DatasetCollection
 from ..dependency import has_dali, has_torch_geometric, has_torchvision
+from ..hyper_parameter import HyperParameter
 from ..ml_type import DatasetType, MachineLearningPhase
 from ..model_evaluator import ModelEvaluator
 
@@ -24,7 +25,7 @@ if has_dali and has_torchvision:
 def get_dataloader(
     dc: DatasetCollection,
     phase: MachineLearningPhase,
-    batch_size: int,
+    hyper_parameter: HyperParameter,
     device: torch.device,
     model_evaluator: ModelEvaluator,
     cache_transforms: str | None = None,
@@ -49,7 +50,7 @@ def get_dataloader(
             dataset=dataset,
             dc=dc,
             phase=phase,
-            batch_size=batch_size,
+            batch_size=hyper_parameter.batch_size,
             device=device,
             model_type=model_evaluator.model_type,
         )
@@ -72,7 +73,7 @@ def get_dataloader(
         kwargs["num_workers"] = 0
         kwargs["prefetch_factor"] = None
         kwargs["persistent_workers"] = False
-    kwargs["batch_size"] = batch_size
+    kwargs["batch_size"] = hyper_parameter.batch_size
     kwargs["shuffle"] = phase == MachineLearningPhase.Training
     kwargs["pin_memory"] = False
 
