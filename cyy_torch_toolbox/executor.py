@@ -124,7 +124,7 @@ class Executor(HookCollection, abc.ABC):
             self.__dataloader = get_dataloader(
                 dc=self.dataset_collection,
                 phase=self.__phase,
-                batch_size=self.hyper_parameter.batch_size,
+                hyper_parameter=self.hyper_parameter,
                 device=self.device,
                 model_evaluator=self.running_model_evaluator,
                 cache_transforms=self.cache_transforms,
