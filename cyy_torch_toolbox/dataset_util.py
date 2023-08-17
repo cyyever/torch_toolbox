@@ -332,19 +332,6 @@ class GraphDatasetUtil(DatasetSplitter):
         graph = original_dataset[graph_index]
         return graph
 
-    def get_boundary(self, node_indices: Iterable) -> dict:
-        raise NotImplementedError()
-
-        assert len(self.dataset) == 1
-        res: dict = {}
-        edge_dict = self.get_edge_dict(graph_index=0)[0]
-        node_indices = set(node_indices)
-        for node_idx in node_indices:
-            boundary = edge_dict[node_idx] - node_indices
-            if boundary:
-                res[node_idx] = boundary
-        return res
-
     def get_subset(self, indices: Iterable) -> list[dict]:
         return self.get_node_subset(indices)
 
@@ -367,9 +354,9 @@ class GraphDatasetUtil(DatasetSplitter):
             result.append(tmp)
         return result
 
-    def get_edge_subset(self, graph_idx: int, edge_index: torch.Tensor) -> list[dict]:
+    def get_edge_subset(self, graph_index: int, edge_index: torch.Tensor) -> list[dict]:
         dataset = copy.copy(self.dataset)
-        dataset[graph_idx]["edge_index"] = edge_index
+        dataset[graph_index]["edge_index"] = edge_index
         return dataset
 
     def decompose(self) -> None | dict:

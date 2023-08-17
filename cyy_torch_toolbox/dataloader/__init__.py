@@ -76,8 +76,9 @@ def get_dataloader(
     kwargs["shuffle"] = phase == MachineLearningPhase.Training
     kwargs["pin_memory"] = False
 
+    # if phase == MachineLearningPhase.Training or phase==MachineLearningPhase.Validation:
     if has_torch_geometric and dc.dataset_type == DatasetType.Graph:
-        if phase == MachineLearningPhase.Training:
+        if True:
             util = dc.get_dataset_util(phase=phase)
             graph = util.get_graph(0)
             graph_dict = graph.to_dict()
