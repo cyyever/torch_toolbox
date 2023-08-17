@@ -122,3 +122,7 @@ class DefaultConfig:
                 str(uuid.uuid4()),
             )
         return self.save_dir
+
+
+class Config(DefaultConfig):
+    pass
