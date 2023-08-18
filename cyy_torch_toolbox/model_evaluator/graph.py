@@ -34,7 +34,6 @@ class GraphModelEvaluator(ModelEvaluator):
         batch_size = kwargs["batch_size"]
         kwargs["targets"] = kwargs["y"][:batch_size]
         kwargs["batch_mask"] = slice(0, batch_size)
-
         return super().__call__(inputs=inputs, **kwargs)
 
     def __from_node_loader(self, **kwargs: Any) -> dict:
