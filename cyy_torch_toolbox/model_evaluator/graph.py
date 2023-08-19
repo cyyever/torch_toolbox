@@ -30,7 +30,7 @@ class GraphModelEvaluator(ModelEvaluator):
         return self.__from_neighbor_loader(**kwargs)
 
     def __from_neighbor_loader(self, **kwargs: Any) -> dict:
-        inputs = {"edge_index": kwargs["edge_index"], "x": kwargs["x"]}
+        inputs = {"edge_index": kwargs["edge_index"], "x": kwargs["x"],"n_id":kwargs["n_id"]}
         batch_size = kwargs["batch_size"]
         kwargs["targets"] = kwargs["y"][:batch_size]
         kwargs["batch_mask"] = slice(0, batch_size)
