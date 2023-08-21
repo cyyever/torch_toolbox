@@ -30,10 +30,17 @@ class GraphModelEvaluator(ModelEvaluator):
         return self.__from_neighbor_loader(**kwargs)
 
     def __from_neighbor_loader(self, **kwargs: Any) -> dict:
-        inputs = {"edge_index": kwargs["edge_index"], "x": kwargs["x"],"n_id":kwargs["n_id"]}
-        batch_size = kwargs["batch_size"]
-        kwargs["targets"] = kwargs["y"][:batch_size]
-        kwargs["batch_mask"] = slice(0, batch_size)
+        inputs = {
+            "edge_index": kwargs["edge_index"],
+            "x": kwargs["x"],
+            "n_id": kwargs["n_id"],
+        }
+        # batch_mask=self.tr
+        mask = self.__dc.get_dataset_util(phase=kwargs["phase"]).get_mask()[0]
+        batch_mask = mask[kwargs["n_id"]]
+        kwargs["batch_size"]
+        kwargs["targets"] = kwargs["y"][batch_mask]
+        kwargs["batch_mask"] = batch_mask
         return super().__call__(inputs=inputs, **kwargs)
 
     def __from_node_loader(self, **kwargs: Any) -> dict:
@@ -63,12 +70,6 @@ class GraphModelEvaluator(ModelEvaluator):
             new_idx = index_map[idx]
             batch_mask[new_idx] = True
         kwargs["batch_mask"] = batch_mask
-        get_logger().debug(
-            "batch size is %s edge shape is %s new x shape is %s",
-            batch_mask.sum().item(),
-            self.__batch_neighbour_edge_index[phase].shape,
-            inputs["x"].shape,
-        )
         return super().__call__(inputs=inputs, **kwargs)
 
     def _compute_loss(
