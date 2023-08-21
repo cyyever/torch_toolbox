@@ -77,7 +77,6 @@ def get_dataloader(
     kwargs["shuffle"] = phase == MachineLearningPhase.Training
     kwargs["pin_memory"] = False
 
-    # if phase == MachineLearningPhase.Training or phase==MachineLearningPhase.Validation:
     if has_torch_geometric and dc.dataset_type == DatasetType.Graph:
         if True:
             util = dc.get_dataset_util(phase=phase)
@@ -89,7 +88,9 @@ def get_dataloader(
                 data=sub_graph,
                 num_neighbors=[hyper_parameter.extra_parameters.get("num_neighbor", 10)]
                 * model_evaluator.neighbour_hop,
-                input_nodes=dataset[0]["mask"],
+                input_nodes=hyper_parameter.extra_parameters.get(
+                    "pyg_input_nodes", dataset[0]["mask"]
+                ),
                 transform=lambda data: data.to_dict(),
                 **kwargs,
             )
