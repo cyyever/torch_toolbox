@@ -209,10 +209,13 @@ class DatasetSplitter(DatasetUtil):
             return split_index_impl(index_list)
 
         sub_index_list: list[list] = [[]] * len(parts)
+        assigned_indices: set = set()
         for v in self.label_sample_dict.values():
-            v = copy.deepcopy(v)
-            random.shuffle(v)
-            part_index_list = split_index_impl(v)
+            indices: set | list = set(v) - assigned_indices
+            assigned_indices |= indices
+            indices = list(indices)
+            random.shuffle(indices)
+            part_index_list = split_index_impl(indices)
             for i, part_index in enumerate(part_index_list):
                 sub_index_list[i] = sub_index_list[i] + part_index
         return sub_index_list
