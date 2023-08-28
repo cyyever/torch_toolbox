@@ -2,7 +2,6 @@ import copy
 import datetime
 import os
 import uuid
-from dataclasses import dataclass
 from typing import Any
 
 from cyy_naive_lib.log import get_logger, set_level
@@ -19,8 +18,7 @@ from cyy_torch_toolbox.reproducible_env import ReproducibleEnvConfig
 from cyy_torch_toolbox.trainer import Trainer, TrainerConfig
 
 
-@dataclass
-class DefaultConfig:
+class Config:
     def __init__(self, dataset_name: str = "", model_name: str = "") -> None:
         self.save_dir: str | None = None
         self.log_level = None
@@ -124,5 +122,5 @@ class DefaultConfig:
         return self.save_dir
 
 
-class Config(DefaultConfig):
+class DefaultConfig(Config):
     pass

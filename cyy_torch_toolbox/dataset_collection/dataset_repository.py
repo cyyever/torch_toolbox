@@ -84,13 +84,6 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
             dataset_constructors[name] = functools.partial(
                 medmnist_cls, target_transform=lambda x: x[0]
             )
-    if has_hugging_face and dataset_type == DatasetType.Text:
-        dataset_names = {a.lower() for a in dataset_constructors.keys()}
-        for name in get_hungging_face_datasets():
-            if name.lower() not in dataset_names:
-                dataset_constructors[name] = functools.partial(
-                    hugging_face_datasets.load_dataset, name
-                )
     return dataset_constructors
 
 
