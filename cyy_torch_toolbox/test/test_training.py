@@ -1,4 +1,4 @@
-from cyy_torch_toolbox.default_config import DefaultConfig
+from cyy_torch_toolbox.default_config import Config
 from cyy_torch_toolbox.dependency import (has_torch_geometric, has_torchtext,
                                           has_torchvision)
 from cyy_torch_toolbox.device import DeviceGreedyAllocator
@@ -12,7 +12,7 @@ def stop_training(*args, **kwargs):
 def test_vision_training() -> None:
     if not has_torchvision:
         return
-    config = DefaultConfig(dataset_name="MNIST", model_name="LeNet5")
+    config = Config(dataset_name="MNIST", model_name="LeNet5")
     config.trainer_config.hook_config.debug = True
     config.hyper_parameter_config.epoch = 1
     config.hyper_parameter_config.learning_rate = 0.01
@@ -30,7 +30,7 @@ def test_text_training() -> None:
     device = DeviceGreedyAllocator().get_device(max_needed_bytes=9 * 1024 * 1024 * 1024)
     if device is None:
         return
-    config = DefaultConfig(dataset_name="IMDB", model_name="simplelstm")
+    config = Config(dataset_name="IMDB", model_name="simplelstm")
     config.trainer_config.hook_config.debug = True
     config.hyper_parameter_config.epoch = 1
     config.hyper_parameter_config.learning_rate = 0.01
@@ -46,7 +46,7 @@ def test_text_training() -> None:
 def test_graph_training() -> None:
     if not has_torch_geometric:
         return
-    config = DefaultConfig(dataset_name="Yelp", model_name="OneGCN")
+    config = Config(dataset_name="Yelp", model_name="OneGCN")
     config.trainer_config.hook_config.debug = True
     config.hyper_parameter_config.epoch = 1
     config.hyper_parameter_config.learning_rate = 0.01
