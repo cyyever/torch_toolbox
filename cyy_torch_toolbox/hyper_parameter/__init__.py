@@ -216,6 +216,7 @@ class HyperParameterConfig:
     batch_size = None
     find_learning_rate = True
     learning_rate = None
+    learning_rate_scheduler = None
     learning_rate_scheduler_name = None
     learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
     momentum = None
@@ -224,6 +225,8 @@ class HyperParameterConfig:
     extra_hyper_parameters: dict = field(default_factory=lambda: {})
 
     def create_hyper_parameter(self, dataset_name, model_name) -> HyperParameter:
+        if not self.learning_rate_scheduler_name:
+            self.learning_rate_scheduler_name = self.learning_rate_scheduler
         hyper_parameter = get_recommended_hyper_parameter(dataset_name, model_name)
 
         if self.epoch is not None:

@@ -84,13 +84,14 @@ def get_dataloader(
             graph_dict = graph.to_dict()
             graph_dict["edge_index"] = util.get_edge_index(0)
             sub_graph = type(graph)(**graph_dict)
+            input_nodes = dataset[0]["mask"]
+            if "pyg_input_nodes" in hyper_parameter.extra_parameters:
+                input_nodes = hyper_parameter.extra_parameters["pyg_input_nodes"][phase]
             return NeighborLoader(
                 data=sub_graph,
                 num_neighbors=[hyper_parameter.extra_parameters.get("num_neighbor", 10)]
                 * model_evaluator.neighbour_hop,
-                input_nodes=hyper_parameter.extra_parameters.get(
-                    "pyg_input_nodes", dataset[0]["mask"]
-                ),
+                input_nodes=input_nodes,
                 transform=lambda data: data.to_dict(),
                 **kwargs,
             )
