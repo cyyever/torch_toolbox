@@ -90,9 +90,9 @@ def get_dataloader(
             if "pyg_input_nodes" in hyper_parameter.extra_parameters:
                 input_nodes = hyper_parameter.extra_parameters["pyg_input_nodes"][phase]
                 dataset_size = input_nodes.numel()
-
-            batch_number = hyper_parameter.extra_parameters["batch_number"]
-            kwargs["batch_size"] = math.ceil(dataset_size / batch_number)
+            if "batch_number"  in hyper_parameter.extra_parameters:
+                batch_number = hyper_parameter.extra_parameters["batch_number"]
+                kwargs["batch_size"] = math.ceil(dataset_size / batch_number)
             return NeighborLoader(
                 data=sub_graph,
                 num_neighbors=[hyper_parameter.extra_parameters.get("num_neighbor", 10)]
