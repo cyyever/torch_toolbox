@@ -1,3 +1,4 @@
+import math
 import os
 from typing import Any
 
@@ -85,8 +86,13 @@ def get_dataloader(
             graph_dict["edge_index"] = util.get_edge_index(0)
             sub_graph = type(graph)(**graph_dict)
             input_nodes = dataset[0]["mask"]
+            dataset_size = input_nodes.sum().item()
             if "pyg_input_nodes" in hyper_parameter.extra_parameters:
                 input_nodes = hyper_parameter.extra_parameters["pyg_input_nodes"][phase]
+                dataset_size = input_nodes.numel()
+
+            batch_number = hyper_parameter.extra_parameters["batch_number"]
+            kwargs["batch_size"] = math.ceil(dataset_size / batch_number)
             return NeighborLoader(
                 data=sub_graph,
                 num_neighbors=[hyper_parameter.extra_parameters.get("num_neighbor", 10)]
