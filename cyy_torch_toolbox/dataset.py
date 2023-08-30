@@ -8,8 +8,8 @@ from cyy_torch_toolbox.dependency import has_hugging_face, has_torch_geometric
 
 if has_torch_geometric:
     import torch_geometric.data
-if has_hugging_face:
-    import datasets as hugging_face_datasets
+# if has_hugging_face:
+#     import datasets as hugging_face_datasets
 
 
 def get_dataset_size(dataset: Any) -> int:
@@ -25,9 +25,9 @@ def get_dataset_size(dataset: Any) -> int:
             return cnt
         case torchdata.datapipes.map.MapDataPipe():
             return len(dataset)
-    if has_hugging_face:
-        if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
-            return len(dataset)
+    # if has_hugging_face:
+    #     if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
+    #         return len(dataset)
     raise NotImplementedError(dataset)
 
 
