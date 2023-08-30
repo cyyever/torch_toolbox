@@ -20,7 +20,7 @@ from cyy_torch_toolbox.trainer import Trainer, TrainerConfig
 
 class Config:
     def __init__(self, dataset_name: str = "", model_name: str = "") -> None:
-        self.save_dir: str | None = None
+        self.save_dir: str = ""
         self.log_level = None
         self.reproducible_env_config = ReproducibleEnvConfig()
         self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
@@ -34,7 +34,7 @@ class Config:
     def create_dataset_collection(self) -> DatasetCollection:
         get_logger().debug("use dataset %s", self.dc_config.dataset_name)
         return self.dc_config.create_dataset_collection(
-            save_dir=self.__get_save_dir(),
+            save_dir=self.get_save_dir(),
         )
 
     def create_trainer(
@@ -54,7 +54,7 @@ class Config:
             model_evaluator=model_evaluator,
             hyper_parameter=hyper_parameter,
         )
-        trainer.set_save_dir(self.__get_save_dir())
+        trainer.set_save_dir(self.get_save_dir())
         return trainer
 
     def create_inferencer(
@@ -66,7 +66,7 @@ class Config:
     def apply_global_config(self) -> None:
         if self.log_level is not None:
             set_level(self.log_level)
-        self.reproducible_env_config.set_reproducible_env(self.__get_save_dir())
+        self.reproducible_env_config.set_reproducible_env(self.get_save_dir())
 
     def __create_model(self, dc: DatasetCollection) -> ModelEvaluator:
         return self.model_config.get_model(dc)
@@ -106,8 +106,8 @@ class Config:
             assert not conf_container
         return conf_container
 
-    def __get_save_dir(self) -> str:
-        if self.save_dir is None:
+    def get_save_dir(self) -> str:
+        if not self.save_dir:
             model_name = self.model_config.model_name
             if not model_name:
                 model_name = "custom_model"
