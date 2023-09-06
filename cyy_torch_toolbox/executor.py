@@ -1,5 +1,6 @@
 import abc
 import contextlib
+import copy
 import os
 from typing import Any, Callable
 
@@ -40,7 +41,7 @@ class Executor(HookCollection, abc.ABC):
         self.__model_evaluator: ModelEvaluator = model_evaluator
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase = phase
-        self.__hyper_parameter = hyper_parameter
+        self.__hyper_parameters = {phase: copy.deepcopy(hyper_parameter)}
         self._hook_config = hook_config
         self.__device: None | torch.device = None
         self.__dataloader = None
@@ -56,7 +57,6 @@ class Executor(HookCollection, abc.ABC):
         self.append_hook(PerformanceMetricLogger(), "performance_metric_logger")
         # self.append_hook(MetricTensorBoard(), "tensor_board_visualizer")
         self.__save_dir: None | str = None
-        self._visualizer_prefix: None | str = None
         self.cache_transforms: None | str = None
 
     @property
@@ -72,7 +72,14 @@ class Executor(HookCollection, abc.ABC):
 
     @property
     def hyper_parameter(self) -> HyperParameter:
-        return self.__hyper_parameter
+        return self.__hyper_parameters[self.phase]
+
+    def set_hyper_parameter(
+        self, hyper_parameter: HyperParameter, phase: MachineLearningPhase | None = None
+    ) -> None:
+        if phase is None:
+            phase = self.phase
+        self.__hyper_parameters[phase] = hyper_parameter
 
     @property
     def performance_metric(self):
@@ -94,7 +101,6 @@ class Executor(HookCollection, abc.ABC):
                 hook.set_data_dir(data_dir)
 
     def set_visualizer_prefix(self, prefix: str) -> None:
-        self._visualizer_prefix = prefix
         for hook in self.get_hooks():
             if isinstance(hook, MetricVisualizer):
                 hook.set_prefix(prefix)
@@ -169,8 +175,6 @@ class Executor(HookCollection, abc.ABC):
         if self.__save_dir is not None:
             self.set_save_dir(self.__save_dir)
 
-        if self._visualizer_prefix is not None:
-            self.set_visualizer_prefix(self._visualizer_prefix)
         self._data["dataset_size"] = self.dataset_size
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_EXECUTE)
 
