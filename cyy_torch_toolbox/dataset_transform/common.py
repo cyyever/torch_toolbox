@@ -9,37 +9,27 @@ if has_torch_geometric:
     from .graph import pyg_data_extraction
 
 
-def default_data_extraction(data: Any, extract_index: bool = True) -> dict:
+def default_data_extraction(data: Any) -> dict:
     if has_torch_geometric:
-        result = pyg_data_extraction(data=data, extract_index=extract_index)
+        result = pyg_data_extraction(data=data)
         if result is not None:
             return result
-    if extract_index:
-        match data:
-            case {"data": real_data, "index": index}:
-                return default_data_extraction(real_data, extract_index=False) | {
-                    "index": index
-                }
-            case [index, real_data]:
-                return default_data_extraction(real_data, extract_index=False) | {
-                    "index": index
-                }
-            case {"index": index, **real_data}:
-                return default_data_extraction(real_data, extract_index=False) | {
-                    "index": index
-                }
-            case _:
-                return default_data_extraction(data, extract_index=False)
-            # case {"input": _, "edge_index": __, **___}:
-            #     return data
-        # raise NotImplementedError(data)
+    index = None
+    match data:
+        case {"data": data, "index": index}:
+            pass
+        case [index, data]:
+            pass
+        case {"index": index, **data}:
+            pass
     match data:
         case [sample_input, target]:
-            return {"input": sample_input, "target": target}
+            data = {"input": sample_input, "target": target}
         case {"label": label, **other_data}:
-            return {"target": label, "input": other_data}
-        case _:
-            return data
+            data = {"target": label, "input": other_data}
+    if index is not None:
+        data["index"] = index
+    return data
 
 
 def __get_int_target(

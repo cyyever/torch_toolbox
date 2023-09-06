@@ -1,7 +1,7 @@
 from typing import Any
 
 
-def pyg_data_extraction(data: Any, extract_index: bool = True) -> dict | None:
+def pyg_data_extraction(data: Any) -> dict | None:
     if "input" in data:
         return data
     match data:
