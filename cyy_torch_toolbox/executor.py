@@ -106,6 +106,13 @@ class Executor(HookCollection, abc.ABC):
                 hook.set_prefix(prefix)
 
     @property
+    def visualizer_prefix(self) -> None | str:
+        for hook in self.get_hooks():
+            if isinstance(hook, MetricVisualizer):
+                return hook.prefix
+        return None
+
+    @property
     def save_dir(self) -> None | str:
         return self.__save_dir
 

@@ -76,8 +76,8 @@ class Trainer(Executor):
         inferencer.set_device(self.device)
         if self.save_dir is not None:
             inferencer.set_save_dir(self.save_dir)
-        if self._visualizer_prefix is not None:
-            inferencer.set_visualizer_prefix(self._visualizer_prefix)
+        if self.visualizer_prefix is not None:
+            inferencer.set_visualizer_prefix(self.visualizer_prefix)
         return inferencer
 
     def get_optimizer(self):
@@ -127,9 +127,9 @@ class Trainer(Executor):
         keep_model_hook.save_last_model = save_last_model
         if batch_loss_log_times is not None:
             self.get_hook("batch_loss_logger").log_times = batch_loss_log_times
-        if self._visualizer_prefix is not None and self.__inferencers:
+        if self.visualizer_prefix is not None and self.__inferencers:
             for inferencer in self.__inferencers.values():
-                inferencer.set_visualizer_prefix(self._visualizer_prefix)
+                inferencer.set_visualizer_prefix(self.visualizer_prefix)
         super()._prepare_execution(**kwargs)
 
     def train(self, run_validation: bool = True, **kwargs: Any) -> None:
