@@ -88,9 +88,12 @@ def get_dataloader(
             input_nodes = dataset[0]["mask"]
             dataset_size = input_nodes.sum().item()
             if "pyg_input_nodes" in hyper_parameter.extra_parameters:
-                input_nodes = hyper_parameter.extra_parameters["pyg_input_nodes"][phase]
-                dataset_size = input_nodes.numel()
-            if "batch_number"  in hyper_parameter.extra_parameters:
+                if phase in hyper_parameter.extra_parameters["pyg_input_nodes"]:
+                    input_nodes = hyper_parameter.extra_parameters["pyg_input_nodes"][
+                        phase
+                    ]
+                    dataset_size = input_nodes.numel()
+            if "batch_number" in hyper_parameter.extra_parameters:
                 batch_number = hyper_parameter.extra_parameters["batch_number"]
                 kwargs["batch_size"] = math.ceil(dataset_size / batch_number)
             return NeighborLoader(
