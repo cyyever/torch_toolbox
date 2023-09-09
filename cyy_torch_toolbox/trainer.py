@@ -26,7 +26,7 @@ class Trainer(Executor):
             phase=MachineLearningPhase.Training,
             **kwargs,
         )
-        self.__inferencers: dict = {}
+        self.__inferencers: dict[MachineLearningPhase, Inferencer] = {}
         self.append_hook(BatchLossLogger(), "batch_loss_logger")
         self.append_hook(KeepModelHook(), "keep_model_hook")
 
@@ -142,31 +142,32 @@ class Trainer(Executor):
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
                     self._execute_epoch(epoch=epoch, in_training=True)
 
-                    if run_validation:
-                        for phase in (
-                            MachineLearningPhase.Validation,
-                            MachineLearningPhase.Test,
+                    if not run_validation:
+                        continue
+                    for phase in (
+                        MachineLearningPhase.Validation,
+                        MachineLearningPhase.Test,
+                    ):
+                        if (
+                            phase not in self.__inferencers
+                            and self.dataset_collection.has_dataset(phase=phase)
                         ):
-                            if (
-                                phase not in self.__inferencers
-                                and self.dataset_collection.has_dataset(phase=phase)
-                            ):
-                                inferencer = self.get_inferencer(
-                                    phase=phase, deepcopy_model=False
-                                )
-                                inferencer.disable_hook("logger")
-                                self.__inferencers[phase] = inferencer
-                            inferencer = self.__inferencers.get(phase, None)
-                            if inferencer is not None:
-                                inferencer.model.load_state_dict(
-                                    self.model.state_dict()
-                                )
-                                inferencer.inference(epoch=epoch, use_grad=False)
-
-                            self.exec_hooks(
-                                ExecutorHookPoint.AFTER_VALIDATION,
-                                epoch=epoch,
+                            tmp_inferencer = self.get_inferencer(
+                                phase=phase, deepcopy_model=False
                             )
+                            tmp_inferencer.disable_hook("logger")
+                            self.__inferencers[phase] = tmp_inferencer
+                        inferencer: None | Inferencer = self.__inferencers.get(
+                            phase, None
+                        )
+                        if inferencer is not None:
+                            inferencer.model.load_state_dict(self.model.state_dict())
+                            inferencer.inference(epoch=epoch, use_grad=False)
+
+                        self.exec_hooks(
+                            ExecutorHookPoint.AFTER_VALIDATION,
+                            epoch=epoch,
+                        )
         except StopExecutingException:
             get_logger().warning("stop training")
         finally:
