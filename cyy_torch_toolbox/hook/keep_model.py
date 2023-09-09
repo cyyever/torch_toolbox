@@ -37,41 +37,40 @@ class KeepModelHook(Hook):
             )
             trainer.save_model(model_path)
 
-        if self.save_best_model or self.keep_best_model:
-            metric = trainer.get_cached_inferencer(
-                MachineLearningPhase.Validation
-            ).performance_metric.get_epoch_metric(1)
-            if (
-                self.best_model is None
-                or metric["accuracy"]
-                > self.best_model["performance_metric"]["accuracy"]
-            ):
-                self.__best_model.set_data(
-                    {
-                        "epoch": epoch,
-                        "parameter": tensor_clone(
-                            tensor_to(
-                                data=trainer.model_util.get_parameter_dict(detach=True),
-                                non_blocking=True,
-                                device=get_cpu_device(),
-                            ),
-                        ),
-                        "performance_metric": {
-                            MachineLearningPhase.Training: trainer.performance_metric.get_epoch_metric(
-                                epoch
-                            ),
-                            MachineLearningPhase.Validation: metric,
-                        },
-                    }
-                )
-                if self.save_best_model:
-                    assert trainer.save_dir is not None
-                    self.__best_model.set_data_path(
-                        os.path.join(
-                            self.__get_model_dir(trainer.save_dir), "best_model.pk"
-                        )
-                    )
-                    self.__best_model.save()
+        if not self.save_best_model and not self.keep_best_model:
+            return
+        metric = trainer.get_cached_inferencer(
+            MachineLearningPhase.Validation
+        ).performance_metric.get_epoch_metric(1)
+        if (
+            self.best_model is not None
+            and metric["accuracy"] <= self.best_model["performance_metric"]["accuracy"]
+        ):
+            return
+        self.__best_model.set_data(
+            {
+                "epoch": epoch,
+                "parameter": tensor_clone(
+                    tensor_to(
+                        data=trainer.model_util.get_parameter_dict(detach=True),
+                        non_blocking=True,
+                        device=get_cpu_device(),
+                    ),
+                ),
+                "performance_metric": {
+                    MachineLearningPhase.Training: trainer.performance_metric.get_epoch_metric(
+                        epoch
+                    ),
+                    MachineLearningPhase.Validation: metric,
+                },
+            }
+        )
+        if self.save_best_model:
+            assert trainer.save_dir is not None
+            self.__best_model.set_data_path(
+                os.path.join(self.__get_model_dir(trainer.save_dir), "best_model.pk")
+            )
+            self.__best_model.save()
 
     def _after_execute(self, executor, **kwargs) -> None:
         trainer = executor
