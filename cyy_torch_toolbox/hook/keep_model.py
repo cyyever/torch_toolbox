@@ -56,7 +56,12 @@ class KeepModelHook(Hook):
                                 device=get_cpu_device(),
                             ),
                         ),
-                        "performance_metric": metric,
+                        "performance_metric": {
+                            MachineLearningPhase.Training: trainer.performance_metric.get_epoch_metric(
+                                epoch
+                            ),
+                            MachineLearningPhase.Validation: metric,
+                        },
                     }
                 )
                 if self.save_best_model:
