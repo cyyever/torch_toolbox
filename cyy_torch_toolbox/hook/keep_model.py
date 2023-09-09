@@ -38,22 +38,26 @@ class KeepModelHook(Hook):
             trainer.save_model(model_path)
 
         if self.save_best_model or self.keep_best_model:
-            acc = trainer.get_cached_inferencer(
+            metric = trainer.get_cached_inferencer(
                 MachineLearningPhase.Validation
-            ).performance_metric.get_epoch_metric(1, "accuracy")
-            if self.best_model is None or acc > self.best_model[1]:
+            ).performance_metric.get_epoch_metric(1)
+            if (
+                self.best_model is None
+                or metric["accuracy"]
+                > self.best_model["performance_metric"]["accuracy"]
+            ):
                 self.__best_model.set_data(
-                    (
-                        tensor_clone(
+                    {
+                        "epoch": epoch,
+                        "parameter": tensor_clone(
                             tensor_to(
                                 data=trainer.model_util.get_parameter_dict(detach=True),
                                 non_blocking=True,
                                 device=get_cpu_device(),
                             ),
                         ),
-                        acc,
-                        epoch,
-                    )
+                        "performance_metric": metric,
+                    }
                 )
                 if self.save_best_model:
                     assert trainer.save_dir is not None
