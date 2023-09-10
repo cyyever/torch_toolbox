@@ -1,5 +1,6 @@
 from typing import Any
 
+import torch
 from cyy_torch_toolbox.hook import Hook
 
 
@@ -21,6 +22,8 @@ class Metric(Hook):
     def _set_epoch_metric(self, epoch, name, data) -> None:
         if epoch not in self.__epoch_metrics:
             self.__epoch_metrics[epoch] = {}
+        if isinstance(data, torch.Tensor):
+            data = data.item()
         self.__epoch_metrics[epoch][name] = data
 
     def get_batch_metric(self, batch: int, name: str) -> Any:
