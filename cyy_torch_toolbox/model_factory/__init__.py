@@ -76,7 +76,7 @@ def get_model(
         final_model_kwargs["num_classes"] = len(
             dataset_collection.get_labels(use_cache=True)
         )
-        get_logger().info("detect %s classes", final_model_kwargs["num_classes"])
+        get_logger().debug("detect %s classes", final_model_kwargs["num_classes"])
         if model_type == ModelType.Detection:
             final_model_kwargs["num_classes"] += 1
     final_model_kwargs["num_labels"] = final_model_kwargs["num_classes"]
