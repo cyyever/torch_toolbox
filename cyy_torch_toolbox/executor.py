@@ -82,7 +82,7 @@ class Executor(HookCollection, abc.ABC):
         self.__hyper_parameters[phase] = hyper_parameter
 
     @property
-    def performance_metric(self):
+    def performance_metric(self) -> PerformanceMetric:
         return self.get_hook("performance_metric")
 
     @property
