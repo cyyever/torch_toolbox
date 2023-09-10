@@ -9,36 +9,14 @@ class Metric(Hook):
         self.__epoch_metrics: dict = {}
         self.__batch_metrics: dict = {}
 
-    # def get_epoch_metric(self, epoch: int, name: str | None = None) -> Any:
-    #     epoch_data = self.__epoch_metrics.get(epoch, None)
-    #     if epoch_data is None:
-    #         return None
-    #     if name is None:
-    #         return epoch_data
-    #     return epoch_data.get(name, None)
-
-    # def get_epoch_metrics(self, epoch: int) -> dict | None:
-    #     epoch_metrics = self.get_epoch_metric(epoch=epoch)
-    #     if epoch_metrics is None:
-    #         epoch_metrics = {}
-    #     for sub_hook in self._sub_hooks:
-    #         if hasattr(sub_hook, "get_epoch_metric"):
-    #             epoch_metric = sub_hook.get_epoch_metric(epoch=epoch)
-    #             if epoch_metric:
-    #                 epoch_metrics |= epoch_metric
-    #     if epoch_metrics:
-    #         return epoch_metrics
-    #     return None
-
-    def get_epoch_metric(self, epoch: int, name: str) -> Any:
-        return self.get_epoch_metrics(epoch=epoch).get(name, None)
-
-    def get_epoch_metrics(self, epoch: int) -> dict:
-        epoch_metrics = self.__epoch_metrics.get(epoch, {})
+    def get_epoch_metric(self, epoch: int, name: str | None = None) -> dict | Any:
+        epoch_metric = self.__epoch_metrics.get(epoch, {})
         for sub_hook in self._sub_hooks:
-            if hasattr(sub_hook, "get_epoch_metrics"):
-                epoch_metrics |= sub_hook.get_epoch_metrics(epoch=epoch)
-        return epoch_metrics
+            if hasattr(sub_hook, "get_epoch_metric"):
+                epoch_metric |= sub_hook.get_epoch_metric(epoch=epoch)
+        if name is None:
+            return epoch_metric
+        return epoch_metric.get(name, None)
 
     def _set_epoch_metric(self, epoch, name, data) -> None:
         if epoch not in self.__epoch_metrics:
