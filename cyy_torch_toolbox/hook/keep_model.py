@@ -44,7 +44,10 @@ class KeepModelHook(Hook):
         ).performance_metric.get_epoch_metric(1)
         if (
             self.best_model is not None
-            and metric["accuracy"] <= self.best_model["performance_metric"]["accuracy"]
+            and metric["accuracy"]
+            <= self.best_model["performance_metric"][MachineLearningPhase.Validation][
+                "accuracy"
+            ]
         ):
             return
         self.__best_model.set_data(
