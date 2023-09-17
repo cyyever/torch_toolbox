@@ -33,10 +33,10 @@ class PerformanceMetric(Metric):
         self.__last_epoch = epoch
         self._set_epoch_metric(epoch, "duration", time.time() - self.__epoch_time_point)
 
-    def get_loss(self, epoch):
+    def get_loss(self, epoch) -> float:
         return self.__loss_metric.get_epoch_metric(epoch, "loss")
 
-    def get_accuracy(self, epoch):
+    def get_accuracy(self, epoch) -> float | None:
         if self.__accuracy_metric is None:
             return None
         return self.__accuracy_metric.get_accuracy(epoch)

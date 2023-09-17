@@ -15,6 +15,9 @@ class Metric(Hook):
         for sub_hook in self._sub_hooks:
             if hasattr(sub_hook, "get_epoch_metric"):
                 epoch_metric |= sub_hook.get_epoch_metric(epoch=epoch)
+        for k, v in epoch_metric.items():
+            if isinstance(v, torch.Tensor):
+                epoch_metric[k] = v.item()
         if name is None:
             return epoch_metric
         return epoch_metric.get(name, None)
@@ -23,7 +26,7 @@ class Metric(Hook):
         if epoch not in self.__epoch_metrics:
             self.__epoch_metrics[epoch] = {}
         if isinstance(data, torch.Tensor):
-            data = data.item()
+            data = data.clone().detach()
         self.__epoch_metrics[epoch][name] = data
 
     def get_batch_metric(self, batch: int, name: str) -> Any:

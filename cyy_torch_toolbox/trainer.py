@@ -40,14 +40,7 @@ class Trainer(Executor):
         keep_model_hook: KeepModelHook = self.get_hook("keep_model_hook")
         if keep_model_hook.best_model is None:
             return None
-        return keep_model_hook.best_model[0]
-
-    @property
-    def best_epoch(self) -> int | None:
-        keep_model_hook: KeepModelHook = self.get_hook("keep_model_hook")
-        if keep_model_hook.best_model is None:
-            return None
-        return keep_model_hook.best_model[2]
+        return keep_model_hook.best_model
 
     def get_cached_inferencer(self, phase: MachineLearningPhase) -> Inferencer | None:
         return self.__inferencers.get(phase, None)
@@ -172,10 +165,7 @@ class Trainer(Executor):
             get_logger().warning("stop training")
         finally:
             self.wait_stream()
-        self.exec_hooks(
-            hook_point=ExecutorHookPoint.AFTER_EXECUTE,
-            epoch=self.hyper_parameter.epoch,
-        )
+        self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
 
     def _get_backward_loss(self, result):
         return result["loss"]
