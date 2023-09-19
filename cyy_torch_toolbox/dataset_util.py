@@ -180,20 +180,24 @@ class DatasetSplitter(DatasetUtil):
 
         def split_index_impl(indices_list: list) -> list[list]:
             part_lens = []
-            first_assert = False
+            first_assert = True
+            index_num = len(indices_list)
 
             for part in parts:
                 assert part > 0
-                part_len = int(len(indices_list) * part / sum(parts))
-                if part_len == 0 and first_assert:
-                    first_assert = False
-                    get_logger().warning(
-                        "has zero part when splitting list, %s %s",
-                        len(indices_list),
-                        parts,
-                    )
+                part_len = int(index_num * part / sum(parts))
+                if part_len == 0:
+                    if sum(part_lens, start=0) < index_num:
+                        part_len = 1
+                    elif first_assert:
+                        first_assert = False
+                        get_logger().warning(
+                            "has zero part when splitting list, %s %s",
+                            index_num,
+                            parts,
+                        )
                 part_lens.append(part_len)
-            part_lens[-1] += len(indices_list) - sum(part_lens)
+            part_lens[-1] += index_num - sum(part_lens)
             part_indices = []
             for part_len in part_lens:
                 if part_len != 0:
