@@ -74,6 +74,7 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
                 dataset_constructors[repository] = functools.partial(
                     dataset_constructors["Planetoid"],
                     name=repository,
+                    split="full"
                 )
 
     if has_medmnist and dataset_type == DatasetType.Vision:
