@@ -327,13 +327,15 @@ class GraphDatasetUtil(DatasetSplitter):
         return [mask]
 
     def get_edge_index(self, graph_index: int) -> torch.Tensor:
-        graph_dict = self.dataset[graph_index]
-        if "edge_index" in graph_dict:
-            return graph_dict["edge_index"]
+        graph = self.dataset[graph_index]
+        if "edge_index" in graph:
+            return graph["edge_index"]
         return self.get_graph(graph_index).edge_index
 
     def get_graph(self, graph_index: int) -> Any:
         graph_dict = self.dataset[graph_index]
+        if "original_dataset" not in graph_dict:
+            return graph_dict
         original_dataset = graph_dict["original_dataset"]
         graph_index = graph_dict["graph_index"]
         graph = original_dataset[graph_index]
