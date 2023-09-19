@@ -72,9 +72,16 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
         if "Planetoid" in dataset_constructors:
             for repository in ["Cora", "CiteSeer", "PubMed"]:
                 dataset_constructors[repository] = functools.partial(
-                    dataset_constructors["Planetoid"],
-                    name=repository,
-                    split="full"
+                    dataset_constructors["Planetoid"], name=repository, split="full"
+                )
+            for name in ["Cora", "CiteSeer", "PubMed"]:
+                dataset_constructors[f"Planetoid_{name}"] = functools.partial(
+                    dataset_constructors["Planetoid"], name=name, split="full"
+                )
+        if "Coauthor" in dataset_constructors:
+            for name in ["CS", "Physics"]:
+                dataset_constructors[f"Coauthor_{name}"] = functools.partial(
+                    dataset_constructors["Coauthor"], name=name
                 )
 
     if has_medmnist and dataset_type == DatasetType.Vision:
