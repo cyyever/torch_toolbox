@@ -22,7 +22,7 @@ class GraphModelEvaluator(ModelEvaluator):
         self.batch_neighbour_index_map: dict = {}
         self.__subset_edge_index: dict = {}
         self.__batch_neighbour_edge_index: dict = {}
-        get_logger().info("use neighbour_hop %s", self.neighbour_hop)
+        get_logger().debug("use neighbour_hop %s", self.neighbour_hop)
 
     def __call__(self, **kwargs: Any) -> dict:
         if "batch_node_indices" in kwargs:
