@@ -47,7 +47,7 @@ def add_vision_transforms(dc, model_evaluator) -> None:
     if input_size is not None:
         get_logger().debug("resize input to %s", input_size)
         dc.append_transform(
-            transform=torchvision.transforms.Resize(input_size),
+            transform=torchvision.transforms.Resize(input_size, antialias=True),
             key=TransformType.Input,
         )
     if dc.name.upper() not in ("SVHN", "MNIST"):
