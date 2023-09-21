@@ -1,4 +1,3 @@
-import torch
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
@@ -15,12 +14,11 @@ class PerformanceMetricLogger(MetricVisualizer):
         performance_metric = executor.performance_metric
 
         epoch_metrics = performance_metric.get_epoch_metric(epoch)
+
         if not epoch_metrics:
             return
         metric_str: str = ""
         for k, value in epoch_metrics.items():
-            if isinstance(value, torch.Tensor):
-                value = value.item()
             if "accuracy" in k:
                 metric_str = metric_str + "{}:{:.2%}, ".format(k, value)
             elif "loss" in k:

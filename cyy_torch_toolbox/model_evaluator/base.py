@@ -154,12 +154,15 @@ class ModelEvaluator:
                         ).view(-1)
                         output = output.view(-1)
                 loss = self.loss_fun(output, targets)
-                return {
+                res = {
                     "loss": loss,
                     "targets": targets,
                     "model_output": output,
                     "is_averaged_loss": self.__is_averaged_loss(),
                 }
+                if res["is_averaged_loss"]:
+                    res["loss_batch_size"] = targets.shape[0]
+                return res
         raise NotImplementedError()
 
     def replace_model(self, model):
