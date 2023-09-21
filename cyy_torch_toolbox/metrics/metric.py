@@ -12,7 +12,7 @@ class Metric(Hook):
         self.__batch_metrics: dict = {}
 
     def get_epoch_metric(self, epoch: int, name: str | None = None) -> dict | Any:
-        epoch_metric = copy.deepcopy(self.__epoch_metrics.get(epoch, {}))
+        epoch_metric = copy.copy(self.__epoch_metrics.get(epoch, {}))
         for sub_hook in self._sub_hooks:
             if hasattr(sub_hook, "get_epoch_metric"):
                 sub_epoch_metric = sub_hook.get_epoch_metric(epoch=epoch)
