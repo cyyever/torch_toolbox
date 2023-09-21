@@ -313,12 +313,11 @@ class Executor(HookCollection, abc.ABC):
                 get_logger().debug("use dataset size %s", self._data["dataset_size"])
                 assert forward_result["is_averaged_loss"]
                 assert self._data["dataset_size"] > 1
-                normalized_batch_loss = (
+                forward_result["normalized_batch_loss"] = (
                     forward_result["loss"]
                     * batch["batch_size"]
                     / self._data["dataset_size"]
                 )
-                forward_result["normalized_batch_loss"] = normalized_batch_loss
                 batch |= forward_result
                 self.exec_hooks(
                     hook_point=ExecutorHookPoint.AFTER_FORWARD,
