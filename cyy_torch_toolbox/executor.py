@@ -310,12 +310,12 @@ class Executor(HookCollection, abc.ABC):
                 else:
                     forward_result = self.__model_evaluator(**kwargs)
 
-                get_logger().debug("use dataset size %s", self._data["dataset_size"])
                 assert forward_result["is_averaged_loss"]
                 assert self._data["dataset_size"] > 1
+                # get_logger().error("phase is %s dataset size %s",self.phase,self._data["dataset_size"])
                 forward_result["normalized_batch_loss"] = (
                     forward_result["loss"]
-                    * batch["batch_size"]
+                    * forward_result["loss_batch_size"]
                     / self._data["dataset_size"]
                 )
                 batch |= forward_result

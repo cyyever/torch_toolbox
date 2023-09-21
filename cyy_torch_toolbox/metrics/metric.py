@@ -14,7 +14,10 @@ class Metric(Hook):
         epoch_metric = self.__epoch_metrics.get(epoch, {})
         for sub_hook in self._sub_hooks:
             if hasattr(sub_hook, "get_epoch_metric"):
-                epoch_metric |= sub_hook.get_epoch_metric(epoch=epoch)
+                sub_epoch_metric = sub_hook.get_epoch_metric(epoch=epoch)
+                for k, v in sub_epoch_metric.items():
+                    assert k not in epoch_metric
+                    epoch_metric[k] = v
         for k, v in epoch_metric.items():
             if isinstance(v, torch.Tensor):
                 epoch_metric[k] = v.item()
