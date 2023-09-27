@@ -71,7 +71,7 @@ global_reproducible_env: ReproducibleEnv = ReproducibleEnv()
 
 @dataclass
 class ReproducibleEnvConfig:
-    make_reproducible_env: bool = False
+    make_reproducible_env: bool = True
     reproducible_env_load_path: str | None = None
 
     def set_reproducible_env(self, save_dir: str | None = None) -> None:
