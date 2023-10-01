@@ -8,7 +8,9 @@ class BatchLossLogger(MetricVisualizer):
         super().__init__(**kwargs)
         self.log_times = 5
 
-    def _after_batch(self, executor, epoch, batch_index, batch_size, result, **kwargs) -> None:
+    def _after_batch(
+        self, executor, epoch, batch_index, batch_size, result, **kwargs
+    ) -> None:
         if self.log_times == 0:
             return
         interval = executor._data["dataset_size"] // (self.log_times * batch_size)

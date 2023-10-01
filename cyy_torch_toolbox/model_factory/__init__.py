@@ -69,18 +69,21 @@ def get_model(
                     phase=MachineLearningPhase.Training
                 ).num_features
 
+    final_model_kwargs |= model_kwargs
     model_type = ModelType.Classification
     if "rcnn" in name.lower():
         model_type = ModelType.Detection
-    if "num_classes" not in model_kwargs:
-        final_model_kwargs["num_classes"] = len(
-            dataset_collection.get_labels(use_cache=True)
-        )
-        get_logger().debug("detect %s classes", final_model_kwargs["num_classes"])
-        if model_type == ModelType.Detection:
-            final_model_kwargs["num_classes"] += 1
+    if model_type in (ModelType.Classification, ModelType.Detection):
+        if "num_classes" not in final_model_kwargs:
+            final_model_kwargs["num_classes"] = dataset_collection.label_number  # E:
+            get_logger().debug("detect %s classes", final_model_kwargs["num_classes"])
+        else:
+            assert (
+                final_model_kwargs["num_classes"] == dataset_collection.label_number
+            )  # E:
+    if model_type == ModelType.Detection:
+        final_model_kwargs["num_classes"] += 1
     final_model_kwargs["num_labels"] = final_model_kwargs["num_classes"]
-    final_model_kwargs |= model_kwargs
     # use_checkpointing = model_kwargs.pop("use_checkpointing", False)
     while True:
         try:
