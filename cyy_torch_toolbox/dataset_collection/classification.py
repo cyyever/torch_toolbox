@@ -1,14 +1,13 @@
+import functools
 from typing import Generator
 
 from ..ml_type import MachineLearningPhase
 
 
 class ClassificationDatasetCollection:
-    # def __init__(self, dc: DatasetCollection) -> None:
-    #     self.__dc = dc
-
-    # def __getattr__(self, name: str) -> Any:
-    #     return getattr(self.__dc, name)
+    @functools.cached_property
+    def label_number(self) -> int:
+        return len(self.get_labels())
 
     def get_labels(self, use_cache: bool = True) -> set:
         def computation_fun() -> set:

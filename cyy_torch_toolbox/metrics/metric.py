@@ -51,9 +51,25 @@ class Metric(Hook):
     def _before_execute(self, **__) -> None:
         self.clear_metric()
 
-    def clear_metric(self) -> None:
+    def _before_epoch(self, **kwargs) -> None:
+        self.clear_metric(metric_type="epoch", key=kwargs["epoch"])
+
+    def _before_batch(self, **kwargs) -> None:
+        self.clear_metric(metric_type="batch", key=kwargs["batch_index"])
+
+    def clear_metric(
+        self, metric_type: str | None = None, key: int | None = None
+    ) -> None:
         for sub_hook in self._sub_hooks:
             if hasattr(sub_hook, "clear_metric"):
-                sub_hook.clear_metric()
-        self.__epoch_metrics.clear()
-        self.__batch_metrics.clear()
+                sub_hook.clear_metric(metric_type=metric_type, key=key)
+        match metric_type:
+            case "epoch":
+                self.__epoch_metrics.pop(key, None)
+            case "batch":
+                self.__batch_metrics.pop(key, None)
+            case None:
+                self.__batch_metrics.clear()
+                self.__epoch_metrics.clear()
+            case _:
+                raise RuntimeError(metric_type)

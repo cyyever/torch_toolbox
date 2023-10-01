@@ -4,7 +4,7 @@ from .metric import Metric
 
 
 class LossMetric(Metric):
-    def _after_batch(self, epoch, executor, result, batch_size, **kwargs) -> None:
+    def _after_batch(self, epoch, executor, result, **kwargs) -> None:
         normalized_batch_loss = result["normalized_batch_loss"].clone().detach()
         epoch_loss = self.get_epoch_metric(epoch, "loss")
         if epoch_loss is None:
@@ -14,8 +14,5 @@ class LossMetric(Metric):
         self._set_epoch_metric(epoch, "loss", epoch_loss)
         if executor.dataset_collection.dataset_type == DatasetType.Text:
             self._set_epoch_metric(
-                epoch, "perplexity", round(epoch_loss.exp().item(), 5)
+                epoch, "perplexity", epoch_loss.exp().clone().detach()
             )
-
-    def get_loss(self, epoch):
-        return self.get_epoch_metric(epoch, "loss")
