@@ -28,6 +28,8 @@ class Metric(Hook):
         for k, v in metric.items():
             if isinstance(v, torch.Tensor):
                 metric[k] = v.item()
+        if name is not None and name in metric:
+            return metric.get(name, None)
         for sub_hook in self._sub_hooks:
             sub_metric = sub_hook.get_metrics(
                 metric_type=metric_type, key=key, name=None
