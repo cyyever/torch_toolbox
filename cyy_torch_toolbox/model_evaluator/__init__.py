@@ -9,6 +9,7 @@ from ..ml_type import DatasetType, ModelType
 from .base import ModelEvaluator, VisionModelEvaluator
 from .graph import GraphModelEvaluator
 from .text import TextModelEvaluator
+from .word_vector import PretrainedWordVector
 
 if has_hugging_face:
     import transformers
@@ -32,9 +33,7 @@ def get_model_evaluator(
         else:
             model_evaluator_fun = TextModelEvaluator
     elif dataset_collection.dataset_type == DatasetType.Graph:
-        model_evaluator_fun = functools.partial(
-            GraphModelEvaluator, dataset_collection
-        )
+        model_evaluator_fun = functools.partial(GraphModelEvaluator, dataset_collection)
     if model_kwargs is None:
         model_kwargs = {}
     loss_fun_name = model_kwargs.get("loss_fun_name", None)
@@ -49,7 +48,7 @@ def get_model_evaluator(
         model_evaluator.model.load_state_dict(torch.load(model_path))
     word_vector_name = model_kwargs.get("word_vector_name", None)
     if word_vector_name is not None:
-        from .word_vector import PretrainedWordVector
+        assert hasattr(dataset_collection, "tokenizer")
 
         PretrainedWordVector(word_vector_name).load_to_model(
             model_evaluator=model_evaluator,
