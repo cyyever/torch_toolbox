@@ -1,29 +1,25 @@
+from typing import Any
+
 import torch
 
 from .metric import Metric
 
 
 class AccuracyMetric(Metric):
-    __correct_count = None
-    __dataset_size = None
+    __correct_count: int | torch.Tensor = 0
+    __dataset_size: int | torch.Tensor = 0
 
-    def get_accuracy(self, epoch: int) -> float:
-        acc = self.get_epoch_metric(epoch, "accuracy")
-        if isinstance(acc, torch.Tensor):
-            return acc.cpu().item()
-        return acc
-
-    def _before_epoch(self, **kwargs) -> None:
+    def _before_epoch(self, **kwargs: Any) -> None:
         self.__dataset_size = 0
-        self.__correct_count = None
+        self.__correct_count = 0
 
-    def _after_batch(self, result, **kwargs) -> None:
+    def _after_batch(self, result: dict, **kwargs: Any) -> None:
         output = result["model_output"]
         logits = result.get("logits", None)
         targets = result["targets"]
         if logits is not None:
             output = logits
-        correct_count = 0
+        correct_count: int | torch.Tensor = 0
         if output.shape == targets.shape:
             if len(targets.shape) == 2:
                 for idx, maxidx in enumerate(torch.argmax(output, dim=1)):
@@ -39,7 +35,7 @@ class AccuracyMetric(Metric):
             correct_count = (
                 torch.eq(torch.max(output, dim=1)[1], targets).view(-1).sum()
             )
-        if self.__correct_count is None:
+        if self.__correct_count == 0:
             self.__correct_count = correct_count
         else:
             self.__correct_count += correct_count
