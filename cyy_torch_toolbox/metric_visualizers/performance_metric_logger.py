@@ -19,7 +19,9 @@ class PerformanceMetricLogger(MetricVisualizer):
             return
         metric_str: str = ""
         for k, value in epoch_metrics.items():
-            if "accuracy" in k:
+            if "F1" in k:
+                metric_str = metric_str + "{}:{:.2}, ".format(k, value)
+            elif "accuracy" in k:
                 metric_str = metric_str + "{}:{:.2%}, ".format(k, value)
             elif "loss" in k:
                 metric_str = metric_str + "{}:{:.5}, ".format(k, value)

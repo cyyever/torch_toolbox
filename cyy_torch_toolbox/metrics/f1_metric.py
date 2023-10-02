@@ -1,58 +1,30 @@
-import torch
-from torchmetrics import F1Score
+from typing import Any
+
+from torchmetrics.classification import MulticlassF1Score
 
 from .metric import Metric
 
 
 class F1Metric(Metric):
-    __f1_score_counter: None | F1Score = None
-
-    def _before_execution(self, **kwargs) -> None:
-        self.__dataset_size = 0
-        self.__correct_count = None
-
-    def get_accuracy(self, epoch: int) -> float:
-        acc = self.get_epoch_metric(epoch, "accuracy")
-        if isinstance(acc, torch.Tensor):
-            return acc.cpu().item()
-        return acc
+    __f1_score_counter: None | MulticlassF1Score = None
 
     def _before_epoch(self, **kwargs) -> None:
-        executor=kwargs["executor"]
-        self.__f1_score_counter=F1Score(num_classes=executor.dataset_collection.)
+        executor = kwargs["executor"]
+        assert executor.dataset_collection.label_number > 0
+        self.__f1_score_counter = MulticlassF1Score(
+            num_classes=executor.dataset_collection.label_number
+        )
 
-        self.__dataset_size = 0
-        self.__correct_count = None
-
-    def _after_batch(self, result, **kwargs) -> None:
+    def _after_batch(self, result: dict, **kwargs: Any) -> None:
         output = result["model_output"]
         logits = result.get("logits", None)
         targets = result["targets"]
         if logits is not None:
             output = logits
-        correct_count = 0
-        if output.shape == targets.shape:
-            if len(targets.shape) == 2:
-                for idx, maxidx in enumerate(torch.argmax(output, dim=1)):
-                    if targets[idx][maxidx] == 1:
-                        correct_count += 1
-            elif len(targets.shape) <= 1:
-                correct_count = (
-                    torch.eq(torch.round(output.sigmoid()), targets).view(-1).sum()
-                )
-            else:
-                raise NotImplementedError()
-        else:
-            correct_count = (
-                torch.eq(torch.max(output, dim=1)[1], targets).view(-1).sum()
-            )
-        if self.__correct_count is None:
-            self.__correct_count = correct_count
-        else:
-            self.__correct_count += correct_count
-        self.__dataset_size += targets.shape[0]
+        self.__f1_score_counter.update(
+            output.clone().detach().cpu(), targets.clone().detach().cpu()
+        )
 
     def _after_epoch(self, **kwargs) -> None:
         epoch = kwargs["epoch"]
-        accuracy = self.__correct_count / self.__dataset_size
-        self._set_epoch_metric(epoch, "accuracy", accuracy)
+        self._set_epoch_metric(epoch, "F1", self.__f1_score_counter.compute())
