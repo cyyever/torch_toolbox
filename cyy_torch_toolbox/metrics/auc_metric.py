@@ -5,7 +5,7 @@ from torchmetrics.classification import MulticlassAUROC
 from .metric import Metric
 
 
-class F1Metric(Metric):
+class AUROCMetric(Metric):
     __auroc: None | MulticlassAUROC = None
 
     def _before_epoch(self, **kwargs) -> None:
