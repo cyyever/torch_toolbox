@@ -11,6 +11,13 @@ class Metric(Hook):
         self.__epoch_metrics: dict = {}
         self.__batch_metrics: dict = {}
 
+    def _get_output(self, result: dict) -> torch.Tensor:
+        output = result["model_output"]
+        logits = result.get("logits", None)
+        if logits is not None:
+            output = logits
+        return output
+
     def get_epoch_metric(self, epoch: int, name: str | None = None) -> dict | Any:
         return self.get_metrics(metric_type="epoch", key=epoch, name=name)
 

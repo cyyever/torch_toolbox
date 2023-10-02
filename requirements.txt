@@ -4,6 +4,7 @@ hydra-core
 omegaconf
 torchtext
 torchdata
+torchmetrics
 torchvision
 transformers
 datasets
