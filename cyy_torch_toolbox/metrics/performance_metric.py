@@ -4,6 +4,7 @@ import time
 from cyy_torch_toolbox.ml_type import ModelType
 
 from .acc_metric import AccuracyMetric
+from .auc_metric import AUROCMetric
 from .dataloader_profiler import DataloaderProfiler
 from .f1_metric import F1Metric
 from .grad_metric import GradMetric
@@ -19,6 +20,7 @@ class PerformanceMetric(Metric):
         if model_type == ModelType.Classification:
             self.__accuracy_metric = AccuracyMetric()
             self.__f1_metric = F1Metric()
+            self.__auc_metric = AUROCMetric()
         self.__epoch_time_point: float = time.time()
         self.__last_epoch = None
         if os.getenv("use_grad_norm") is not None:
