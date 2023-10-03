@@ -11,12 +11,12 @@ class ClassificationMetric(Metric):
             self.disable()
 
     def _get_output(self, result: dict) -> torch.Tensor:
-        output = result["model_output"]
-        logits = result.get("logits", None)
-        if logits is not None:
-            output = logits
+        output = result.get("logits", None)
+        if output is None:
+            output = result["model_output"]
+        assert isinstance(output, torch.Tensor)
         if output.shape == 2:
-            output = torch.max(output, dim=1).review(-1)
+            output = output.max(dim=1).view(-1)
         if (output < 0).sum().item():
             output = output.sigmoid()
         return output
