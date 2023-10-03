@@ -26,12 +26,13 @@ class ClassificationDatasetCollection:
         def computation_fun() -> bool:
             if self.name.lower() == "imagenet":
                 return False
-            for _, labels in self.get_dataset_util(
-                phase=MachineLearningPhase.Training
-            ).get_batch_labels():
+            for _, labels in self.__get_first_dataset_util().get_batch_labels():
                 if len(labels) > 1:
                     return True
             return False
+
+        if not self.has_dataset(MachineLearningPhase.Training):
+            return computation_fun()
 
         return self.get_cached_data("is_mutilabel.pk", computation_fun)
 
@@ -45,6 +46,16 @@ class ClassificationDatasetCollection:
             return label_names
 
         return self.get_cached_data("label_names.pk", computation_fun)
+
+    def __get_first_dataset_util(self):
+        for phase in (
+            MachineLearningPhase.Training,
+            MachineLearningPhase.Validation,
+            MachineLearningPhase.Test,
+        ):
+            if self.has_dataset(phase):
+                return self.get_dataset_util(phase)
+        raise RuntimeError("no dataset")
 
     def get_raw_data(self, phase: MachineLearningPhase, index: int) -> tuple:
         dataset_util = self.get_dataset_util(phase)
