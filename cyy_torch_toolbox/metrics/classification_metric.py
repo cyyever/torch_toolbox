@@ -1,8 +1,15 @@
 import torch
-from cyy_torch_toolbox.hook import Hook
+
+from ..ml_type import ModelType
+from .metric import Metric
 
 
-class ClassificationMetric(Hook):
+class ClassificationMetric(Metric):
+    def _before_execution(self, **kwargs) -> None:
+        executor = kwargs["executor"]
+        if executor.running_model_evaluator.model_type != ModelType.Classification:
+            self.disable()
+
     def _get_output(self, result: dict) -> torch.Tensor:
         output = result["model_output"]
         logits = result.get("logits", None)
