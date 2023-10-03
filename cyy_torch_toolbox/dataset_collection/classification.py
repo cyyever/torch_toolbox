@@ -11,7 +11,7 @@ class ClassificationDatasetCollection:
 
     def get_labels(self, use_cache: bool = True) -> set:
         def computation_fun() -> set:
-            if self.name is not None and self.name.lower() == "imagenet":
+            if self.name.lower() == "imagenet":
                 return set(range(1000))
             return self.get_dataset_util(
                 phase=MachineLearningPhase.Training
@@ -21,6 +21,19 @@ class ClassificationDatasetCollection:
             return computation_fun()
 
         return self.get_cached_data("labels.pk", computation_fun)
+
+    def is_mutilabel(self) -> bool:
+        def computation_fun() -> bool:
+            if self.name.lower() == "imagenet":
+                return False
+            for _, labels in self.get_dataset_util(
+                phase=MachineLearningPhase.Training
+            ).get_batch_labels():
+                if len(labels) > 1:
+                    return True
+            return False
+
+        return self.get_cached_data("is_mutilabel.pk", computation_fun)
 
     def get_label_names(self) -> dict:
         def computation_fun():
