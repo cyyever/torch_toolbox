@@ -137,6 +137,7 @@ class ModelEvaluator:
     def _compute_loss(
         self, output: Any, targets: Any, non_blocking: bool, **kwargs: Any
     ) -> dict:
+        original_targets=targets
         convert_kwargs = {"device": output.device}
         match output:
             case torch.Tensor():
@@ -157,6 +158,7 @@ class ModelEvaluator:
                 res = {
                     "loss": loss,
                     "targets": targets,
+                    "original_targets": original_targets,
                     "model_output": output,
                     "is_averaged_loss": self.__is_averaged_loss(),
                 }
