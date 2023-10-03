@@ -60,6 +60,7 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
         return tensor_to(inputs, device=device, non_blocking=non_blocking)
 
     def _forward_model(self, **kwargs: Any) -> dict:
+        targets = kwargs["targets"]
         model_input = self._create_input(**kwargs)
         output = self.model(**model_input)
         return {
@@ -68,4 +69,5 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
             "logits": output.logits,
             "loss": output.loss,
             "is_averaged_loss": True,
+            "loss_batch_size": targets.shape[0],
         }
