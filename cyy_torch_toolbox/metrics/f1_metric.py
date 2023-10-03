@@ -2,10 +2,10 @@ from typing import Any
 
 from torchmetrics.classification import MulticlassF1Score
 
-from .metric import Metric
+from .classification_metric import ClassificationMetric
 
 
-class F1Metric(Metric):
+class F1Metric(ClassificationMetric):
     __f1: None | MulticlassF1Score = None
 
     def _before_epoch(self, **kwargs) -> None:

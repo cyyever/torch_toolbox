@@ -2,10 +2,10 @@ from typing import Any
 
 from torchmetrics.classification import MulticlassAUROC
 
-from .metric import Metric
+from .classification_metric import ClassificationMetric
 
 
-class AUROCMetric(Metric):
+class AUROCMetric(ClassificationMetric):
     __auroc: None | MulticlassAUROC = None
 
     def _before_epoch(self, **kwargs) -> None:
