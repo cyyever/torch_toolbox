@@ -20,7 +20,7 @@ class PerformanceMetricLogger(MetricVisualizer):
         metric_str: str = ""
         for k, value in epoch_metrics.items():
             if "F1" in k:
-                metric_str = metric_str + "{}:{:.2}, ".format(k, value)
+                metric_str = metric_str + "{}:{:.4}, ".format(k, value)
             elif "AUROC" in k:
                 metric_str = metric_str + "{}:{:.4}, ".format(k, value)
             elif "accuracy" in k:
