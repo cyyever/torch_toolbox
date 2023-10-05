@@ -1,3 +1,4 @@
+import torch
 from cyy_torch_toolbox.data_structure.torch_process_context import \
     TorchProcessContext
 
@@ -5,5 +6,5 @@ from cyy_torch_toolbox.data_structure.torch_process_context import \
 def test_pipe():
     ctx = TorchProcessContext()
     p, q = ctx.create_pipe()
-    p.send(1)
-    assert q.recv() == 1
+    p.send(torch.tensor(1))
+    assert q.recv().item() == 1
