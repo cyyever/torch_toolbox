@@ -1,5 +1,4 @@
 from typing import Any
-import torch
 
 from torchmetrics.classification import MulticlassF1Score, MultilabelF1Score
 
@@ -23,9 +22,7 @@ class F1Metric(ClassificationMetric):
 
     def _after_batch(self, result: dict, **kwargs: Any) -> None:
         targets = result["targets"]
-        output = self._get_output(result).clone().detach().cpu().view(-1)
-        if len(output.shape) == 1:
-            output = torch.stack((1 - output, output), dim=1)
+        output = self._get_output(result).clone().detach().cpu()
         assert self.__f1 is not None
         self.__f1.update(
             output,
