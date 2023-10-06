@@ -83,7 +83,9 @@ def dataset_with_indices(
 
 
 def select_item(
-    dataset: Any, indices: None | Iterable = None, mask: None | torch.Tensor = None
+    dataset: Any,
+    indices: None | Iterable = None,
+    mask: None | list[torch.Tensor] = None,
 ) -> Iterable:
     if indices is not None:
         indices = set(indices)
@@ -97,16 +99,15 @@ def select_item(
                         idx += 1
                     return
                 assert len(mask) == 1
-                mask = mask[0]
                 if isinstance(dataset, torch_geometric.data.Dataset):
-                    for idx, flag in enumerate(mask.tolist()):
+                    for idx, flag in enumerate(mask[0].tolist()):
                         if not flag:
                             continue
                         if indices is None or idx in indices:
                             yield idx, {"target": dataset[0].y[idx], "index": idx}
                 else:
                     graph = dataset[0]["original_dataset"][dataset[0]["graph_index"]]
-                    for idx, flag in enumerate(mask.tolist()):
+                    for idx, flag in enumerate(mask[0].tolist()):
                         if not flag:
                             continue
                         if indices is None or idx in indices:
