@@ -1,8 +1,8 @@
 import torch
 from cyy_naive_lib.log import get_logger
 
+from ..dataset.util import VisionDatasetUtil
 from ..dataset_collection import DatasetCollection
-from ..dataset_util import VisionDatasetUtil
 from ..dependency import has_torchvision
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 from .transform import Transforms

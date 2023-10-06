@@ -3,8 +3,8 @@ from typing import Any, Iterable
 import torch
 from cyy_naive_lib.log import get_logger
 
+from ..dataset.util import GraphDatasetUtil
 from ..dataset_collection import DatasetCollection
-from ..dataset_util import GraphDatasetUtil
 from ..dependency import has_torch_geometric
 from ..ml_type import MachineLearningPhase
 from .base import ModelEvaluator

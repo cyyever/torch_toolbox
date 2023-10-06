@@ -9,10 +9,10 @@ import torch
 import torch.utils
 from cyy_naive_lib.log import get_logger
 
-from cyy_torch_toolbox.dataset import get_dataset_size, select_item, subset_dp
-from cyy_torch_toolbox.dataset_transform.transform import Transforms
-from cyy_torch_toolbox.dependency import has_torch_geometric, has_torchvision
-from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
+from ..dataset_transform.transform import Transforms
+from ..dependency import has_torch_geometric, has_torchvision
+from ..ml_type import DatasetType, MachineLearningPhase
+from . import get_dataset_size, select_item, subset_dp
 
 if has_torchvision:
     import PIL

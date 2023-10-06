@@ -6,7 +6,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_class_attrs, get_kwarg_names
 
-from ..dataset_util import get_dataset_util_cls
+from ..dataset.util import get_dataset_util_cls
 from ..dependency import (has_hugging_face, has_medmnist, has_torch_geometric,
                           has_torchaudio, has_torchtext, has_torchvision)
 from ..ml_type import DatasetType, MachineLearningPhase

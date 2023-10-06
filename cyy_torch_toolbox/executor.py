@@ -8,8 +8,8 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from .dataloader import get_dataloader
+from .dataset.util import DatasetUtil
 from .dataset_collection import DatasetCollection
-from .dataset_util import DatasetUtil
 from .device import get_device
 from .hook import HookCollection
 from .hook.config import HookConfig
@@ -40,7 +40,7 @@ class Executor(HookCollection, abc.ABC):
         self._data: dict = {}
         self.__model_evaluator: ModelEvaluator = model_evaluator
         self.__dataset_collection: DatasetCollection = dataset_collection
-        self.__phase = phase
+        self.__phase: MachineLearningPhase = phase
         self.__hyper_parameters = {phase: copy.deepcopy(hyper_parameter)}
         self._hook_config = hook_config
         self.__device: None | torch.device = None
@@ -83,10 +83,12 @@ class Executor(HookCollection, abc.ABC):
 
     @property
     def performance_metric(self) -> PerformanceMetric:
-        return self.get_hook("performance_metric")
+        hook = self.get_hook("performance_metric")
+        assert isinstance(hook, PerformanceMetric)
+        return hook
 
     @property
-    def phase(self):
+    def phase(self) -> MachineLearningPhase:
         return self.__phase
 
     def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
@@ -343,6 +345,7 @@ class Executor(HookCollection, abc.ABC):
                     self.exec_hooks(ExecutorHookPoint.OPTIMIZER_STEP)
                     step_skipped = self._data["step_skipped"]
                 else:
+                    assert optimizer is not None
                     optimizer.step()
                 if step_skipped:
                     self.exec_hooks(
