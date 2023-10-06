@@ -1,13 +1,11 @@
 import copy
 import functools
 import os
-import random
 from collections.abc import Iterable
 from typing import Any, Generator, Type
 
 import torch
 import torch.utils
-from cyy_naive_lib.log import get_logger
 
 from ..dataset_transform.transform import Transforms
 from ..dependency import has_torch_geometric, has_torchvision
@@ -44,6 +42,9 @@ class DatasetUtil:
     def decompose(self) -> None | dict:
         return None
 
+    def get_subset(self, indices: Iterable) -> list[dict]:
+        return subset_dp(self.dataset, indices)
+
     def get_samples(self, indices: Iterable | None = None) -> Iterable:
         items = select_item(dataset=self.dataset, indices=indices, mask=self.get_mask())
         if self.__transforms is None:
@@ -52,7 +53,7 @@ class DatasetUtil:
             sample = self.__transforms.extract_data(sample)
             yield idx, sample
 
-    def get_mask(self) -> None | list:
+    def get_mask(self) -> None | list[torch.Tensor]:
         return None
 
     def get_sample(self, index: int) -> Any:
@@ -107,7 +108,7 @@ class DatasetUtil:
     def get_labels(self) -> set:
         return set().union(*tuple(set(labels) for _, labels in self.get_batch_labels()))
 
-    def get_original_dataset(self) -> torch.utils.data.Dataset | list:
+    def get_original_dataset(self) -> torch.utils.data.Dataset:
         dataset = self.dataset
         if hasattr(dataset, "original_dataset"):
             dataset = dataset.original_dataset
@@ -134,122 +135,7 @@ class DatasetUtil:
         raise RuntimeError("no label names detected")
 
 
-class DatasetSplitter(DatasetUtil):
-    __sample_label_dict: None | dict = None
-    __label_sample_dict: None | dict = None
-
-    @property
-    def sample_label_dict(self) -> dict[int, list]:
-        if self.__sample_label_dict is not None:
-            return self.__sample_label_dict
-        self.__sample_label_dict = dict(self.get_batch_labels())
-        return self.__sample_label_dict
-
-    @property
-    def label_sample_dict(self) -> dict:
-        if self.__label_sample_dict is not None:
-            return self.__label_sample_dict
-        self.__label_sample_dict = {}
-        for index, labels in self.sample_label_dict.items():
-            for label in labels:
-                if label not in self.__label_sample_dict:
-                    self.__label_sample_dict[label] = [index]
-                else:
-                    self.__label_sample_dict[label].append(index)
-        return self.__label_sample_dict
-
-    def iid_split_indices(self, parts: list) -> list:
-        return self.__get_split_indices(parts, iid=True)
-
-    def random_split_indices(self, parts: list) -> list:
-        return self.__get_split_indices(parts, iid=False)
-
-    def iid_split(self, parts: list) -> list:
-        return self.split_by_indices(self.iid_split_indices(parts))
-
-    def get_subset(self, indices):
-        return subset_dp(self.dataset, indices)
-
-    def split_by_indices(self, indices_list: list) -> list:
-        return [self.get_subset(indices) for indices in indices_list]
-
-    def __get_split_indices(self, parts: list, iid: bool = True) -> list[list]:
-        assert parts
-        if len(parts) == 1:
-            return [list(range(len(self)))]
-
-        def split_index_impl(indices_list: list) -> list[list]:
-            part_lens = []
-            first_assert = True
-            index_num = len(indices_list)
-
-            for part in parts:
-                assert part > 0
-                part_len = int(index_num * part / sum(parts))
-                if part_len == 0:
-                    if sum(part_lens, start=0) < index_num:
-                        part_len = 1
-                    elif first_assert:
-                        first_assert = False
-                        get_logger().warning(
-                            "has zero part when splitting list, %s %s",
-                            index_num,
-                            parts,
-                        )
-                part_lens.append(part_len)
-            part_lens[-1] += index_num - sum(part_lens)
-            part_indices = []
-            for part_len in part_lens:
-                if part_len != 0:
-                    part_indices.append(indices_list[0:part_len])
-                    indices_list = indices_list[part_len:]
-                else:
-                    part_indices.append([])
-            return part_indices
-
-        if not iid:
-            index_list = list(range(len(self)))
-            random.shuffle(index_list)
-            return split_index_impl(index_list)
-
-        sub_index_list: list[list] = [[]] * len(parts)
-        assigned_indices: set = set()
-        for v in self.label_sample_dict.values():
-            indices: set | list = set(v) - assigned_indices
-            assigned_indices |= indices
-            indices = list(indices)
-            random.shuffle(indices)
-            part_index_list = split_index_impl(indices)
-            for i, part_index in enumerate(part_index_list):
-                sub_index_list[i] = sub_index_list[i] + part_index
-        return sub_index_list
-
-    def sample_by_labels(self, percents: list[float]) -> dict:
-        sample_indices: dict = {}
-        for idx, label in enumerate(sorted(self.label_sample_dict.keys())):
-            v = self.label_sample_dict[label]
-            sample_size = int(len(v) * percents[idx])
-            if sample_size == 0:
-                sample_indices[label] = []
-            else:
-                sample_indices[label] = random.sample(v, k=sample_size)
-        return sample_indices
-
-    def iid_sample(self, percentage: float) -> dict:
-        return self.sample_by_labels([percentage] * len(self.label_sample_dict))
-
-    def randomize_subset_label(self, percentage: float) -> dict:
-        sample_indices = self.iid_sample(percentage)
-        labels = self.get_labels()
-        randomized_label_map = {}
-        for label, indices in sample_indices.items():
-            other_labels = list(set(labels) - {label})
-            for index in indices:
-                randomized_label_map[index] = random.choice(other_labels)
-        return randomized_label_map
-
-
-class VisionDatasetUtil(DatasetSplitter):
+class VisionDatasetUtil(DatasetUtil):
     @functools.cached_property
     def channel(self):
         x = self._get_sample_input(0)
@@ -309,7 +195,7 @@ class VisionDatasetUtil(DatasetSplitter):
         return PIL.Image.fromarray(ndarr)
 
 
-class TextDatasetUtil(DatasetSplitter):
+class TextDatasetUtil(DatasetUtil):
     @torch.no_grad()
     def get_sample_text(self, index: int) -> str:
         return self._get_sample_input(index, apply_transform=False)
@@ -318,9 +204,8 @@ class TextDatasetUtil(DatasetSplitter):
         return self.get_sample_text(index=index)
 
 
-class GraphDatasetUtil(DatasetSplitter):
+class GraphDatasetUtil(DatasetUtil):
     def get_mask(self) -> list[torch.Tensor]:
-        assert len(self.dataset) == 1
         if hasattr(self.dataset[0], "mask") or "mask" in self.dataset[0]:
             return [dataset["mask"] for dataset in self.dataset]
         mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
@@ -399,7 +284,7 @@ class GraphDatasetUtil(DatasetSplitter):
 
 
 def get_dataset_util_cls(dataset_type: DatasetType) -> Type:
-    class_name: Type = DatasetSplitter
+    class_name: Type = DatasetUtil
     match dataset_type:
         case DatasetType.Vision:
             class_name = VisionDatasetUtil

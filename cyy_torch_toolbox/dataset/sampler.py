@@ -1,37 +1,29 @@
+import functools
 import random
 
 from cyy_naive_lib.log import get_logger
 
-from . import subset_dp
 from .util import DatasetUtil
 
 
 class DatasetSampler:
-    __sample_label_dict: None | dict = None
-    __label_sample_dict: None | dict = None
-
     def __init__(self, dataset_util: DatasetUtil):
         self.__dataset_util = dataset_util
 
-    @property
+    @functools.cached_property
     def sample_label_dict(self) -> dict[int, list]:
-        if self.__sample_label_dict is not None:
-            return self.__sample_label_dict
-        self.__sample_label_dict = dict(self.__dataset_util.get_batch_labels())
-        return self.__sample_label_dict
+        return dict(self.__dataset_util.get_batch_labels())
 
-    @property
+    @functools.cached_property
     def label_sample_dict(self) -> dict:
-        if self.__label_sample_dict is not None:
-            return self.__label_sample_dict
-        self.__label_sample_dict = {}
+        label_sample_dict: dict = {}
         for index, labels in self.sample_label_dict.items():
             for label in labels:
-                if label not in self.__label_sample_dict:
-                    self.__label_sample_dict[label] = [index]
+                if label not in label_sample_dict:
+                    label_sample_dict[label] = [index]
                 else:
-                    self.__label_sample_dict[label].append(index)
-        return self.__label_sample_dict
+                    label_sample_dict[label].append(index)
+        return label_sample_dict
 
     def iid_split_indices(self, parts: list) -> list:
         return self.__get_split_indices(parts, iid=True)
@@ -42,11 +34,10 @@ class DatasetSampler:
     def iid_split(self, parts: list) -> list:
         return self.split_by_indices(self.iid_split_indices(parts))
 
-    def get_subset(self, indices):
-        return subset_dp(self.__dataset_util.dataset, indices)
-
     def split_by_indices(self, indices_list: list) -> list:
-        return [self.get_subset(indices) for indices in indices_list]
+        return [
+            self.__dataset_util.get_subset(indices=indices) for indices in indices_list
+        ]
 
     def __get_split_indices(self, parts: list, iid: bool = True) -> list[list]:
         assert parts

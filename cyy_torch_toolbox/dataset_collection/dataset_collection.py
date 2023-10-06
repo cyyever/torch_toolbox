@@ -4,12 +4,14 @@ import threading
 from typing import Any, Callable, Generator, Iterable
 
 import torch
+import torch.utils
 from cyy_naive_lib.fs.ssd import is_ssd
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.storage import get_cached_data
 
 from ..dataset import dataset_with_indices
-from ..dataset.util import DatasetSplitter, get_dataset_util_cls
+from ..dataset.sampler import DatasetSampler
+from ..dataset.util import DatasetUtil, get_dataset_util_cls
 from ..dataset_transform import add_data_extraction, add_transforms
 from ..dataset_transform.transform import Transforms
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
@@ -79,9 +81,7 @@ class DatasetCollection:
     def set_subset(self, phase: MachineLearningPhase, indices: set) -> None:
         self.transform_dataset(
             phase=phase,
-            transformer=lambda dataset, dataset_util, phase: dataset_util.get_subset(
-                indices
-            ),
+            transformer=lambda _, dataset_util, *__: dataset_util.get_subset(indices),
         )
 
     def remove_dataset(self, phase: MachineLearningPhase) -> None:
@@ -96,7 +96,7 @@ class DatasetCollection:
 
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
-    ) -> DatasetSplitter:
+    ) -> DatasetUtil:
         return get_dataset_util_cls(dataset_type=self.dataset_type)(
             dataset=self.get_dataset(phase),
             transforms=self.__transforms[phase],
@@ -171,11 +171,11 @@ class DatasetCollection:
         assert self.has_dataset(phase=from_phase)
         assert parts
         get_logger().debug("split %s dataset for %s", from_phase, self.name)
-        dataset_util = self.get_dataset_util(phase=from_phase)
         part_list = list(parts.items())
 
-        datasets = dataset_util.split_by_indices(
-            dataset_util.iid_split_indices([part for (_, part) in part_list])
+        sampler = DatasetSampler(dataset_util=self.get_dataset_util(phase=from_phase))
+        datasets = sampler.split_by_indices(
+            sampler.iid_split_indices([part for (_, part) in part_list])
         )
         for phase, dataset in zip([phase for (phase, _) in part_list], datasets):
             self.__datasets[phase] = dataset

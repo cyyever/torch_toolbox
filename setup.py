@@ -15,6 +15,7 @@ setuptools.setup(
         "cyy_torch_toolbox",
         "cyy_torch_toolbox/dataset_collection",
         "cyy_torch_toolbox/dataset_wrapper",
+        "cyy_torch_toolbox/dataset",
         "cyy_torch_toolbox/dataset_wrapper/vision",
         "cyy_torch_toolbox/dataset_wrapper/audio",
         "cyy_torch_toolbox/hyper_parameter",
