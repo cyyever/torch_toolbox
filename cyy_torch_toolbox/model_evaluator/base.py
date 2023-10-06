@@ -137,7 +137,7 @@ class ModelEvaluator:
     def _compute_loss(
         self, output: Any, targets: Any, non_blocking: bool, **kwargs: Any
     ) -> dict:
-        original_targets=targets
+        original_output = output
         convert_kwargs = {"device": output.device}
         match output:
             case torch.Tensor():
@@ -158,7 +158,7 @@ class ModelEvaluator:
                 res = {
                     "loss": loss,
                     "targets": targets,
-                    "original_targets": original_targets,
+                    "original_output": original_output,
                     "model_output": output,
                     "is_averaged_loss": self.__is_averaged_loss(),
                 }
@@ -217,9 +217,8 @@ class ModelEvaluator:
             if last_layer.out_features > 1:
                 get_logger().debug("choose loss function CrossEntropyLoss")
                 return nn.CrossEntropyLoss()
-            else:
-                get_logger().debug("choose loss function BCEWithLogitsLoss")
-                return nn.BCEWithLogitsLoss()
+            get_logger().debug("choose loss function BCEWithLogitsLoss")
+            return nn.BCEWithLogitsLoss()
         get_logger().error("can't choose a loss function, model is %s", self._model)
         raise NotImplementedError(type(last_layer))
 

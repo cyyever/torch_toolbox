@@ -1,5 +1,6 @@
 from typing import Any
 
+import torch
 from torchmetrics.classification import MulticlassAUROC, MultilabelAUROC
 
 from .classification_metric import ClassificationMetric
@@ -21,9 +22,12 @@ class AUROCMetric(ClassificationMetric):
             )
 
     def _after_batch(self, result: dict, **kwargs: Any) -> None:
-        targets = result["original_targets"]
+        targets = result["targets"]
+        output = self._get_output(result).clone().detach().cpu()
+        if len(output.shape) == 1:
+            output = torch.stack((1 - output, output), dim=1)
         self.__auroc.update(
-            self._get_output(result).clone().detach().cpu(),
+            output,
             targets.clone().detach().cpu().long(),
         )
 
