@@ -25,11 +25,11 @@ class Metric(Hook):
                 metric = copy.copy(self.__batch_metrics.get(key, {}))
             case _:
                 raise RuntimeError(metric_type)
-        for k, v in metric.items():
-            if isinstance(v, torch.Tensor):
-                metric[k] = v.item()
         if name is not None and name in metric:
-            return metric.get(name, None)
+            res = metric[name]
+            if isinstance(res, torch.Tensor):
+                return res.item()
+            return res
         for sub_hook in self._sub_hooks:
             sub_metric = sub_hook.get_metrics(
                 metric_type=metric_type, key=key, name=None
@@ -39,7 +39,13 @@ class Metric(Hook):
                     assert k not in metric
                     metric[k] = v
         if name is not None:
-            return metric.get(name, None)
+            res = metric.get(name, None)
+            if isinstance(res, torch.Tensor):
+                return res.item()
+            return res
+        for k, v in metric.items():
+            if isinstance(v, torch.Tensor):
+                metric[k] = v.item()
         return metric
 
     def _set_epoch_metric(self, epoch, name, data) -> None:
