@@ -13,10 +13,10 @@ class ClassificationMetric(Metric):
     def _get_output(self, result: dict) -> torch.Tensor:
         output = result.get("logits", None)
         if output is None:
-            output = result["model_output"]
+            output = result["original_output"]
         assert isinstance(output, torch.Tensor)
-        # if output.shape == 2:
-        #     output = output.max(dim=1).view(-1)
         if (output < 0).view(-1).sum().item():
             output = output.sigmoid()
+        if len(output.shape) == 2 and output.shape[1] == 1:
+            output = torch.stack((1 - output, output), dim=2).squeeze()
         return output

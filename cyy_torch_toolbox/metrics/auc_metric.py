@@ -24,8 +24,6 @@ class AUROCMetric(ClassificationMetric):
     def _after_batch(self, result: dict, **kwargs: Any) -> None:
         targets = result["targets"]
         output = self._get_output(result).clone().detach().cpu()
-        if len(output.shape) == 1:
-            output = torch.stack((1 - output, output), dim=1)
         self.__auroc.update(
             output,
             targets.clone().detach().cpu().long(),
