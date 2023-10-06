@@ -3,18 +3,19 @@ from typing import Any
 
 import torch
 import torchdata
-
 from cyy_torch_toolbox.dependency import has_hugging_face, has_torch_geometric
 
 if has_torch_geometric:
     import torch_geometric.data
-# if has_hugging_face:
-#     import datasets as hugging_face_datasets
+if has_hugging_face:
+    import datasets as hugging_face_datasets
 
 
 def get_dataset_size(dataset: Any) -> int:
     match dataset:
-        case {0: {"mask": mask, **__}} | [{"mask": mask, **__}]:
+        case {0: {"mask": mask, **__}}:
+            return mask.sum()
+        case [{"mask": mask, **___}]:
             return mask.sum()
         case torch.utils.data.dataset.ConcatDataset():
             return sum(get_dataset_size(d) for d in dataset.datasets)
@@ -25,9 +26,9 @@ def get_dataset_size(dataset: Any) -> int:
             return cnt
         case torchdata.datapipes.map.MapDataPipe():
             return len(dataset)
-    # if has_hugging_face:
-    #     if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
-    #         return len(dataset)
+    if has_hugging_face:
+        if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
+            return len(dataset)
     raise NotImplementedError(dataset)
 
 
