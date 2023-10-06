@@ -116,7 +116,7 @@ class Transforms:
     def cache_transforms(
         self, dataset: Iterable, device: torch.device
     ) -> tuple[dict, Any]:
-        get_logger().warning("cache dataset to device: %s", device)
+        get_logger().debug("cache dataset to device: %s", device)
         transformed_dataset: dict = {}
         for k, item in select_item(dataset):
             item = self.extract_data(item)
