@@ -11,7 +11,7 @@ class DatasetSampler:
         self.__dataset_util = dataset_util
 
     @functools.cached_property
-    def sample_label_dict(self) -> dict[int, list]:
+    def sample_label_dict(self) -> dict[int, set]:
         return dict(self.__dataset_util.get_batch_labels())
 
     @functools.cached_property
@@ -32,9 +32,9 @@ class DatasetSampler:
         return self.__get_split_indices(parts, iid=False)
 
     def iid_split(self, parts: list) -> list:
-        return self.split_by_indices(self.iid_split_indices(parts))
+        return self.get_subsets(self.iid_split_indices(parts))
 
-    def split_by_indices(self, indices_list: list) -> list:
+    def get_subsets(self, indices_list: list) -> list:
         return [
             self.__dataset_util.get_subset(indices=indices) for indices in indices_list
         ]
@@ -90,26 +90,29 @@ class DatasetSampler:
                 sub_index_list[i] = sub_index_list[i] + part_index
         return sub_index_list
 
-    def sample_by_labels(self, percents: list[float]) -> dict:
+    def __sample_indices(self, percents: dict) -> dict:
         sample_indices: dict = {}
-        for idx, label in enumerate(sorted(self.label_sample_dict.keys())):
-            v = self.label_sample_dict[label]
-            sample_size = int(len(v) * percents[idx])
+        for label, indices in self.label_sample_dict.items():
+            percent = percents[label]
+            sample_size = int(len(indices) * percent)
             if sample_size == 0:
                 sample_indices[label] = []
             else:
-                sample_indices[label] = random.sample(v, k=sample_size)
+                sample_indices[label] = random.sample(indices, k=sample_size)
         return sample_indices
 
-    def iid_sample(self, percentage: float) -> dict:
-        return self.sample_by_labels([percentage] * len(self.label_sample_dict))
+    def iid_sample_indices(self, percent: float) -> dict:
+        return self.__sample_indices(
+            {label: percent for label in self.label_sample_dict}
+        )
 
-    def randomize_subset_label(self, percentage: float) -> dict:
-        sample_indices = self.iid_sample(percentage)
-        labels = self.__dataset_util.get_labels()
-        randomized_label_map = {}
-        for label, indices in sample_indices.items():
-            other_labels = list(set(labels) - {label})
-            for index in indices:
-                randomized_label_map[index] = random.choice(other_labels)
+    def randomize_label(self, percent: float) -> dict:
+        sample_indices: list = sum(self.iid_sample_indices(percent).values(), [])
+        labels: set = set(self.label_sample_dict.keys())
+        randomized_label_map: dict = {}
+        for index in sample_indices:
+            other_labels = list(labels - self.sample_label_dict[index])
+            randomized_label_map[index] = random.sample(
+                other_labels, min(len(other_labels), len(self.sample_label_dict[index]))
+            )
         return randomized_label_map
