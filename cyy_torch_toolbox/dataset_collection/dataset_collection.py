@@ -174,11 +174,9 @@ class DatasetCollection:
         part_list = list(parts.items())
 
         sampler = DatasetSampler(dataset_util=self.get_dataset_util(phase=from_phase))
-        datasets = sampler.split_by_indices(
-            sampler.iid_split_indices([part for (_, part) in part_list])
-        )
-        for phase, dataset in zip([phase for (phase, _) in part_list], datasets):
-            self.__datasets[phase] = dataset
+        datasets = sampler.iid_split([part for (_, part) in part_list])
+        for idx, (phase, _) in enumerate(part_list):
+            self.__datasets[phase] = datasets[idx]
 
     def add_transforms(self, model_evaluator: Any) -> None:
         add_transforms(dc=self, model_evaluator=model_evaluator)
