@@ -136,7 +136,7 @@ class DatasetSampler:
         parts: list,
         labels: list | None = None,
         excluded_indices: Iterable[int] | None = None,
-    ) -> list[set]:
+    ) -> list[set[int]]:
         assert parts
 
         label_sample_sub_dict: dict = self.get_indices_by_label(
@@ -152,7 +152,7 @@ class DatasetSampler:
             random.shuffle(index_list)
             part_index_lists = self.__split_index_list(parts, index_list)
             for i, part_index_list in enumerate(part_index_lists):
-                sub_index_list[i].update(part_index_list)
+                sub_index_list[i] = sub_index_list[i] | set(part_index_list)
         return sub_index_list
 
     def __sample_indices(self, percents: dict) -> dict[Any, list]:
