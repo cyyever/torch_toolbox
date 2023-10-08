@@ -31,7 +31,7 @@ class DatasetSampler:
         parts: list,
         labels: list | None = None,
         excluded_indices: Iterable[int] | None = None,
-    ) -> list:
+    ) -> list[set]:
         return self.__get_split_indices(
             parts=parts, labels=labels, excluded_indices=excluded_indices
         )
@@ -56,7 +56,7 @@ class DatasetSampler:
         parts: list,
         labels: list | None = None,
         excluded_indices: Iterable[int] | None = None,
-    ) -> list:
+    ) -> list[list]:
         assert parts
         if labels is None:
             labels = list(self.label_sample_dict.keys())
@@ -72,7 +72,7 @@ class DatasetSampler:
         )
         index_list = list(indices)
         random.shuffle(index_list)
-        return self.__split_index_impl(parts, index_list)
+        return self.__split_index_list(parts, index_list)
 
     def iid_split(self, parts: list, labels: list | None = None) -> list:
         return self.get_subsets(self.iid_split_indices(parts, labels=labels))
@@ -99,7 +99,7 @@ class DatasetSampler:
         return randomized_label_map
 
     @classmethod
-    def __split_index_impl(cls, parts: list, indices_list: list) -> list[list]:
+    def __split_index_list(cls, parts: list, indices_list: list) -> list[list]:
         assert indices_list
         if len(parts) == 1:
             return [indices_list]
@@ -136,23 +136,23 @@ class DatasetSampler:
         parts: list,
         labels: list | None = None,
         excluded_indices: Iterable[int] | None = None,
-    ) -> list[list]:
+    ) -> list[set]:
         assert parts
 
         label_sample_sub_dict: dict = self.get_indices_by_label(
             labels=labels, excluded_indices=excluded_indices
         )
 
-        sub_index_list: list[list] = [[]] * len(parts)
+        sub_index_list: list[set] = [set()] * len(parts)
         assigned_indices: set = set()
         for label_sample_indices in label_sample_sub_dict.values():
             # deal with multi-label samples
             index_list = list(set(label_sample_indices) - assigned_indices)
             assigned_indices |= label_sample_indices
             random.shuffle(index_list)
-            part_index_lists = self.__split_index_impl(parts, index_list)
+            part_index_lists = self.__split_index_list(parts, index_list)
             for i, part_index_list in enumerate(part_index_lists):
-                sub_index_list[i] = sub_index_list[i] + part_index_list
+                sub_index_list[i].update(part_index_list)
         return sub_index_list
 
     def __sample_indices(self, percents: dict) -> dict[Any, list]:
