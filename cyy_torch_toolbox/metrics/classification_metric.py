@@ -15,8 +15,8 @@ class ClassificationMetric(Metric):
         if output is None:
             output = result["original_output"]
         assert isinstance(output, torch.Tensor)
-        if (output < 0).view(-1).sum().item():
-            output = output.sigmoid()
+        output = output.detach()
+        output = torch.where(torch.any(output < 0), output.sigmoid(), output)
         if len(output.shape) == 2 and output.shape[1] == 1:
             output = torch.stack((1 - output, output), dim=2).squeeze()
         return output
