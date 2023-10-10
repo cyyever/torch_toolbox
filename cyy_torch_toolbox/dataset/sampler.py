@@ -148,6 +148,8 @@ class DatasetSampler:
         for label_sample_indices in label_sample_sub_dict.values():
             # deal with multi-label samples
             index_list = list(set(label_sample_indices) - assigned_indices)
+            if not index_list:
+                continue
             assigned_indices |= label_sample_indices
             random.shuffle(index_list)
             part_index_lists = self.__split_index_list(parts, index_list)
