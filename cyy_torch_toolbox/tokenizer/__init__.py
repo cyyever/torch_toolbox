@@ -11,7 +11,7 @@ if has_hugging_face:
 
 
 def get_tokenizer(dc, tokenizer_config: dict) -> Any:
-    tokenizer_type = tokenizer_config.get("type", "spacy")
+    tokenizer_type: str = tokenizer_config.get("type", "spacy")
     match tokenizer_type:
         case "hugging_face":
             assert has_hugging_face

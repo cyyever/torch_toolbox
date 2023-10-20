@@ -2,7 +2,10 @@ import importlib.util
 
 has_torchvision: bool = importlib.util.find_spec("torchvision") is not None
 has_torchtext: bool = importlib.util.find_spec("torchtext") is not None
-has_torch_geometric: bool = importlib.util.find_spec("torch_geometric") is not None
+has_torch_geometric: bool = (
+    importlib.util.find_spec("torch_geometric") is not None
+    and importlib.util.find_spec("pyg_lib") is not None
+)
 has_torchaudio: bool = importlib.util.find_spec("torchaudio") is not None
 has_medmnist: bool = importlib.util.find_spec("medmnist") is not None
 has_hugging_face: bool = (
