@@ -23,7 +23,7 @@ class SpacyTokenizer:
         self.__spacy = spacy.load("en_core_web_sm")
         self.unusual_words: set = set()
 
-        def computation_fun():
+        def computation_fun() -> Counter:
             nonlocal dc
             counter: Counter = Counter()
 

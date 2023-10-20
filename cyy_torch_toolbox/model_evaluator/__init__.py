@@ -4,12 +4,14 @@ from typing import Callable
 import torch
 
 from ..dataset_collection import DatasetCollection
-from ..dependency import has_hugging_face
+from ..dependency import has_hugging_face, has_torchtext
 from ..ml_type import DatasetType, ModelType
 from .base import ModelEvaluator, VisionModelEvaluator
 from .graph import GraphModelEvaluator
 from .text import TextModelEvaluator
-from .word_vector import PretrainedWordVector
+
+if has_torchtext:
+    from .word_vector import PretrainedWordVector
 
 if has_hugging_face:
     import transformers

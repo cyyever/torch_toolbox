@@ -41,7 +41,7 @@ class Executor(HookCollection, abc.ABC):
         self.__model_evaluator: ModelEvaluator = model_evaluator
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase: MachineLearningPhase = phase
-        self.__hyper_parameters = {phase: copy.deepcopy(hyper_parameter)}
+        self.__hyper_parameters: dict = {phase: copy.deepcopy(hyper_parameter)}
         self._hook_config = hook_config
         self.__device: None | torch.device = None
         self.__dataloader = None
@@ -314,7 +314,6 @@ class Executor(HookCollection, abc.ABC):
 
                 assert forward_result["is_averaged_loss"]
                 assert self._data["dataset_size"] > 1
-                # get_logger().error("phase is %s dataset size %s",self.phase,self._data["dataset_size"])
                 forward_result["normalized_batch_loss"] = (
                     forward_result["loss"]
                     * forward_result["loss_batch_size"]
