@@ -63,6 +63,8 @@ def get_device_memory_info(
             device_type = "cuda"
         elif torch.backends.mps.is_available():
             device_type = "mps"
+        elif torch.is_vulkan_available():
+            device_type = "vulkan"
         else:
             device_type = "cpu"
     match device_type:
@@ -89,7 +91,7 @@ def get_cpu_device() -> torch.device:
 
 class DeviceGreedyAllocator:
     @classmethod
-    def get_devices(cls, max_needed_bytes: int | None) -> list[torch.device]:
+    def get_devices(cls, max_needed_bytes: int | None = None) -> list[torch.device]:
         memory_info = get_device_memory_info()
         memory_to_device: dict = {}
         for device, info in memory_info.items():
