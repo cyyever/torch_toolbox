@@ -236,7 +236,12 @@ def __create_dataset(
 
 def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, dict]:
     dataset_names = set()
-    for dataset_type in DatasetType:
+    dataset_types: tuple[DatasetType] = tuple(DatasetType)
+    match dataset_kwargs.get("dataset_type", None):
+        case "text":
+            dataset_types = (DatasetType.Text,)
+
+    for dataset_type in dataset_types:
         dataset_constructors = get_dataset_constructors(
             dataset_type=dataset_type,
         )
