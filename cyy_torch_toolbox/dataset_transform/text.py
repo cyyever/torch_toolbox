@@ -4,16 +4,14 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from ..dataset_collection import DatasetCollection
-from ..dependency import has_hugging_face, has_spacy, has_torchtext
+from ..dependency import has_hugging_face, has_spacy
 from ..ml_type import (DatasetType, MachineLearningPhase, ModelType,
                        TransformType)
 from ..model_evaluator import ModelEvaluator
 from .common import (backup_target, int_target_to_text, replace_str,
-                     str_target_to_int, swap_input_and_target, target_offset)
+                     str_target_to_int)
 from .template import get_text_template, interpret_template
 
-if has_torchtext:
-    import torchtext
 if has_spacy:
     from ..tokenizer.spacy import SpacyTokenizer
 
@@ -23,15 +21,7 @@ if has_hugging_face:
 
 def add_text_extraction(dc: DatasetCollection) -> None:
     assert dc.dataset_type == DatasetType.Text
-    assert has_torchtext
     # ExtractData
-    match dc.name.lower():
-        case "imdb":
-            dc.append_transform(swap_input_and_target, key=TransformType.ExtractData)
-            dc.append_transform(
-                functools.partial(target_offset, offset=-1),
-                key=TransformType.ExtractData,
-            )
     dc.append_transform(backup_target, key=TransformType.ExtractData)
 
 
@@ -51,7 +41,7 @@ def __apply_tokenizer_transforms(
             dc.append_transform(dc.tokenizer, key=key)
             if max_len is not None:
                 dc.append_transform(
-                    torchtext.transforms.Truncate(max_seq_len=max_len),
+                    lambda a: a[:max_len],
                     key=key,
                 )
             dc.append_transform(torch.LongTensor, key=key)
@@ -88,7 +78,6 @@ def get_label_to_text_mapping(dataset_name: str) -> dict | None:
 
 def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) -> None:
     assert dc.dataset_type == DatasetType.Text
-    assert has_torchtext
     dataset_name: str = dc.name.lower()
     # InputText
     if dataset_name == "imdb":

@@ -1,6 +1,6 @@
 import copy
 import functools
-from typing import Callable, Iterable
+from typing import Callable
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -8,15 +8,13 @@ from cyy_naive_lib.reflection import get_class_attrs, get_kwarg_names
 
 from ..dataset.util import get_dataset_util_cls
 from ..dependency import (has_hugging_face, has_medmnist, has_torch_geometric,
-                          has_torchaudio, has_torchtext, has_torchvision)
+                          has_torchaudio, has_torchvision)
 from ..ml_type import DatasetType, MachineLearningPhase
 
 if has_torchvision:
     import cyy_torch_toolbox.dataset_wrapper.vision as local_vision_datasets
     import torchvision
 
-if has_torchtext:
-    import torchtext
 
 if has_torch_geometric:
     import torch_geometric
@@ -27,12 +25,15 @@ if has_medmnist:
     import medmnist
 if has_hugging_face:
     import datasets as hugging_face_datasets
+    from datasets import load_dataset as load_hugging_face_dataset
 
 
 @functools.cache
-def get_hungging_face_datasets() -> Iterable:
-    return hugging_face_datasets.list_datasets(
-        with_community_datasets=False, with_details=False
+def get_hungging_face_datasets() -> list:
+    return sorted(
+        hugging_face_datasets.list_datasets(
+            with_community_datasets=False, with_details=False
+        )
     )
 
 
@@ -45,9 +46,6 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
                     torchvision.datasets,
                     local_vision_datasets,
                 ]
-        case DatasetType.Text:
-            if has_torchtext:
-                repositories = [torchtext.datasets]
         case DatasetType.Graph:
             if has_torch_geometric:
                 repositories = [torch_geometric.datasets]
@@ -92,6 +90,11 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
             dataset_constructors[name] = functools.partial(
                 medmnist_cls, target_transform=lambda x: x[0]
             )
+    if has_hugging_face and dataset_type == DatasetType.Text:
+        for name in get_hungging_face_datasets():
+            dataset_constructors[name] = functools.partial(
+                load_hugging_face_dataset, path=name
+            )
     return dataset_constructors
 
 
@@ -103,6 +106,8 @@ def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> C
     def get_dataset_kwargs_per_phase(
         dataset_type: DatasetType, phase: MachineLearningPhase
     ) -> dict | None:
+        if "data_dir" in constructor_kwargs and "data_dir" not in new_dataset_kwargs:
+            new_dataset_kwargs["data_dir"] = new_dataset_kwargs.get("root", None)
         if "train" in constructor_kwargs:
             # Some dataset only have train and test parts
             if phase == MachineLearningPhase.Validation:
@@ -245,11 +250,14 @@ def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, di
         dataset_constructors = get_dataset_constructors(
             dataset_type=dataset_type,
         )
-        if name in dataset_constructors:
+        constructor = dataset_constructors.get(name, None)
+        if constructor is None:
+            constructor = dataset_constructors.get(name.lower(), None)
+        if constructor is not None:
             return __create_dataset(
                 dataset_name=name,
                 dataset_type=dataset_type,
-                dataset_constructor=dataset_constructors[name],
+                dataset_constructor=constructor,
                 dataset_kwargs=dataset_kwargs,
             )
         dataset_names |= set(dataset_constructors.keys())

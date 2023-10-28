@@ -25,6 +25,8 @@ def default_data_extraction(data: Any) -> dict:
     match data:
         case [sample_input, target]:
             data = {"input": sample_input, "target": target}
+        case {"label": label, "text": text}:
+            data = {"target": label, "input": text}
         case {"label": label, **other_data}:
             data = {"target": label, "input": other_data}
     if index is not None:
