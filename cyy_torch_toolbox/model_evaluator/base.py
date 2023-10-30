@@ -104,18 +104,17 @@ class ModelEvaluator:
 
         if device is not None:
             inputs = tensor_to(inputs, device=device, non_blocking=non_blocking)
+            targets = tensor_to(targets, device=device, non_blocking=non_blocking)
             self.to(device=device, non_blocking=non_blocking)
 
-        return {
-            "inputs": inputs,
-        } | self._forward_model(
+        return self._forward_model(
             inputs=inputs,
             is_input_feature=is_input_feature,
             targets=targets,
             non_blocking=non_blocking,
             device=device,
             **kwargs,
-        )
+        ) | {"inputs": inputs, "targets": targets}
 
     def _forward_model(
         self, inputs: Any, is_input_feature: bool, **kwargs: Any
