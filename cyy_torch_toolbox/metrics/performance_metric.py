@@ -14,13 +14,16 @@ from .metric import Metric
 
 
 class PerformanceMetric(Metric):
-    def __init__(self, model_type, profile: bool = False, **kwargs) -> None:
+    def __init__(
+        self, model_type, profile: bool = False, extra_metrics: bool = False, **kwargs
+    ) -> None:
         super().__init__(**kwargs)
         self.__loss_metric = LossMetric()
         if model_type == ModelType.Classification:
             self.__accuracy_metric = AccuracyMetric()
-            self.__f1_metric = F1Metric()
-            self.__auc_metric = AUROCMetric()
+            if extra_metrics:
+                self.__f1_metric = F1Metric()
+                self.__auc_metric = AUROCMetric()
         self.__epoch_time_point: float = time.time()
         self.__last_epoch = None
         if os.getenv("use_grad_norm") is not None:

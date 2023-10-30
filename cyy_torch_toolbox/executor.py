@@ -51,6 +51,9 @@ class Executor(HookCollection, abc.ABC):
             PerformanceMetric(
                 model_type=self.__model_evaluator.model_type,
                 profile=hook_config.profile if hook_config is not None else False,
+                extra_metrics=hook_config.extra_metrics
+                if hook_config is not None
+                else False,
             ),
             "performance_metric",
         )

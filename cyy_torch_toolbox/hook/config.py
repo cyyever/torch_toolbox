@@ -14,6 +14,7 @@ class HookConfig:
     def __init__(self) -> None:
         self.debug = False
         self.profile = False
+        self.extra_metrics = False
         self.use_amp = torch.cuda.is_available()
         self.save_performance_metric = False
         self.benchmark_cudnn: bool = True
