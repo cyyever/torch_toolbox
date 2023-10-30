@@ -6,5 +6,5 @@ from .torch_process_context import TorchProcessContext
 
 
 class TorchProcessTaskQueue(TorchTaskQueue):
-    def __init__(self, use_manager: bool = True, **kwargs: Any) -> None:
-        super().__init__(mp_ctx=TorchProcessContext(use_manager=use_manager), **kwargs)
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(mp_ctx=TorchProcessContext(), **kwargs)
