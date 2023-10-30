@@ -35,12 +35,10 @@ class GraphModelEvaluator(ModelEvaluator):
             "x": kwargs["x"],
             "n_id": kwargs["n_id"],
         }
-        # batch_mask=self.tr
-        mask = self.__dc.get_dataset_util(phase=kwargs["phase"]).get_mask()[0]
-        batch_mask = mask[kwargs["n_id"]]
-        kwargs["batch_size"]
-        kwargs["targets"] = kwargs["y"][batch_mask]
-        kwargs["batch_mask"] = batch_mask
+        mask = self.__dc.get_dataset_util(phase=kwargs["phase"]).get_mask()
+        assert mask is not None
+        kwargs["batch_mask"] = mask[0][kwargs["n_id"]]
+        kwargs["targets"] = kwargs["y"][kwargs["batch_mask"]]
         return super().__call__(inputs=inputs, **kwargs)
 
     def __from_node_loader(self, **kwargs: Any) -> dict:
