@@ -10,10 +10,9 @@ def hello(tasks, **kwargs):
 
 def test_process_task_queue() -> None:
     queue = TorchProcessTaskQueue(
-        worker_fun=hello,
         batch_process=True,
     )
-    queue.start()
+    queue.start(worker_fun=hello)
     queue.add_task(())
     res = queue.get_data()
     assert res is not None
