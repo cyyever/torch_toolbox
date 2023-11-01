@@ -35,9 +35,9 @@ class RandomNodeLoader(torch.utils.data.DataLoader):
     ) -> None:
         assert "collate_fn" not in kwargs
         super().__init__(
+            **kwargs,
             dataset=node_indices,
             collate_fn=self.__collate_fn,
-            **kwargs,
         )
 
     def __collate_fn(self, indices):
