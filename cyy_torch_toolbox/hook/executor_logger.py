@@ -1,6 +1,6 @@
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.hook import Hook
-from cyy_torch_toolbox.ml_type import DatasetType, MachineLearningPhase
+from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 # import os
 
@@ -22,7 +22,7 @@ class ExecutorLogger(Hook):
         get_logger().debug("loss function is %s", executor.loss_fun)
         get_logger().info(
             "parameter number is %s",
-            len(model_util.get_parameter_list()),
+            sum(a.numel() for a in model_util.get_parameter_seq()),
         )
         if hasattr(executor, "hyper_parameter"):
             get_logger().info("hyper_parameter is %s", executor.hyper_parameter)

@@ -45,6 +45,7 @@ class Executor(HookCollection, abc.ABC):
         self._hook_config = hook_config
         self.__device: None | torch.device = None
         self.__dataloader = None
+        self.__dataloader_kwargs: dict = {}
         self.__device_stream: None | torch.cuda.Stream = None
         self.append_hook(ExecutorLogger(), "logger")
         self.append_hook(
@@ -132,9 +133,13 @@ class Executor(HookCollection, abc.ABC):
     def transform_dataset(self, transformer: Callable) -> None:
         self.dataset_collection.transform_dataset(self.phase, transformer)
 
-    @property
-    def dataset_size(self) -> int:
-        return len(self.dataset_util)
+    def refresh_dataset_size(self) -> int:
+        self._data["dataset_size"] = len(self.dataset_util)
+        return self._data["dataset_size"]
+
+    def set_dataloader_kwargs(self, dataloader_kwargs: dict) -> None:
+        self.__dataloader_kwargs = dataloader_kwargs
+        self.__dataloader = None
 
     @property
     def dataloader(self):
@@ -146,6 +151,7 @@ class Executor(HookCollection, abc.ABC):
                 device=self.device,
                 model_evaluator=self.running_model_evaluator,
                 cache_transforms=self.cache_transforms,
+                **self.__dataloader_kwargs,
             )
         return self.__dataloader
 
@@ -187,7 +193,6 @@ class Executor(HookCollection, abc.ABC):
         if self.__save_dir is not None:
             self.set_save_dir(self.__save_dir)
 
-        self._data["dataset_size"] = self.dataset_size
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_EXECUTE)
 
     def set_device(self, device: torch.device) -> None:
@@ -264,6 +269,7 @@ class Executor(HookCollection, abc.ABC):
             hook_point=ExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
         )
+        self.refresh_dataset_size()
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
         for batch_index, batch in enumerate(self.dataloader):
             self.exec_hooks(
