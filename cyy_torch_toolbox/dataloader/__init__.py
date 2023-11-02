@@ -104,25 +104,23 @@ def get_dataloader(
     if dc.dataset_type != DatasetType.Graph:
         return torch.utils.data.DataLoader(**kwargs)
     assert has_torch_geometric
-    dataset = kwargs["dataset"]
+    assert isinstance(model_evaluator, GraphModelEvaluator)
+    util = dc.get_dataset_util(phase=phase)
+    assert isinstance(util, GraphDatasetUtil)
+    assert len(util) == 1
+    graph = util.get_graph(0)
+    graph_dict = graph.to_dict()
+    input_nodes = util.get_mask()[0]
     if hyper_parameter.extra_parameters.get("sample_neighbor", True):
-        util = dc.get_dataset_util(phase=phase)
-        assert isinstance(util, GraphDatasetUtil)
-        graph = util.get_graph(0)
-        graph_dict = graph.to_dict()
-        graph_dict["edge_index"] = util.get_edge_index(0)
-        sub_graph = type(graph)(**graph_dict)
-        input_nodes = dataset[0]["mask"]
         if (
             "pyg_input_nodes" in hyper_parameter.extra_parameters
             and phase in hyper_parameter.extra_parameters["pyg_input_nodes"]
         ):
             input_nodes = hyper_parameter.extra_parameters["pyg_input_nodes"][phase]
-        dataset_size = input_nodes.numel()
         if "batch_number" in hyper_parameter.extra_parameters:
             batch_number = hyper_parameter.extra_parameters["batch_number"]
-            kwargs["batch_size"] = math.ceil(dataset_size / batch_number)
-        assert isinstance(model_evaluator, GraphModelEvaluator)
+            kwargs["batch_size"] = math.ceil(input_nodes.numel() / batch_number)
+        sub_graph = type(graph)(**graph_dict)
         return NeighborLoader(
             data=sub_graph,
             num_neighbors=[hyper_parameter.extra_parameters.get("num_neighbor", 10)]
@@ -131,5 +129,5 @@ def get_dataloader(
             transform=lambda data: data.to_dict(),
             **kwargs,
         )
-    node_indices = torch_geometric.utils.mask_to_index(dataset[0]["mask"]).tolist()
+    node_indices = torch_geometric.utils.mask_to_index(input_nodes).tolist()
     return RandomNodeLoader(node_indices, **kwargs)

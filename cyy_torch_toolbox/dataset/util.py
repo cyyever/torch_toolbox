@@ -208,7 +208,7 @@ class GraphDatasetUtil(DatasetUtil):
     def get_mask(self) -> list[torch.Tensor]:
         if hasattr(self.dataset[0], "mask") or "mask" in self.dataset[0]:
             return [dataset["mask"] for dataset in self.dataset]
-        mask = torch.ones((self.dataset[0].x.shape[0],), dtype=torch.bool)
+        mask = torch.ones((self.get_graph(0).x.shape[0],), dtype=torch.bool)
         return [mask]
 
     def get_edge_index(self, graph_index: int) -> torch.Tensor:
@@ -223,8 +223,7 @@ class GraphDatasetUtil(DatasetUtil):
             return graph_dict
         original_dataset = graph_dict["original_dataset"]
         graph_index = graph_dict["graph_index"]
-        graph = original_dataset[graph_index]
-        return graph
+        return original_dataset[graph_index]
 
     def get_subset(self, indices: Iterable) -> list[dict]:
         return self.get_node_subset(indices)
@@ -264,10 +263,9 @@ class GraphDatasetUtil(DatasetUtil):
         ):
             return None
         datasets: dict = {}
-        for idx, graph in enumerate(self.dataset):
-            for phase, mask_name in mapping.items():
-                if phase not in datasets:
-                    datasets[phase] = []
+        for phase, mask_name in mapping.items():
+            datasets[phase] = []
+            for idx, graph in enumerate(self.dataset):
                 datasets[phase].append(
                     {
                         "mask": getattr(graph, mask_name),
@@ -278,9 +276,7 @@ class GraphDatasetUtil(DatasetUtil):
         return datasets
 
     def get_original_dataset(self) -> torch.utils.data.Dataset:
-        if "original_dataset" in self.dataset[0]:
-            return self.dataset[0]["original_dataset"]
-        return super().get_original_dataset()
+        return self.get_graph(0)
 
 
 def get_dataset_util_cls(dataset_type: DatasetType) -> Type:
