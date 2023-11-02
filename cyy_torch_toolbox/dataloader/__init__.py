@@ -8,7 +8,7 @@ from cyy_naive_lib.log import get_logger
 from ..data_structure.torch_process_context import TorchProcessContext
 from ..dataset.util import GraphDatasetUtil
 from ..dataset_collection import DatasetCollection
-from ..dependency import has_dali, has_torch_geometric, has_torchvision
+from ..dependency import has_torch_geometric
 from ..hyper_parameter import HyperParameter
 from ..ml_type import DatasetType, MachineLearningPhase
 from ..model_evaluator import GraphModelEvaluator, ModelEvaluator
@@ -18,10 +18,6 @@ if has_torch_geometric:
     from torch_geometric.loader import NeighborLoader
 
     from .pyg_dataloader import RandomNodeLoader
-
-
-if has_dali and has_torchvision:
-    pass
 
 
 def __prepare_dataloader_kwargs(
