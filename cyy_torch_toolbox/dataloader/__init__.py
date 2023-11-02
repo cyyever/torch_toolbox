@@ -103,7 +103,6 @@ def get_dataloader(
     assert isinstance(model_evaluator, GraphModelEvaluator)
     util = dc.get_dataset_util(phase=phase)
     assert isinstance(util, GraphDatasetUtil)
-    assert len(util) == 1
     pyg_input_nodes = kwargs.get("pyg_input_nodes", {})
     if pyg_input_nodes:
         input_nodes = pyg_input_nodes[phase]
