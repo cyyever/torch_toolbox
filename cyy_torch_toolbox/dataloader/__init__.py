@@ -1,6 +1,5 @@
 import math
 import os
-from typing import Any
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -77,7 +76,8 @@ def get_dataloader(
     cache_transforms: str | None = None,
     device: torch.device | None = None,
     model_evaluator: ModelEvaluator | None = None,
-) -> Any:
+    **kwargs,
+) -> torch.utils.data.DataLoader:
     kwargs = __prepare_dataloader_kwargs(
         dc=dc,
         phase=phase,
@@ -104,26 +104,23 @@ def get_dataloader(
     util = dc.get_dataset_util(phase=phase)
     assert isinstance(util, GraphDatasetUtil)
     assert len(util) == 1
-    graph = util.get_graph(0)
-    graph_dict = graph.to_dict()
-    input_nodes = util.get_mask()[0]
-    if hyper_parameter.extra_parameters.get("sample_neighbor", True):
-        if (
-            "pyg_input_nodes" in hyper_parameter.extra_parameters
-            and phase in hyper_parameter.extra_parameters["pyg_input_nodes"]
-        ):
-            input_nodes = hyper_parameter.extra_parameters["pyg_input_nodes"][phase]
-        if "batch_number" in hyper_parameter.extra_parameters:
-            batch_number = hyper_parameter.extra_parameters["batch_number"]
-            kwargs["batch_size"] = math.ceil(input_nodes.numel() / batch_number)
-        sub_graph = type(graph)(**graph_dict)
-        return NeighborLoader(
-            data=sub_graph,
-            num_neighbors=[hyper_parameter.extra_parameters.get("num_neighbor", 10)]
-            * model_evaluator.neighbour_hop,
-            input_nodes=input_nodes,
-            transform=lambda data: data.to_dict(),
-            **kwargs,
-        )
-    node_indices = torch_geometric.utils.mask_to_index(input_nodes).tolist()
-    return RandomNodeLoader(node_indices, **kwargs)
+    pyg_input_nodes = kwargs.get("pyg_input_nodes", {})
+    if pyg_input_nodes:
+        input_nodes = pyg_input_nodes[phase]
+    else:
+        input_nodes = util.get_mask()[0]
+
+    if not kwargs.get("sample_neighbor", True):
+        node_indices = torch_geometric.utils.mask_to_index(input_nodes).tolist()
+        return RandomNodeLoader(node_indices, **kwargs)
+
+    if "batch_number" in kwargs:
+        batch_number = kwargs["batch_number"]
+        kwargs["batch_size"] = math.ceil(input_nodes.numel() / batch_number)
+    return NeighborLoader(
+        data=util.get_graph(0),
+        num_neighbors=[kwargs.get("num_neighbor", 10)] * model_evaluator.neighbour_hop,
+        input_nodes=input_nodes,
+        transform=lambda data: data.to_dict(),
+        **kwargs,
+    )
