@@ -78,7 +78,7 @@ def get_dataloader(
     model_evaluator: ModelEvaluator | None = None,
     **kwargs,
 ) -> torch.utils.data.DataLoader:
-    kwargs = __prepare_dataloader_kwargs(
+    dataloader_kwargs = __prepare_dataloader_kwargs(
         dc=dc,
         phase=phase,
         hyper_parameter=hyper_parameter,
@@ -98,7 +98,7 @@ def get_dataloader(
     #         return dataloader
 
     if dc.dataset_type != DatasetType.Graph:
-        return torch.utils.data.DataLoader(**kwargs)
+        return torch.utils.data.DataLoader(**dataloader_kwargs)
     assert has_torch_geometric
     assert isinstance(model_evaluator, GraphModelEvaluator)
     util = dc.get_dataset_util(phase=phase)
@@ -111,15 +111,15 @@ def get_dataloader(
 
     if not kwargs.get("sample_neighbor", True):
         node_indices = torch_geometric.utils.mask_to_index(input_nodes).tolist()
-        return RandomNodeLoader(node_indices, **kwargs)
+        return RandomNodeLoader(node_indices=node_indices, **dataloader_kwargs)
 
     if "batch_number" in kwargs:
         batch_number = kwargs["batch_number"]
-        kwargs["batch_size"] = math.ceil(input_nodes.numel() / batch_number)
+        dataloader_kwargs["batch_size"] = math.ceil(input_nodes.numel() / batch_number)
     return NeighborLoader(
         data=util.get_graph(0),
         num_neighbors=[kwargs.get("num_neighbor", 10)] * model_evaluator.neighbour_hop,
         input_nodes=input_nodes,
         transform=lambda data: data.to_dict(),
-        **kwargs,
+        **dataloader_kwargs,
     )
