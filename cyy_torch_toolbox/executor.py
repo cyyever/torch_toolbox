@@ -133,12 +133,17 @@ class Executor(HookCollection, abc.ABC):
     def transform_dataset(self, transformer: Callable) -> None:
         self.dataset_collection.transform_dataset(self.phase, transformer)
 
-    def refresh_dataset_size(self) -> int:
-        self._data["dataset_size"] = len(self.dataset_util)
+    @property
+    def dataset_size(self) -> int:
+        if "dataset_size" not in self._data:
+            self.refresh_dataset_size()
         return self._data["dataset_size"]
 
-    def set_dataloader_kwargs(self, dataloader_kwargs: dict) -> None:
-        self.__dataloader_kwargs = dataloader_kwargs
+    def refresh_dataset_size(self) -> None:
+        self._data["dataset_size"] = len(self.dataset_util)
+
+    def add_dataloader_kwargs(self, **kwargs: Any) -> None:
+        self.__dataloader_kwargs.update(kwargs)
         self.__dataloader = None
 
     @property
