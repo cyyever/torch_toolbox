@@ -258,13 +258,11 @@ class Executor(HookCollection, abc.ABC):
         self.__model_evaluator.offload_from_device()
         torch.cuda.empty_cache()
 
-    @abc.abstractmethod
-    def get_optimizer(self) -> Any:
-        pass
+    def get_optimizer(self) -> None | torch.optim.Optimizer:
+        return None
 
-    @abc.abstractmethod
     def get_lr_scheduler(self) -> Any:
-        pass
+        return None
 
     def _execute_epoch(
         self, epoch: int, in_training: bool, need_backward: bool = False
@@ -282,7 +280,8 @@ class Executor(HookCollection, abc.ABC):
                 batch_index=batch_index,
             )
             batch["batch_index"] = batch_index
-            optimizer = None
+            optimizer: None | torch.optim.Optimizer = None
+            lr_scheduler = None
             if in_training:
                 if (
                     self.hyper_parameter.batch_size != 1
