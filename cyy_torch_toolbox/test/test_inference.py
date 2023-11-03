@@ -11,6 +11,7 @@ def test_inference() -> None:
     trainer = config.create_trainer()
     inferencer = trainer.get_inferencer(MachineLearningPhase.Test)
     inferencer.inference()
+    inferencer.get_sample_loss()
 
 
 def test_gradient() -> None:

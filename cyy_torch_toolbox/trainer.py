@@ -168,7 +168,7 @@ class Trainer(Executor):
             finally:
                 self.wait_stream()
 
-    def _get_backward_loss(self, result):
+    def _get_backward_loss(self, result) -> torch.Tensor:
         return result["loss"]
 
 

@@ -8,7 +8,9 @@ from cyy_torch_toolbox.ml_type import ExecutorHookPoint, StopExecutingException
 
 
 class Inferencer(Executor):
-    def inference(self, use_grad: bool = False, **kwargs: Any) -> bool:
+    def inference(
+        self, use_grad: bool = False, reduce_loss: bool = True, **kwargs: Any
+    ) -> bool:
         succ_flag: bool = False
         with (
             torch.set_grad_enabled(use_grad),
@@ -17,7 +19,12 @@ class Inferencer(Executor):
         ):
             try:
                 self._prepare_execution(**kwargs)
-                self._execute_epoch(epoch=1, need_backward=use_grad, in_training=False)
+                self._execute_epoch(
+                    epoch=1,
+                    need_backward=use_grad,
+                    in_training=False,
+                    reduce_loss=reduce_loss,
+                )
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
                 succ_flag = True
             except StopExecutingException:
@@ -33,3 +40,8 @@ class Inferencer(Executor):
         succ: bool = self.inference(use_grad=True)
         assert succ
         return self.model_util.get_gradient_dict()
+
+    def get_sample_loss(self) -> dict:
+        succ: bool = self.inference(reduce_loss=False)
+        assert succ
+        return {}
