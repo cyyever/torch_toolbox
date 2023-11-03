@@ -44,9 +44,10 @@ class GraphModelEvaluator(ModelEvaluator):
     def __from_node_loader(self, **kwargs: Any) -> dict:
         phase = kwargs["phase"]
         graph_dict = self.__dc.get_dataset(phase=phase)[0]
-        graph = self.__dc.get_dataset_util(phase=phase).get_graph(0)
-
         dataset_util = self.__dc.get_dataset_util(phase=phase)
+        assert isinstance(dataset_util, GraphDatasetUtil)
+        graph = dataset_util.get_graph(0)
+
         self.__narrow_graph(phase=phase, dataset_util=dataset_util)
         batch_neighbour_mask, batch_neighbour_size = self.__narrow_batch(
             phase=phase,
@@ -70,12 +71,8 @@ class GraphModelEvaluator(ModelEvaluator):
         kwargs["batch_mask"] = batch_mask
         return super().__call__(inputs=inputs, **kwargs)
 
-    def _compute_loss(
-        self, output: torch.Tensor, batch_mask: torch.Tensor, **kwargs: Any
-    ) -> dict:
-        if kwargs.pop("from_neighbor_loader", 0):
-            pass
-        return super()._compute_loss(output=output[batch_mask], **kwargs)
+    def _compute_loss(self, output: torch.Tensor, **kwargs: Any) -> dict:
+        return super()._compute_loss(output=output[kwargs.pop("batch_mask")], **kwargs)
 
     def __narrow_graph(
         self, phase: MachineLearningPhase, dataset_util: GraphDatasetUtil

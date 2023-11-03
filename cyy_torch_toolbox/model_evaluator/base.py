@@ -87,6 +87,7 @@ class ModelEvaluator:
 
     def __call__(
         self,
+        *,
         inputs: Any,
         targets: Any,
         phase: MachineLearningPhase | None = None,
@@ -134,7 +135,7 @@ class ModelEvaluator:
         return self._compute_loss(output=output, **kwargs)
 
     def _compute_loss(
-        self, output: Any, targets: Any, non_blocking: bool, **kwargs: Any
+        self, *, output: Any, targets: Any, non_blocking: bool, **kwargs: Any
     ) -> dict:
         original_output = output
         convert_kwargs = {"device": output.device}
