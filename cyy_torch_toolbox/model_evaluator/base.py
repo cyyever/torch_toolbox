@@ -30,6 +30,7 @@ class ModelEvaluator:
         self._model: torch.nn.Module = model
         self.__name = model_name
         self.__loss_fun: Callable | None = None
+        self.__non_reduction_loss_fun: Callable | None = None
         if loss_fun is not None:
             self.set_loss_fun(loss_fun)
         if model_type is None:
@@ -71,6 +72,7 @@ class ModelEvaluator:
                 raise RuntimeError(f"unknown loss function {loss_fun}")
             case _:
                 self.__loss_fun = loss_fun
+        self.__non_reduction_loss_fun = None
 
     def offload_from_device(self) -> None:
         self.model.zero_grad(set_to_none=True)
@@ -94,11 +96,11 @@ class ModelEvaluator:
         non_blocking: bool = False,
         is_input_feature: bool = False,
         need_backward: bool = False,
-        reduction: bool = True,
+        reduce_loss: bool = True,
         **kwargs: Any,
     ) -> dict:
         if need_backward:
-            assert reduction
+            assert reduce_loss
         if phase is not None:
             self.__set_model_mode(
                 is_training=(phase == MachineLearningPhase.Training),
@@ -116,7 +118,7 @@ class ModelEvaluator:
             targets=targets,
             non_blocking=non_blocking,
             device=device,
-            reduction=reduction,
+            reduce_loss=reduce_loss,
             **kwargs,
         ) | {"inputs": inputs, "targets": targets}
 
@@ -143,13 +145,21 @@ class ModelEvaluator:
         output: Any,
         targets: Any,
         non_blocking: bool,
-        reduction: bool,
+        reduce_loss: bool,
         **kwargs: Any,
     ) -> dict:
         original_output = output
         convert_kwargs = {"device": output.device}
         assert isinstance(output, torch.Tensor)
-        match self.loss_fun:
+        loss_fun = self.loss_fun
+        if not reduce_loss:
+            if self.__non_reduction_loss_fun is None:
+                self.__non_reduction_loss_fun = self.__choose_loss_function(
+                    reduction=False
+                )
+            loss_fun = self.__non_reduction_loss_fun
+
+        match loss_fun:
             case nn.CrossEntropyLoss():
                 if len(targets.shape) > 1:
                     convert_kwargs["dtype"] = torch.float
@@ -160,13 +170,13 @@ class ModelEvaluator:
                     -1
                 )
                 output = output.view(-1)
-        loss = self.loss_fun(output, targets)
+        loss = loss_fun(output, targets)
         res = {
             "loss": loss,
             "targets": targets,
             "original_output": original_output,
             "model_output": output,
-            "is_averaged_loss": self.__is_averaged_loss(),
+            "is_averaged_loss": self.__is_averaged_loss(loss_fun),
         }
         if res["is_averaged_loss"]:
             res["loss_batch_size"] = targets.shape[0]
@@ -194,7 +204,7 @@ class ModelEvaluator:
                 model.to(device=device, non_blocking=non_blocking)
             return
 
-    def __choose_loss_function(self) -> Callable:
+    def __choose_loss_function(self, reduction: bool = True) -> Callable:
         layers = [
             m
             for _, m in self.model_util.get_modules()
@@ -234,9 +244,10 @@ class ModelEvaluator:
             case _:
                 return self.model
 
-    def __is_averaged_loss(self) -> bool:
-        if hasattr(self.loss_fun, "reduction"):
-            match self.loss_fun.reduction:
+    @classmethod
+    def __is_averaged_loss(cls, loss_fun) -> bool:
+        if hasattr(loss_fun, "reduction"):
+            match loss_fun.reduction:
                 case "mean":
                     return True
         return False
