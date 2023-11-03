@@ -1,5 +1,5 @@
 import functools
-from typing import Any, Callable
+from typing import Any, Callable, Type
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -225,17 +225,24 @@ class ModelEvaluator:
         last_layer = layers[-1]
 
         get_logger().debug("last module is %s", last_layer.__class__)
-        if isinstance(last_layer, nn.LogSoftmax):
-            get_logger().debug("choose loss function NLLLoss")
-            return nn.NLLLoss()
-        if isinstance(last_layer, nn.Linear):
-            if last_layer.out_features > 1:
-                get_logger().debug("choose loss function CrossEntropyLoss")
-                return nn.CrossEntropyLoss()
-            get_logger().debug("choose loss function BCEWithLogitsLoss")
-            return nn.BCEWithLogitsLoss()
-        get_logger().error("can't choose a loss function, model is %s", self._model)
-        raise NotImplementedError(type(last_layer))
+        loss_fun_type: None | Type = None
+        match last_layer:
+            case nn.LogSoftmax():
+                get_logger().debug("choose loss function NLLLoss")
+                loss_fun_type = nn.NLLLoss
+            case nn.Linear():
+                if last_layer.out_features > 1:
+                    get_logger().debug("choose loss function CrossEntropyLoss")
+                    loss_fun_type = nn.CrossEntropyLoss
+                else:
+                    get_logger().debug("choose loss function BCEWithLogitsLoss")
+                    loss_fun_type = nn.BCEWithLogitsLoss
+        if loss_fun_type is None:
+            get_logger().error("can't choose a loss function, model is %s", self._model)
+            raise NotImplementedError(type(last_layer))
+        if reduction:
+            return loss_fun_type()
+        return loss_fun_type(reduction="none")
 
     def get_underlying_model(self) -> torch.nn.Module:
         match self.model:
