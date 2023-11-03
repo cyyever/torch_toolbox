@@ -35,7 +35,6 @@ class ModelEvaluator:
         if model_type is None:
             model_type = ModelType.Classification
         self.__model_type: ModelType = model_type
-        self.need_input_features = False
 
     @property
     def model_name(self) -> str | None:
@@ -95,8 +94,11 @@ class ModelEvaluator:
         non_blocking: bool = False,
         is_input_feature: bool = False,
         need_backward: bool = False,
+        reduction: bool = True,
         **kwargs: Any,
     ) -> dict:
+        if need_backward:
+            assert reduction
         if phase is not None:
             self.__set_model_mode(
                 is_training=(phase == MachineLearningPhase.Training),
@@ -114,6 +116,7 @@ class ModelEvaluator:
             targets=targets,
             non_blocking=non_blocking,
             device=device,
+            reduction=reduction,
             **kwargs,
         ) | {"inputs": inputs, "targets": targets}
 
@@ -135,37 +138,39 @@ class ModelEvaluator:
         return self._compute_loss(output=output, **kwargs)
 
     def _compute_loss(
-        self, *, output: Any, targets: Any, non_blocking: bool, **kwargs: Any
+        self,
+        *,
+        output: Any,
+        targets: Any,
+        non_blocking: bool,
+        reduction: bool,
+        **kwargs: Any,
     ) -> dict:
         original_output = output
         convert_kwargs = {"device": output.device}
-        match output:
-            case torch.Tensor():
-                match self.loss_fun:
-                    case nn.CrossEntropyLoss():
-                        if len(targets.shape) > 1:
-                            convert_kwargs["dtype"] = torch.float
-                        targets = targets.to(
-                            **convert_kwargs, non_blocking=non_blocking
-                        )
-                    case nn.BCEWithLogitsLoss():
-                        convert_kwargs["dtype"] = output.dtype
-                        targets = targets.to(
-                            **convert_kwargs, non_blocking=non_blocking
-                        ).view(-1)
-                        output = output.view(-1)
-                loss = self.loss_fun(output, targets)
-                res = {
-                    "loss": loss,
-                    "targets": targets,
-                    "original_output": original_output,
-                    "model_output": output,
-                    "is_averaged_loss": self.__is_averaged_loss(),
-                }
-                if res["is_averaged_loss"]:
-                    res["loss_batch_size"] = targets.shape[0]
-                return res
-        raise NotImplementedError()
+        assert isinstance(output, torch.Tensor)
+        match self.loss_fun:
+            case nn.CrossEntropyLoss():
+                if len(targets.shape) > 1:
+                    convert_kwargs["dtype"] = torch.float
+                targets = targets.to(**convert_kwargs, non_blocking=non_blocking)
+            case nn.BCEWithLogitsLoss():
+                convert_kwargs["dtype"] = output.dtype
+                targets = targets.to(**convert_kwargs, non_blocking=non_blocking).view(
+                    -1
+                )
+                output = output.view(-1)
+        loss = self.loss_fun(output, targets)
+        res = {
+            "loss": loss,
+            "targets": targets,
+            "original_output": original_output,
+            "model_output": output,
+            "is_averaged_loss": self.__is_averaged_loss(),
+        }
+        if res["is_averaged_loss"]:
+            res["loss_batch_size"] = targets.shape[0]
+        return res
 
     def replace_model(self, model):
         return ModelEvaluator(
@@ -229,12 +234,12 @@ class ModelEvaluator:
             case _:
                 return self.model
 
-    def __is_averaged_loss(self) -> bool | None:
+    def __is_averaged_loss(self) -> bool:
         if hasattr(self.loss_fun, "reduction"):
-            if self.loss_fun.reduction in ("mean",):
-                return True
-            return False
-        return None
+            match self.loss_fun.reduction:
+                case "mean":
+                    return True
+        return False
 
     def __repr__(self) -> str:
         return f"model: {self._model.__class__.__name__}, loss_fun: {self.loss_fun}"
