@@ -37,7 +37,8 @@ class Trainer(Executor):
 
     @property
     def best_model(self) -> Any:
-        keep_model_hook: KeepModelHook = self.get_hook("keep_model_hook")
+        keep_model_hook = self.get_hook("keep_model_hook")
+        assert isinstance(keep_model_hook, KeepModelHook)
         if keep_model_hook.best_model is None:
             return None
         return keep_model_hook.best_model
@@ -73,7 +74,7 @@ class Trainer(Executor):
             inferencer.set_visualizer_prefix(self.visualizer_prefix)
         return inferencer
 
-    def get_optimizer(self):
+    def get_optimizer(self) -> Any:
         if "optimizer" not in self._data:
             self._data["optimizer"] = self.hyper_parameter.get_optimizer(self)
         return self._data["optimizer"]
@@ -126,15 +127,14 @@ class Trainer(Executor):
         super()._prepare_execution(**kwargs)
 
     def train(self, run_validation: bool = True, **kwargs: Any) -> None:
-        try:
-            with (
-                self.device_context,
-                self.device_stream_context,
-            ):
+        with (
+            self.device_context,
+            self.device_stream_context,
+        ):
+            try:
                 self._prepare_execution(**kwargs)
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
                     self._execute_epoch(epoch=epoch, in_training=True)
-
                     if not run_validation:
                         continue
                     for phase in (
@@ -161,11 +161,12 @@ class Trainer(Executor):
                             ExecutorHookPoint.AFTER_VALIDATION,
                             epoch=epoch,
                         )
-        except StopExecutingException:
-            get_logger().warning("stop training")
-        finally:
-            self.wait_stream()
-        self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
+                self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
+            except StopExecutingException:
+                get_logger().warning("stop training")
+                self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
+            finally:
+                self.wait_stream()
 
     def _get_backward_loss(self, result):
         return result["loss"]
