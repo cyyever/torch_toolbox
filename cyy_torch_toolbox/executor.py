@@ -265,7 +265,11 @@ class Executor(HookCollection, abc.ABC):
         return None
 
     def _execute_epoch(
-        self, epoch: int, in_training: bool, need_backward: bool = False
+        self,
+        epoch: int,
+        in_training: bool,
+        need_backward: bool = False,
+        reduce_loss: bool = True,
     ) -> None:
         step_lr_after_epoch: bool = False
         self.exec_hooks(
@@ -306,6 +310,7 @@ class Executor(HookCollection, abc.ABC):
                 "device": self.device,
                 "need_backward": need_backward,
                 "non_blocking": True,
+                "reduce_loss": reduce_loss,
             }
 
             forward_result: dict = {}
