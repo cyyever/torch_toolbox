@@ -173,10 +173,12 @@ class HookCollection:
     def enable_hook(self, hook_name: str, hook: Hook | None = None) -> None:
         if self.has_hook_obj(hook_name):
             hook = self.get_hook(hook_name)
-        assert hook is not None
-        for name in hook.yield_hook_names():
-            if name in self.__disabled_hooks:
-                self.__disabled_hooks.remove(name)
+            for name in hook.yield_hook_names():
+                if name in self.__disabled_hooks:
+                    self.__disabled_hooks.remove(name)
+        else:
+            assert hook is not None
+            self.append_hook(hook, hook_name=hook_name)
 
     def disable_hook(self, hook_name: str) -> None:
         if self.has_hook_obj(hook_name):
