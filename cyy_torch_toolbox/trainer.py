@@ -114,17 +114,21 @@ class Trainer(Executor):
         save_last_model: bool = False,
         **kwargs: Any,
     ) -> None:
+        super()._prepare_execution(**kwargs)
         keep_model_hook = self.get_hook("keep_model_hook")
         keep_model_hook.keep_best_model = keep_best_model
         keep_model_hook.save_best_model = save_best_model
         keep_model_hook.save_epoch_model = save_epoch_model
         keep_model_hook.save_last_model = save_last_model
-        if batch_loss_log_times is not None:
-            self.get_hook("batch_loss_logger").log_times = batch_loss_log_times
+        self.enable_or_disable_hook(
+            "batch_loss_logger", self.hook_config.use_performance_metric
+        )
+        if self.hook_config.use_performance_metric:
+            if batch_loss_log_times is not None:
+                self.get_hook("batch_loss_logger").log_times = batch_loss_log_times
         if self.visualizer_prefix is not None and self.__inferencers:
             for inferencer in self.__inferencers.values():
                 inferencer.set_visualizer_prefix(self.visualizer_prefix)
-        super()._prepare_execution(**kwargs)
 
     def train(self, run_validation: bool = True, **kwargs: Any) -> None:
         with (

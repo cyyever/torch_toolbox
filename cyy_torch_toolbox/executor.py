@@ -316,7 +316,6 @@ class Executor(HookCollection, abc.ABC):
                     forward_result = self._data.pop("forward_result")
                 else:
                     forward_result = self.__model_evaluator(**kwargs)
-                print(forward_result["loss"])
 
                 if forward_result["is_averaged_loss"]:
                     assert self._data["dataset_size"] > 1
