@@ -60,7 +60,7 @@ class Trainer(Executor):
                 self.dataset_collection,
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
-                hook_config=self._hook_config,
+                hook_config=copy.copy(self.hook_config),
             )
         if inferencer is None:
             raise RuntimeError(

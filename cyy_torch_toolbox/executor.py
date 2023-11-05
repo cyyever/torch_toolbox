@@ -16,8 +16,6 @@ from .hook.config import HookConfig
 from .hook.executor_logger import ExecutorLogger
 from .hyper_parameter import HyperParameter
 from .metric_visualizers.metric_visualizer import MetricVisualizer
-from .metric_visualizers.performance_metric_logger import \
-    PerformanceMetricLogger
 from .metrics.performance_metric import PerformanceMetric
 from .ml_type import ExecutorHookPoint, MachineLearningPhase
 from .model_evaluator import ModelEvaluator
@@ -42,24 +40,14 @@ class Executor(HookCollection, abc.ABC):
         self.__dataset_collection: DatasetCollection = dataset_collection
         self.__phase: MachineLearningPhase = phase
         self.__hyper_parameters: dict = {phase: copy.deepcopy(hyper_parameter)}
-        self._hook_config = hook_config
+        if not hook_config:
+            hook_config = HookConfig()
+        self.hook_config: HookConfig = hook_config
         self.__device: None | torch.device = None
         self.__dataloader = None
         self.__dataloader_kwargs: dict = {}
         self.__device_stream: None | torch.cuda.Stream = None
         self.append_hook(ExecutorLogger(), "logger")
-        self.append_hook(
-            PerformanceMetric(
-                model_type=self.__model_evaluator.model_type,
-                profile=hook_config.profile if hook_config is not None else False,
-                extra_metrics=hook_config.extra_metrics
-                if hook_config is not None
-                else False,
-            ),
-            "performance_metric",
-        )
-        self.append_hook(PerformanceMetricLogger(), "performance_metric_logger")
-        # self.append_hook(MetricTensorBoard(), "tensor_board_visualizer")
         self.__save_dir: None | str = None
         self.cache_transforms: None | str = None
 
@@ -189,12 +177,11 @@ class Executor(HookCollection, abc.ABC):
 
     def _prepare_execution(self, **kwargs: Any) -> None:
         self._data.clear()
-        if self._hook_config:
-            for k, v in kwargs.items():
-                if not hasattr(self._hook_config, k):
-                    continue
-                setattr(self._hook_config, k, v)
-            self._hook_config.append_hooks(self)
+        for k, v in kwargs.items():
+            if not hasattr(self.hook_config, k):
+                continue
+            setattr(self.hook_config, k, v)
+        self.hook_config.set_hooks(self)
         if self.__save_dir is not None:
             self.set_save_dir(self.__save_dir)
 
@@ -329,15 +316,16 @@ class Executor(HookCollection, abc.ABC):
                     forward_result = self._data.pop("forward_result")
                 else:
                     forward_result = self.__model_evaluator(**kwargs)
+                print(forward_result["loss"])
 
-                assert forward_result["is_averaged_loss"]
-                assert self._data["dataset_size"] > 1
-                forward_result["normalized_batch_loss"] = (
-                    forward_result["loss"]
-                    * forward_result["loss_batch_size"]
-                    / self._data["dataset_size"]
-                )
-                batch |= forward_result
+                if forward_result["is_averaged_loss"]:
+                    assert self._data["dataset_size"] > 1
+                    forward_result["normalized_batch_loss"] = (
+                        forward_result["loss"]
+                        * forward_result["loss_batch_size"]
+                        / self._data["dataset_size"]
+                    )
+                    batch |= forward_result
                 self.exec_hooks(
                     hook_point=ExecutorHookPoint.AFTER_FORWARD,
                     epoch=epoch,
