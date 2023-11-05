@@ -1,3 +1,4 @@
+import copy
 from typing import Any
 
 import torch
@@ -37,11 +38,15 @@ class Inferencer(Executor):
         return result["normalized_batch_loss"]
 
     def get_gradient(self) -> dict:
-        succ: bool = self.inference(use_grad=True)
+        old_hook_config = copy.copy(self.hook_config)
+        succ: bool = self.inference(use_grad=True, use_performance_metric=False)
+        self.hook_config = old_hook_config
         assert succ
         return self.model_util.get_gradient_dict()
 
     def get_sample_loss(self) -> dict:
-        succ: bool = self.inference(reduce_loss=False)
+        old_hook_config = copy.copy(self.hook_config)
+        succ: bool = self.inference(reduce_loss=False, use_performance_metric=False)
+        self.hook_config = old_hook_config
         assert succ
         return {}
