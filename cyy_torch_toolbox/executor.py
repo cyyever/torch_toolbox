@@ -324,7 +324,9 @@ class Executor(HookCollection, abc.ABC):
                         * forward_result["loss_batch_size"]
                         / self._data["dataset_size"]
                     )
-                    batch |= forward_result
+                else:
+                    forward_result["normalized_batch_loss"] = forward_result["loss"]
+                batch |= forward_result
                 self.exec_hooks(
                     hook_point=ExecutorHookPoint.AFTER_FORWARD,
                     epoch=epoch,
