@@ -1,4 +1,5 @@
 import copy
+import functools
 from typing import Any
 
 import torch
@@ -45,8 +46,22 @@ class Inferencer(Executor):
         return self.model_util.get_gradient_dict()
 
     def get_sample_loss(self) -> dict:
+        sample_loss: dict = {}
         old_hook_config = copy.copy(self.hook_config)
+        name = "__cyy_collect_sample_loss"
+        self.append_named_hook(
+            hook_point=ExecutorHookPoint.AFTER_BATCH,
+            name=name,
+            fun=functools.partial(self._collect_sample_loss, sample_loss),
+        )
         succ: bool = self.inference(reduce_loss=False, use_performance_metric=False)
+        self.remove_named_hook(name=name)
         self.hook_config = old_hook_config
         assert succ
-        return {}
+        assert len(sample_loss) == self.dataset_size
+        return sample_loss
+
+    def _collect_sample_loss(
+        self, sample_loss, result, sample_indices, **kwargs
+    ) -> None:
+        sample_loss.update(zip(sample_indices, result["loss"]))

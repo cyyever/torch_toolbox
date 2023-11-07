@@ -292,7 +292,6 @@ class Executor(HookCollection, abc.ABC):
                     get_logger().debug("drop last one-batch for batchnorm")
                     continue
                 need_backward = True
-                get_logger().error("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
                 optimizer: torch.optim.Optimizer = self.get_optimizer()
                 lr_scheduler = self.get_lr_scheduler()
 
