@@ -49,7 +49,7 @@ class Executor(HookCollection, abc.ABC):
         self.__device_stream: None | torch.cuda.Stream = None
         self.append_hook(ExecutorLogger(), "logger")
         self.__save_dir: None | str = None
-        self.cache_transforms: None | str = None
+        self.cache_transforms: None | str = "cpu"
 
     @property
     def dataset_collection(self) -> DatasetCollection:
