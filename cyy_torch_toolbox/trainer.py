@@ -74,19 +74,9 @@ class Trainer(Executor):
             inferencer.set_visualizer_prefix(self.visualizer_prefix)
         return inferencer
 
-    def get_optimizer(self) -> Any:
-        if "optimizer" not in self._data:
-            self._data["optimizer"] = self.hyper_parameter.get_optimizer(self)
-        return self._data["optimizer"]
-
     def remove_optimizer(self) -> None:
         self._data.pop("optimizer", None)
         self.remove_lr_scheduler()
-
-    def get_lr_scheduler(self):
-        if "lr_scheduler" not in self._data:
-            self._data["lr_scheduler"] = self.hyper_parameter.get_lr_scheduler(self)
-        return self._data["lr_scheduler"]
 
     def remove_lr_scheduler(self) -> None:
         self._data.pop("lr_scheduler", None)
