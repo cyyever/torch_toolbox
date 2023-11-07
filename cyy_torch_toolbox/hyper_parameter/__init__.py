@@ -42,12 +42,13 @@ class HyperParameter:
     _optimizer_factory: None | Callable = None
     extra_parameters: dict = field(default_factory=lambda: {})
 
-    def get_learning_rate(self, trainer: Any) -> float:
+    def __get_learning_rate(self, trainer: Any) -> float:
         if isinstance(self.learning_rate, HyperParameterAction):
-            task_queue = TorchThreadTaskQueue(worker_fun=determine_learning_rate)
+            task_queue = TorchThreadTaskQueue()
+            task_queue.start(worker_fun=determine_learning_rate)
             device = trainer.device
             trainer.offload_from_device()
-            task_queue.add_task((copy.deepcopy(trainer), device))
+            task_queue.add_task((copy.deepcopy(trainer), trainer.device))
             data = task_queue.get_data()
             assert data is not None
             self.learning_rate = data[0]
@@ -67,7 +68,7 @@ class HyperParameter:
             return dataset_size
         return (dataset_size + self.batch_size - 1) // self.batch_size
 
-    def get_lr_scheduler(self, trainer):
+    def get_lr_scheduler(self, trainer) -> Any:
         assert self._lr_scheduler_factory is not None
         return self._lr_scheduler_factory(trainer)
 
@@ -92,7 +93,7 @@ class HyperParameter:
             return torch.optim.lr_scheduler.ReduceLROnPlateau(**full_kwargs)
         if name == "OneCycleLR":
             full_kwargs["pct_start"] = 0.4
-            full_kwargs["max_lr"] = 10 * self.get_learning_rate(trainer)
+            full_kwargs["max_lr"] = 10 * self.__get_learning_rate(trainer)
             full_kwargs["total_steps"] = self.epoch * self.get_iterations_per_epoch(
                 training_dataset_size
             )
@@ -138,7 +139,7 @@ class HyperParameter:
         foreach = not torch.backends.mps.is_available()
         kwargs: dict = {
             "params": trainer.model.parameters(),
-            "lr": self.get_learning_rate(trainer),
+            "lr": self.__get_learning_rate(trainer),
             "momentum": self.momentum,
             "weight_decay": self.weight_decay / trainer.dataset_size,
             "foreach": foreach,

@@ -245,11 +245,21 @@ class Executor(HookCollection, abc.ABC):
         self.__model_evaluator.offload_from_device()
         torch.cuda.empty_cache()
 
-    def get_optimizer(self) -> None | torch.optim.Optimizer:
-        return None
+    def has_optimizer(self) -> bool:
+        return "optimizer" in self._data
+
+    def has_lr_scheduler(self) -> bool:
+        return "lr_scheduler" in self._data
+
+    def get_optimizer(self) -> torch.optim.Optimizer:
+        if "optimizer" not in self._data:
+            self._data["optimizer"] = self.hyper_parameter.get_optimizer(self)
+        return self._data["optimizer"]
 
     def get_lr_scheduler(self) -> Any:
-        return None
+        if "lr_scheduler" not in self._data:
+            self._data["lr_scheduler"] = self.hyper_parameter.get_lr_scheduler(self)
+        return self._data["lr_scheduler"]
 
     def _execute_epoch(
         self,
@@ -271,8 +281,6 @@ class Executor(HookCollection, abc.ABC):
                 batch_index=batch_index,
             )
             batch["batch_index"] = batch_index
-            optimizer: None | torch.optim.Optimizer = None
-            lr_scheduler = None
             if in_training:
                 if (
                     self.hyper_parameter.batch_size != 1
@@ -284,7 +292,8 @@ class Executor(HookCollection, abc.ABC):
                     get_logger().debug("drop last one-batch for batchnorm")
                     continue
                 need_backward = True
-                optimizer = self.get_optimizer()
+                get_logger().error("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                optimizer: torch.optim.Optimizer = self.get_optimizer()
                 lr_scheduler = self.get_lr_scheduler()
 
             self.exec_hooks(
@@ -304,7 +313,7 @@ class Executor(HookCollection, abc.ABC):
 
             while True:
                 if need_backward:
-                    if optimizer is not None:
+                    if in_training:
                         optimizer.zero_grad(set_to_none=True)
                     else:
                         self.running_model_evaluator.model.zero_grad(set_to_none=True)
@@ -351,7 +360,6 @@ class Executor(HookCollection, abc.ABC):
                     self.exec_hooks(ExecutorHookPoint.OPTIMIZER_STEP)
                     step_skipped = self._data["step_skipped"]
                 else:
-                    assert optimizer is not None
                     optimizer.step()
                 if step_skipped:
                     self.exec_hooks(
@@ -380,7 +388,6 @@ class Executor(HookCollection, abc.ABC):
                 batch_index=batch_index + 1,
             )
         if in_training and step_lr_after_epoch:
-            lr_scheduler = self.get_lr_scheduler()
             match lr_scheduler:
                 case torch.optim.lr_scheduler.ReduceLROnPlateau():
                     training_loss = self.performance_metric.get_loss(epoch)

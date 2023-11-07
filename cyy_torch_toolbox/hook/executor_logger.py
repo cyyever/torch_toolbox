@@ -10,7 +10,6 @@ class ExecutorLogger(Hook):
         super().__init__(stripable=True)
 
     def _before_execute(self, executor, **kwargs) -> None:
-        model_util = executor.model_util
         get_logger().info(
             "dataset type is %s",
             executor.dataset_collection.get_original_dataset(
@@ -22,16 +21,14 @@ class ExecutorLogger(Hook):
         get_logger().debug("loss function is %s", executor.loss_fun)
         get_logger().info(
             "parameter number is %s",
-            sum(a.numel() for a in model_util.get_parameter_seq()),
+            sum(a.numel() for a in executor.model_util.get_parameter_seq()),
         )
         if hasattr(executor, "hyper_parameter"):
             get_logger().info("hyper_parameter is %s", executor.hyper_parameter)
-        optimizer = executor.get_optimizer()
-        if optimizer is not None:
-            get_logger().info("optimizer is %s", optimizer)
-        lr_scheduler = executor.get_lr_scheduler()
-        if lr_scheduler is not None:
-            get_logger().info("lr_scheduler is %s", type(lr_scheduler))
+        if executor.has_optimizer():
+            get_logger().info("optimizer is %s", executor.get_optimizer())
+        if executor.has_lr_scheduler():
+            get_logger().info("lr_scheduler is %s", type(executor.get_lr_scheduler()))
         for phase in MachineLearningPhase:
             if executor.dataset_collection.has_dataset(phase):
                 get_logger().info(
