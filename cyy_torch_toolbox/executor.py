@@ -130,7 +130,7 @@ class Executor(HookCollection, abc.ABC):
     def refresh_dataset_size(self) -> None:
         self._data["dataset_size"] = len(self.dataset_util)
 
-    def add_dataloader_kwargs(self, **kwargs: Any) -> None:
+    def update_dataloader_kwargs(self, **kwargs: Any) -> None:
         self.__dataloader_kwargs.update(kwargs)
         self.__dataloader = None
 
@@ -159,7 +159,7 @@ class Executor(HookCollection, abc.ABC):
 
     @property
     def model_util(self) -> ModelUtil:
-        return self.model_evaluator.model_util
+        return self.running_model_evaluator.model_util
 
     @property
     def loss_fun(self) -> Callable:
@@ -167,7 +167,7 @@ class Executor(HookCollection, abc.ABC):
 
     @property
     def model(self) -> torch.nn.Module:
-        return self.model_evaluator.model
+        return self.running_model_evaluator.model
 
     def replace_model_evaluator(self, fun: Callable) -> None:
         self.__model_evaluator = fun(self.model_evaluator)

@@ -109,10 +109,7 @@ class DatasetUtil:
         return set().union(*tuple(set(labels) for _, labels in self.get_batch_labels()))
 
     def get_original_dataset(self) -> torch.utils.data.Dataset:
-        dataset = self.dataset
-        if hasattr(dataset, "original_dataset"):
-            dataset = dataset.original_dataset
-        return dataset
+        return self.dataset[0].get("original_dataset", self.dataset)
 
     def get_label_names(self) -> dict:
         original_dataset = self.get_original_dataset()
@@ -208,16 +205,24 @@ class GraphDatasetUtil(DatasetUtil):
     def get_mask(self) -> list[torch.Tensor]:
         if hasattr(self.dataset[0], "mask") or "mask" in self.dataset[0]:
             return [dataset["mask"] for dataset in self.dataset]
-        mask = torch.ones((self.get_graph(0).x.shape[0],), dtype=torch.bool)
+        mask = torch.ones((self.get_original_graph(0).x.shape[0],), dtype=torch.bool)
         return [mask]
 
     def get_edge_index(self, graph_index: int) -> torch.Tensor:
         graph = self.dataset[graph_index]
         if "edge_index" in graph:
             return graph["edge_index"]
-        return self.get_graph(graph_index).edge_index
+        return self.get_original_graph(graph_index).edge_index
 
     def get_graph(self, graph_index: int) -> Any:
+        original_graph = self.get_original_graph(graph_index=graph_index)
+        edge_index = self.get_edge_index(graph_index=graph_index)
+        graph_dict = original_graph.to_dict()
+        assert "edge_index" in graph_dict
+        graph_dict["edge_index"] = edge_index
+        return type(original_graph)(**graph_dict)
+
+    def get_original_graph(self, graph_index: int) -> Any:
         graph_dict = self.dataset[graph_index]
         if "original_dataset" not in graph_dict:
             return graph_dict
@@ -233,7 +238,7 @@ class GraphDatasetUtil(DatasetUtil):
         node_indices = torch.tensor(list(node_indices))
         result = []
         for idx, graph_dict in enumerate(self.dataset):
-            graph = self.get_graph(idx)
+            graph = self.get_original_graph(idx)
             if isinstance(graph_dict, dict):
                 tmp = graph_dict.copy()
             else:
@@ -274,9 +279,6 @@ class GraphDatasetUtil(DatasetUtil):
                     }
                 )
         return datasets
-
-    def get_original_dataset(self) -> torch.utils.data.Dataset:
-        return self.get_graph(0)
 
 
 def get_dataset_util_cls(dataset_type: DatasetType) -> Type:
