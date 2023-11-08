@@ -7,6 +7,12 @@ class MachineLearningPhase(StrEnum):
     Test = auto()
 
 
+class EvaluationMode(StrEnum):
+    Training = auto()
+    Test = auto()
+    TestWithGrad = auto()
+
+
 class ModelType(StrEnum):
     Classification = auto()
     Detection = auto()
