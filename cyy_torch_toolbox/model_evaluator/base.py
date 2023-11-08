@@ -267,8 +267,7 @@ class ModelEvaluator:
             if self._model.training:
                 return
             self._model.train()
-            return
-        if self._model.training:
+        elif self._model.training:
             self._model.eval()
             if need_backward:
                 self.model_util.change_modules(

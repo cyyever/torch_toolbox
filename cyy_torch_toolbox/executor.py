@@ -311,19 +311,22 @@ class Executor(HookCollection, abc.ABC):
             forward_result: dict = {}
 
             while True:
-                if need_backward:
-                    if in_training:
-                        optimizer.zero_grad(set_to_none=True)
+                with torch.set_grad_enabled(mode=need_backward):
+                    if need_backward:
+                        if in_training:
+                            optimizer.zero_grad(set_to_none=True)
+                        else:
+                            self.running_model_evaluator.model.zero_grad(
+                                set_to_none=True
+                            )
+                    if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
+                        self.exec_hooks(
+                            hook_point=ExecutorHookPoint.MODEL_FORWARD,
+                            model_kwargs=kwargs,
+                        )
+                        forward_result = self._data.pop("forward_result")
                     else:
-                        self.running_model_evaluator.model.zero_grad(set_to_none=True)
-                if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
-                    self.exec_hooks(
-                        hook_point=ExecutorHookPoint.MODEL_FORWARD,
-                        model_kwargs=kwargs,
-                    )
-                    forward_result = self._data.pop("forward_result")
-                else:
-                    forward_result = self.__model_evaluator(**kwargs)
+                        forward_result = self.__model_evaluator(**kwargs)
 
                 if forward_result["is_averaged_loss"]:
                     assert self._data["dataset_size"] > 1
@@ -349,6 +352,7 @@ class Executor(HookCollection, abc.ABC):
                             hook_point=ExecutorHookPoint.MODEL_BACKWARD, loss=loss
                         )
                     else:
+                        get_logger().error("loss is %s", loss)
                         loss.backward()
 
                 if not in_training:
