@@ -129,9 +129,7 @@ class Trainer(Executor):
                 self._prepare_execution(**kwargs)
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
                     self._execute_epoch(
-                        epoch=epoch,
-                        evaluation_mode=EvaluationMode.Training,
-                        in_training=True,
+                        epoch=epoch, evaluation_mode=EvaluationMode.Training
                     )
                     if not run_validation:
                         continue
