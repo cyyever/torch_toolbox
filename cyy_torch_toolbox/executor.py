@@ -311,7 +311,7 @@ class Executor(HookCollection, abc.ABC):
             forward_result: dict = {}
 
             while True:
-                with torch.set_grad_enabled(mode=need_backward):
+                with torch.set_grad_enabled(need_backward):
                     if need_backward:
                         if in_training:
                             optimizer.zero_grad(set_to_none=True)
@@ -352,7 +352,6 @@ class Executor(HookCollection, abc.ABC):
                             hook_point=ExecutorHookPoint.MODEL_BACKWARD, loss=loss
                         )
                     else:
-                        get_logger().error("loss is %s", loss)
                         loss.backward()
 
                 if not in_training:
