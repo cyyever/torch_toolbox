@@ -26,11 +26,7 @@ class Inferencer(Executor):
             try:
                 self._prepare_execution(**kwargs)
                 self._execute_epoch(
-                    epoch=1,
-                    evaluation_mode=evaluation_mode,
-                    require_grad=require_grad,
-                    in_training=False,
-                    reduce_loss=reduce_loss,
+                    epoch=1, evaluation_mode=evaluation_mode, reduce_loss=reduce_loss
                 )
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
                 succ_flag = True
