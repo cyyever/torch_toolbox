@@ -21,9 +21,6 @@ from .ml_type import EvaluationMode, ExecutorHookPoint, MachineLearningPhase
 from .model_evaluator import ModelEvaluator
 from .model_util import ModelUtil
 
-# from cyy_torch_toolbox.metric_visualizers.metric_tensorboard import \
-#     MetricTensorBoard
-
 
 class Executor(HookCollection, abc.ABC):
     def __init__(
@@ -265,8 +262,6 @@ class Executor(HookCollection, abc.ABC):
         self,
         epoch: int,
         evaluation_mode: EvaluationMode,
-        in_training: bool,
-        require_grad: bool = False,
         reduce_loss: bool = True,
     ) -> None:
         step_lr_after_epoch: bool = False
@@ -302,10 +297,8 @@ class Executor(HookCollection, abc.ABC):
             )
             kwargs = batch | {
                 "phase": self.phase,
-                "training_mode": in_training,
                 "device": self.device,
                 "evaluation_mode": evaluation_mode,
-                "require_grad": require_grad,
                 "non_blocking": True,
                 "reduce_loss": reduce_loss,
             }
@@ -387,7 +380,7 @@ class Executor(HookCollection, abc.ABC):
                 hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH,
                 batch_index=batch_index + 1,
             )
-        if in_training and step_lr_after_epoch:
+        if step_lr_after_epoch:
             match lr_scheduler:
                 case torch.optim.lr_scheduler.ReduceLROnPlateau():
                     training_loss = self.performance_metric.get_loss(epoch)
