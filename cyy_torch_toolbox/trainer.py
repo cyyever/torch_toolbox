@@ -12,8 +12,8 @@ from .hook.keep_model import KeepModelHook
 from .hyper_parameter import HyperParameter
 from .inferencer import Inferencer
 from .metric_visualizers.batch_loss_logger import BatchLossLogger
-from .ml_type import (ExecutorHookPoint, MachineLearningPhase, ModelType,
-                      StopExecutingException)
+from .ml_type import (EvaluationMode, ExecutorHookPoint, MachineLearningPhase,
+                      ModelType, StopExecutingException)
 from .model_evaluator import ModelEvaluator
 
 
@@ -128,7 +128,11 @@ class Trainer(Executor):
             try:
                 self._prepare_execution(**kwargs)
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
-                    self._execute_epoch(epoch=epoch, in_training=True)
+                    self._execute_epoch(
+                        epoch=epoch,
+                        evaluation_mode=EvaluationMode.Training,
+                        in_training=True,
+                    )
                     if not run_validation:
                         continue
                     for phase in (

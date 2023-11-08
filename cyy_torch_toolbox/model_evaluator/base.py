@@ -5,13 +5,12 @@ import torch
 from cyy_naive_lib.log import get_logger
 from torch import nn
 
-from ..ml_type import MachineLearningPhase, ModelType
+from ..ml_type import EvaluationMode, MachineLearningPhase, ModelType
 from ..model_util import ModelUtil
 from ..tensor import tensor_to
 
 # from cyy_torch_toolbox.model_transform.checkpointed_model import \
 #     get_checkpointed_model
-# from cyy_torch_toolbox.device import get_devices
 # from torch.nn.parallel import DistributedDataParallel as DDP
 
 
@@ -95,20 +94,12 @@ class ModelEvaluator:
         device: None | torch.device = None,
         non_blocking: bool = False,
         is_input_feature: bool = False,
-        require_grad: bool = False,
-        training_mode: bool | None = None,
+        evaluation_mode: EvaluationMode | None = None,
         reduce_loss: bool = True,
         **kwargs: Any,
     ) -> dict:
-        if require_grad:
-            assert reduce_loss
-        if training_mode is not None or phase is not None:
-            if training_mode is None:
-                training_mode = phase == MachineLearningPhase.Training
-            self.__set_model_mode(
-                is_training=training_mode,
-                require_grad=require_grad,
-            )
+        if evaluation_mode is not None:
+            self.__set_model_mode(evaluation_mode=evaluation_mode)
 
         if device is not None:
             inputs = tensor_to(inputs, device=device, non_blocking=non_blocking)
@@ -265,19 +256,19 @@ class ModelEvaluator:
     def __repr__(self) -> str:
         return f"model: {self._model.__class__.__name__}, loss_fun: {self.loss_fun}"
 
-    def __set_model_mode(self, is_training: bool, require_grad: bool = False) -> None:
-        if is_training:
-            assert require_grad
-            if not self._model.training:
-                self._model.train()
-        elif self._model.training:
-            self._model.eval()
-            if require_grad:
-                self.model_util.change_modules(
-                    f=lambda _, module, __: module.train(), module_type=nn.RNNBase
-                )
-        if require_grad:
-            self._model.requires_grad_()
+    def __set_model_mode(self, evaluation_mode: EvaluationMode) -> None:
+        match evaluation_mode:
+            case EvaluationMode.Training:
+                if not self._model.training:
+                    self._model.train()
+                    return
+            case EvaluationMode.Test | EvaluationMode.TestWithGrad:
+                if self._model.training:
+                    self._model.eval()
+                if evaluation_mode == EvaluationMode.TestWithGrad:
+                    self.model_util.change_modules(
+                        f=lambda _, module, __: module.train(), module_type=nn.RNNBase
+                    )
 
 
 # class CheckPointedModelWithLoss:
