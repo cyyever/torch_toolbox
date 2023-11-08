@@ -72,7 +72,12 @@ class GraphModelEvaluator(ModelEvaluator):
         return super().__call__(inputs=inputs, **kwargs)
 
     def _compute_loss(self, output: torch.Tensor, **kwargs: Any) -> dict:
-        return super()._compute_loss(output=output[kwargs.pop("batch_mask")], **kwargs)
+        batch_mask = kwargs.pop("batch_mask")
+        n_id = kwargs.pop("n_id")
+
+        return super()._compute_loss(output=output[batch_mask], **kwargs) | {
+            "sample_indices": n_id[batch_mask].tolist()
+        }
 
     def __narrow_graph(
         self, phase: MachineLearningPhase, dataset_util: GraphDatasetUtil
