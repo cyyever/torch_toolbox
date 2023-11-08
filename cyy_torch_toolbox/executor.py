@@ -265,7 +265,7 @@ class Executor(HookCollection, abc.ABC):
         self,
         epoch: int,
         in_training: bool,
-        need_backward: bool = False,
+        require_grad: bool = False,
         reduce_loss: bool = True,
     ) -> None:
         step_lr_after_epoch: bool = False
@@ -291,7 +291,7 @@ class Executor(HookCollection, abc.ABC):
                 ):
                     get_logger().debug("drop last one-batch for batchnorm")
                     continue
-                need_backward = True
+                require_grad = True
                 optimizer: torch.optim.Optimizer = self.get_optimizer()
                 lr_scheduler = self.get_lr_scheduler()
 
@@ -302,8 +302,9 @@ class Executor(HookCollection, abc.ABC):
             )
             kwargs = batch | {
                 "phase": self.phase,
+                "training_mode": in_training,
                 "device": self.device,
-                "need_backward": need_backward,
+                "require_grad": require_grad,
                 "non_blocking": True,
                 "reduce_loss": reduce_loss,
             }
@@ -311,8 +312,7 @@ class Executor(HookCollection, abc.ABC):
             forward_result: dict = {}
 
             while True:
-                with torch.set_grad_enabled(need_backward):
-                    if need_backward:
+                    if require_grad:
                         if in_training:
                             optimizer.zero_grad(set_to_none=True)
                         else:
@@ -328,15 +328,18 @@ class Executor(HookCollection, abc.ABC):
                     else:
                         forward_result = self.__model_evaluator(**kwargs)
 
-                if forward_result["is_averaged_loss"]:
-                    assert self._data["dataset_size"] > 1
-                    forward_result["normalized_batch_loss"] = (
-                        forward_result["loss"]
-                        * forward_result["loss_batch_size"]
-                        / self._data["dataset_size"]
-                    )
-                else:
-                    forward_result["normalized_batch_loss"] = forward_result["loss"]
+                    if forward_result["is_averaged_loss"]:
+                        assert self._data["dataset_size"] > 1
+                        forward_result["normalized_batch_loss"] = (
+                            forward_result["loss"]
+                            * forward_result["loss_batch_size"]
+                            / self._data["dataset_size"]
+                        )
+                        get_logger().error(
+                            "normalized_batch_loss is %s ",
+                            forward_result["normalized_batch_loss"],
+                        )
+
                 batch |= forward_result
                 self.exec_hooks(
                     hook_point=ExecutorHookPoint.AFTER_FORWARD,
@@ -344,7 +347,7 @@ class Executor(HookCollection, abc.ABC):
                     **batch,
                 )
 
-                if need_backward:
+                if require_grad:
                     loss = self._get_backward_loss(result=forward_result)
                     assert loss is not None
                     if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):

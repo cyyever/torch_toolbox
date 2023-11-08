@@ -95,16 +95,19 @@ class ModelEvaluator:
         device: None | torch.device = None,
         non_blocking: bool = False,
         is_input_feature: bool = False,
-        need_backward: bool = False,
+        require_grad: bool = False,
+        training_mode: bool | None = None,
         reduce_loss: bool = True,
         **kwargs: Any,
     ) -> dict:
-        if need_backward:
+        if require_grad:
             assert reduce_loss
-        if phase is not None:
+        if training_mode is not None or phase is not None:
+            if training_mode is None:
+                training_mode = phase == MachineLearningPhase.Training
             self.__set_model_mode(
-                is_training=(phase == MachineLearningPhase.Training),
-                need_backward=need_backward,
+                is_training=training_mode,
+                require_grad=require_grad,
             )
 
         if device is not None:
@@ -262,17 +265,19 @@ class ModelEvaluator:
     def __repr__(self) -> str:
         return f"model: {self._model.__class__.__name__}, loss_fun: {self.loss_fun}"
 
-    def __set_model_mode(self, is_training: bool, need_backward: bool = False) -> None:
+    def __set_model_mode(self, is_training: bool, require_grad: bool = False) -> None:
         if is_training:
-            if self._model.training:
-                return
-            self._model.train()
+            assert require_grad
+            if not self._model.training:
+                self._model.train()
         elif self._model.training:
             self._model.eval()
-            if need_backward:
+            if require_grad:
                 self.model_util.change_modules(
                     f=lambda _, module, __: module.train(), module_type=nn.RNNBase
                 )
+        if require_grad:
+            self._model.requires_grad_()
 
 
 # class CheckPointedModelWithLoss:
