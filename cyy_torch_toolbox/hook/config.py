@@ -10,11 +10,13 @@ from ..ml_type import MachineLearningPhase
 from .amp import AMP
 from .cudnn import CUDNNHook
 from .debugger import Debugger
+from .executor_logger import ExecutorLogger
 from .profiler import Profiler
 
 
 class HookConfig:
     def __init__(self) -> None:
+        self.summarize_executor = True
         self.debug = False
         self.profile = False
         self.use_amp = torch.cuda.is_available()
@@ -30,6 +32,9 @@ class HookConfig:
                 executor.enable_or_disable_hook("AMP", self.use_amp, AMP())
         executor.enable_or_disable_hook("debugger", self.debug, Debugger())
         executor.enable_or_disable_hook("profiler", self.profile, Profiler())
+        executor.enable_or_disable_hook(
+            "logger", self.summarize_executor, ExecutorLogger()
+        )
         if torch.cuda.is_available():
             executor.enable_or_disable_hook("cudnn", self.benchmark_cudnn, CUDNNHook())
         if self.use_performance_metric:
