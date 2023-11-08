@@ -2,7 +2,6 @@ import copy
 import functools
 from typing import Any
 
-import torch
 from cyy_naive_lib.log import get_logger
 
 from cyy_torch_toolbox.executor import Executor
@@ -15,7 +14,6 @@ class Inferencer(Executor):
     ) -> bool:
         succ_flag: bool = False
         with (
-            torch.set_grad_enabled(use_grad),
             self.device_context,
             self.device_stream_context,
         ):
@@ -54,7 +52,9 @@ class Inferencer(Executor):
             name=name,
             fun=functools.partial(self._collect_sample_loss, sample_loss),
         )
-        succ: bool = self.inference(reduce_loss=False, use_performance_metric=False)
+        succ: bool = self.inference(
+            use_grad=False, reduce_loss=False, use_performance_metric=False
+        )
         self.remove_named_hook(name=name)
         self.hook_config = old_hook_config
         assert succ
