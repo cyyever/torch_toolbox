@@ -107,11 +107,10 @@ def get_dataloader(
     if pyg_input_nodes:
         input_nodes = pyg_input_nodes[phase]
     else:
-        input_nodes = util.get_mask()[0]
+        input_nodes = torch_geometric.utils.mask_to_index(util.get_mask()[0])
 
     if not kwargs.get("sample_neighbor", True):
-        node_indices = torch_geometric.utils.mask_to_index(input_nodes).tolist()
-        return RandomNodeLoader(node_indices=node_indices, **dataloader_kwargs)
+        return RandomNodeLoader(node_indices=input_nodes.tolist(), **dataloader_kwargs)
 
     if "batch_number" in kwargs:
         batch_number = kwargs["batch_number"]
