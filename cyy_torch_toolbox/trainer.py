@@ -144,7 +144,7 @@ class Trainer(Executor):
                             tmp_inferencer = self.get_inferencer(
                                 phase=phase, deepcopy_model=False
                             )
-                            tmp_inferencer.disable_hook("logger")
+                            tmp_inferencer.hook_config.summarize_executor = False
                             self.__inferencers[phase] = tmp_inferencer
                         inferencer: None | Inferencer = self.__inferencers.get(
                             phase, None
