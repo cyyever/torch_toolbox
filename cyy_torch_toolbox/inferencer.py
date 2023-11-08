@@ -42,7 +42,9 @@ class Inferencer(Executor):
     def get_gradient(self) -> dict:
         old_hook_config = copy.copy(self.hook_config)
         succ: bool = self.inference(
-            evaluation_mode=EvaluationMode.TestWithGrad, use_performance_metric=False
+            evaluation_mode=EvaluationMode.TestWithGrad,
+            use_performance_metric=False,
+            summarize_executor=False,
         )
         self.hook_config = old_hook_config
         assert succ
@@ -57,7 +59,9 @@ class Inferencer(Executor):
             name=name,
             fun=functools.partial(self._collect_sample_loss, sample_loss),
         )
-        succ: bool = self.inference(reduce_loss=False, use_performance_metric=False)
+        succ: bool = self.inference(
+            reduce_loss=False, use_performance_metric=False, summarize_executor=False
+        )
         self.remove_named_hook(name=name)
         self.hook_config = old_hook_config
         assert succ
