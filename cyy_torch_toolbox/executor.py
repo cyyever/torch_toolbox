@@ -13,7 +13,6 @@ from .dataset_collection import DatasetCollection
 from .device import get_device
 from .hook import HookCollection
 from .hook.config import HookConfig
-from .hook.executor_logger import ExecutorLogger
 from .hyper_parameter import HyperParameter
 from .metric_visualizers.metric_visualizer import MetricVisualizer
 from .metrics.performance_metric import PerformanceMetric
@@ -44,7 +43,6 @@ class Executor(HookCollection, abc.ABC):
         self.__dataloader = None
         self.__dataloader_kwargs: dict = {}
         self.__device_stream: None | torch.cuda.Stream = None
-        self.append_hook(ExecutorLogger(), "logger")
         self.__save_dir: None | str = None
         self.cache_transforms: None | str = "cpu"
 
