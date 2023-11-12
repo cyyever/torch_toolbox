@@ -60,7 +60,10 @@ class Inferencer(Executor):
             fun=functools.partial(self._collect_sample_loss, sample_loss),
         )
         succ: bool = self.inference(
-            reduce_loss=False, use_performance_metric=False, summarize_executor=False
+            reduce_loss=False,
+            use_performance_metric=False,
+            summarize_executor=False,
+            need_sample_indices=True,
         )
         self.remove_named_hook(name=name)
         self.hook_config = old_hook_config

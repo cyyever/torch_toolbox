@@ -96,6 +96,7 @@ class ModelEvaluator:
         is_input_feature: bool = False,
         evaluation_mode: EvaluationMode | None = None,
         reduce_loss: bool = True,
+        need_sample_indices: bool = False,
         **kwargs: Any,
     ) -> dict:
         if evaluation_mode is not None:

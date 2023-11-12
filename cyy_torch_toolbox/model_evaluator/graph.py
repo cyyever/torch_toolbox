@@ -7,22 +7,27 @@ from ..dataset.util import GraphDatasetUtil
 from ..dataset_collection import DatasetCollection
 from ..dependency import has_torch_geometric
 from ..ml_type import MachineLearningPhase
+from ..tensor import tensor_to
 from .base import ModelEvaluator
 
-if has_torch_geometric:
-    import torch_geometric.nn
-    import torch_geometric.utils
+assert has_torch_geometric
+import torch_geometric.nn
+import torch_geometric.utils
 
 
 class GraphModelEvaluator(ModelEvaluator):
     def __init__(self, dataset_collection: DatasetCollection, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.__dc = dataset_collection
-        self.neighbour_hop = torch_geometric.utils.get_num_hops(self.model)
         self.batch_neighbour_index_map: dict = {}
         self.__subset_edge_index: dict = {}
         self.__batch_neighbour_edge_index: dict = {}
+        self.__masks: dict = {}
         get_logger().debug("use neighbour_hop %s", self.neighbour_hop)
+
+    @property
+    def neighbour_hop(self):
+        return torch_geometric.utils.get_num_hops(self.model)
 
     def __call__(self, **kwargs: Any) -> dict:
         if "batch_node_indices" in kwargs:
@@ -30,16 +35,39 @@ class GraphModelEvaluator(ModelEvaluator):
         return self.__from_neighbor_loader(**kwargs)
 
     def __from_neighbor_loader(self, **kwargs: Any) -> dict:
-        inputs = {
-            "edge_index": kwargs["edge_index"],
-            "x": kwargs["x"],
-            "n_id": kwargs["n_id"],
-        }
-        mask = self.__dc.get_dataset_util(phase=kwargs["phase"]).get_mask()
-        assert mask is not None
-        kwargs["batch_mask"] = mask[0][kwargs["n_id"]]
-        kwargs["targets"] = kwargs["y"][kwargs["batch_mask"]]
+        n_id = tensor_to(
+            kwargs.pop("n_id"),
+            device=kwargs["device"],
+            non_blocking=kwargs["non_blocking"],
+        )
+        kwargs["n_id"] = n_id
+        inputs = {"edge_index": kwargs["edge_index"], "x": kwargs["x"], "n_id": n_id}
+        batch_mask = self.get_mask(
+            phase=kwargs["phase"],
+            device=kwargs["device"],
+            non_blocking=kwargs["non_blocking"],
+        )[n_id]
+        kwargs["batch_mask"] = batch_mask
+        y = tensor_to(
+            kwargs["y"], device=kwargs["device"], non_blocking=kwargs["non_blocking"]
+        )
+        if y.shape == batch_mask.shape:
+            kwargs["targets"] = y.masked_select(kwargs["batch_mask"])
+        else:
+            kwargs["targets"] = y[kwargs["batch_mask"]]
+        print(kwargs["batch_mask"].device, kwargs["non_blocking"])
         return super().__call__(inputs=inputs, **kwargs)
+
+    def get_mask(
+        self, phase: MachineLearningPhase, device, non_blocking
+    ) -> torch.Tensor:
+        mask = self.__masks.get(phase, None)
+        if mask is None:
+            mask = self.__dc.get_dataset_util(phase=phase).get_mask()[0]
+            mask = tensor_to(mask, device=device, non_blocking=non_blocking)
+            self.__masks[phase] = mask
+        assert mask is not None
+        return mask
 
     def __from_node_loader(self, **kwargs: Any) -> dict:
         phase = kwargs["phase"]
@@ -73,11 +101,12 @@ class GraphModelEvaluator(ModelEvaluator):
 
     def _compute_loss(self, output: torch.Tensor, **kwargs: Any) -> dict:
         batch_mask = kwargs.pop("batch_mask")
-        n_id = kwargs.pop("n_id")
+        extra_res = {}
+        if kwargs.pop("need_sample_indices", False):
+            n_id = kwargs.pop("n_id")
+            extra_res = {"sample_indices": n_id[batch_mask].tolist()}
 
-        return super()._compute_loss(output=output[batch_mask], **kwargs) | {
-            "sample_indices": n_id[batch_mask].tolist()
-        }
+        return super()._compute_loss(output=output[batch_mask], **kwargs) | extra_res
 
     def __narrow_graph(
         self, phase: MachineLearningPhase, dataset_util: GraphDatasetUtil
