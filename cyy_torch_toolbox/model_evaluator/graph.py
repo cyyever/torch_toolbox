@@ -55,7 +55,6 @@ class GraphModelEvaluator(ModelEvaluator):
             kwargs["targets"] = y.masked_select(kwargs["batch_mask"])
         else:
             kwargs["targets"] = y[kwargs["batch_mask"]]
-        print(kwargs["batch_mask"].device, kwargs["non_blocking"])
         return super().__call__(inputs=inputs, **kwargs)
 
     def get_mask(
