@@ -260,7 +260,7 @@ class Executor(HookCollection, abc.ABC):
         self,
         epoch: int,
         evaluation_mode: EvaluationMode,
-        reduce_loss: bool = True,
+        model_evaluator_kwargs: dict | None = None,
     ) -> None:
         step_lr_after_epoch: bool = False
         self.exec_hooks(
@@ -298,9 +298,10 @@ class Executor(HookCollection, abc.ABC):
                 "device": self.device,
                 "evaluation_mode": evaluation_mode,
                 "non_blocking": True,
-                "reduce_loss": reduce_loss,
             }
 
+            if model_evaluator_kwargs is not None:
+                kwargs |= model_evaluator_kwargs
             forward_result: dict = {}
 
             while True:

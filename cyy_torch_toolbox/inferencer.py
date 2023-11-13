@@ -13,7 +13,7 @@ class Inferencer(Executor):
     def inference(
         self,
         evaluation_mode: EvaluationMode = EvaluationMode.Test,
-        reduce_loss: bool = True,
+        model_evaluator_kwargs: dict | None = None,
         **kwargs: Any,
     ) -> bool:
         succ_flag: bool = False
@@ -26,7 +26,9 @@ class Inferencer(Executor):
             try:
                 self._prepare_execution(**kwargs)
                 self._execute_epoch(
-                    epoch=1, evaluation_mode=evaluation_mode, reduce_loss=reduce_loss
+                    epoch=1,
+                    evaluation_mode=evaluation_mode,
+                    model_evaluator_kwargs=model_evaluator_kwargs,
                 )
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
                 succ_flag = True
@@ -60,10 +62,12 @@ class Inferencer(Executor):
             fun=functools.partial(self._collect_sample_loss, sample_loss),
         )
         succ: bool = self.inference(
-            reduce_loss=False,
             use_performance_metric=False,
             summarize_executor=False,
-            need_sample_indices=True,
+            model_evaluator_kwargs={
+                "reduce_loss": False,
+                "need_sample_indices": True,
+            },
         )
         self.remove_named_hook(name=name)
         self.hook_config = old_hook_config
