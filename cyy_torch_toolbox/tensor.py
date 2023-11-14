@@ -58,18 +58,20 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
                 recursive_tensor_op(element, fun, **kwargs) for element in data
             )
         case dict():
-            try:
-                # we need to check in key order because that order may be useful
-                keys = sorted(data.keys())
-            except BaseException:
-                keys = list(data.keys())
-            return {k: recursive_tensor_op(data[k], fun, **kwargs) for k in keys}
+            return {k: recursive_tensor_op(v, fun, **kwargs) for k, v in data.items()}
         case functools.partial():
             return functools.partial(
                 data.func,
                 *recursive_tensor_op(data.args, fun, **kwargs),
                 **recursive_tensor_op(data.keywords, fun, **kwargs),
             )
+        # case dict():
+        #     try:
+        #         # we need to check in key order because that order may be useful
+        #         keys = sorted(data.keys())
+        #     except BaseException:
+        #         keys = list(data.keys())
+        #     return {k: recursive_tensor_op(data[k], fun, **kwargs) for k in keys}
         # case _:
         #     print("unsupported tensor type", type(data))
     if has_hugging_face:
