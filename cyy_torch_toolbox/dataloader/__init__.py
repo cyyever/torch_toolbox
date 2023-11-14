@@ -1,3 +1,4 @@
+import math
 import os
 
 import torch
@@ -113,8 +114,18 @@ def get_dataloader(
 
     if "batch_number" in kwargs:
         batch_number = kwargs["batch_number"]
-        assert input_nodes.numel() >= batch_number
-        dataloader_kwargs["batch_size"] = int(input_nodes.numel() / batch_number)
+        input_number = input_nodes.numel()
+        assert input_number >= batch_number
+        dataloader_kwargs["batch_size"] = math.ceil(input_number / batch_number)
+        get_logger().debug(
+            "batch_number %s input size %s batch_size %s",
+            batch_number,
+            input_number,
+            dataloader_kwargs["batch_size"],
+        )
+        assert dataloader_kwargs["batch_size"] >= 1
+        assert dataloader_kwargs["batch_size"] * (batch_number - 1) < input_number
+        assert dataloader_kwargs["batch_size"] * batch_number >= input_number
     return NeighborLoader(
         data=util.get_graph(0),
         num_neighbors=[kwargs.get("num_neighbor", 10)] * model_evaluator.neighbour_hop,
