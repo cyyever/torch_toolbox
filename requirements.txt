@@ -1,6 +1,7 @@
 torch>=1.13
 nvidia-ml-py
 hydra-core
+spacy
 omegaconf
 torchtext
 torchdata
