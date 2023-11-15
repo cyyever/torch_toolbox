@@ -10,12 +10,13 @@ from ..dataset_collection import DatasetCollection
 from ..dependency import has_torch_geometric
 from ..hyper_parameter import HyperParameter
 from ..ml_type import DatasetType, MachineLearningPhase
-from ..model_evaluator import GraphModelEvaluator, ModelEvaluator
+from ..model_evaluator import ModelEvaluator
 
 if has_torch_geometric:
     import torch_geometric
     from torch_geometric.loader import NeighborLoader
 
+    from ..model_evaluator import GraphModelEvaluator
     from .pyg_dataloader import RandomNodeLoader
 
 
