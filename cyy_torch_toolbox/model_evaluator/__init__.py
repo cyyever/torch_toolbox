@@ -4,10 +4,9 @@ from typing import Callable
 import torch
 
 from ..dataset_collection import DatasetCollection
-from ..dependency import has_hugging_face, has_torchtext
+from ..dependency import has_hugging_face, has_torch_geometric, has_torchtext
 from ..ml_type import DatasetType, ModelType
 from .base import ModelEvaluator, VisionModelEvaluator
-from .graph import GraphModelEvaluator
 from .text import TextModelEvaluator
 
 if has_torchtext:
@@ -17,6 +16,9 @@ if has_hugging_face:
     import transformers
 
     from .hugging_face import HuggingFaceModelEvaluator
+
+if has_torch_geometric:
+    from .graph import GraphModelEvaluator
 
 
 def get_model_evaluator(
