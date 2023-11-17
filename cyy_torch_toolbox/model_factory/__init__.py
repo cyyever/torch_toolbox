@@ -33,9 +33,7 @@ def __get_model_info() -> dict:
 
 
 def get_model(
-    name: str,
-    dataset_collection: DatasetCollection,
-    model_kwargs: dict | None = None,
+    name: str, dataset_collection: DatasetCollection, model_kwargs: dict
 ) -> torch.nn.Module:
     model_constructors = __get_model_info().get(dataset_collection.dataset_type, {})
     model_constructor_info = model_constructors.get(name.lower(), {})
@@ -45,8 +43,6 @@ def get_model(
             + str(model_constructors.keys())
         )
 
-    if not model_kwargs:
-        model_kwargs = {}
     final_model_kwargs: dict = {}
     match dataset_collection.dataset_type:
         case DatasetType.Vision:
@@ -131,13 +127,17 @@ def get_model(
 class ModelConfig:
     def __init__(self, model_name: str) -> None:
         self.model_name: str = model_name
-        self.model_kwargs: dict = {"pretrained": False}
+        self.model_kwargs: dict | None = None
         self.frozen_modules: dict | None = None
 
     def get_model(self, dc: DatasetCollection) -> ModelEvaluator:
         model_kwargs = copy.deepcopy(self.model_kwargs)
+        if model_kwargs is None:
+            model_kwargs = {}
+        if "pretrained" not in model_kwargs:
+            model_kwargs["pretrained"] = False
         if hasattr(dc, "set_model_kwargs"):
-            dc.set_model_kwargs(self.model_kwargs | {"name": self.model_name})
+            dc.set_model_kwargs(model_kwargs | {"name": self.model_name})
         model = get_model(
             name=self.model_name,
             dataset_collection=dc,
