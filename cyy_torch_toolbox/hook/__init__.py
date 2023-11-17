@@ -183,9 +183,9 @@ class HookCollection:
     def disable_hook(self, hook_name: str) -> None:
         if self.has_hook_obj(hook_name):
             hook = self.get_hook(hook_name)
-            hook.disable()
             for name in hook.yield_hook_names():
                 self.__disabled_hooks.add(name)
+            hook.disable()
 
     def remove_hook(self, hook: Hook, hook_name: str | None = None) -> None:
         if hook_name is not None:
