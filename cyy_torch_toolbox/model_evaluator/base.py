@@ -28,6 +28,7 @@ class ModelEvaluator:
     ) -> None:
         self._model: torch.nn.Module = model
         self.__name = model_name
+        self.__forward_fun: str | None = None
         self.__loss_fun: Callable | None = None
         self.__non_reduction_loss_fun: Callable | None = None
         if loss_fun is not None:
@@ -35,6 +36,9 @@ class ModelEvaluator:
         if model_type is None:
             model_type = ModelType.Classification
         self.__model_type: ModelType = model_type
+
+    def set_forward_fun(self, forward_fun: str) -> None:
+        self.__forward_fun = forward_fun
 
     @property
     def model_name(self) -> str | None:
@@ -115,8 +119,8 @@ class ModelEvaluator:
 
     def _forward_model(self, inputs: Any, **kwargs: Any) -> dict:
         fun: Callable = self.model
-        if "forward_fun" in kwargs:
-            fun = getattr(self.model, kwargs["forward_fun"])
+        if self.__forward_fun is not None:
+            fun = getattr(self.model, self.__forward_fun)
         match inputs:
             case torch.Tensor():
                 output = fun(inputs)
