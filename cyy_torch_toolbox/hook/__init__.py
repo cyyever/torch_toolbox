@@ -54,6 +54,8 @@ class Hook:
         return None
 
     def yield_hooks(self) -> Generator:
+        if not self._enabled:
+            return
         for c in self._sub_hooks:
             yield from c.yield_hooks()
 
