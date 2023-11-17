@@ -1,4 +1,4 @@
-torch>=1.13
+torch
 nvidia-ml-py
 hydra-core
 spacy
