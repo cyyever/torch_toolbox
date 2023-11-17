@@ -5,7 +5,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 from torch import nn
 
-from ..ml_type import EvaluationMode, MachineLearningPhase, ModelType
+from ..ml_type import EvaluationMode, ModelType
 from ..model_util import ModelUtil
 from ..tensor import tensor_to
 
@@ -90,10 +90,8 @@ class ModelEvaluator:
         *,
         inputs: Any,
         targets: Any,
-        phase: MachineLearningPhase | None = None,
         device: None | torch.device = None,
         non_blocking: bool = False,
-        is_input_feature: bool = False,
         evaluation_mode: EvaluationMode | None = None,
         reduce_loss: bool = True,
         **kwargs: Any,
@@ -108,7 +106,6 @@ class ModelEvaluator:
 
         return self._forward_model(
             inputs=inputs,
-            is_input_feature=is_input_feature,
             targets=targets,
             non_blocking=non_blocking,
             device=device,
@@ -116,12 +113,10 @@ class ModelEvaluator:
             **kwargs,
         ) | {"inputs": inputs, "targets": targets}
 
-    def _forward_model(
-        self, inputs: Any, is_input_feature: bool, **kwargs: Any
-    ) -> dict:
+    def _forward_model(self, inputs: Any, **kwargs: Any) -> dict:
         fun: Callable = self.model
-        if hasattr(self.model, "forward_input_feature") and is_input_feature:
-            fun = self.model.forward_input_feature
+        if "forward_fun" in kwargs:
+            fun = getattr(self.model, kwargs["forward_fun"])
         match inputs:
             case torch.Tensor():
                 output = fun(inputs)
