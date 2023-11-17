@@ -2,9 +2,8 @@ from typing import Any
 
 from ..dependency import has_hugging_face, has_spacy, has_torchtext
 
-if has_spacy and has_torchtext:
+if has_torchtext and has_spacy:
     from .spacy import SpacyTokenizer
-
 
 if has_hugging_face:
     import transformers

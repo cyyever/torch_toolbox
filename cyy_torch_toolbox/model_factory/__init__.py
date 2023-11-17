@@ -131,18 +131,12 @@ def get_model(
 class ModelConfig:
     def __init__(self, model_name: str) -> None:
         self.model_name: str = model_name
-        self.model_path = None
-        self.pretrained: bool = False
         self.model_kwargs: dict = {}
+        self.frozen_modules: dict | None = None
+        # self.pretrained: bool = False
 
     def get_model(self, dc: DatasetCollection) -> ModelEvaluator:
-        assert not (self.pretrained and self.model_path)
         model_kwargs = copy.deepcopy(self.model_kwargs)
-        if "pretrained" not in model_kwargs:
-            model_kwargs["pretrained"] = self.pretrained
-        if self.model_path is not None:
-            assert "model_path" not in model_kwargs
-            model_kwargs["model_path"] = self.model_path
         if hasattr(dc, "set_model_kwargs"):
             dc.set_model_kwargs(self.model_kwargs | {"name": self.model_name})
         model = get_model(
@@ -150,9 +144,20 @@ class ModelConfig:
             dataset_collection=dc,
             model_kwargs=model_kwargs,
         )
-        return get_model_evaluator(
+        model_evaluator = get_model_evaluator(
             model=model,
             dataset_collection=dc,
             model_name=self.model_name,
             model_kwargs=model_kwargs,
         )
+        if self.frozen_modules is not None:
+            match self.frozen_modules:
+                case {"types": types}:
+                    for t in types:
+                        model_evaluator.model_util.freeze_modules(module_type=t)
+                case {"names": names}:
+                    for name in names:
+                        model_evaluator.model_util.freeze_modules(module_name=name)
+                case _:
+                    raise NotImplementedError(self.frozen_modules)
+        return model_evaluator
