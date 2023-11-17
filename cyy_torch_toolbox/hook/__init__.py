@@ -45,7 +45,7 @@ class Hook:
             return None
         assert (
             str(hook_point).rsplit(".", maxsplit=1)[-1]
-            == str(hook_point).split(".")[-1]
+            == str(hook_point).rsplit(".", maxsplit=1)[-1]
         )
         method_name = "_" + str(hook_point).rsplit(".", maxsplit=1)[-1].lower()
         name = self.__class__.__name__ + "." + str(method_name)
