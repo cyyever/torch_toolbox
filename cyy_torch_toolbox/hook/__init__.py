@@ -1,6 +1,5 @@
 import copy
-from collections.abc import Iterable
-from typing import Any, Callable, Dict, Generator, List
+from typing import Any, Callable, Generator
 
 from ..ml_type import ExecutorHookPoint
 
@@ -25,6 +24,10 @@ class Hook:
 
     def disable(self) -> None:
         self._enabled = False
+
+    @property
+    def enabled(self) -> bool:
+        return self._enabled
 
     @property
     def stripable(self) -> bool:
@@ -62,13 +65,13 @@ class Hook:
 
 class HookCollection:
     def __init__(self) -> None:
-        self.__hooks: Dict[ExecutorHookPoint, List[Dict[str, Callable]]] = {}
+        self._hooks: dict[ExecutorHookPoint, list[dict[str, Callable]]] = {}
         self.__stripable_hooks: set = set()
         self.__disabled_hooks: set = set()
         self.__hook_objs: dict = {}
 
     def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
-        for hook in copy.copy(self.__hooks.get(hook_point, [])):
+        for hook in copy.copy(self._hooks.get(hook_point, [])):
             for name, fun in copy.copy(hook).items():
                 if name not in self.__disabled_hooks:
                     fun(**kwargs)
@@ -77,14 +80,11 @@ class HookCollection:
         self,
         hook_point: ExecutorHookPoint,
     ) -> bool:
-        for hook in self.__hooks.get(hook_point, []):
+        for hook in self._hooks.get(hook_point, []):
             for name in hook:
                 if name not in self.__disabled_hooks:
                     return True
         return False
-
-    def hooks(self):
-        return self.__hooks
 
     def disable_stripable_hooks(self) -> None:
         self.__disabled_hooks.update(self.__stripable_hooks)
@@ -121,16 +121,16 @@ class HookCollection:
         if stripable:
             self.__stripable_hooks.add(name)
         data = {name: fun}
-        if hook_point not in self.__hooks:
-            self.__hooks[hook_point] = [data]
+        if hook_point not in self._hooks:
+            self._hooks[hook_point] = [data]
         else:
-            for d in self.__hooks[hook_point]:
+            for d in self._hooks[hook_point]:
                 if name in d:
                     raise RuntimeError(name + " has registered")
             if pos < 0:
-                self.__hooks[hook_point].append(data)
+                self._hooks[hook_point].append(data)
             else:
-                self.__hooks[hook_point].insert(pos, data)
+                self._hooks[hook_point].insert(pos, data)
 
     def insert_hook(self, pos: int, hook: Hook, hook_name: str | None = None) -> None:
         if hook_name is not None:
@@ -145,9 +145,6 @@ class HookCollection:
 
     def get_hook(self, hook_name: str) -> Hook:
         return self.__hook_objs[hook_name]
-
-    def get_hooks(self) -> Iterable:
-        return self.__hook_objs.values()
 
     def has_hook_obj(self, hook_name: str) -> bool:
         return hook_name in self.__hook_objs
@@ -173,6 +170,7 @@ class HookCollection:
     def enable_hook(self, hook_name: str, hook: Hook | None = None) -> None:
         if self.has_hook_obj(hook_name):
             hook = self.get_hook(hook_name)
+            hook.enable()
             for name in hook.yield_hook_names():
                 if name in self.__disabled_hooks:
                     self.__disabled_hooks.remove(name)
@@ -183,6 +181,7 @@ class HookCollection:
     def disable_hook(self, hook_name: str) -> None:
         if self.has_hook_obj(hook_name):
             hook = self.get_hook(hook_name)
+            hook.disable()
             for name in hook.yield_hook_names():
                 self.__disabled_hooks.add(name)
 
@@ -195,7 +194,7 @@ class HookCollection:
     def remove_named_hook(
         self, name: str, hook_point: ExecutorHookPoint | None = None
     ) -> None:
-        for cur_hook_point, hooks in self.__hooks.items():
+        for cur_hook_point, hooks in self._hooks.items():
             if hook_point is not None and cur_hook_point != hook_point:
                 continue
             for idx, hook in enumerate(hooks):

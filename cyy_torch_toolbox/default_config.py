@@ -21,7 +21,7 @@ from cyy_torch_toolbox.trainer import Trainer, TrainerConfig
 class Config:
     def __init__(self, dataset_name: str = "", model_name: str = "") -> None:
         self.save_dir: str = ""
-        self.log_level = None
+        self.log_level: Any = None
         self.reproducible_env_config = ReproducibleEnvConfig()
         self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
         self.model_config = ModelConfig(model_name=model_name)

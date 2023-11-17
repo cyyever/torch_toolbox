@@ -85,18 +85,18 @@ class Executor(HookCollection, abc.ABC):
     def set_save_dir(self, save_dir: str) -> None:
         self.__save_dir = save_dir
         data_dir = os.path.join(save_dir, "visualizer")
-        for hook in self.get_hooks():
+        for hook in self._hooks.values():
             if isinstance(hook, MetricVisualizer):
                 hook.set_data_dir(data_dir)
 
     def set_visualizer_prefix(self, prefix: str) -> None:
-        for hook in self.get_hooks():
+        for hook in self._hooks.values():
             if isinstance(hook, MetricVisualizer):
                 hook.set_prefix(prefix)
 
     @property
     def visualizer_prefix(self) -> None | str:
-        for hook in self.get_hooks():
+        for hook in self._hooks.values():
             if isinstance(hook, MetricVisualizer):
                 return hook.prefix
         return None
