@@ -131,9 +131,8 @@ def get_model(
 class ModelConfig:
     def __init__(self, model_name: str) -> None:
         self.model_name: str = model_name
-        self.model_kwargs: dict = {}
+        self.model_kwargs: dict = {"pretrained": False}
         self.frozen_modules: dict | None = None
-        # self.pretrained: bool = False
 
     def get_model(self, dc: DatasetCollection) -> ModelEvaluator:
         model_kwargs = copy.deepcopy(self.model_kwargs)
