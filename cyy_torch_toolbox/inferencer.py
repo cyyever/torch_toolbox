@@ -13,7 +13,7 @@ class Inferencer(Executor):
     def inference(
         self,
         evaluation_mode: EvaluationMode = EvaluationMode.Test,
-        model_evaluator_kwargs: dict | None = None,
+        evaluation_kwargs: dict | None = None,
         **kwargs: Any,
     ) -> bool:
         succ_flag: bool = False
@@ -28,7 +28,7 @@ class Inferencer(Executor):
                 self._execute_epoch(
                     epoch=1,
                     evaluation_mode=evaluation_mode,
-                    model_evaluator_kwargs=model_evaluator_kwargs,
+                    evaluation_kwargs=evaluation_kwargs,
                 )
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
                 succ_flag = True
@@ -64,7 +64,7 @@ class Inferencer(Executor):
         succ: bool = self.inference(
             use_performance_metric=False,
             summarize_executor=False,
-            model_evaluator_kwargs={
+            evaluation_kwargs={
                 "reduce_loss": False,
                 "need_sample_indices": True,
             },
