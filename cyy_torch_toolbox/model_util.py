@@ -10,10 +10,10 @@ from .tensor import cat_tensors_to_vector
 
 class ModelUtil:
     def __init__(self, model: torch.nn.Module) -> None:
-        self.__model = model
+        self.__model: torch.nn.Module = model
 
     @property
-    def model(self):
+    def model(self) -> torch.nn.Module:
         return self.__model
 
     def get_parameter_seq(self, **kwargs: Any) -> Generator:
