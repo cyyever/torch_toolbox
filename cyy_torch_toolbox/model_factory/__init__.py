@@ -133,8 +133,6 @@ class ModelConfig:
         model_kwargs = copy.deepcopy(self.model_kwargs)
         if "pretrained" not in model_kwargs:
             model_kwargs["pretrained"] = False
-        if hasattr(dc, "set_model_kwargs"):
-            dc.set_model_kwargs(model_kwargs | {"name": self.model_name})
         model = get_model(
             name=self.model_name,
             dataset_collection=dc,

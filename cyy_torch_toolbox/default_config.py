@@ -33,9 +33,12 @@ class Config:
 
     def create_dataset_collection(self) -> DatasetCollection:
         get_logger().debug("use dataset %s", self.dc_config.dataset_name)
-        return self.dc_config.create_dataset_collection(
+        dc = self.dc_config.create_dataset_collection(
             save_dir=self.get_save_dir(),
         )
+        if hasattr(dc, "set_model_kwargs"):
+            dc.set_model_kwargs(self.model_config.model_kwargs)
+        return dc
 
     def create_trainer(
         self,
