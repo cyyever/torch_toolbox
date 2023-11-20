@@ -120,7 +120,3 @@ class Config:
                 str(uuid.uuid4()),
             )
         return self.save_dir
-
-
-class DefaultConfig(Config):
-    pass
