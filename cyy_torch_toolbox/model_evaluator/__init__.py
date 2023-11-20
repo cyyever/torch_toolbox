@@ -40,11 +40,10 @@ def get_model_evaluator(
         model_evaluator_fun = functools.partial(GraphModelEvaluator, dataset_collection)
     if model_kwargs is None:
         model_kwargs = {}
-    loss_fun_name = model_kwargs.get("loss_fun_name", None)
     model_evaluator = model_evaluator_fun(
         model=model,
         model_name=model_name,
-        loss_fun=loss_fun_name,
+        loss_fun=model_kwargs.get("loss_fun_name", None),
         model_type=model_type,
     )
     model_path = model_kwargs.get("model_path", None)
@@ -59,7 +58,15 @@ def get_model_evaluator(
             tokenizer=dataset_collection.tokenizer,
             freeze_embedding=model_kwargs.get("freeze_word_vector", False),
         )
-    for frozen_module_name in model_kwargs.get("frozen_module_names", []):
-        model_evaluator.model_util.freeze_modules(module_name=frozen_module_name)
 
+    if "frozen_modules" in model_kwargs:
+        match model_kwargs["frozen_modules"]:
+            case {"types": types}:
+                for t in types:
+                    model_evaluator.model_util.freeze_modules(module_type=t)
+            case {"names": names}:
+                for name in names:
+                    model_evaluator.model_util.freeze_modules(module_name=name)
+            case _:
+                raise NotImplementedError(model_kwargs["frozen_modules"])
     return model_evaluator

@@ -128,7 +128,6 @@ class ModelConfig:
     def __init__(self, model_name: str) -> None:
         self.model_name: str = model_name
         self.model_kwargs: dict = {}
-        self.frozen_modules: dict | None = None
 
     def get_model(self, dc: DatasetCollection) -> ModelEvaluator:
         model_kwargs = copy.deepcopy(self.model_kwargs)
@@ -147,14 +146,4 @@ class ModelConfig:
             model_name=self.model_name,
             model_kwargs=model_kwargs,
         )
-        if self.frozen_modules is not None:
-            match self.frozen_modules:
-                case {"types": types}:
-                    for t in types:
-                        model_evaluator.model_util.freeze_modules(module_type=t)
-                case {"names": names}:
-                    for name in names:
-                        model_evaluator.model_util.freeze_modules(module_name=name)
-                case _:
-                    raise NotImplementedError(self.frozen_modules)
         return model_evaluator
