@@ -3,6 +3,7 @@ nvidia-ml-py
 hydra-core
 spacy
 omegaconf
+huggingface-hub
 torchdata
 torchmetrics
 transformers
