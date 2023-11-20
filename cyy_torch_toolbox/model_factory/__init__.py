@@ -127,13 +127,11 @@ def get_model(
 class ModelConfig:
     def __init__(self, model_name: str) -> None:
         self.model_name: str = model_name
-        self.model_kwargs: dict | None = None
+        self.model_kwargs: dict = {}
         self.frozen_modules: dict | None = None
 
     def get_model(self, dc: DatasetCollection) -> ModelEvaluator:
         model_kwargs = copy.deepcopy(self.model_kwargs)
-        if model_kwargs is None:
-            model_kwargs = {}
         if "pretrained" not in model_kwargs:
             model_kwargs["pretrained"] = False
         if hasattr(dc, "set_model_kwargs"):
