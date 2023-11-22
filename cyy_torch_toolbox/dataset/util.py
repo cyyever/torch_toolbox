@@ -13,7 +13,6 @@ from ..ml_type import DatasetType, MachineLearningPhase
 from . import get_dataset_size, select_item, subset_dp
 
 if has_torchvision:
-    import PIL
     import torchvision
 if has_torch_geometric:
     import torch_geometric.data
@@ -165,40 +164,16 @@ class VisionDatasetUtil(DatasetUtil):
     def save_sample_image(self, index: int, path: str) -> None:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         sample_input = self._get_sample_input(index, apply_transform=False)
-        match sample_input:
-            case PIL.Image.Image():
-                sample_input.save(path)
-            case _:
-                torchvision.utils.save_image(sample_input, path)
-
-    def get_sample_raw_input(self, index: int) -> Any:
-        return self.get_sample_image(index=index)
-
-    @torch.no_grad()
-    def get_sample_image(self, index: int) -> Any:
-        tensor = self._get_sample_input(index, apply_transform=False)
-        if isinstance(tensor, PIL.Image.Image):
-            return tensor
-        grid = torchvision.utils.make_grid(tensor)
-        # Add 0.5 after unnormalizing to [0, 255] to round to nearest integer
-        ndarr = (
-            grid.mul(255)
-            .add_(0.5)
-            .clamp_(0, 255)
-            .permute(1, 2, 0)
-            .to("cpu", torch.uint8)
-            .numpy()
-        )
-        return PIL.Image.fromarray(ndarr)
+        if "image" in sample_input.__class__.__name__.lower():
+            return sample_input
+        else:
+            torchvision.utils.save_image(sample_input, path)
 
 
 class TextDatasetUtil(DatasetUtil):
     @torch.no_grad()
     def get_sample_text(self, index: int) -> str:
         return self._get_sample_input(index, apply_transform=False)
-
-    def get_sample_raw_input(self, index: int) -> Any:
-        return self.get_sample_text(index=index)
 
 
 class GraphDatasetUtil(DatasetUtil):
