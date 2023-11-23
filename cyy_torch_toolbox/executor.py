@@ -328,11 +328,6 @@ class Executor(HookCollection, abc.ABC):
                     )
 
                 batch |= forward_result
-                self.exec_hooks(
-                    hook_point=ExecutorHookPoint.AFTER_FORWARD,
-                    epoch=epoch,
-                    **batch,
-                )
 
                 if evaluation_mode != EvaluationMode.Test:
                     loss = self._get_backward_loss(result=forward_result)
