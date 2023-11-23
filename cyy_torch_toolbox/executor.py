@@ -113,16 +113,13 @@ class Executor(HookCollection, abc.ABC):
     def dataset_util(self) -> DatasetUtil:
         return self.dataset_collection.get_dataset_util(phase=self.__phase)
 
-    def transform_dataset(self, transformer: Callable) -> None:
-        self.dataset_collection.transform_dataset(self.phase, transformer)
-
     @property
     def dataset_size(self) -> int:
         if "dataset_size" not in self._data:
-            self.refresh_dataset_size()
+            self.__refresh_dataset_size()
         return self._data["dataset_size"]
 
-    def refresh_dataset_size(self) -> None:
+    def __refresh_dataset_size(self) -> None:
         self._data["dataset_size"] = len(self.dataset_util)
 
     def update_dataloader_kwargs(self, **kwargs: Any) -> None:
@@ -267,7 +264,7 @@ class Executor(HookCollection, abc.ABC):
             hook_point=ExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
         )
-        self.refresh_dataset_size()
+        self.__refresh_dataset_size()
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
         for batch_index, batch in enumerate(self.dataloader):
             self.exec_hooks(
