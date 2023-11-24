@@ -2,12 +2,11 @@ from collections import Counter
 from typing import Callable
 
 from ..dataset.util import TextDatasetUtil
-from ..dataset_collection.text import TextDatasetCollection
 from ..ml_type import MachineLearningPhase
 
 
 def collect_tokens(
-    dc: TextDatasetCollection,
+    dc,
     tokenizer: Callable,
     phase: MachineLearningPhase | None = None,
 ) -> Counter:
