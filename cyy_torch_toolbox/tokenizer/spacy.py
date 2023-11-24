@@ -12,6 +12,7 @@ class SpacyTokenizer:
     def __init__(
         self,
         dc,
+        package_name: str = "en_core_web_sm",
         special_tokens: None | list[str] = None,
         keep_punct: bool = True,
         keep_stop: bool = True,
@@ -20,7 +21,7 @@ class SpacyTokenizer:
     ) -> None:
         self.__keep_punct = keep_punct
         self.__keep_stop = keep_stop
-        self.__spacy = spacy.load("en_core_web_sm")
+        self.__spacy = spacy.load(package_name)
         self.unusual_words: set = set()
 
         def computation_fun() -> Counter:
