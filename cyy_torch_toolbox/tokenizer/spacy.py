@@ -59,7 +59,7 @@ class SpacyTokenizer:
         word_vocab = vocab(
             ordered_dict,
             min_freq=min_freq,
-            specials=special_tokens,
+            specials=list(special_tokens),
         )
 
         word_vocab.set_default_index(word_vocab["<unk>"])
@@ -78,7 +78,7 @@ class SpacyTokenizer:
     def spacy_model(self):
         return self.__spacy
 
-    def __tokenize(self, s):
+    def __tokenize(self, s) -> list[str]:
         tokens = self.__spacy.tokenizer(s)
         return [
             t.text
@@ -87,5 +87,5 @@ class SpacyTokenizer:
             and (self.__keep_stop or not t.is_stop)
         ]
 
-    def __call__(self, s):
+    def __call__(self, s) -> list[int]:
         return self.__vocab(self.__tokenize(s))
