@@ -86,8 +86,8 @@ class ModelEvaluator:
             return self.model.get_input_feature(inputs)
         return None
 
-    def split_batch_input(self, inputs: Any, targets: Any) -> tuple:
-        return inputs, 0
+    def split_batch_input(self, inputs: Any, targets: Any) -> dict:
+        return {"inputs": inputs, "batch_dim": 0}
 
     def __call__(
         self,
