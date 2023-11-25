@@ -58,6 +58,9 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
         inputs["labels"] = targets
         return tensor_to(inputs, device=device, non_blocking=non_blocking)
 
+    def get_feature_forward_fun(self) -> str:
+        return "_forward_model"
+
     def _forward_model(self, **kwargs: Any) -> dict:
         targets = kwargs["targets"]
         model_input = self._create_input(**kwargs)

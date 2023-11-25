@@ -82,8 +82,9 @@ class ModelEvaluator:
         self.to(device=torch.device("cpu"))
 
     def get_input_feature(self, inputs: Any) -> Any:
-        assert hasattr(self.model, "get_input_feature")
-        return self.model.get_input_feature(inputs)
+        if hasattr(self.model, "get_input_feature"):
+            return self.model.get_input_feature(inputs)
+        return None
 
     def split_batch_input(self, inputs: Any, targets: Any) -> dict:
         return {"inputs": inputs, "batch_dim": 0}
@@ -120,6 +121,7 @@ class ModelEvaluator:
         fun: Callable = self.model
         if self.__forward_fun is not None:
             fun = getattr(self.model, self.__forward_fun)
+            get_logger().debug("forward with function %s", self.__forward_fun)
         match inputs:
             case torch.Tensor():
                 output = fun(inputs)
