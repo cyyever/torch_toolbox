@@ -22,15 +22,14 @@ class HuggingFaceModelEvaluator(TextModelEvaluator):
             return ModelType.TextGeneration
         return None
 
-    def split_batch_input(self, inputs, targets) -> tuple:
+    def split_batch_input(self, inputs, targets) -> dict:
         batch_dim = 0
         new_inputs = []
         first_value = next(iter(inputs.values()))
         assert isinstance(first_value, torch.Tensor)
         for i in range(first_value.size(dim=0)):
             new_inputs.append({k: v[i].unsqueeze(dim=0) for k, v in inputs.items()})
-        inputs = new_inputs
-        return inputs, batch_dim
+        return {"inputs": new_inputs, "batch_dim": batch_dim}
 
     def get_input_feature(self, inputs) -> dict:
         input_ids = inputs["input_ids"]
