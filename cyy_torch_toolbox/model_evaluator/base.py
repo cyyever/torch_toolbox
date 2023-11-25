@@ -81,10 +81,9 @@ class ModelEvaluator:
         self.model.zero_grad(set_to_none=True)
         self.to(device=torch.device("cpu"))
 
-    def get_input_feature(self, inputs: Any) -> None | Any:
-        if hasattr(self.model, "get_input_feature"):
-            return self.model.get_input_feature(inputs)
-        return None
+    def get_input_feature(self, inputs: Any) -> Any:
+        assert hasattr(self.model, "get_input_feature")
+        return self.model.get_input_feature(inputs)
 
     def split_batch_input(self, inputs: Any, targets: Any) -> dict:
         return {"inputs": inputs, "batch_dim": 0}
