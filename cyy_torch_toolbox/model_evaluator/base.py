@@ -25,6 +25,9 @@ class ModelEvaluator:
         model_name: str | None = None,
         model_type: None | ModelType = None,
         loss_fun: str | Callable | None = None,
+        model_path: str | None = None,
+        frozen_modules: dict | None = None,
+        **kwargs,
     ) -> None:
         self._model: torch.nn.Module = model
         self.__name = model_name
@@ -36,6 +39,19 @@ class ModelEvaluator:
         if model_type is None:
             model_type = ModelType.Classification
         self.__model_type: ModelType = model_type
+        if model_path is not None:
+            self._model.load_state_dict(torch.load(model_path))
+        match frozen_modules:
+            case {"types": types}:
+                for t in types:
+                    self.model_util.freeze_modules(module_type=t)
+            case {"names": names}:
+                for name in names:
+                    self.model_util.freeze_modules(module_name=name)
+            case None:
+                pass
+            case _:
+                raise NotImplementedError(frozen_modules)
 
     def set_forward_fun(self, forward_fun: str) -> None:
         self.__forward_fun = forward_fun
