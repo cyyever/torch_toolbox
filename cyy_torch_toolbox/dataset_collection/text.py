@@ -31,9 +31,3 @@ class TextDatasetCollection(DatasetCollection):
             get_logger().info("tokenizer is %s", self.__tokenizer)
             assert self.__tokenizer is not None
         return self.__tokenizer
-
-    # def __copy__(self):
-    #     new_obj = super().__copy__()
-    #     new_obj.__model_kwargs = copy.copy(self.__model_kwargs)
-    #     new_obj.__tokenizer = copy.copy(self.__tokenizer)
-    #     return new_obj
