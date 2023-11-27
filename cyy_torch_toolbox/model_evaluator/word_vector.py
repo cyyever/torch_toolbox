@@ -25,9 +25,8 @@ class PretrainedWordVector:
             PretrainedWordVector.__word_vector_cache[self.__name] = self.__download()
         return PretrainedWordVector.__word_vector_cache[self.__name]
 
-    def load_to_model(
-        self, model_evaluator: ModelEvaluator, tokenizer, freeze_embedding: bool = False
-    ) -> None:
+    def load_to_model(self, model_evaluator: ModelEvaluator) -> None:
+        tokenizer = model_evaluator.tokenizer
         assert isinstance(tokenizer, SpacyTokenizer)
         itos = tokenizer.vocab.get_itos()
 
@@ -59,8 +58,6 @@ class PretrainedWordVector:
         model_evaluator.model_util.change_modules(
             f=__load_embedding, module_type=nn.Embedding
         )
-        if freeze_embedding:
-            model_evaluator.model_util.freeze_modules(module_type=nn.Embedding)
 
     @classmethod
     def get_root_dir(cls) -> str:
