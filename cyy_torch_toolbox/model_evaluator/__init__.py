@@ -5,7 +5,7 @@ import torch
 
 from ..dataset_collection import DatasetCollection
 from ..dependency import has_hugging_face, has_torch_geometric
-from ..ml_type import DatasetType, ModelType
+from ..ml_type import DatasetType
 from .base import ModelEvaluator, VisionModelEvaluator
 from .text import TextModelEvaluator
 
@@ -19,11 +19,7 @@ if has_torch_geometric:
 
 
 def get_model_evaluator(
-    model: torch.nn.Module,
-    dataset_collection: DatasetCollection,
-    model_kwargs: dict,
-    model_name: str | None = None,
-    model_type: None | ModelType = None,
+    model: torch.nn.Module, dataset_collection: DatasetCollection, **model_kwargs
 ) -> ModelEvaluator:
     model_evaluator_fun: Callable = ModelEvaluator
     if dataset_collection.dataset_type == DatasetType.Vision:
@@ -37,10 +33,7 @@ def get_model_evaluator(
         model_evaluator_fun = functools.partial(GraphModelEvaluator, dataset_collection)
     model_evaluator = model_evaluator_fun(
         model=model,
-        model_name=model_name,
         loss_fun=model_kwargs.pop("loss_fun_name", None),
-        model_type=model_type,
-        tokenizer=getattr(dataset_collection, "tokenizer", None),
         **model_kwargs,
     )
     return model_evaluator
