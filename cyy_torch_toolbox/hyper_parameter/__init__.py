@@ -1,7 +1,7 @@
 import copy
 import functools
 from dataclasses import dataclass, field
-from enum import IntEnum, auto
+from enum import StrEnum, auto
 from typing import Any, Callable
 
 import torch
@@ -27,7 +27,7 @@ def determine_learning_rate(task: Any, **kwargs: Any) -> float:
     return lr_finder.suggested_learning_rate
 
 
-class HyperParameterAction(IntEnum):
+class HyperParameterAction(StrEnum):
     FIND_LR = auto()
 
 
@@ -40,7 +40,6 @@ class HyperParameter:
     momentum: float = 0.9
     _lr_scheduler_factory: None | Callable = None
     _optimizer_factory: None | Callable = None
-    extra_parameters: dict = field(default_factory=lambda: {})
 
     def __get_learning_rate(self, trainer: Any) -> float:
         if isinstance(self.learning_rate, HyperParameterAction):
@@ -52,6 +51,7 @@ class HyperParameter:
             data = task_queue.get_data()
             assert data is not None
             self.learning_rate = data[0]
+            assert isinstance(self.learning_rate, float)
             trainer.set_device(device)
             task_queue.stop()
         return self.learning_rate
@@ -73,7 +73,7 @@ class HyperParameter:
         return self._lr_scheduler_factory(trainer)
 
     @staticmethod
-    def lr_scheduler_step_after_batch(lr_scheduler):
+    def lr_scheduler_step_after_batch(lr_scheduler) -> bool:
         return isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR)
 
     def __get_lr_scheduler_factory(self, trainer: Any, name: str, kwargs: dict) -> Any:
@@ -127,11 +127,11 @@ class HyperParameter:
         self._optimizer_factory = optimizer_class
 
     @staticmethod
-    def get_optimizer_names():
+    def get_optimizer_names() -> list[str]:
         return sorted(HyperParameter.__get_optimizer_classes().keys())
 
     @staticmethod
-    def get_lr_scheduler_names() -> list:
+    def get_lr_scheduler_names() -> list[str]:
         return ["ReduceLROnPlateau", "OneCycleLR", "CosineAnnealingLR", "MultiStepLR"]
 
     def get_optimizer(self, trainer: Any) -> Any:
@@ -147,7 +147,7 @@ class HyperParameter:
         return call_fun(self._optimizer_factory, kwargs)
 
     @staticmethod
-    def __get_optimizer_classes():
+    def __get_optimizer_classes() -> dict:
         return get_class_attrs(
             torch.optim,
             filter_fun=lambda _, v: issubclass(v, torch.optim.Optimizer),
@@ -176,11 +176,9 @@ def get_recommended_hyper_parameter(
 
     hyper_parameter = None
 
-    if dataset_name == "MNIST":
-        hyper_parameter = HyperParameter(
-            epoch=50, batch_size=64, learning_rate=0.01, weight_decay=1
-        )
-    elif dataset_name == "FashionMNIST" and model_name.lower() == "LeNet5".lower():
+    if dataset_name == "MNIST" or (
+        dataset_name == "FashionMNIST" and model_name.lower() == "LeNet5".lower()
+    ):
         hyper_parameter = HyperParameter(
             epoch=50, batch_size=64, learning_rate=0.01, weight_decay=1
         )
@@ -215,19 +213,14 @@ def get_recommended_hyper_parameter(
 class HyperParameterConfig:
     epoch = None
     batch_size = None
-    find_learning_rate = True
     learning_rate = None
-    learning_rate_scheduler = None
-    learning_rate_scheduler_name = None
-    learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
     momentum = None
     weight_decay = None
+    learning_rate_scheduler_name = None
+    learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
     optimizer_name = None
-    extra_hyper_parameters: dict = field(default_factory=lambda: {})
 
     def create_hyper_parameter(self, dataset_name, model_name) -> HyperParameter:
-        if not self.learning_rate_scheduler_name:
-            self.learning_rate_scheduler_name = self.learning_rate_scheduler
         hyper_parameter = get_recommended_hyper_parameter(dataset_name, model_name)
 
         if self.epoch is not None:
@@ -235,9 +228,8 @@ class HyperParameterConfig:
         if self.batch_size is not None:
             hyper_parameter.batch_size = self.batch_size
         if self.learning_rate is not None:
-            self.find_learning_rate = False
             hyper_parameter.learning_rate = self.learning_rate
-        elif self.find_learning_rate:
+        else:
             hyper_parameter.learning_rate = HyperParameterAction.FIND_LR
         if self.momentum is not None:
             hyper_parameter.momentum = self.momentum
@@ -250,5 +242,4 @@ class HyperParameterConfig:
                 name=self.learning_rate_scheduler_name,
                 **self.learning_rate_scheduler_kwargs,
             )
-        hyper_parameter.extra_parameters = self.extra_hyper_parameters
         return hyper_parameter

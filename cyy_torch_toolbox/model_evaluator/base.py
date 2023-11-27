@@ -102,6 +102,7 @@ class ModelEvaluator:
     ) -> dict:
         if evaluation_mode is not None:
             self.__set_model_mode(evaluation_mode=evaluation_mode)
+        raw_inputs = inputs
 
         if device is not None:
             inputs = tensor_to(inputs, device=device, non_blocking=non_blocking)
@@ -115,7 +116,7 @@ class ModelEvaluator:
             device=device,
             reduce_loss=reduce_loss,
             **kwargs,
-        ) | {"inputs": inputs, "targets": targets}
+        ) | {"inputs": inputs, "targets": targets, "raw_inputs": raw_inputs}
 
     def _forward_model(self, inputs: Any, **kwargs: Any) -> dict:
         fun: Callable = self.model
