@@ -4,13 +4,10 @@ from typing import Callable
 import torch
 
 from ..dataset_collection import DatasetCollection
-from ..dependency import has_hugging_face, has_torch_geometric, has_torchtext
+from ..dependency import has_hugging_face, has_torch_geometric
 from ..ml_type import DatasetType, ModelType
 from .base import ModelEvaluator, VisionModelEvaluator
 from .text import TextModelEvaluator
-
-if has_torchtext:
-    from .word_vector import PretrainedWordVector
 
 if has_hugging_face:
     import transformers
@@ -43,16 +40,7 @@ def get_model_evaluator(
         model_name=model_name,
         loss_fun=model_kwargs.pop("loss_fun_name", None),
         model_type=model_type,
+        tokenizer=getattr(dataset_collection, "tokenizer", None),
         **model_kwargs,
     )
-    word_vector_name = model_kwargs.get("word_vector_name", None)
-    if word_vector_name is not None:
-        assert hasattr(dataset_collection, "tokenizer")
-
-        PretrainedWordVector(word_vector_name).load_to_model(
-            model_evaluator=model_evaluator,
-            tokenizer=dataset_collection.tokenizer,
-            freeze_embedding=model_kwargs.get("freeze_word_vector", False),
-        )
-
     return model_evaluator

@@ -4,6 +4,19 @@ from .base import ModelEvaluator
 
 
 class TextModelEvaluator(ModelEvaluator):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.tokenizer = kwargs.get("tokenizer", None)
+        word_vector_name = kwargs.get("word_vector_name", None)
+        if word_vector_name is not None:
+            from .word_vector import PretrainedWordVector
+
+            PretrainedWordVector(word_vector_name).load_to_model(
+                model_evaluator=model_evaluator,
+                tokenizer=self.tokenizer,
+                freeze_embedding=model_kwargs.get("freeze_word_vector", False),
+            )
+
     def get_feature_forward_fun(self) -> str:
         return "forward_input_feature"
 
