@@ -1,18 +1,15 @@
 from typing import Any, Iterable
 
 import torch
+import torch_geometric.nn
+import torch_geometric.utils
 from cyy_naive_lib.log import get_logger
 
 from ..dataset.util import GraphDatasetUtil
 from ..dataset_collection import DatasetCollection
-from ..dependency import has_torch_geometric
 from ..ml_type import MachineLearningPhase
 from ..tensor import tensor_to
 from .base import ModelEvaluator
-
-assert has_torch_geometric
-import torch_geometric.nn
-import torch_geometric.utils
 
 
 class GraphModelEvaluator(ModelEvaluator):
