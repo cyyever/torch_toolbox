@@ -11,6 +11,7 @@ from ..dataset_collection import DatasetCollection
 from ..dependency import has_hugging_face
 from ..ml_type import DatasetType, MachineLearningPhase, ModelType
 from ..model_evaluator import ModelEvaluator, get_model_evaluator
+from ..tokenizer import get_tokenizer
 from .torch_model import get_torch_model_info
 
 if has_hugging_face:
@@ -34,7 +35,7 @@ def __get_model_info() -> dict:
 
 def get_model(
     name: str, dataset_collection: DatasetCollection, model_kwargs: dict
-) -> torch.nn.Module:
+) -> dict:
     model_constructors = __get_model_info().get(dataset_collection.dataset_type, {})
     model_constructor_info = model_constructors.get(name.lower(), {})
     if not model_constructor_info:
@@ -44,6 +45,7 @@ def get_model(
         )
 
     final_model_kwargs: dict = {}
+    tokenizer = None
     match dataset_collection.dataset_type:
         case DatasetType.Vision:
             dataset_util = dataset_collection.get_dataset_util()
@@ -53,10 +55,18 @@ def get_model(
                         k: dataset_util.channel,
                     }
         case DatasetType.Text:
-            if dataset_collection.tokenizer is not None:
+            tokenizer_kwargs = dataset_collection.dataset_kwargs.get("tokenizer", {})
+            if "type" not in tokenizer_kwargs and "hugging_face" in model_kwargs.get(
+                "name", ""
+            ):
+                tokenizer_kwargs["type"] = "hugging_face"
+            tokenizer = get_tokenizer(dataset_collection, tokenizer_kwargs)
+            get_logger().info("tokenizer is %s", tokenizer)
+
+            if tokenizer is not None:
                 for k in ("num_embeddings", "token_num"):
                     if k not in model_kwargs:
-                        final_model_kwargs[k] = len(dataset_collection.tokenizer.vocab)
+                        final_model_kwargs[k] = len(tokenizer.vocab)
         case DatasetType.Graph:
             if "num_features" not in model_kwargs:
                 final_model_kwargs[
@@ -89,6 +99,17 @@ def get_model(
                 final_model_kwargs,
                 model_constructor_info["name"],
             )
+            res = {"model": model}
+            if tokenizer is not None:
+                res |= {"tokenizer": tokenizer}
+            word_vector_name = model_kwargs.get("word_vector_name", None)
+            if word_vector_name is not None:
+                from .word_vector import PretrainedWordVector
+
+                PretrainedWordVector(word_vector_name).load_to_model(
+                    model=model,
+                    tokenizer=dataset_collection.tokenizer,
+                )
             repo = model_constructor_info.get("repo", None)
             if repo is not None:
                 # we need the model path to pickle models
@@ -107,7 +128,7 @@ def get_model(
                 owner_name_branch = "_".join([repo_owner, repo_name, normalized_br])
                 repo_dir = os.path.join(hub_dir, owner_name_branch)
                 sys.path.append(repo_dir)
-            return model
+            return res
         except TypeError as e:
             retry = False
             for k in copy.copy(final_model_kwargs):
@@ -133,15 +154,14 @@ class ModelConfig:
         model_kwargs = copy.deepcopy(self.model_kwargs)
         if "pretrained" not in model_kwargs:
             model_kwargs["pretrained"] = False
-        model = get_model(
+        model_res = get_model(
             name=self.model_name,
             dataset_collection=dc,
             model_kwargs=model_kwargs,
         )
         model_evaluator = get_model_evaluator(
-            model=model,
             dataset_collection=dc,
             model_name=self.model_name,
-            model_kwargs=model_kwargs,
+            **(model_kwargs | model_res),
         )
         return model_evaluator

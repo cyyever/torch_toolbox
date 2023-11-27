@@ -8,6 +8,7 @@ from ..dependency import has_hugging_face, has_spacy
 from ..ml_type import (DatasetType, MachineLearningPhase, ModelType,
                        TransformType)
 from ..model_evaluator import ModelEvaluator
+from ..model_evaluator.text import TextModelEvaluator
 from .common import (backup_target, int_target_to_text, replace_str,
                      str_target_to_int)
 from .template import get_text_template, interpret_template
@@ -26,19 +27,22 @@ def add_text_extraction(dc: DatasetCollection) -> None:
 
 
 def __apply_tokenizer_transforms(
-    dc: DatasetCollection, max_len: int | None, for_input: bool
+    dc: DatasetCollection,
+    model_evaluator: TextModelEvaluator,
+    max_len: int | None,
+    for_input: bool,
 ) -> None:
     if for_input:
         batch_key = TransformType.InputBatch
     else:
         batch_key = TransformType.TargetBatch
-    match dc.tokenizer:
+    match model_evaluator.tokenizer:
         case SpacyTokenizer():
             if for_input:
                 key = TransformType.Input
             else:
                 key = TransformType.Target
-            dc.append_transform(dc.tokenizer, key=key)
+            dc.append_transform(model_evaluator.tokenizer, key=key)
             if max_len is not None:
                 dc.append_transform(
                     lambda a: a[:max_len],
@@ -48,14 +52,14 @@ def __apply_tokenizer_transforms(
             dc.append_transform(
                 functools.partial(
                     torch.nn.utils.rnn.pad_sequence,
-                    padding_value=dc.tokenizer.vocab["<pad>"],
+                    padding_value=model_evaluator.tokenizer.vocab["<pad>"],
                 ),
                 key=batch_key,
             )
         case hugging_face_transformers.PreTrainedTokenizerBase():
             dc.append_transform(
                 functools.partial(
-                    dc.tokenizer,
+                    model_evaluator.tokenizer,
                     max_length=max_len,
                     padding="max_length",
                     return_tensors="pt",
@@ -64,7 +68,7 @@ def __apply_tokenizer_transforms(
                 key=batch_key,
             )
         case _:
-            raise NotImplementedError(type(dc.tokenizer))
+            raise NotImplementedError(type(model_evaluator.tokenizer))
 
 
 def get_label_to_text_mapping(dataset_name: str) -> dict | None:
@@ -101,7 +105,9 @@ def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) 
     if input_max_len is None:
         input_max_len = dc.dataset_kwargs.get("input_max_len", None)
     get_logger().info("use input text max_len %s", input_max_len)
-    __apply_tokenizer_transforms(dc=dc, max_len=input_max_len, for_input=True)
+    __apply_tokenizer_transforms(
+        dc=dc, model_evaluator=model_evaluator, max_len=input_max_len, for_input=True
+    )
 
     # Target
     if (

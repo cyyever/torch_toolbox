@@ -6,8 +6,8 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.source_code.tarball_source import TarballSource
 from torch import nn
 
+from ..model_util import ModelUtil
 from ..tokenizer.spacy import SpacyTokenizer
-from .base import ModelEvaluator
 
 
 class PretrainedWordVector:
@@ -25,8 +25,7 @@ class PretrainedWordVector:
             PretrainedWordVector.__word_vector_cache[self.__name] = self.__download()
         return PretrainedWordVector.__word_vector_cache[self.__name]
 
-    def load_to_model(self, model_evaluator: ModelEvaluator) -> None:
-        tokenizer = model_evaluator.tokenizer
+    def load_to_model(self, model, tokenizer) -> None:
         assert isinstance(tokenizer, SpacyTokenizer)
         itos = tokenizer.vocab.get_itos()
 
@@ -55,9 +54,7 @@ class PretrainedWordVector:
                 )
 
         get_logger().debug("load word vector %s", self.__name)
-        model_evaluator.model_util.change_modules(
-            f=__load_embedding, module_type=nn.Embedding
-        )
+        ModelUtil(model).change_modules(f=__load_embedding, module_type=nn.Embedding)
 
     @classmethod
     def get_root_dir(cls) -> str:
