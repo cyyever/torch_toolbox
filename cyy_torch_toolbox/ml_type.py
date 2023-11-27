@@ -24,6 +24,7 @@ class DatasetType(StrEnum):
     Text = auto()
     Graph = auto()
     Audio = auto()
+    Code = auto()
     Unknown = auto()
 
 
