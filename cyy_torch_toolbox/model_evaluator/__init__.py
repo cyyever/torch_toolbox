@@ -24,9 +24,9 @@ if has_torch_geometric:
 def get_model_evaluator(
     model: torch.nn.Module,
     dataset_collection: DatasetCollection,
+    model_kwargs: dict,
     model_name: str | None = None,
     model_type: None | ModelType = None,
-    model_kwargs: dict | None = None,
 ) -> ModelEvaluator:
     model_evaluator_fun: Callable = ModelEvaluator
     if dataset_collection.dataset_type == DatasetType.Vision:
@@ -38,17 +38,13 @@ def get_model_evaluator(
             model_evaluator_fun = TextModelEvaluator
     elif dataset_collection.dataset_type == DatasetType.Graph:
         model_evaluator_fun = functools.partial(GraphModelEvaluator, dataset_collection)
-    if model_kwargs is None:
-        model_kwargs = {}
     model_evaluator = model_evaluator_fun(
         model=model,
         model_name=model_name,
-        loss_fun=model_kwargs.get("loss_fun_name", None),
+        loss_fun=model_kwargs.pop("loss_fun_name", None),
         model_type=model_type,
+        **model_kwargs,
     )
-    model_path = model_kwargs.get("model_path", None)
-    if model_path is not None:
-        model_evaluator.model.load_state_dict(torch.load(model_path))
     word_vector_name = model_kwargs.get("word_vector_name", None)
     if word_vector_name is not None:
         assert hasattr(dataset_collection, "tokenizer")
@@ -59,14 +55,4 @@ def get_model_evaluator(
             freeze_embedding=model_kwargs.get("freeze_word_vector", False),
         )
 
-    if "frozen_modules" in model_kwargs:
-        match model_kwargs["frozen_modules"]:
-            case {"types": types}:
-                for t in types:
-                    model_evaluator.model_util.freeze_modules(module_type=t)
-            case {"names": names}:
-                for name in names:
-                    model_evaluator.model_util.freeze_modules(module_name=name)
-            case _:
-                raise NotImplementedError(model_kwargs["frozen_modules"])
     return model_evaluator
