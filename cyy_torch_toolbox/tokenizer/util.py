@@ -29,5 +29,5 @@ def collect_tokens(
                     raise NotImplementedError(type(input_text))
             for text in input_text:
                 tokens = tokenizer(text)
-                counter.update(tokens)
+                counter.update(str(token) for token in tokens)
     return counter

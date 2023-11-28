@@ -26,10 +26,14 @@ if has_hugging_face:
     from datasets import load_dataset as load_hugging_face_dataset
 
     @functools.cache
-    def get_hungging_face_datasets() -> list:
-        return sorted(
-            dataset.id for dataset in huggingface_hub.list_datasets(full=False)
-        )
+    def get_hungging_face_datasets() -> dict:
+        return {
+            dataset.id: functools.partial(load_hugging_face_dataset, path=dataset.id)
+            for dataset in huggingface_hub.list_datasets(full=False)
+        }
+
+
+global_dataset_constructors: dict = {}
 
 
 def get_dataset_constructors(dataset_type: DatasetType) -> dict:
@@ -78,10 +82,7 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
                 )
 
     if has_hugging_face and dataset_type == DatasetType.Text:
-        for name in get_hungging_face_datasets():
-            dataset_constructors[name] = functools.partial(
-                load_hugging_face_dataset, path=name
-            )
+        dataset_constructors |= get_hungging_face_datasets()
     return dataset_constructors
 
 
@@ -236,7 +237,7 @@ def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, di
     for dataset_type in dataset_types:
         dataset_constructors = get_dataset_constructors(
             dataset_type=dataset_type,
-        )
+        ) | global_dataset_constructors.get(dataset_type, {})
         constructor = dataset_constructors.get(name, None)
         if constructor is None:
             constructor = dataset_constructors.get(name.lower(), None)
