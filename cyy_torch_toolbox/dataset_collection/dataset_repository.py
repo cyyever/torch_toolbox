@@ -12,14 +12,12 @@ from ..dependency import (has_hugging_face, has_torch_geometric,
 from ..ml_type import DatasetType, MachineLearningPhase
 
 if has_torchvision:
-    import cyy_torch_toolbox.dataset_wrapper.vision as local_vision_datasets
     import torchvision
 
 
 if has_torch_geometric:
     import torch_geometric
 if has_torchaudio:
-    import cyy_torch_toolbox.dataset_wrapper.audio as local_audio_datasets
     import torchaudio
 if has_hugging_face:
     import huggingface_hub
@@ -43,7 +41,6 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
             if has_torchvision:
                 repositories = [
                     torchvision.datasets,
-                    local_vision_datasets,
                 ]
         case DatasetType.Graph:
             if has_torch_geometric:
@@ -52,7 +49,6 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
             if has_torchaudio:
                 repositories = [
                     torchaudio.datasets,
-                    local_audio_datasets,
                 ]
     dataset_constructors: dict = {}
     for repository in repositories:
