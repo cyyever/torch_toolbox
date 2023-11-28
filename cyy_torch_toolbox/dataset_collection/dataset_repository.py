@@ -52,11 +52,11 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
                 ]
     dataset_constructors: dict = {}
     for repository in repositories:
-        if hasattr(repository, "DATASETS"):
-            for name, dataset_constructor in repository.DATASETS.items():
-                if dataset_type == DatasetType.Text:
+        if dataset_type == DatasetType.Text:
+            if hasattr(repository, "DATASETS"):
+                for name, dataset_constructor in repository.DATASETS.items():
                     dataset_constructors[name] = dataset_constructor
-            continue
+                continue
         dataset_constructors |= get_class_attrs(
             repository,
             filter_fun=lambda k, v: issubclass(v, torch.utils.data.Dataset),
