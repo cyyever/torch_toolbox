@@ -7,7 +7,7 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_class_attrs, get_kwarg_names
 
 from ..dataset.util import get_dataset_util_cls
-from ..dependency import (has_hugging_face, has_medmnist, has_torch_geometric,
+from ..dependency import (has_hugging_face, has_torch_geometric,
                           has_torchaudio, has_torchvision)
 from ..ml_type import DatasetType, MachineLearningPhase
 
@@ -21,16 +21,15 @@ if has_torch_geometric:
 if has_torchaudio:
     import cyy_torch_toolbox.dataset_wrapper.audio as local_audio_datasets
     import torchaudio
-if has_medmnist:
-    import medmnist
 if has_hugging_face:
     import huggingface_hub
     from datasets import load_dataset as load_hugging_face_dataset
 
-
-@functools.cache
-def get_hungging_face_datasets() -> list:
-    return sorted(dataset.id for dataset in huggingface_hub.list_datasets(full=False))
+    @functools.cache
+    def get_hungging_face_datasets() -> list:
+        return sorted(
+            dataset.id for dataset in huggingface_hub.list_datasets(full=False)
+        )
 
 
 def get_dataset_constructors(dataset_type: DatasetType) -> dict:
@@ -78,14 +77,6 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
                     dataset_constructors["Coauthor"], name=name
                 )
 
-    if has_medmnist and dataset_type == DatasetType.Vision:
-        INFO = medmnist.info.INFO
-        for name, item in INFO.items():
-            medmnist_cls = getattr(medmnist, item["python_class"])
-            medmnist_cls.targets = item["label"]
-            dataset_constructors[name] = functools.partial(
-                medmnist_cls, target_transform=lambda x: x[0]
-            )
     if has_hugging_face and dataset_type == DatasetType.Text:
         for name in get_hungging_face_datasets():
             dataset_constructors[name] = functools.partial(
