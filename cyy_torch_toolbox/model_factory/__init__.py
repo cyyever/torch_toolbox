@@ -108,7 +108,7 @@ def get_model(
 
                 PretrainedWordVector(word_vector_name).load_to_model(
                     model=model,
-                    tokenizer=dataset_collection.tokenizer,
+                    tokenizer=tokenizer,
                 )
             repo = model_constructor_info.get("repo", None)
             if repo is not None:
