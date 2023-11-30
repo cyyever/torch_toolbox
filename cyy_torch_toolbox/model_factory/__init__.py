@@ -63,7 +63,7 @@ def get_model(
             tokenizer = get_tokenizer(dataset_collection, tokenizer_kwargs)
             get_logger().info("tokenizer is %s", tokenizer)
 
-            if tokenizer is not None:
+            if tokenizer is not None and hasattr(tokenizer, "itos"):
                 for k in ("num_embeddings", "token_num"):
                     if k not in model_kwargs:
                         final_model_kwargs[k] = len(tokenizer.itos)
