@@ -52,7 +52,7 @@ def __apply_tokenizer_transforms(
             dc.append_transform(
                 functools.partial(
                     torch.nn.utils.rnn.pad_sequence,
-                    padding_value=model_evaluator.tokenizer.vocab["<pad>"],
+                    padding_value=model_evaluator.tokenizer.get_index("<pad>"),
                 ),
                 key=batch_key,
             )

@@ -1,7 +1,7 @@
 from cyy_torch_toolbox.dataset import subset_dp
 from cyy_torch_toolbox.dataset_collection import create_dataset_collection
-from cyy_torch_toolbox.dependency import (has_torch_geometric, has_torchtext,
-                                          has_torchvision)
+from cyy_torch_toolbox.dependency import (has_hugging_face,
+                                          has_torch_geometric, has_torchvision)
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
@@ -45,7 +45,7 @@ def test_dataset_labels() -> None:
         for name in ("MNIST", "CIFAR10"):
             dc = create_dataset_collection(name)
             assert len(dc.get_labels()) == 10
-    if has_torchtext:
-        for name in ("IMDB",):
+    if has_hugging_face:
+        for name in ("imdb",):
             dc = create_dataset_collection(name)
             assert dc.get_labels()

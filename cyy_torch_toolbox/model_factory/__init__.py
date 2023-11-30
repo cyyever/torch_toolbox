@@ -66,7 +66,7 @@ def get_model(
             if tokenizer is not None:
                 for k in ("num_embeddings", "token_num"):
                     if k not in model_kwargs:
-                        final_model_kwargs[k] = len(tokenizer.vocab)
+                        final_model_kwargs[k] = len(tokenizer.itos)
         case DatasetType.Graph:
             if "num_features" not in model_kwargs:
                 final_model_kwargs[

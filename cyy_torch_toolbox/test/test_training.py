@@ -1,6 +1,6 @@
 from cyy_torch_toolbox.default_config import Config
-from cyy_torch_toolbox.dependency import (has_torch_geometric, has_torchtext,
-                                          has_torchvision)
+from cyy_torch_toolbox.dependency import (has_hugging_face,
+                                          has_torch_geometric, has_torchvision)
 from cyy_torch_toolbox.device import DeviceGreedyAllocator
 from cyy_torch_toolbox.ml_type import ExecutorHookPoint, StopExecutingException
 
@@ -24,13 +24,13 @@ def test_vision_training() -> None:
     trainer.train()
 
 
-def test_text_training() -> None:
-    if not has_torchtext:
+def test_nlp_training() -> None:
+    if not has_hugging_face:
         return
     device = DeviceGreedyAllocator().get_device(max_needed_bytes=9 * 1024 * 1024 * 1024)
     if device is None:
         return
-    config = Config(dataset_name="IMDB", model_name="simplelstm")
+    config = Config(dataset_name="imdb", model_name="simplelstm")
     config.trainer_config.hook_config.debug = True
     config.hyper_parameter_config.epoch = 1
     config.hyper_parameter_config.learning_rate = 0.01
