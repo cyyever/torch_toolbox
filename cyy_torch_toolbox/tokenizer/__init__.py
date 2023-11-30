@@ -1,8 +1,8 @@
 from typing import Any
 
-from ..dependency import has_hugging_face, has_spacy, has_torchtext
+from ..dependency import has_hugging_face, has_spacy
 
-if has_torchtext and has_spacy:
+if has_spacy:
     from .spacy import SpacyTokenizer
 
 if has_hugging_face:

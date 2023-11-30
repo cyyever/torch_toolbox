@@ -27,7 +27,7 @@ class PretrainedWordVector:
 
     def load_to_model(self, model, tokenizer) -> None:
         assert isinstance(tokenizer, SpacyTokenizer)
-        itos = tokenizer.vocab.get_itos()
+        itos = tokenizer.itos
 
         def __load_embedding(name, module, module_util) -> None:
             unknown_token_cnt = 0

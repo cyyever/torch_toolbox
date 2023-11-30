@@ -211,14 +211,14 @@ def get_recommended_hyper_parameter(
 
 @dataclass(kw_only=True)
 class HyperParameterConfig:
-    epoch = None
-    batch_size = None
-    learning_rate = None
-    momentum = None
-    weight_decay = None
-    learning_rate_scheduler_name = None
+    epoch: None | int = None
+    batch_size: None | int = None
+    learning_rate: None | float = None
+    momentum: None | float = None
+    weight_decay: None | float = None
+    learning_rate_scheduler_name: None | str = None
     learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
-    optimizer_name = None
+    optimizer_name: None | str = None
 
     def create_hyper_parameter(self, dataset_name, model_name) -> HyperParameter:
         hyper_parameter = get_recommended_hyper_parameter(dataset_name, model_name)

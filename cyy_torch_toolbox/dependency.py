@@ -1,7 +1,6 @@
 import importlib.util
 
 has_torchvision: bool = importlib.util.find_spec("torchvision") is not None
-has_torchtext: bool = importlib.util.find_spec("torchtext") is not None
 has_torch_geometric: bool = (
     importlib.util.find_spec("torch_geometric") is not None
     and importlib.util.find_spec("pyg_lib") is not None
