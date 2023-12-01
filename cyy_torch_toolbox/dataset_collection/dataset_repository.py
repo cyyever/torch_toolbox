@@ -7,7 +7,7 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_class_attrs, get_kwarg_names
 
 from ..dataset.util import get_dataset_util_cls
-from ..dependency import has_hugging_face, has_torch_geometric, has_torchvision
+from ..dependency import has_hugging_face, has_torchvision
 from ..factory import Factory
 from ..ml_type import DatasetType, MachineLearningPhase
 
@@ -15,8 +15,6 @@ if has_torchvision:
     import torchvision
 
 
-if has_torch_geometric:
-    import torch_geometric
 if has_hugging_face:
     import huggingface_hub
     from datasets import load_dataset as load_hugging_face_dataset
@@ -48,9 +46,6 @@ def register_default_dataset_constructors(dataset_type: DatasetType) -> None:
                 repositories = [
                     torchvision.datasets,
                 ]
-        case DatasetType.Graph:
-            if has_torch_geometric:
-                repositories = [torch_geometric.datasets]
     dataset_constructors: dict = {}
     for repository in repositories:
         if dataset_type == DatasetType.Text:
@@ -62,21 +57,6 @@ def register_default_dataset_constructors(dataset_type: DatasetType) -> None:
             repository,
             filter_fun=lambda k, v: issubclass(v, torch.utils.data.Dataset),
         )
-    if has_torch_geometric and dataset_type == DatasetType.Graph:
-        if "Planetoid" in dataset_constructors:
-            for repository in ["Cora", "CiteSeer", "PubMed"]:
-                dataset_constructors[repository] = functools.partial(
-                    dataset_constructors["Planetoid"], name=repository, split="full"
-                )
-            for name in ["Cora", "CiteSeer", "PubMed"]:
-                dataset_constructors[f"Planetoid_{name}"] = functools.partial(
-                    dataset_constructors["Planetoid"], name=name, split="full"
-                )
-        if "Coauthor" in dataset_constructors:
-            for name in ["CS", "Physics"]:
-                dataset_constructors[f"Coauthor_{name}"] = functools.partial(
-                    dataset_constructors["Coauthor"], name=name
-                )
 
     if has_hugging_face and dataset_type == DatasetType.Text:
         dataset_constructors |= get_hungging_face_datasets()
