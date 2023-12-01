@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-import torchdata
 from typing import Any
 
 import torch
@@ -46,13 +45,9 @@ class KeyPipe(torch.utils.data.MapDataPipe):
         return len(self.__dp)
 
 
-def __convert_item_to_dict(item) -> dict:
-    return {"data": item}
-
-
 def __add_index_to_map_item(item) -> dict:
     key, value = item[0], item[1]
-    return __convert_item_to_dict(value) | {"index": key}
+    return {"index": key, "data": value}
 
 
 def dataset_with_indices(
@@ -75,7 +70,7 @@ def dataset_with_indices(
         case torch.utils.data.datapipes.datapipe.IterDataPipe():
             dataset = dataset.enumerate()
         case _:
-            dataset = torchdata.datapipes.map.Mapper(
+            dataset = torch.utils.data.datapipes.map.Mapper(
                 KeyPipe(dataset), __add_index_to_map_item
             )
     assert not hasattr(dataset, "original_dataset")
