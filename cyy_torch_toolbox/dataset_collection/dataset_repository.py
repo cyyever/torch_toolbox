@@ -7,8 +7,8 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_class_attrs, get_kwarg_names
 
 from ..dataset.util import get_dataset_util_cls
-from ..dependency import (has_hugging_face, has_torch_geometric,
-                          has_torchaudio, has_torchvision)
+from ..dependency import has_hugging_face, has_torch_geometric, has_torchvision
+from ..factory import Factory
 from ..ml_type import DatasetType, MachineLearningPhase
 
 if has_torchvision:
@@ -17,8 +17,6 @@ if has_torchvision:
 
 if has_torch_geometric:
     import torch_geometric
-if has_torchaudio:
-    import torchaudio
 if has_hugging_face:
     import huggingface_hub
     from datasets import load_dataset as load_hugging_face_dataset
@@ -31,15 +29,15 @@ if has_hugging_face:
         }
 
 
-global_dataset_constructors: dict[DatasetType, dict[str, Callable]] = {}
+global_dataset_constructors: dict[DatasetType, Factory] = {}
 
 
 def register_dataset_constructors(
-    dataset_type: DatasetType, constructors: dict[str, Callable]
+    dataset_type: DatasetType, name: str, constructor: Callable
 ) -> None:
     if dataset_type not in global_dataset_constructors:
-        global_dataset_constructors[dataset_type] = {}
-    global_dataset_constructors[dataset_type].update(constructors)
+        global_dataset_constructors[dataset_type] = Factory()
+    global_dataset_constructors[dataset_type].register(name, constructor)
 
 
 def register_default_dataset_constructors(dataset_type: DatasetType) -> None:
@@ -53,11 +51,6 @@ def register_default_dataset_constructors(dataset_type: DatasetType) -> None:
         case DatasetType.Graph:
             if has_torch_geometric:
                 repositories = [torch_geometric.datasets]
-        case DatasetType.Audio:
-            if has_torchaudio:
-                repositories = [
-                    torchaudio.datasets,
-                ]
     dataset_constructors: dict = {}
     for repository in repositories:
         if dataset_type == DatasetType.Text:
@@ -87,7 +80,8 @@ def register_default_dataset_constructors(dataset_type: DatasetType) -> None:
 
     if has_hugging_face and dataset_type == DatasetType.Text:
         dataset_constructors |= get_hungging_face_datasets()
-    register_dataset_constructors(dataset_type, dataset_constructors)
+    for name, constructor in dataset_constructors.items():
+        register_dataset_constructors(dataset_type, name, constructor)
 
 
 def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> Callable:
@@ -232,18 +226,17 @@ def __create_dataset(
 
 
 def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, dict]:
-    dataset_names = set()
     dataset_types: tuple[DatasetType] = tuple(DatasetType)
     match dataset_kwargs.get("dataset_type", None):
         case "text":
             dataset_types = (DatasetType.Text,)
+    similar_names = []
 
     for dataset_type in dataset_types:
         register_default_dataset_constructors(dataset_type=dataset_type)
-        dataset_constructors = global_dataset_constructors.get(dataset_type, {})
-        constructor = dataset_constructors.get(name, None)
-        if constructor is None:
-            constructor = dataset_constructors.get(name.lower(), None)
+        constructor = global_dataset_constructors[dataset_type].get(
+            name, case_sensitive=True
+        )
         if constructor is not None:
             return __create_dataset(
                 dataset_name=name,
@@ -251,9 +244,11 @@ def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, di
                 dataset_constructor=constructor,
                 dataset_kwargs=dataset_kwargs,
             )
-        dataset_names |= set(dataset_constructors.keys())
+        similar_names += global_dataset_constructors[dataset_type].get_similar_keys(
+            name
+        )
 
     get_logger().error(
-        "can't find dataset %s, supported datasets are %s", name, sorted(dataset_names)
+        "can't find dataset %s, similar datasets are %s", name, sorted(similar_names)
     )
     return None
