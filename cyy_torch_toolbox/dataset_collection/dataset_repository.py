@@ -31,10 +31,18 @@ if has_hugging_face:
         }
 
 
-global_dataset_constructors: dict = {}
+global_dataset_constructors: dict[DatasetType, dict[str, Callable]] = {}
 
 
-def get_dataset_constructors(dataset_type: DatasetType) -> dict:
+def register_dataset_constructors(
+    dataset_type: DatasetType, constructors: dict[str, Callable]
+) -> None:
+    if dataset_type not in global_dataset_constructors:
+        global_dataset_constructors[dataset_type] = {}
+    global_dataset_constructors[dataset_type].update(constructors)
+
+
+def register_default_dataset_constructors(dataset_type: DatasetType) -> None:
     repositories = []
     match dataset_type:
         case DatasetType.Vision:
@@ -79,7 +87,7 @@ def get_dataset_constructors(dataset_type: DatasetType) -> dict:
 
     if has_hugging_face and dataset_type == DatasetType.Text:
         dataset_constructors |= get_hungging_face_datasets()
-    return dataset_constructors
+    register_dataset_constructors(dataset_type, dataset_constructors)
 
 
 def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> Callable:
@@ -231,9 +239,8 @@ def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, di
             dataset_types = (DatasetType.Text,)
 
     for dataset_type in dataset_types:
-        dataset_constructors = get_dataset_constructors(
-            dataset_type=dataset_type,
-        ) | global_dataset_constructors.get(dataset_type, {})
+        register_default_dataset_constructors(dataset_type=dataset_type)
+        dataset_constructors = global_dataset_constructors.get(dataset_type, {})
         constructor = dataset_constructors.get(name, None)
         if constructor is None:
             constructor = dataset_constructors.get(name.lower(), None)
