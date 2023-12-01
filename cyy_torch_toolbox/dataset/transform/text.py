@@ -2,19 +2,17 @@ import functools
 
 import torch
 from cyy_naive_lib.log import get_logger
+from cyy_torch_toolbox.dataset_collection import DatasetCollection
+from cyy_torch_toolbox.dependency import has_hugging_face, has_spacy
+from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
+                                       ModelType, TransformType)
+from cyy_torch_toolbox.model_evaluator.text import TextModelEvaluator
 
-from ..dataset_collection import DatasetCollection
-from ..dependency import has_hugging_face, has_spacy
-from ..ml_type import (DatasetType, MachineLearningPhase, ModelType,
-                       TransformType)
-from ..model_evaluator import ModelEvaluator
-from ..model_evaluator.text import TextModelEvaluator
-from .common import (backup_target, int_target_to_text, replace_str,
-                     str_target_to_int)
+from .common import backup_target, int_target_to_text, replace_str
 from .template import get_text_template, interpret_template
 
 if has_spacy:
-    from ..tokenizer.spacy import SpacyTokenizer
+    from cyy_torch_toolbox.tokenizer.spacy import SpacyTokenizer
 
 if has_hugging_face:
     import transformers as hugging_face_transformers
@@ -80,7 +78,9 @@ def get_label_to_text_mapping(dataset_name: str) -> dict | None:
     return None
 
 
-def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) -> None:
+def add_text_transforms(
+    dc: DatasetCollection, model_evaluator: TextModelEvaluator
+) -> None:
     assert dc.dataset_type == DatasetType.Text
     dataset_name: str = dc.name.lower()
     # InputText

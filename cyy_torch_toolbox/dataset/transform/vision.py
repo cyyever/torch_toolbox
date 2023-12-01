@@ -1,10 +1,12 @@
 import torch
+import torch.utils
 from cyy_naive_lib.log import get_logger
+from cyy_torch_toolbox.dataset_collection import DatasetCollection
+from cyy_torch_toolbox.dependency import has_torchvision
+from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
+                                       TransformType)
 
-from ..dataset.util import VisionDatasetUtil
-from ..dataset_collection import DatasetCollection
-from ..dependency import has_torchvision
-from ..ml_type import DatasetType, MachineLearningPhase, TransformType
+from ..util import VisionDatasetUtil
 from .transform import Transforms
 
 if has_torchvision:
@@ -34,7 +36,7 @@ def add_vision_extraction(dc: DatasetCollection) -> None:
     dc.append_transform(torchvision.transforms.ToTensor(), key=TransformType.Input)
 
 
-def add_vision_transforms(dc, model_evaluator) -> None:
+def add_vision_transforms(dc: DatasetCollection, model_evaluator) -> None:
     assert dc.dataset_type == DatasetType.Vision
     mean, std = get_mean_and_std(dc)
     dc.append_transform(

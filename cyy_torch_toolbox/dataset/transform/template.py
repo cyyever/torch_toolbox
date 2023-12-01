@@ -1,6 +1,6 @@
 from typing import Any
 
-from ..ml_type import ModelType
+from cyy_torch_toolbox.ml_type import ModelType
 
 
 def get_text_template(dataset_name: str, model_type: ModelType) -> list[str] | None:

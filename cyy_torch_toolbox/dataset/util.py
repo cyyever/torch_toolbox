@@ -7,7 +7,7 @@ from typing import Any, Generator, Type
 import torch
 import torch.utils
 
-from ..dataset_transform.transform import Transforms
+from ..dataset.transform.transform import Transforms
 from ..dependency import has_torch_geometric, has_torchvision
 from ..ml_type import DatasetType, MachineLearningPhase
 from . import get_dataset_size, select_item, subset_dp
@@ -166,8 +166,7 @@ class VisionDatasetUtil(DatasetUtil):
         sample_input = self._get_sample_input(index, apply_transform=False)
         if "image" in sample_input.__class__.__name__.lower():
             return sample_input
-        else:
-            torchvision.utils.save_image(sample_input, path)
+        torchvision.utils.save_image(sample_input, path)
 
 
 class TextDatasetUtil(DatasetUtil):

@@ -107,15 +107,17 @@ __huggingface_models = [
     "funnel-transformer/xlarge",
     "funnel-transformer/xlarge-base",
     "microsoft/layoutlm-base-uncased",
-    "microsoft/layoutlm-large-uncased",
+    "microsoft/codebert-base",
 ]
 
 
-def __create_hugging_face_seq2seq_lm_model(model_name, pretrained, **model_kwargs):
-    pretrained_model = transformers.AutoModelForSeq2SeqLM.from_pretrained(
-        model_name, **model_kwargs
-    )
+def __create_hugging_face_seq2seq_lm_model(
+    model_name: str, pretrained: bool, **model_kwargs
+):
     if pretrained:
+        pretrained_model = transformers.AutoModelForSeq2SeqLM.from_pretrained(
+            model_name, **model_kwargs
+        )
         return pretrained_model
     get_logger().warning("use huggingface without pretrained parameters")
     config = transformers.AutoConfig.from_pretrained(model_name, **model_kwargs)
@@ -124,12 +126,14 @@ def __create_hugging_face_seq2seq_lm_model(model_name, pretrained, **model_kwarg
 
 
 def __create_hugging_face_sequence_classification_model(
-    model_name, pretrained, **model_kwargs
+    model_name: str, pretrained: bool, **model_kwargs
 ):
-    pretrained_model = transformers.AutoModelForSequenceClassification.from_pretrained(
-        model_name, **model_kwargs
-    )
     if pretrained:
+        pretrained_model = (
+            transformers.AutoModelForSequenceClassification.from_pretrained(
+                model_name, **model_kwargs
+            )
+        )
         return pretrained_model
     get_logger().warning("use huggingface without pretrained parameters")
     config = transformers.AutoConfig.from_pretrained(model_name, **model_kwargs)
@@ -137,11 +141,11 @@ def __create_hugging_face_sequence_classification_model(
     return model
 
 
-def __create_hugging_face_model(model_name, pretrained, **model_kwargs):
-    pretrained_model = transformers.AutoModel.from_pretrained(
-        model_name, **model_kwargs
-    )
+def __create_hugging_face_model(model_name: str, pretrained: bool, **model_kwargs):
     if pretrained:
+        pretrained_model = transformers.AutoModel.from_pretrained(
+            model_name, **model_kwargs
+        )
         return pretrained_model
     get_logger().warning("use huggingface without pretrained parameters")
     config = transformers.AutoConfig.from_pretrained(model_name, **model_kwargs)
