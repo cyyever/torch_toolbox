@@ -87,7 +87,7 @@ def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> C
     if "download" not in new_dataset_kwargs:
         new_dataset_kwargs["download"] = True
 
-    def get_dataset_kwargs_per_phase(
+    def get_dataset_kwargs_of_phase(
         dataset_type: DatasetType, phase: MachineLearningPhase
     ) -> dict | None:
         if "data_dir" in constructor_kwargs and "data_dir" not in new_dataset_kwargs:
@@ -116,11 +116,11 @@ def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> C
                 )
         elif "subset" in constructor_kwargs:
             if phase == MachineLearningPhase.Training:
-                new_dataset_kwargs["subset"] = "training"
+                new_dataset_kwargs["subset"] = "train"
             elif phase == MachineLearningPhase.Validation:
-                new_dataset_kwargs["subset"] = "validation"
+                new_dataset_kwargs["subset"] = "valid"
             else:
-                new_dataset_kwargs["subset"] = "testing"
+                new_dataset_kwargs["subset"] = "test"
         else:
             if phase != MachineLearningPhase.Training:
                 return None
@@ -134,7 +134,7 @@ def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> C
                 new_dataset_kwargs.pop(k)
         return new_dataset_kwargs
 
-    return get_dataset_kwargs_per_phase
+    return get_dataset_kwargs_of_phase
 
 
 __dataset_cache: dict = {}
