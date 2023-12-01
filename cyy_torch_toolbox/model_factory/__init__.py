@@ -56,10 +56,15 @@ def get_model(
                     }
         case DatasetType.Text:
             tokenizer_kwargs = dataset_collection.dataset_kwargs.get("tokenizer", {})
-            if "type" not in tokenizer_kwargs and "hugging_face" in model_kwargs.get(
-                "name", ""
-            ):
+            print(model_kwargs.get("name", ""))
+            if "hugging_face" in model_kwargs.get("name", ""):
                 tokenizer_kwargs["type"] = "hugging_face"
+                tokenizer_kwargs["name"] = (
+                    model_kwargs["name"]
+                    .replace("hugging_face_seq2seq_lm_", "")
+                    .replace("hugging_face_sequence_classification_", "")
+                    .replace("hugging_face_", "")
+                )
             tokenizer = get_tokenizer(dataset_collection, tokenizer_kwargs)
             get_logger().info("tokenizer is %s", tokenizer)
 
@@ -151,6 +156,7 @@ class ModelConfig:
         self.model_kwargs: dict = {}
 
     def get_model(self, dc: DatasetCollection) -> ModelEvaluator:
+        self.model_kwargs["name"] = self.model_name
         model_kwargs = copy.deepcopy(self.model_kwargs)
         if "pretrained" not in model_kwargs:
             model_kwargs["pretrained"] = False
