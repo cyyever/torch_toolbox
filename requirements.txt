@@ -4,7 +4,6 @@ hydra-core
 spacy
 omegaconf
 huggingface-hub
-torchdata
 torchmetrics
 transformers
 datasets
