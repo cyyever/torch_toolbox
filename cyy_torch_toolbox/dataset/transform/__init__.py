@@ -1,4 +1,4 @@
-from ..ml_type import DatasetType
+from cyy_torch_toolbox.ml_type import DatasetType
 
 
 def add_data_extraction(dc) -> None:

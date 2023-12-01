@@ -11,9 +11,9 @@ from cyy_naive_lib.storage import get_cached_data
 
 from ..dataset import dataset_with_indices
 from ..dataset.sampler import DatasetSampler
+from ..dataset.transform import add_data_extraction, add_transforms
+from ..dataset.transform.transform import Transforms
 from ..dataset.util import DatasetUtil, get_dataset_util_cls
-from ..dataset_transform import add_data_extraction, add_transforms
-from ..dataset_transform.transform import Transforms
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 
 

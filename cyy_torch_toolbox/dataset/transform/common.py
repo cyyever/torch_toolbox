@@ -3,7 +3,7 @@ from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
 
-from ..dependency import has_torch_geometric
+from cyy_torch_toolbox.dependency import has_torch_geometric
 
 if has_torch_geometric:
     from .graph import pyg_data_extraction
