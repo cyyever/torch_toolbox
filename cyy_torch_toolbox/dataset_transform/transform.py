@@ -104,13 +104,6 @@ class Transforms:
             if "index" in tmp:
                 tmp["sample_indices"] = tmp.pop("index")
             res |= tmp
-
-        # if (
-        #     hasattr(inputs, "device")
-        #     and hasattr(targets, "device")
-        #     and targets.device != inputs.device
-        # ):
-        #     targets = tensor_to(targets, device=inputs.device, non_blocking=False)
         return res
 
     def cache_transforms(

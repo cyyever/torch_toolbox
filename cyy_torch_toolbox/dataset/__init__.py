@@ -1,8 +1,9 @@
 from collections.abc import Iterable
+import torchdata
 from typing import Any
 
 import torch
-import torchdata
+import torch.utils.data
 from cyy_torch_toolbox.dependency import has_hugging_face, has_torch_geometric
 
 if has_torch_geometric:
@@ -24,7 +25,7 @@ def get_dataset_size(dataset: Any) -> int:
             for _ in dataset:
                 cnt += 1
             return cnt
-        case torchdata.datapipes.map.MapDataPipe():
+        case torch.utils.data.MapDataPipe():
             return len(dataset)
     if has_hugging_face:
         if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
@@ -65,13 +66,13 @@ def dataset_with_indices(
         case list():
             return dataset
         case torch.utils.data.IterableDataset():
-            dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
+            dataset = torch.utils.data.datapipes.iter.IterableWrapper(dataset)
     # if has_hugging_face:
     #     if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
     #         return dataset
     # dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
     match dataset:
-        case torchdata.datapipes.iter.IterDataPipe():
+        case torch.utils.data.datapipes.datapipe.IterDataPipe():
             dataset = dataset.enumerate()
         case _:
             dataset = torchdata.datapipes.map.Mapper(
@@ -147,6 +148,6 @@ def subset_dp(
     #         case hugging_face_datasets.arrow_dataset.Dataset():
     #             pass
 
-    return torchdata.datapipes.map.SequenceWrapper(
+    return torch.utils.data.datapipes.map.SequenceWrapper(
         list(dict(select_item(dataset, indices)).values()), deepcopy=False
     )
