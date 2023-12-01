@@ -1,10 +1,10 @@
-import functools
 from typing import Callable
 
 import torch
 
 from ..dataset_collection import DatasetCollection
-from ..dependency import has_hugging_face, has_torch_geometric
+from ..dependency import has_hugging_face
+from ..factory import Factory
 from ..ml_type import DatasetType
 from .base import ModelEvaluator, VisionModelEvaluator
 from .text import TextModelEvaluator
@@ -14,8 +14,8 @@ if has_hugging_face:
 
     from .hugging_face import HuggingFaceModelEvaluator
 
-if has_torch_geometric:
-    from .graph import GraphModelEvaluator
+
+global_model_evaluator_factory = Factory()
 
 
 def get_model_evaluator(
@@ -29,11 +29,14 @@ def get_model_evaluator(
             model_evaluator_fun = HuggingFaceModelEvaluator
         else:
             model_evaluator_fun = TextModelEvaluator
-    elif dataset_collection.dataset_type == DatasetType.Graph:
-        model_evaluator_fun = functools.partial(GraphModelEvaluator, dataset_collection)
+    else:
+        model_evaluator_fun = global_model_evaluator_factory.get(
+            dataset_collection.dataset_type
+        )
     model_evaluator = model_evaluator_fun(
         model=model,
         loss_fun=model_kwargs.pop("loss_fun_name", None),
+        dataset_collection=dataset_collection,
         **model_kwargs,
     )
     return model_evaluator

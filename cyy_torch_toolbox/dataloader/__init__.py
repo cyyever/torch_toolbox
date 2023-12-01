@@ -16,7 +16,6 @@ if has_torch_geometric:
     import torch_geometric
     from torch_geometric.loader import NeighborLoader
 
-    from ..model_evaluator import GraphModelEvaluator
     from .pyg_dataloader import RandomNodeLoader
 
 
@@ -101,7 +100,6 @@ def get_dataloader(
     if dc.dataset_type != DatasetType.Graph:
         return torch.utils.data.DataLoader(**dataloader_kwargs)
     assert has_torch_geometric
-    assert isinstance(model_evaluator, GraphModelEvaluator)
     util = dc.get_dataset_util(phase=phase)
     assert isinstance(util, GraphDatasetUtil)
     pyg_input_nodes = kwargs.get("pyg_input_nodes", {})
