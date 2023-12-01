@@ -132,14 +132,14 @@ def add_text_transforms(dc: DatasetCollection, model_evaluator: ModelEvaluator) 
         __apply_tokenizer_transforms(
             dc=dc, model_evaluator=model_evaluator, max_len=max_len, for_input=False
         )
-    elif model_evaluator.model_type == ModelType.Classification:
-        if isinstance(
-            dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(
-                0
-            ),
-            str,
-        ):
-            label_names = dc.get_label_names()
-            dc.append_transform(
-                str_target_to_int(label_names), key=TransformType.Target
-            )
+    # elif model_evaluator.model_type == ModelType.Classification:
+    #     if isinstance(
+    #         dc.get_dataset_util(phase=MachineLearningPhase.Training).get_sample_label(
+    #             0
+    #         ),
+    #         str,
+    #     ):
+    #         label_names = dc.get_label_names()
+    #         dc.append_transform(
+    #             str_target_to_int(label_names), key=TransformType.Target
+    #         )
