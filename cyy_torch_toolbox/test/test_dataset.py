@@ -1,7 +1,7 @@
 from cyy_torch_toolbox.dataset import subset_dp
 from cyy_torch_toolbox.dataset_collection import create_dataset_collection
 from cyy_torch_toolbox.dependency import (has_hugging_face,
-                                          has_torch_geometric, has_torchvision)
+                                          has_torchvision)
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
@@ -29,10 +29,6 @@ def test_dataset() -> None:
             <= 1
         )
         print("cifar10 labels are", cifar10.get_label_names())
-    if has_torch_geometric:
-        create_dataset_collection(
-            "Cora",
-        )
     # if has_hugging_face:
     #     dc = create_dataset_collection(
     #         "multi_nli",
