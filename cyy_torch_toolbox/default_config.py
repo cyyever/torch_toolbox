@@ -12,8 +12,8 @@ from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
 from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
+from cyy_torch_toolbox.model import ModelConfig
 from cyy_torch_toolbox.model_evaluator import ModelEvaluator
-from cyy_torch_toolbox.model_factory import ModelConfig
 from cyy_torch_toolbox.reproducible_env import ReproducibleEnvConfig
 from cyy_torch_toolbox.trainer import Trainer, TrainerConfig
 
