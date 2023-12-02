@@ -1,5 +1,4 @@
 import copy
-import functools
 from typing import Callable
 
 import torch
@@ -7,24 +6,12 @@ from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_class_attrs, get_kwarg_names
 
 from ..dataset.util import global_dataset_util_factor
-from ..dependency import has_hugging_face, has_torchvision
+from ..dependency import has_torchvision
 from ..factory import Factory
 from ..ml_type import DatasetType, MachineLearningPhase
 
 if has_torchvision:
     import torchvision
-
-
-if has_hugging_face:
-    import huggingface_hub
-    from datasets import load_dataset as load_hugging_face_dataset
-
-    @functools.cache
-    def get_hungging_face_datasets() -> dict:
-        return {
-            dataset.id: functools.partial(load_hugging_face_dataset, path=dataset.id)
-            for dataset in huggingface_hub.list_datasets(full=False)
-        }
 
 
 global_dataset_constructors: dict[DatasetType, Factory] = {}
@@ -48,18 +35,16 @@ def register_default_dataset_constructors(dataset_type: DatasetType) -> None:
                 ]
     dataset_constructors: dict = {}
     for repository in repositories:
-        if dataset_type == DatasetType.Text:
-            if hasattr(repository, "DATASETS"):
-                for name, dataset_constructor in repository.DATASETS.items():
-                    dataset_constructors[name] = dataset_constructor
-                continue
+        # if dataset_type == DatasetType.Text:
+        #     if hasattr(repository, "DATASETS"):
+        #         for name, dataset_constructor in repository.DATASETS.items():
+        #             dataset_constructors[name] = dataset_constructor
+        #         continue
         dataset_constructors |= get_class_attrs(
             repository,
             filter_fun=lambda k, v: issubclass(v, torch.utils.data.Dataset),
         )
 
-    if has_hugging_face and dataset_type == DatasetType.Text:
-        dataset_constructors |= get_hungging_face_datasets()
     for name, constructor in dataset_constructors.items():
         register_dataset_constructors(dataset_type, name, constructor)
 
