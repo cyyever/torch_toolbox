@@ -1,6 +1,7 @@
 from cyy_torch_toolbox.ml_type import DatasetType
 
 from ..factory import Factory
+from .vision import add_vision_extraction, add_vision_transforms
 
 global_data_transform_factory = Factory()
 
@@ -19,8 +20,6 @@ def append_transforms_to_dc(dc, model_evaluator=None) -> None:
             add_text_transforms(dc=dc, model_evaluator=model_evaluator)
         return
     if dc.dataset_type == DatasetType.Vision:
-        from .vision import add_vision_extraction, add_vision_transforms
-
         if model_evaluator is None:
             add_vision_extraction(dc=dc)
         else:
