@@ -6,7 +6,7 @@ from cyy_naive_lib.log import get_logger
 from torch import nn
 
 from ..ml_type import EvaluationMode, ModelType
-from ..model_util import ModelUtil
+from ..model.util import ModelUtil
 from ..tensor import tensor_to
 
 # from cyy_torch_toolbox.model_transform.checkpointed_model import \

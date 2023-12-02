@@ -1,11 +1,10 @@
-import functools
 from typing import Any, Callable, Generator, Type
 
 import torch
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 from cyy_naive_lib.log import get_logger
 
-from .tensor import cat_tensors_to_vector
+from ..tensor import cat_tensors_to_vector
 
 
 class ModelUtil:
@@ -40,12 +39,12 @@ class ModelUtil:
         for name, parameter in buffer_dict.items():
             self.set_attr(name, parameter, as_parameter=False)
 
-    def clear_parameters(self) -> None:
-        def clear(module: torch.nn.Module) -> None:
-            module._parameters = {k: None for k in module._parameters}
+    # def clear_parameters(self) -> None:
+    #     def clear(module: torch.nn.Module) -> None:
+    #         module._parameters = {k: None for k in module._parameters}
 
-        for _, module in self.get_modules():
-            clear(module)
+    #     for _, module in self.get_modules():
+    #         clear(module)
 
     def get_parameter_dict(self, detach: bool = True) -> dict:
         res: dict = {}
@@ -135,13 +134,6 @@ class ModelUtil:
             ):
                 f(name, module, self)
 
-    @functools.cached_property
-    def cached_buffer_names(self):
-        res = set()
-        for param_name, _ in self.__model.named_buffers():
-            res.add(param_name)
-        return res
-
     def freeze_modules(self, **kwargs: Any) -> None:
         def freeze(name, module, model_util) -> None:
             get_logger().info("freeze %s", name)
@@ -167,12 +159,11 @@ class ModelUtil:
     def have_module(
         self, module_type: Type | None = None, module_name: str | None = None
     ) -> bool:
-        for name, module in self.get_modules():
-            if (module_type is not None and isinstance(module, module_type)) or (
-                module_name is not None and name == module_name
-            ):
-                return True
-        return False
+        return any(
+            (module_type is not None and isinstance(module, module_type))
+            or (module_name is not None and name == module_name)
+            for name, module in self.get_modules()
+        )
 
     def get_modules(self) -> list[tuple[str, Any]]:
         def get_module_impl(model: Any, prefix: str) -> list[tuple[str, Any]]:
