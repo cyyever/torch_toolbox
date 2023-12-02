@@ -1,4 +1,6 @@
 import copy
+import os
+import sys
 from typing import Callable
 
 import torch
@@ -84,6 +86,18 @@ def get_model(
     while True:
         try:
             model = constructor(**final_model_kwargs)
+            if model_constructor_info is None:
+                repo = None
+            else:
+                repo = model_constructor_info.get("repo", None)
+            if repo is not None:
+                # we need the model path to pickle models
+                hub_dir = torch.hub.get_dir()
+                repo_owner, repo_name, ref = torch.hub._parse_repo_info(repo)
+                normalized_br = ref.replace("/", "_")
+                owner_name_branch = "_".join([repo_owner, repo_name, normalized_br])
+                repo_dir = os.path.join(hub_dir, owner_name_branch)
+                sys.path.append(repo_dir)
             get_logger().debug(
                 "use model arguments %s for model %s", final_model_kwargs, name
             )
