@@ -39,6 +39,7 @@ def get_model_info() -> dict:
                             skip_validation=True,
                             verbose=False,
                         ),
+                        "repo": repo,
                     }
                 else:
                     get_logger().debug("ignore model_name %s", model_name)
