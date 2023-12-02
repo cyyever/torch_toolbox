@@ -1,7 +1,5 @@
 from cyy_torch_toolbox.default_config import Config
-from cyy_torch_toolbox.dependency import (has_hugging_face,
-                                          has_torchvision)
-from cyy_torch_toolbox.device import DeviceGreedyAllocator
+from cyy_torch_toolbox.dependency import has_torchvision
 from cyy_torch_toolbox.ml_type import ExecutorHookPoint, StopExecutingException
 
 
@@ -21,23 +19,4 @@ def test_vision_training() -> None:
         ExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
     )
     # trainer.model_with_loss.compile_model()
-    trainer.train()
-
-
-def test_nlp_training() -> None:
-    if not has_hugging_face:
-        return
-    device = DeviceGreedyAllocator().get_device(max_needed_bytes=9 * 1024 * 1024 * 1024)
-    if device is None:
-        return
-    config = Config(dataset_name="imdb", model_name="simplelstm")
-    config.trainer_config.hook_config.debug = True
-    config.hyper_parameter_config.epoch = 1
-    config.hyper_parameter_config.learning_rate = 0.01
-    config.dc_config.dataset_kwargs["tokenizer"] = {"type": "spacy"}
-    trainer = config.create_trainer()
-    # trainer.model_with_loss.compile_model()
-    trainer.append_named_hook(
-        ExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
-    )
     trainer.train()

@@ -166,12 +166,5 @@ class VisionDatasetUtil(DatasetUtil):
         torchvision.utils.save_image(sample_input, path)
 
 
-class TextDatasetUtil(DatasetUtil):
-    @torch.no_grad()
-    def get_sample_text(self, index: int) -> str:
-        return self._get_sample_input(index, apply_transform=False)
-
-
 global_dataset_util_factor = Factory()
 global_dataset_util_factor.register(DatasetType.Vision, VisionDatasetUtil)
-global_dataset_util_factor.register(DatasetType.Text, TextDatasetUtil)
