@@ -110,6 +110,9 @@ class DatasetCollection:
         dataset_util = self.get_dataset_util(phase=phase)
         return dataset_util.get_original_dataset()
 
+    def foreach_transform(self):
+        yield from self.__transforms.items()
+
     def append_transform(
         self, transform: Callable, key: TransformType, phases: None | Iterable = None
     ) -> None:
