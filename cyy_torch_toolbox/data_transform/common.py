@@ -3,17 +3,8 @@ from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
 
-from cyy_torch_toolbox.dependency import has_torch_geometric
-
-if has_torch_geometric:
-    from .graph import pyg_data_extraction
-
 
 def default_data_extraction(data: Any) -> dict:
-    if has_torch_geometric:
-        result = pyg_data_extraction(data=data)
-        if result is not None:
-            return result
     index = None
     match data:
         case {"data": data, "index": index}:
