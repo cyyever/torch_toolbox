@@ -14,7 +14,7 @@ from .inferencer import Inferencer
 from .metric_visualizers.batch_loss_logger import BatchLossLogger
 from .ml_type import (EvaluationMode, ExecutorHookPoint, MachineLearningPhase,
                       ModelType, StopExecutingException)
-from .model_evaluator import ModelEvaluator
+from .model.evaluator import ModelEvaluator
 
 
 class Trainer(Executor):
