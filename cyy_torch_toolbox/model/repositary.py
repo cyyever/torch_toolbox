@@ -7,7 +7,7 @@ from cyy_naive_lib.log import get_logger
 from ..ml_type import DatasetType
 
 
-def get_torch_model_info() -> dict:
+def get_model_info() -> dict:
     model_info: dict = {}
     github_repos: dict[DatasetType, list] = {}
     github_repos[DatasetType.Vision] = [

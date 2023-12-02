@@ -164,7 +164,6 @@ class ModelUtil:
 
         self.change_modules(f=unfreeze, **kwargs)
 
-    @functools.lru_cache(maxsize=128)
     def have_module(
         self, module_type: Type | None = None, module_name: str | None = None
     ) -> bool:
