@@ -1,10 +1,6 @@
 torch
 nvidia-ml-py
 hydra-core
-spacy
 omegaconf
-huggingface-hub
 torchmetrics
-transformers
-datasets
 git+ssh://git@github.com/cyyever/naive_python_lib.git@main#egg=cyy_naive_lib

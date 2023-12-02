@@ -1,5 +1,4 @@
 import copy
-import functools
 import os
 import sys
 
@@ -8,35 +7,23 @@ import torch.nn
 from cyy_naive_lib.log import get_logger
 
 from ..dataset_collection import DatasetCollection
-from ..dependency import has_hugging_face
+from ..factory import Factory
 from ..ml_type import DatasetType, MachineLearningPhase, ModelType
 from ..model_evaluator import ModelEvaluator, get_model_evaluator
-from ..tokenizer import get_tokenizer
 from .torch_model import get_torch_model_info
 
-if has_hugging_face:
-    from .huggingface_model import get_hugging_face_model_info
-
-
-@functools.cache
-def __get_model_info() -> dict:
-    model_info = get_torch_model_info()
-    if has_hugging_face:
-        for dataset_type, info in get_hugging_face_model_info().items():
-            if dataset_type not in model_info:
-                model_info[dataset_type] = info
-            else:
-                for model_name, res in info.items():
-                    if model_name in model_info[dataset_type]:
-                        raise RuntimeError(f"model {model_name} from multiple sources")
-                    model_info[dataset_type][model_name] = res
-    return model_info
+globel_model_factory = Factory()
 
 
 def get_model(
     name: str, dataset_collection: DatasetCollection, model_kwargs: dict
 ) -> dict:
-    model_constructors = __get_model_info().get(dataset_collection.dataset_type, {})
+    constructor = globel_model_factory.get(dataset_collection.dataset_type)
+    if constructor is not None:
+        return constructor(
+            name=name, dataset_collection=dataset_collection, model_kwargs=model_kwargs
+        )
+    model_constructors = get_torch_model_info().get(dataset_collection.dataset_type, {})
     model_constructor_info = model_constructors.get(name.lower(), {})
     if not model_constructor_info:
         raise NotImplementedError(
@@ -45,7 +32,6 @@ def get_model(
         )
 
     final_model_kwargs: dict = {}
-    tokenizer = None
     match dataset_collection.dataset_type:
         case DatasetType.Vision:
             dataset_util = dataset_collection.get_dataset_util()
@@ -54,24 +40,6 @@ def get_model(
                     final_model_kwargs |= {
                         k: dataset_util.channel,
                     }
-        case DatasetType.Text:
-            tokenizer_kwargs = dataset_collection.dataset_kwargs.get("tokenizer", {})
-            print(model_kwargs.get("name", ""))
-            if "hugging_face" in model_kwargs.get("name", ""):
-                tokenizer_kwargs["type"] = "hugging_face"
-                tokenizer_kwargs["name"] = (
-                    model_kwargs["name"]
-                    .replace("hugging_face_seq2seq_lm_", "")
-                    .replace("hugging_face_sequence_classification_", "")
-                    .replace("hugging_face_", "")
-                )
-            tokenizer = get_tokenizer(dataset_collection, tokenizer_kwargs)
-            get_logger().info("tokenizer is %s", tokenizer)
-
-            if tokenizer is not None and hasattr(tokenizer, "itos"):
-                for k in ("num_embeddings", "token_num"):
-                    if k not in model_kwargs:
-                        final_model_kwargs[k] = len(tokenizer.itos)
         case DatasetType.Graph:
             if "num_features" not in model_kwargs:
                 final_model_kwargs[
@@ -105,16 +73,6 @@ def get_model(
                 model_constructor_info["name"],
             )
             res = {"model": model}
-            if tokenizer is not None:
-                res |= {"tokenizer": tokenizer}
-            word_vector_name = model_kwargs.get("word_vector_name", None)
-            if word_vector_name is not None:
-                from .word_vector import PretrainedWordVector
-
-                PretrainedWordVector(word_vector_name).load_to_model(
-                    model=model,
-                    tokenizer=tokenizer,
-                )
             repo = model_constructor_info.get("repo", None)
             if repo is not None:
                 # we need the model path to pickle models
