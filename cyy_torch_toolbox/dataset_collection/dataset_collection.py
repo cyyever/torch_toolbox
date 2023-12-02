@@ -13,7 +13,7 @@ from ..dataset import dataset_with_indices
 from ..dataset.sampler import DatasetSampler
 from ..dataset.transform import add_data_extraction, add_transforms
 from ..dataset.transform.transform import Transforms
-from ..dataset.util import DatasetUtil, get_dataset_util_cls
+from ..dataset.util import DatasetUtil, global_dataset_util_factor
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 
 
@@ -97,7 +97,7 @@ class DatasetCollection:
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
-        return get_dataset_util_cls(dataset_type=self.dataset_type)(
+        return global_dataset_util_factor.get(self.dataset_type)(
             dataset=self.get_dataset(phase),
             transforms=self.__transforms[phase],
             name=self.name,

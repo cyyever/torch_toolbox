@@ -89,10 +89,8 @@ def select_item(
         match dataset:
             case torch_geometric.data.Dataset() | list():
                 if mask is None:
-                    idx = 0
-                    for data in dataset:
+                    for idx, data in enumerate(dataset):
                         yield idx, data
-                        idx += 1
                     return
                 assert len(mask) == 1
                 if isinstance(dataset, torch_geometric.data.Dataset):
@@ -118,13 +116,11 @@ def select_item(
             if hasattr(dataset, "reset"):
                 dataset.reset()
             iterator = iter(dataset)
-            idx = 0
-            for item in iterator:
+            for idx, item in enumerate(iterator):
                 if indices is None or idx in indices:
                     yield idx, item
                     if indices is not None:
                         indices.remove(idx)
-                idx += 1
             if hasattr(dataset, "reset"):
                 dataset.reset()
         case _:
