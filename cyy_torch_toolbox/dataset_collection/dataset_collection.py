@@ -9,10 +9,10 @@ from cyy_naive_lib.fs.ssd import is_ssd
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.storage import get_cached_data
 
+from ..data_transform import append_transforms_to_dc
+from ..data_transform.transform import Transforms
 from ..dataset import dataset_with_indices
 from ..dataset.sampler import DatasetSampler
-from ..dataset.transform import add_data_extraction, add_transforms
-from ..dataset.transform.transform import Transforms
 from ..dataset.util import DatasetUtil, global_dataset_util_factor
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 
@@ -36,7 +36,7 @@ class DatasetCollection:
         self.__dataset_kwargs: dict = (
             copy.deepcopy(dataset_kwargs) if dataset_kwargs else {}
         )
-        add_data_extraction(self)
+        append_transforms_to_dc(self)
 
     @property
     def name(self) -> str:
@@ -179,7 +179,7 @@ class DatasetCollection:
             self.__datasets[phase] = datasets[idx]
 
     def add_transforms(self, model_evaluator: Any) -> None:
-        add_transforms(dc=self, model_evaluator=model_evaluator)
+        append_transforms_to_dc(dc=self, model_evaluator=model_evaluator)
 
     def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
         with DatasetCollection.lock:

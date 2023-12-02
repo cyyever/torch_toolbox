@@ -5,15 +5,12 @@ from typing import Any, Generator, Type
 
 import torch
 import torch.utils
+import torchvision
 
-from ..dataset.transform.transform import Transforms
-from ..dependency import has_torchvision
+from ..data_transform.transform import Transforms
 from ..factory import Factory
 from ..ml_type import DatasetType
 from . import get_dataset_size, select_item, subset_dp
-
-if has_torchvision:
-    import torchvision
 
 
 class DatasetUtil:
