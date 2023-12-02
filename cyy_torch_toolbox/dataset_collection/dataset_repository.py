@@ -6,7 +6,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import get_class_attrs, get_kwarg_names
 
-from ..dataset.util import get_dataset_util_cls
+from ..dataset.util import global_dataset_util_factor
 from ..dependency import has_hugging_face, has_torchvision
 from ..factory import Factory
 from ..ml_type import DatasetType, MachineLearningPhase
@@ -191,7 +191,7 @@ def __create_dataset(
         test_dataset = None
 
     if validation_dataset is None and test_dataset is None:
-        datasets: dict = get_dataset_util_cls(dataset_type)(
+        datasets: dict = global_dataset_util_factor.get(dataset_type)(
             training_dataset
         ).decompose()
         if datasets is not None:
@@ -214,6 +214,8 @@ def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, di
 
     for dataset_type in dataset_types:
         register_default_dataset_constructors(dataset_type=dataset_type)
+        if dataset_type not in global_dataset_constructors:
+            continue
         constructor = global_dataset_constructors[dataset_type].get(
             name, case_sensitive=True
         )

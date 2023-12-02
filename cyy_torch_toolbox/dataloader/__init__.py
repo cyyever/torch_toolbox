@@ -1,22 +1,15 @@
-import math
 import os
 
 import torch
 from cyy_naive_lib.log import get_logger
 
 from ..data_structure.torch_process_context import TorchProcessContext
-from ..dataset.util import GraphDatasetUtil
 from ..dataset_collection import DatasetCollection
-from ..dependency import has_torch_geometric
+from ..factory import Factory
 from ..hyper_parameter import HyperParameter
 from ..ml_type import DatasetType, MachineLearningPhase
-from ..model_evaluator import ModelEvaluator
 
-if has_torch_geometric:
-    import torch_geometric
-    from torch_geometric.loader import NeighborLoader
-
-    from .pyg_dataloader import RandomNodeLoader
+global_dataloader_factory = Factory()
 
 
 def __prepare_dataloader_kwargs(
@@ -25,6 +18,7 @@ def __prepare_dataloader_kwargs(
     hyper_parameter: HyperParameter,
     cache_transforms: str | None = None,
     device: torch.device | None = None,
+    **kwargs,
 ) -> dict:
     dataset = dc.get_dataset(phase=phase)
     transforms = dc.get_transforms(phase=phase)
@@ -45,7 +39,6 @@ def __prepare_dataloader_kwargs(
         case _:
             if cache_transforms is not None:
                 raise RuntimeError(cache_transforms)
-    kwargs: dict = {}
     use_process: bool = "USE_THREAD_DATALOADER" not in os.environ
     if dc.dataset_type == DatasetType.Graph:
         # don't pass large graphs around processes
@@ -75,7 +68,7 @@ def get_dataloader(
     hyper_parameter: HyperParameter,
     cache_transforms: str | None = None,
     device: torch.device | None = None,
-    model_evaluator: ModelEvaluator | None = None,
+    model_evaluator=None,
     **kwargs,
 ) -> torch.utils.data.DataLoader:
     dataloader_kwargs = __prepare_dataloader_kwargs(
@@ -84,7 +77,13 @@ def get_dataloader(
         hyper_parameter=hyper_parameter,
         cache_transforms=cache_transforms,
         device=device,
+        **kwargs,
     )
+    constructor = global_dataloader_factory.get(dc.dataset_type)
+    if constructor is not None:
+        return constructor(
+            dc=dc, model_evaluator=model_evaluator, phase=phase, **dataloader_kwargs
+        )
     # if has_dali and has_torchvision and dc.dataset_type == DatasetType.Vision:
     #     dataloader = get_dali_dataloader(
     #         dataset=dataset,
@@ -97,38 +96,4 @@ def get_dataloader(
     #     if dataloader is not None:
     #         return dataloader
 
-    if dc.dataset_type != DatasetType.Graph:
-        return torch.utils.data.DataLoader(**dataloader_kwargs)
-    assert has_torch_geometric
-    util = dc.get_dataset_util(phase=phase)
-    assert isinstance(util, GraphDatasetUtil)
-    pyg_input_nodes = kwargs.get("pyg_input_nodes", {})
-    if pyg_input_nodes:
-        input_nodes = pyg_input_nodes[phase]
-    else:
-        input_nodes = torch_geometric.utils.mask_to_index(util.get_mask()[0])
-
-    if not kwargs.get("sample_neighbor", True):
-        return RandomNodeLoader(node_indices=input_nodes.tolist(), **dataloader_kwargs)
-
-    if "batch_number" in kwargs:
-        batch_number = kwargs["batch_number"]
-        input_number = input_nodes.numel()
-        assert input_number >= batch_number
-        dataloader_kwargs["batch_size"] = math.ceil(input_number / batch_number)
-        get_logger().debug(
-            "batch_number %s input size %s batch_size %s",
-            batch_number,
-            input_number,
-            dataloader_kwargs["batch_size"],
-        )
-        assert dataloader_kwargs["batch_size"] >= 1
-        assert dataloader_kwargs["batch_size"] * (batch_number - 1) < input_number
-        assert dataloader_kwargs["batch_size"] * batch_number >= input_number
-    return NeighborLoader(
-        data=util.get_graph(0),
-        num_neighbors=[kwargs.get("num_neighbor", 10)] * model_evaluator.neighbour_hop,
-        input_nodes=input_nodes,
-        transform=lambda data: data.to_dict(),
-        **dataloader_kwargs,
-    )
+    return torch.utils.data.DataLoader(**dataloader_kwargs)
