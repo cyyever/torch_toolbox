@@ -63,27 +63,9 @@ def get_model(
             get_logger().debug(
                 "use model arguments %s for model %s", final_model_kwargs, name
             )
-            res = {"model": model}
-            # repo = None
-            # if model_constructor_info is not None:
-            #     repo = model_constructor_info.get("repo", None)
-            # if repo is not None:
-            #     # we need the model path to pickle models
-            #     hub_dir = torch.hub.get_dir()
-            #     # Parse github repo information
-            #     repo_owner, repo_name, ref = torch.hub._parse_repo_info(repo)
-            #     # Github allows branch name with slash '/',
-            #     # this causes confusion with path on both Linux and Windows.
-            #     # Backslash is not allowed in Github branch name so no need to
-            #     # to worry about it.
-            #     normalized_br = ref.replace("/", "_")
-            #     # Github renames folder repo-v1.x.x to repo-1.x.x
-            #     # We don't know the repo name before downloading the zip file
-            #     # and inspect name from it.
-            #     # To check if cached repo exists, we need to normalize folder names.
-            #     owner_name_branch = "_".join([repo_owner, repo_name, normalized_br])
-            #     repo_dir = os.path.join(hub_dir, owner_name_branch)
-            #     sys.path.append(repo_dir)
+            res = model
+            if not isinstance(model, dict):
+                res = {"model": model}
             return res
         except TypeError as e:
             retry = False
@@ -93,10 +75,6 @@ def get_model(
                     final_model_kwargs.pop(k)
                     retry = True
                     break
-            # if not retry:
-            #     if "pretrained" in str(e) and not model_kwargs["pretrained"]:
-            #         model_kwargs.pop("pretrained")
-            #         retry = True
             if not retry:
                 raise e
 
