@@ -68,11 +68,6 @@ def backup_target(data: dict) -> dict:
     return data
 
 
-def swap_input_and_target(data: dict) -> dict:
-    data["input"], data["target"] = data["target"], data["input"]
-    return data
-
-
 def replace_str(string: str, old: str, new: str) -> str:
     return string.replace(old, new)
 
