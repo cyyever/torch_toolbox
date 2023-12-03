@@ -7,7 +7,7 @@ from typing import Any, Callable
 import torch
 from cyy_naive_lib.log import get_logger
 
-from .dataloader import get_dataloader
+from .data_pipeline.loader import get_dataloader
 from .dataset.util import DatasetUtil
 from .dataset_collection import DatasetCollection
 from .device import get_device
