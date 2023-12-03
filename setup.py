@@ -19,7 +19,7 @@ setuptools.setup(
         "cyy_torch_toolbox/hyper_parameter",
         "cyy_torch_toolbox/model",
         "cyy_torch_toolbox/metrics",
-        "cyy_torch_toolbox/dataloader",
+        "cyy_torch_toolbox/data_pipeline",
         "cyy_torch_toolbox/hook",
         "cyy_torch_toolbox/metric_visualizers",
         "cyy_torch_toolbox/data_structure",
