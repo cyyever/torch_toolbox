@@ -13,7 +13,6 @@ setuptools.setup(
     url="https://github.com/cyyever/torch_toolbox",
     packages=[
         "cyy_torch_toolbox",
-        "cyy_torch_toolbox/dataset_collection",
         "cyy_torch_toolbox/dataset",
         "cyy_torch_toolbox/hyper_parameter",
         "cyy_torch_toolbox/model",
