@@ -4,7 +4,7 @@ from typing import Type
 
 from cyy_naive_lib.log import get_logger
 
-from ..data_transform.common import replace_target
+from ..data_pipeline.common import replace_target
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 from .classification import ClassificationDatasetCollection
 from .dataset_collection import DatasetCollection

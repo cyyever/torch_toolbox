@@ -4,10 +4,10 @@ from collections.abc import Iterable
 from typing import Any, Generator, Type
 
 import torch
-import torch.utils
+import torch.utils.data
 import torchvision
 
-from ..data_transform.transform import Transforms
+from ..data_pipeline.transform import Transforms
 from ..factory import Factory
 from ..ml_type import DatasetType
 from . import get_dataset_size, select_item, subset_dp
