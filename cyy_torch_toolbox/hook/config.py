@@ -29,14 +29,14 @@ class HookConfig:
     def set_hooks(self, executor) -> None:
         if executor.phase == MachineLearningPhase.Training:
             if torch.cuda.is_available():
-                executor.enable_or_disable_hook("AMP", self.use_amp, AMP())
-        executor.enable_or_disable_hook("debugger", self.debug, Debugger())
-        executor.enable_or_disable_hook("profiler", self.profile, Profiler())
-        executor.enable_or_disable_hook(
+                executor.append_or_disable_hook("AMP", self.use_amp, AMP())
+        executor.append_or_disable_hook("debugger", self.debug, Debugger())
+        executor.append_or_disable_hook("profiler", self.profile, Profiler())
+        executor.append_or_disable_hook(
             "logger", self.summarize_executor, ExecutorLogger()
         )
         if torch.cuda.is_available():
-            executor.enable_or_disable_hook("cudnn", self.benchmark_cudnn, CUDNNHook())
+            executor.append_or_disable_hook("cudnn", self.benchmark_cudnn, CUDNNHook())
         if self.use_performance_metric:
             executor.enable_hook(
                 "performance_metric",
@@ -46,12 +46,12 @@ class HookConfig:
                     extra_metrics=self.use_extra_performance_metrics,
                 ),
             )
-            executor.enable_or_disable_hook(
+            executor.append_or_disable_hook(
                 "performance_metric_recorder",
                 self.save_performance_metric,
                 PerformanceMetricRecorder(),
             )
-            executor.enable_or_disable_hook(
+            executor.append_or_disable_hook(
                 "performance_metric_logger",
                 self.log_performance_metric,
                 PerformanceMetricLogger(),
