@@ -44,10 +44,10 @@ class ModelEvaluator:
         match frozen_modules:
             case {"types": types}:
                 for t in types:
-                    self.model_util.freeze_modules(module_type=t)
+                    assert self.model_util.freeze_modules(module_type=t)
             case {"names": names}:
                 for name in names:
-                    self.model_util.freeze_modules(module_name=name)
+                    assert self.model_util.freeze_modules(module_name=name)
             case None:
                 pass
             case _:

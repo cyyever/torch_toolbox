@@ -5,9 +5,9 @@ from ..hook import Hook
 
 
 class AMP(Hook):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self) -> None:
         assert torch.cuda.is_available()
-        super().__init__(*args, **kwargs)
+        super().__init__(stripable=True)
         self.__ctx = None
         self.__scaler = None
 
