@@ -4,12 +4,12 @@ from typing import Any, Callable
 
 import torch
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.dataset import select_item
 from cyy_torch_toolbox.ml_type import TransformType
 from cyy_torch_toolbox.tensor import tensor_to
 from torch.utils.data import default_collate
 
 from .common import default_data_extraction
+from .dataset import select_item
 
 
 class Transforms:
