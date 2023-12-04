@@ -7,8 +7,8 @@ from typing import Any
 from cyy_naive_lib.log import get_logger, set_level
 from omegaconf import OmegaConf
 
-from cyy_torch_toolbox.dataset_collection import (DatasetCollection,
-                                                  DatasetCollectionConfig)
+from cyy_torch_toolbox.dataset import DatasetCollectionConfig
+from cyy_torch_toolbox.dataset.collection import DatasetCollection
 from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase

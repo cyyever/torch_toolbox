@@ -5,7 +5,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from .classification_inferencer import ClassificationInferencer
-from .dataset_collection import DatasetCollection
+from .dataset.collection import DatasetCollection
 from .executor import Executor
 from .hook.config import HookConfig
 from .hook.keep_model import KeepModelHook

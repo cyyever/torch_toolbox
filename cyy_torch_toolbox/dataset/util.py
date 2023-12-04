@@ -5,9 +5,9 @@ from typing import Any, Generator, Type
 import torch
 import torch.utils.data
 
+from ..data_pipeline.dataset import get_dataset_size, select_item, subset_dp
 from ..data_pipeline.transform import Transforms
 from ..factory import Factory
-from . import get_dataset_size, select_item, subset_dp
 
 
 class DatasetUtil:

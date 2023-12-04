@@ -6,7 +6,7 @@ from typing import Callable
 import torch
 from cyy_naive_lib.log import get_logger
 
-from ..dataset_collection import DatasetCollection
+from ..dataset.collection import DatasetCollection
 from ..factory import Factory
 from ..ml_type import DatasetType, ModelType
 from .evaluator import ModelEvaluator, VisionModelEvaluator

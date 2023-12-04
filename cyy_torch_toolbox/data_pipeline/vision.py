@@ -1,7 +1,7 @@
 import torch
-import torch.utils
+import torch.utils.data
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.dataset_collection import DatasetCollection
+from cyy_torch_toolbox.dataset.collection import DatasetCollection
 from cyy_torch_toolbox.dependency import has_torchvision
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)

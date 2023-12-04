@@ -4,7 +4,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from ..data_structure.torch_process_context import TorchProcessContext
-from ..dataset_collection import DatasetCollection
+from ..dataset.collection import DatasetCollection
 from ..factory import Factory
 from ..hyper_parameter import HyperParameter
 from ..ml_type import DatasetType, MachineLearningPhase

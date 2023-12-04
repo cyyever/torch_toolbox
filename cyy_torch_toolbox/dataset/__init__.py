@@ -1,142 +1,144 @@
-# from collections.abc import Iterable
-from typing import Any, Iterable, Mapping
+import json
+import os
+from typing import Type
 
-import torch
-import torch.utils.data
-import torch.utils.data.datapipes
-import torch.utils.data.dataset
-from cyy_torch_toolbox.dependency import has_hugging_face, has_torch_geometric
+from cyy_naive_lib.log import get_logger
 
-if has_torch_geometric:
-    import torch_geometric.data
-if has_hugging_face:
-    import datasets as hugging_face_datasets
+from ..data_pipeline.common import replace_target
+from ..ml_type import MachineLearningPhase, TransformType
+from .classification_collection import ClassificationDatasetCollection
+from .collection import DatasetCollection
+from .repository import get_dataset
 
-
-def get_dataset_size(dataset: Any) -> int:
-    match dataset:
-        case {0: {"mask": mask, **__}}:
-            return mask.sum()
-        case [{"mask": mask, **___}]:
-            return mask.sum()
-    if hasattr(dataset, "__len__"):
-        return len(dataset)
-    match dataset:
-        case torch.utils.data.IterableDataset():
-            return sum(1 for _ in dataset)
-    if has_hugging_face:
-        if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
-            return len(dataset)
-    raise NotImplementedError(dataset)
+# from .text import TextDatasetCollection
 
 
-class KeyPipe(torch.utils.data.MapDataPipe):
-    def __init__(self, dp: Mapping) -> None:
-        super().__init__()
-        self.__dp = dp
+def create_dataset_collection(
+    name: str, dataset_kwargs: dict | None = None
+) -> DatasetCollection:
+    if dataset_kwargs is None:
+        dataset_kwargs = {}
+    with DatasetCollection.lock:
+        if "root" not in dataset_kwargs:
+            dataset_kwargs["root"] = DatasetCollection.get_dataset_dir(name)
+        if "download" not in dataset_kwargs:
+            dataset_kwargs["download"] = True
+        res = get_dataset(name=name, dataset_kwargs=dataset_kwargs)
+        if res is None:
+            raise NotImplementedError(name)
+        dataset_type, datasets = res
 
-    def __getitem__(self, index) -> tuple:
-        item = self.__dp.__getitem__(index)
-        return (index, item)
-
-    def __len__(self) -> int:
-        return len(self.__dp)
-
-
-def __add_index_to_map_item(item) -> dict:
-    key, value = item[0], item[1]
-    return {"index": key, "data": value}
-
-
-def dataset_with_indices(
-    dataset: torch.utils.data.Dataset,
-) -> torch.utils.data.MapDataPipe:
-    old_dataset = dataset
-    if has_torch_geometric:
-        if isinstance(dataset, torch_geometric.data.dataset.Dataset):
-            return dataset
-    match dataset:
-        case list():
-            return dataset
-        case torch.utils.data.IterableDataset():
-            dataset = torch.utils.data.datapipes.iter.IterableWrapper(dataset)
-    # if has_hugging_face:
-    #     if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
-    #         return dataset
-    # dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
-    match dataset:
-        case torch.utils.data.IterDataPipe():
-            dataset = dataset.enumerate()
-        case _:
-            dataset = torch.utils.data.datapipes.map.Mapper(
-                KeyPipe(dataset), __add_index_to_map_item
+        cls: Type = DatasetCollection
+        # if dataset_type == DatasetType.Text:
+        #     cls = TextDatasetCollection
+        dc: DatasetCollection = cls(
+            datasets=datasets,
+            dataset_type=dataset_type,
+            name=name,
+            dataset_kwargs=dataset_kwargs,
+        )
+        if dc.is_classification_dataset():
+            cls = dc.__class__
+            dc.__class__ = cls.__class__(
+                cls.__name__ + "WithClassification",
+                (cls, ClassificationDatasetCollection),
+                {},
             )
-    assert not hasattr(dataset, "original_dataset")
-    setattr(dataset, "original_dataset", old_dataset)
-    return dataset
+
+        if not dc.has_dataset(MachineLearningPhase.Validation):
+            dc.iid_split(
+                from_phase=MachineLearningPhase.Training,
+                parts={
+                    MachineLearningPhase.Training: 8,
+                    MachineLearningPhase.Validation: 1,
+                    MachineLearningPhase.Test: 1,
+                },
+            )
+        if not dc.has_dataset(MachineLearningPhase.Test):
+            dc.iid_split(
+                from_phase=MachineLearningPhase.Validation,
+                parts={
+                    MachineLearningPhase.Validation: 1,
+                    MachineLearningPhase.Test: 1,
+                },
+            )
+        return dc
 
 
-def select_item(
-    dataset: Any,
-    indices: None | Iterable = None,
-    mask: None | list[torch.Tensor] = None,
-) -> Iterable:
-    if indices is not None:
-        indices = set(indices)
-    if has_torch_geometric:
-        match dataset:
-            case torch_geometric.data.Dataset() | list():
-                if mask is None:
-                    for idx, data in enumerate(dataset):
-                        yield idx, data
-                    return
-                assert len(mask) == 1
-                if isinstance(dataset, torch_geometric.data.Dataset):
-                    for idx, flag in enumerate(mask[0].tolist()):
-                        if not flag:
-                            continue
-                        if indices is None or idx in indices:
-                            yield idx, {"target": dataset[0].y[idx], "index": idx}
-                else:
-                    graph = dataset[0]["original_dataset"][dataset[0]["graph_index"]]
-                    for idx, flag in enumerate(mask[0].tolist()):
-                        if not flag:
-                            continue
-                        if indices is None or idx in indices:
-                            yield idx, {
-                                "target": graph.y[idx],
-                                "index": idx,
-                            }
-                return
+class DatasetCollectionConfig:
+    def __init__(self, dataset_name: str = "") -> None:
+        self.dataset_name: str = dataset_name
+        self.dataset_kwargs: dict = {}
+        self.training_dataset_percentage = None
+        self.training_dataset_indices_path = None
+        self.training_dataset_label_map_path = None
+        self.training_dataset_label_map = None
+        self.training_dataset_label_noise_percentage = None
 
-    match dataset:
-        case torch.utils.data.IterableDataset():
-            if hasattr(dataset, "reset"):
-                dataset.reset()
-            iterator = iter(dataset)
-            for idx, item in enumerate(iterator):
-                if indices is None or idx in indices:
-                    yield idx, item
-                    if indices is not None:
-                        indices.remove(idx)
-            if hasattr(dataset, "reset"):
-                dataset.reset()
-        case _:
-            if indices is None:
-                indices = list(range(get_dataset_size(dataset)))
-            for idx in indices:
-                yield idx, dataset[idx]
+    def create_dataset_collection(
+        self, save_dir: str | None = None
+    ) -> DatasetCollection:
+        assert self.dataset_name is not None
+        dc = create_dataset_collection(
+            name=self.dataset_name, dataset_kwargs=self.dataset_kwargs
+        )
 
+        self.__transform_training_dataset(dc=dc, save_dir=save_dir)
+        return dc
 
-def subset_dp(
-    dataset: torch.utils.data.Dataset, indices: None | Iterable = None
-) -> torch.utils.data.MapDataPipe:
-    # original_dataset = getattr(dataset, "dataset", None)
-    # if has_hugging_face:
-    #     match original_dataset:
-    #         case hugging_face_datasets.arrow_dataset.Dataset():
-    #             pass
+    def __transform_training_dataset(self, dc, save_dir: str | None = None) -> None:
+        subset_indices = None
+        dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
+        if self.training_dataset_percentage is not None:
+            subset_dict = dataset_util.iid_sample(self.training_dataset_percentage)
+            subset_indices = sum(subset_dict.values(), [])
+            assert save_dir is not None
+            with open(
+                os.path.join(save_dir, "training_dataset_indices.json"),
+                mode="wt",
+                encoding="utf-8",
+            ) as f:
+                json.dump(subset_indices, f)
 
-    return torch.utils.data.datapipes.map.SequenceWrapper(
-        list(dict(select_item(dataset, indices)).values()), deepcopy=False
-    )
+        if self.training_dataset_indices_path is not None:
+            assert subset_indices is None
+            get_logger().info(
+                "use training_dataset_indices_path %s",
+                self.training_dataset_indices_path,
+            )
+            with open(self.training_dataset_indices_path, "r", encoding="utf-8") as f:
+                subset_indices = json.load(f)
+        if subset_indices is not None:
+            dc.set_subset(phase=MachineLearningPhase.Training, indices=subset_indices)
+        dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
+        label_map = None
+        if self.training_dataset_label_noise_percentage:
+            label_map = dataset_util.randomize_subset_label(
+                self.training_dataset_label_noise_percentage
+            )
+            assert save_dir is not None
+            with open(
+                os.path.join(
+                    save_dir,
+                    "training_dataset_label_map.json",
+                ),
+                mode="wt",
+                encoding="utf-8",
+            ) as f:
+                json.dump(label_map, f)
+
+        if self.training_dataset_label_map_path is not None:
+            assert label_map is not None
+            get_logger().info(
+                "use training_dataset_label_map_path %s",
+                self.training_dataset_label_map_path,
+            )
+            with open(self.training_dataset_label_map_path, "r", encoding="utf-8") as f:
+                self.training_dataset_label_map = json.load(f)
+
+        if self.training_dataset_label_map is not None:
+            dc.append_transform(
+                transform=replace_target(self.training_dataset_label_map),
+                key=TransformType.Target,
+                phases=[MachineLearningPhase.Training],
+            )
