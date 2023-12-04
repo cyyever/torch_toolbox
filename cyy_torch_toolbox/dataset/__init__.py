@@ -1,8 +1,10 @@
-from collections.abc import Iterable
-from typing import Any
+# from collections.abc import Iterable
+from typing import Any, Iterable, Mapping
 
 import torch
 import torch.utils.data
+import torch.utils.data.datapipes
+import torch.utils.data.dataset
 from cyy_torch_toolbox.dependency import has_hugging_face, has_torch_geometric
 
 if has_torch_geometric:
@@ -17,15 +19,11 @@ def get_dataset_size(dataset: Any) -> int:
             return mask.sum()
         case [{"mask": mask, **___}]:
             return mask.sum()
-        case torch.utils.data.dataset.ConcatDataset():
-            return sum(get_dataset_size(d) for d in dataset.datasets)
+    if hasattr(dataset, "__len__"):
+        return len(dataset)
+    match dataset:
         case torch.utils.data.IterableDataset():
-            cnt: int = 0
-            for _ in dataset:
-                cnt += 1
-            return cnt
-        case torch.utils.data.MapDataPipe():
-            return len(dataset)
+            return sum(1 for _ in dataset)
     if has_hugging_face:
         if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
             return len(dataset)
@@ -33,7 +31,7 @@ def get_dataset_size(dataset: Any) -> int:
 
 
 class KeyPipe(torch.utils.data.MapDataPipe):
-    def __init__(self, dp: torch.utils.data.MapDataPipe) -> None:
+    def __init__(self, dp: Mapping) -> None:
         super().__init__()
         self.__dp = dp
 
@@ -67,7 +65,7 @@ def dataset_with_indices(
     #         return dataset
     # dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
     match dataset:
-        case torch.utils.data.datapipes.datapipe.IterDataPipe():
+        case torch.utils.data.IterDataPipe():
             dataset = dataset.enumerate()
         case _:
             dataset = torch.utils.data.datapipes.map.Mapper(
