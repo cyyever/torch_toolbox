@@ -6,7 +6,7 @@ from cyy_torch_toolbox.dependency import has_torchvision
 from cyy_torch_toolbox.ml_type import (DatasetType, MachineLearningPhase,
                                        TransformType)
 
-from ..dataset.util import VisionDatasetUtil
+from ..dataset.vision_util import VisionDatasetUtil
 from .transform import Transforms
 
 if has_torchvision:
