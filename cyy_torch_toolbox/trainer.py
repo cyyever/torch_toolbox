@@ -135,7 +135,7 @@ class Trainer(Executor):
                         )
                         if inferencer is not None:
                             inferencer.model.load_state_dict(self.model.state_dict())
-                            inferencer.inference(epoch=epoch, use_grad=False)
+                            inferencer.inference()
 
                         self.exec_hooks(
                             ExecutorHookPoint.AFTER_VALIDATION,

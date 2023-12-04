@@ -1,3 +1,6 @@
+import copy
+from typing import Any
+
 import torch
 import torch.cuda
 
@@ -25,6 +28,17 @@ class HookConfig:
         self.use_extra_performance_metrics: bool = False
         self.log_performance_metric: bool = True
         self.save_performance_metric = False
+        self.__old_config: Any = None
+
+    def __enter__(self):
+        self.__old_config = copy.copy(self)
+        return self
+
+    def __exit__(self, *args, **kwargs) -> None:
+        for name in dir(self):
+            if not name.startswith("_"):
+                setattr(self, name, getattr(self.__old_config, name))
+        self.__old_config = None
 
     def set_hooks(self, executor) -> None:
         if executor.phase == MachineLearningPhase.Training:
@@ -37,15 +51,16 @@ class HookConfig:
         )
         if torch.cuda.is_available():
             executor.append_or_disable_hook("cudnn", self.benchmark_cudnn, CUDNNHook())
+        executor.append_or_disable_hook(
+            "performance_metric",
+            self.use_performance_metric,
+            PerformanceMetric(
+                model_type=executor.running_model_evaluator.model_type,
+                profile=self.profile,
+                extra_metrics=self.use_extra_performance_metrics,
+            ),
+        )
         if self.use_performance_metric:
-            executor.enable_hook(
-                "performance_metric",
-                PerformanceMetric(
-                    model_type=executor.running_model_evaluator.model_type,
-                    profile=self.profile,
-                    extra_metrics=self.use_extra_performance_metrics,
-                ),
-            )
             executor.append_or_disable_hook(
                 "performance_metric_recorder",
                 self.save_performance_metric,

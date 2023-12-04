@@ -16,14 +16,14 @@ class LRFinder(Hook):
     ) -> None:
         super().__init__()
         self.lr_getter = lambda idx: start_lr * (end_lr / start_lr) ** idx
-        self.epoch = epoch
-        self.stop_div = stop_div
-        self.best_loss = float("inf")
-        self.losses = []
-        self.learning_rates = []
-        self.batch_index = 0
-        self.total_batch_num = None
-        self.suggested_learning_rate = None
+        self.epoch: int = epoch
+        self.stop_div: bool = stop_div
+        self.best_loss: float = float("inf")
+        self.losses: list[float] = []
+        self.learning_rates: list[float] = []
+        self.batch_index: int = 0
+        self.total_batch_num: int = 0
+        self.suggested_learning_rate: float = 0
 
     def _before_execute(self, **kwargs) -> None:
         trainer = kwargs["executor"]

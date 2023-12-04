@@ -36,12 +36,3 @@ class ExecutorLogger(Hook):
                     phase,
                     len(executor.dataset_collection.get_dataset_util(phase=phase)),
                 )
-        # if os.getenv("draw_torch_model") is not None:
-        #     executor._model_with_loss.trace_input = True
-
-    # def _after_execute(self, **kwargs):
-    #     executor = kwargs["executor"]
-    #     if os.getenv("draw_torch_model") is not None:
-    #         executor.visualizer.writer.add_graph(
-    #             executor.model, executor._model_with_loss.example_input
-    #         )
