@@ -3,10 +3,10 @@ from typing import Any
 
 from cyy_naive_lib.log import get_logger
 
-from ..dataset import get_dataset_size
-from ..dataset_collection import DatasetCollection
+from ..dataset.collection import DatasetCollection
 from ..dependency import has_dali, has_torchvision
 from ..ml_type import MachineLearningPhase, ModelType
+from .dataset import get_dataset_size
 
 if has_dali and has_torchvision:
     import nvidia.dali
