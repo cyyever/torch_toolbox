@@ -15,7 +15,6 @@ setuptools.setup(
         "cyy_torch_toolbox",
         "cyy_torch_toolbox/dataset_collection",
         "cyy_torch_toolbox/dataset",
-        "cyy_torch_toolbox/data_transform",
         "cyy_torch_toolbox/hyper_parameter",
         "cyy_torch_toolbox/model",
         "cyy_torch_toolbox/metrics",
