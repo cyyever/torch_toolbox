@@ -157,28 +157,28 @@ class HookCollection:
     def prepend_hook(self, hook: Hook, hook_name: str | None = None) -> None:
         self.insert_hook(0, hook, hook_name)
 
-    def enable_or_disable_hook(
+    def append_or_disable_hook(
         self, hook_name: str, enabled: bool, hook: Hook | None = None
     ) -> None:
         if enabled:
-            if self.has_hook_obj(hook_name):
-                self.enable_hook(hook_name=hook_name)
-            else:
+            if not self.has_hook_obj(hook_name):
                 assert hook is not None
                 self.append_hook(hook, hook_name=hook_name)
         else:
             self.disable_hook(hook_name=hook_name)
 
-    def enable_hook(self, hook_name: str, hook: Hook | None = None) -> None:
-        if self.has_hook_obj(hook_name):
-            hook = self.get_hook(hook_name)
-            hook.enable()
-            for name in hook.yield_hook_names():
-                if name in self.__disabled_hooks:
-                    self.__disabled_hooks.remove(name)
+    def switch_hook(self, hook_name: str, enabled: bool) -> None:
+        if enabled:
+            self.enable_hook(hook_name=hook_name)
         else:
-            assert hook is not None
-            self.append_hook(hook, hook_name=hook_name)
+            self.disable_hook(hook_name=hook_name)
+
+    def enable_hook(self, hook_name: str) -> None:
+        hook = self.get_hook(hook_name)
+        hook.enable()
+        for name in hook.yield_hook_names():
+            if name in self.__disabled_hooks:
+                self.__disabled_hooks.remove(name)
 
     def disable_hook(self, hook_name: str) -> None:
         if self.has_hook_obj(hook_name):
