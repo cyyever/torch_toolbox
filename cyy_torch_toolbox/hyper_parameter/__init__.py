@@ -153,19 +153,6 @@ class HyperParameter:
             filter_fun=lambda _, v: issubclass(v, torch.optim.Optimizer),
         )
 
-    def __str__(self) -> str:
-        s = (
-            "epoch:"
-            + str(self.epoch)
-            + " batch_size:"
-            + str(self.batch_size)
-            + " learning_rate:"
-            + str(self.learning_rate)
-            + " weight_decay:"
-            + str(self.weight_decay)
-        )
-        return s
-
 
 def get_recommended_hyper_parameter(
     dataset_name: str, model_name: str
