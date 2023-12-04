@@ -122,19 +122,25 @@ class ModelUtil:
             model = getattr(model, component)
         return True
 
-    def change_modules(
+    def filter_modules(
         self,
-        f: Callable,
         module_type: Type | None = None,
         module_name: str | None = None,
-    ) -> None:
+    ) -> Generator:
         for name, module in self.get_modules():
             if (module_type is not None and isinstance(module, module_type)) or (
                 module_name is not None and name == module_name
             ):
-                f(name, module, self)
+                yield name, module
 
-    def freeze_modules(self, **kwargs: Any) -> None:
+    def change_modules(self, f: Callable, **kwargs) -> bool:
+        flag = False
+        for name, module in self.filter_modules(**kwargs):
+            f(name, module, self)
+            flag = True
+        return flag
+
+    def freeze_modules(self, **kwargs: Any) -> bool:
         def freeze(name, module, model_util) -> None:
             get_logger().info("freeze %s", name)
             parameter_dict = {}
@@ -143,9 +149,9 @@ class ModelUtil:
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=False)
 
-        self.change_modules(f=freeze, **kwargs)
+        return self.change_modules(f=freeze, **kwargs)
 
-    def unfreeze_modules(self, **kwargs: Any) -> None:
+    def unfreeze_modules(self, **kwargs: Any) -> bool:
         def unfreeze(name, module, model_util) -> None:
             get_logger().info("unfreeze %s", name)
             parameter_dict = {}
@@ -154,33 +160,25 @@ class ModelUtil:
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=True)
 
-        self.change_modules(f=unfreeze, **kwargs)
+        return self.change_modules(f=unfreeze, **kwargs)
 
     def have_module(
         self, module_type: Type | None = None, module_name: str | None = None
     ) -> bool:
-        return any(
-            (module_type is not None and isinstance(module, module_type))
-            or (module_name is not None and name == module_name)
-            for name, module in self.get_modules()
-        )
+        for _ in self.filter_modules(module_type=module_type, module_name=module_name):
+            return True
+        return False
 
-    def get_modules(self) -> list[tuple[str, Any]]:
-        def get_module_impl(model: Any, prefix: str) -> list[tuple[str, Any]]:
-            result = [(prefix, model)]
+    def get_modules(self) -> Generator:
+        def get_module_impl(model: torch.nn.Module, prefix: str) -> Generator:
+            yield prefix, model
             for name, module in model._modules.items():
                 if module is None:
                     continue
                 module_prefix: str = prefix + ("." if prefix else "") + name
                 if isinstance(module, torch.nn.Conv2d):
-                    result.append((module_prefix, module))
-                    continue
-                sub_result = get_module_impl(module, module_prefix)
-                if sub_result:
-                    result += sub_result
-                else:
-                    result.append((module_prefix, module))
-            return result
+                    yield module_prefix, module
+                yield from get_module_impl(module, module_prefix)
 
         return get_module_impl(self.model, "")
 
