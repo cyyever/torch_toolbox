@@ -5,7 +5,8 @@ from typing import Any, Callable
 
 import numpy
 import torch
-from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
+from cyy_naive_lib.algorithm.mapping_op import (
+    get_mapping_items_by_key_order, get_mapping_values_by_key_order)
 
 from .dependency import has_hugging_face
 
@@ -19,6 +20,17 @@ def cat_tensors_to_vector(tensors: Iterable) -> torch.Tensor:
 
 def cat_tensor_dict(tensor_dict: dict) -> torch.Tensor:
     return cat_tensors_to_vector(get_mapping_values_by_key_order(tensor_dict))
+
+
+def decompose_like_tensor_dict(tensor_dict: dict, tensor: torch.Tensor) -> dict:
+    result = {}
+    bias = 0
+    for key, component in get_mapping_items_by_key_order(tensor_dict):
+        param_element_num = numpy.prod(component.shape)
+        result[key] = tensor[bias: bias + param_element_num].view(*component.shape)
+        bias += param_element_num
+    assert bias == tensor.shape[0]
+    return result
 
 
 def decompose_tensor_to_list(shapes: list, tensor: torch.Tensor) -> list:
