@@ -5,7 +5,6 @@ has_torch_geometric: bool = (
     importlib.util.find_spec("torch_geometric") is not None
     and importlib.util.find_spec("pyg_lib") is not None
 )
-has_torchaudio: bool = importlib.util.find_spec("torchaudio") is not None
 has_hugging_face: bool = (
     importlib.util.find_spec("datasets") is not None
     and importlib.util.find_spec("transformers") is not None

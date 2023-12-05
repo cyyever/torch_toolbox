@@ -4,12 +4,10 @@ import torch
 import torch.utils.data
 import torch.utils.data.datapipes
 import torch.utils.data.dataset
-from cyy_torch_toolbox.dependency import has_hugging_face, has_torch_geometric
+from cyy_torch_toolbox.dependency import has_torch_geometric
 
 if has_torch_geometric:
     import torch_geometric.data
-if has_hugging_face:
-    import datasets as hugging_face_datasets
 
 
 def get_dataset_size(dataset: Any) -> int:
@@ -23,9 +21,6 @@ def get_dataset_size(dataset: Any) -> int:
     match dataset:
         case torch.utils.data.IterableDataset():
             return sum(1 for _ in dataset)
-    if has_hugging_face:
-        if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
-            return len(dataset)
     raise NotImplementedError(dataset)
 
 
