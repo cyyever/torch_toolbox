@@ -12,9 +12,9 @@ if has_torch_geometric:
 
 def get_dataset_size(dataset: Any) -> int:
     match dataset:
-        case {0: {"mask": mask, **__}}:
+        case {0: {"mask": mask}}:
             return mask.sum()
-        case [{"mask": mask, **___}]:
+        case [{"mask": mask}]:
             return mask.sum()
     if hasattr(dataset, "__len__"):
         return len(dataset)
