@@ -47,8 +47,9 @@ def dataset_with_indices(
 ) -> torch.utils.data.MapDataPipe:
     old_dataset = dataset
     if has_torch_geometric:
-        if isinstance(dataset, torch_geometric.data.dataset.Dataset):
-            return dataset
+        match dataset:
+            case torch_geometric.data.Dataset():
+                return dataset
     match dataset:
         case list():
             return dataset
@@ -79,7 +80,10 @@ def select_item(
         indices = set(indices)
     if has_torch_geometric:
         match dataset:
-            case torch_geometric.data.Dataset() | list():
+            case torch_geometric.data.Dataset() | [
+                torch_geometric.data.Dataset(),
+                *_,
+            ] | [{"original_dataset": torch_geometric.data.Dataset()}, *_]:
                 if mask is None:
                     for idx, data in enumerate(dataset):
                         yield idx, data
