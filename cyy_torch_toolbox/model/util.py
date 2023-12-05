@@ -177,8 +177,15 @@ class ModelUtil:
                     continue
                 module_prefix: str = prefix + ("." if prefix else "") + name
                 if isinstance(module, torch.nn.Conv2d):
+                    has_submodule = True
                     yield module_prefix, module
-                yield from get_module_impl(module, module_prefix)
+                    continue
+                has_submodule = False
+                for sub_name, sub_module in get_module_impl(module, module_prefix):
+                    has_submodule = True
+                    yield sub_name, sub_module
+                if not has_submodule:
+                    yield module_prefix, module
 
         return get_module_impl(self.model, "")
 
