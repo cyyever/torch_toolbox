@@ -8,10 +8,6 @@ import torch
 from cyy_naive_lib.algorithm.mapping_op import (
     get_mapping_items_by_key_order, get_mapping_values_by_key_order)
 
-from .dependency import has_hugging_face
-
-if has_hugging_face:
-    import transformers
 
 
 def cat_tensors_to_vector(tensors: Iterable) -> torch.Tensor:
@@ -86,11 +82,12 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
         #     return {k: recursive_tensor_op(data[k], fun, **kwargs) for k in keys}
         # case _:
         #     print("unsupported tensor type", type(data))
-    if has_hugging_face:
-        match data:
-            case transformers.tokenization_utils_base.BatchEncoding():
-                data.data = recursive_tensor_op(data.data, fun, **kwargs)
-                return data
+    if (
+        "transformers" in data.__class__.__name__.lower()
+        and "BatchEncoding" in data.__class__.__name__
+    ):
+        data.data = recursive_tensor_op(data.data, fun, **kwargs)
+        return data
     return data
 
 
