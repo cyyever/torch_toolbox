@@ -1,5 +1,5 @@
 import functools
-from typing import Any, Callable, Type
+from typing import Any, Callable, Iterable, Type
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -25,22 +25,20 @@ class ModelEvaluator:
         model_name: str | None = None,
         model_type: None | ModelType = None,
         loss_fun: str | Callable | None = None,
-        model_path: str | None = None,
         frozen_modules: dict | None = None,
         **kwargs,
     ) -> None:
         self._model: torch.nn.Module = model
         self.__name = model_name
-        self.__forward_fun: str | None = None
         self.__loss_fun: Callable | None = None
-        self.__non_reduction_loss_fun: Callable | None = None
         if loss_fun is not None:
             self.set_loss_fun(loss_fun)
-        if model_type is None:
-            model_type = ModelType.Classification
-        self.__model_type: ModelType = model_type
-        if model_path is not None:
-            self._model.load_state_dict(torch.load(model_path))
+        self.__model_type: ModelType = (
+            model_type if model_type is not None else ModelType.Classification
+        )
+        assert "model_path" not in kwargs
+        # if model_path is not None:
+        #     self._model.load_state_dict(torch.load(model_path))
         match frozen_modules:
             case {"types": types}:
                 for t in types:
@@ -52,9 +50,17 @@ class ModelEvaluator:
                 pass
             case _:
                 raise NotImplementedError(frozen_modules)
+        self.__evaluation_kwargs: dict = {}
 
     def set_forward_fun(self, forward_fun: str) -> None:
-        self.__forward_fun = forward_fun
+        self.add_evaluation_kwargs(forward_fun=forward_fun)
+
+    def add_evaluation_kwargs(self, **kwargs) -> None:
+        self.__evaluation_kwargs.update(kwargs)
+
+    def remove_evaluation_kwargs(self, keys: Iterable[str]) -> None:
+        for key in keys:
+            self.__evaluation_kwargs.pop(key, None)
 
     @property
     def model_name(self) -> str | None:
@@ -91,7 +97,6 @@ class ModelEvaluator:
                 raise RuntimeError(f"unknown loss function {loss_fun}")
             case _:
                 self.__loss_fun = loss_fun
-        self.__non_reduction_loss_fun = None
 
     def offload_from_device(self) -> None:
         self.model.zero_grad(set_to_none=True)
@@ -113,7 +118,6 @@ class ModelEvaluator:
         device: None | torch.device = None,
         non_blocking: bool = False,
         evaluation_mode: EvaluationMode | None = None,
-        reduce_loss: bool = True,
         **kwargs: Any,
     ) -> dict:
         if evaluation_mode is not None:
@@ -130,15 +134,15 @@ class ModelEvaluator:
             targets=targets,
             non_blocking=non_blocking,
             device=device,
-            reduce_loss=reduce_loss,
-            **kwargs,
+            **(kwargs | self.__evaluation_kwargs),
         ) | {"inputs": inputs, "targets": targets, "raw_inputs": raw_inputs}
 
     def _forward_model(self, inputs: Any, **kwargs: Any) -> dict:
         fun: Callable = self.model
-        if self.__forward_fun is not None:
-            fun = getattr(self.model, self.__forward_fun)
-            get_logger().debug("forward with function %s", self.__forward_fun)
+        if "forward_fun" in self.__evaluation_kwargs:
+            forward_fun_name = self.__evaluation_kwargs["forward_fun"]
+            fun = getattr(self.model, forward_fun_name)
+            get_logger().debug("forward with function %s", forward_fun_name)
         match inputs:
             case torch.Tensor():
                 output = fun(inputs)
@@ -156,7 +160,7 @@ class ModelEvaluator:
         output: Any,
         targets: Any,
         non_blocking: bool,
-        reduce_loss: bool,
+        reduce_loss: bool = True,
         **kwargs: Any,
     ) -> dict:
         original_output = output
@@ -164,11 +168,7 @@ class ModelEvaluator:
         assert isinstance(output, torch.Tensor)
         loss_fun = self.loss_fun
         if not reduce_loss:
-            if self.__non_reduction_loss_fun is None:
-                self.__non_reduction_loss_fun = self.__choose_loss_function(
-                    reduction=False
-                )
-            loss_fun = self.__non_reduction_loss_fun
+            loss_fun = type(loss_fun)(reduction="none")
 
         match loss_fun:
             case nn.CrossEntropyLoss():

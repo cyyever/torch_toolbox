@@ -253,7 +253,6 @@ class Executor(HookCollection, abc.ABC):
         self,
         epoch: int,
         evaluation_mode: EvaluationMode,
-        evaluation_kwargs: dict | None = None,
     ) -> None:
         step_lr_after_epoch: bool = False
         self.exec_hooks(
@@ -293,8 +292,6 @@ class Executor(HookCollection, abc.ABC):
                 "non_blocking": True,
             }
 
-            if evaluation_kwargs is not None:
-                kwargs |= evaluation_kwargs
             forward_result: dict = {}
 
             while True:
