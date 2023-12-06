@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from cyy_torch_toolbox import hyper_parameter
 
 

@@ -1,7 +1,6 @@
+from cyy_torch_toolbox import MachineLearningPhase, create_dataset_collection
 from cyy_torch_toolbox.data_pipeline.dataset import subset_dp
-from cyy_torch_toolbox.dataset import create_dataset_collection
 from cyy_torch_toolbox.dependency import has_torchvision
-from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 
 def test_dataset() -> None:
