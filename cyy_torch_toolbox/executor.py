@@ -42,7 +42,7 @@ class Executor(HookCollection, abc.ABC):
         self.__device: None | torch.device = None
         self.__dataloader = None
         self.__dataloader_kwargs: dict = {}
-        self.__device_stream: None | torch.cuda.Stream = None
+        self.__device_stream: None | torch._C._CudaStreamBase = None
         self.__save_dir: None | str = None
         self.cache_transforms: None | str = "cpu"
 
@@ -167,12 +167,8 @@ class Executor(HookCollection, abc.ABC):
     def replace_model(self, fun: Callable) -> None:
         self.__model_evaluator = self.model_evaluator.replace_model(fun(self.model))
 
-    def _prepare_execution(self, **kwargs: Any) -> None:
+    def _prepare_execution(self) -> None:
         self._data.clear()
-        for k, v in kwargs.items():
-            if not hasattr(self.hook_config, k):
-                continue
-            setattr(self.hook_config, k, v)
         self.hook_config.set_hooks(self)
         if self.__save_dir is not None:
             self.set_save_dir(self.__save_dir)
@@ -200,7 +196,7 @@ class Executor(HookCollection, abc.ABC):
     def device_context(self) -> Any:
         return (
             contextlib.nullcontext()
-            if "cuda" not in self.device.type.lower()
+            if "cuda" not in self.device.type.lower() or not torch.cuda.is_available()
             else torch.cuda.device(self.device)
         )
 
