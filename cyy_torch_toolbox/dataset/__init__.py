@@ -1,15 +1,17 @@
 import json
 import os
-from typing import Type
 
 from cyy_naive_lib.log import get_logger
 
 from ..data_pipeline.common import replace_target
+from ..factory import Factory
 from ..ml_type import MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
 from .repository import get_dataset
 from .util import DatasetUtil  # noqa: F401
+
+global_dataset_collection_factory: Factory = Factory()
 
 
 def create_dataset_collection(
@@ -26,11 +28,10 @@ def create_dataset_collection(
         if res is None:
             raise NotImplementedError(name)
         dataset_type, datasets = res
-
-        cls: Type = DatasetCollection
-        # if dataset_type == DatasetType.Text:
-        #     cls = TextDatasetCollection
-        dc: DatasetCollection = cls(
+        constructor = global_dataset_collection_factory.get(dataset_type)
+        if constructor is None:
+            constructor = DatasetCollection
+        dc: DatasetCollection = constructor(
             datasets=datasets,
             dataset_type=dataset_type,
             name=name,

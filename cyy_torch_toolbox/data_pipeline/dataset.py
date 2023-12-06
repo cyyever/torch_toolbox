@@ -46,10 +46,6 @@ def dataset_with_indices(
     dataset: torch.utils.data.Dataset,
 ) -> torch.utils.data.MapDataPipe:
     old_dataset = dataset
-    if has_torch_geometric:
-        match dataset:
-            case torch_geometric.data.Dataset():
-                return dataset
     match dataset:
         case list():
             return dataset
