@@ -55,10 +55,6 @@ def dataset_with_indices(
             return dataset
         case torch.utils.data.IterableDataset():
             dataset = torch.utils.data.datapipes.iter.IterableWrapper(dataset)
-    # if has_hugging_face:
-    #     if isinstance(dataset, hugging_face_datasets.arrow_dataset.Dataset):
-    #         return dataset
-    # dataset = torchdata.datapipes.iter.IterableWrapper(dataset)
     match dataset:
         case torch.utils.data.IterDataPipe():
             dataset = dataset.enumerate()

@@ -4,7 +4,7 @@ import threading
 from typing import Any, Callable, Generator, Iterable
 
 import torch
-import torch.utils
+import torch.utils.data
 from cyy_naive_lib.fs.ssd import is_ssd
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.storage import get_cached_data
@@ -12,9 +12,9 @@ from cyy_naive_lib.storage import get_cached_data
 from ..data_pipeline import append_transforms_to_dc
 from ..data_pipeline.dataset import dataset_with_indices
 from ..data_pipeline.transform import Transforms
-from ..dataset.sampler import DatasetSampler
-from ..dataset.util import DatasetUtil, global_dataset_util_factor
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
+from .sampler import DatasetSampler
+from .util import DatasetUtil, global_dataset_util_factor
 
 
 class DatasetCollection:
@@ -24,11 +24,13 @@ class DatasetCollection:
         dataset_type: DatasetType,
         name: str | None = None,
         dataset_kwargs: dict | None = None,
+        add_index: bool = True,
     ) -> None:
         self.__name: str = "" if name is None else name
         self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = datasets
-        for k, v in self.__datasets.items():
-            self.__datasets[k] = dataset_with_indices(v)
+        if add_index:
+            for k, v in self.__datasets.items():
+                self.__datasets[k] = dataset_with_indices(v)
         self.__dataset_type: DatasetType = dataset_type
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
