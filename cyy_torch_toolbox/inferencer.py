@@ -12,7 +12,6 @@ class Inferencer(Executor):
     def inference(
         self,
         evaluation_mode: EvaluationMode = EvaluationMode.Test,
-        evaluation_kwargs: dict | None = None,
     ) -> bool:
         succ_flag: bool = False
         require_grad: bool = EvaluationMode != EvaluationMode.Test
@@ -23,11 +22,7 @@ class Inferencer(Executor):
         ):
             try:
                 self._prepare_execution()
-                self._execute_epoch(
-                    epoch=1,
-                    evaluation_mode=evaluation_mode,
-                    evaluation_kwargs=evaluation_kwargs,
-                )
+                self._execute_epoch(epoch=1, evaluation_mode=evaluation_mode)
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
                 succ_flag = True
             except StopExecutingException:
@@ -60,11 +55,14 @@ class Inferencer(Executor):
             )
             self.hook_config.use_performance_metric = False
             self.hook_config.summarize_executor = False
-            succ: bool = self.inference(
-                evaluation_kwargs={
-                    "reduce_loss": False,
-                    "need_sample_indices": True,
-                },
+            evaluation_kwargs = {
+                "reduce_loss": False,
+                "need_sample_indices": True,
+            }
+            self.running_model_evaluator.add_evaluation_kwargs(**evaluation_kwargs)
+            succ: bool = self.inference()
+            self.running_model_evaluator.remove_evaluation_kwargs(
+                evaluation_kwargs.keys()
             )
             self.remove_named_hook(name=hook_name)
             assert succ
