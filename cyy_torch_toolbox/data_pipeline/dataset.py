@@ -4,10 +4,6 @@ import torch
 import torch.utils.data
 import torch.utils.data.datapipes
 import torch.utils.data.dataset
-from cyy_torch_toolbox.dependency import has_torch_geometric
-
-if has_torch_geometric:
-    import torch_geometric.data
 
 
 def get_dataset_size(dataset: Any) -> int:
@@ -63,42 +59,9 @@ def dataset_with_indices(
     return dataset
 
 
-def select_item(
-    dataset: Any,
-    indices: None | Iterable = None,
-    mask: None | list[torch.Tensor] = None,
-) -> Iterable:
+def select_item(dataset: Any, indices: None | Iterable = None) -> Iterable:
     if indices is not None:
         indices = set(indices)
-    if has_torch_geometric:
-        match dataset:
-            case torch_geometric.data.Dataset() | [
-                torch_geometric.data.Dataset(),
-                *_,
-            ] | [{"original_dataset": torch_geometric.data.Dataset()}, *_]:
-                if mask is None:
-                    for idx, data in enumerate(dataset):
-                        yield idx, data
-                    return
-                assert len(mask) == 1
-                if isinstance(dataset, torch_geometric.data.Dataset):
-                    for idx, flag in enumerate(mask[0].tolist()):
-                        if not flag:
-                            continue
-                        if indices is None or idx in indices:
-                            yield idx, {"target": dataset[0].y[idx], "index": idx}
-                else:
-                    graph = dataset[0]["original_dataset"][dataset[0]["graph_index"]]
-                    for idx, flag in enumerate(mask[0].tolist()):
-                        if not flag:
-                            continue
-                        if indices is None or idx in indices:
-                            yield idx, {
-                                "target": graph.y[idx],
-                                "index": idx,
-                            }
-                return
-
     match dataset:
         case torch.utils.data.IterableDataset():
             if hasattr(dataset, "reset"):
