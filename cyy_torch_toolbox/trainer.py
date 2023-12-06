@@ -95,15 +95,6 @@ class Trainer(Executor):
                 inferencer.offload_from_device()
         super().offload_from_device()
 
-    def _prepare_execution(
-        self,
-        **kwargs: Any,
-    ) -> None:
-        super()._prepare_execution(**kwargs)
-        if self.visualizer_prefix is not None and self.__inferencers:
-            for inferencer in self.__inferencers.values():
-                inferencer.set_visualizer_prefix(self.visualizer_prefix)
-
     def train(self, run_validation: bool = True, **kwargs: Any) -> None:
         with (
             self.device_context,
