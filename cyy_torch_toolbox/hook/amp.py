@@ -11,9 +11,9 @@ class AMP(Hook):
         self.__ctx = None
         self.__scaler = None
 
-    def _model_forward(self, executor, model_kwargs, **kwargs) -> None:
+    def _model_forward(self, executor, evaluation_kwargs, **kwargs) -> None:
         assert self._enabled
-        device = model_kwargs.get("device", None)
+        device = evaluation_kwargs.get("device", None)
         if device is not None and "cuda" in str(device).lower():
             device_type = "cuda"
         else:
@@ -21,7 +21,7 @@ class AMP(Hook):
         if self.__ctx is None or device_type != self.__ctx.device:
             self.__ctx = torch.autocast(device_type=device_type)
         with self.__ctx:
-            result = executor.running_model_evaluator(**model_kwargs)
+            result = executor.running_model_evaluator(**evaluation_kwargs)
             executor._data["forward_result"] = result
 
     def _model_backward(self, loss, **kwargs) -> None:

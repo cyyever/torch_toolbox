@@ -1,6 +1,7 @@
 import os
 
 import torch
+import torch.utils.data
 from cyy_naive_lib.log import get_logger
 
 from ..data_structure.torch_process_context import TorchProcessContext
