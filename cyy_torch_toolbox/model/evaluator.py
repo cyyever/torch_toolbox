@@ -37,8 +37,6 @@ class ModelEvaluator:
             model_type if model_type is not None else ModelType.Classification
         )
         assert "model_path" not in kwargs
-        # if model_path is not None:
-        #     self._model.load_state_dict(torch.load(model_path))
         match frozen_modules:
             case {"types": types}:
                 for t in types:

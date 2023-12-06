@@ -285,7 +285,7 @@ class Executor(HookCollection, abc.ABC):
                 epoch=epoch,
                 **batch,
             )
-            kwargs = batch | {
+            evaluation_kwargs = batch | {
                 "phase": self.phase,
                 "device": self.device,
                 "evaluation_mode": evaluation_mode,
@@ -303,11 +303,11 @@ class Executor(HookCollection, abc.ABC):
                 if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
                     self.exec_hooks(
                         hook_point=ExecutorHookPoint.MODEL_FORWARD,
-                        model_kwargs=kwargs,
+                        model_kwargs=evaluation_kwargs,
                     )
                     forward_result = self._data.pop("forward_result")
                 else:
-                    forward_result = self.__model_evaluator(**kwargs)
+                    forward_result = self.__model_evaluator(**evaluation_kwargs)
 
                 if forward_result["is_averaged_loss"]:
                     assert self._data["dataset_size"] > 1
