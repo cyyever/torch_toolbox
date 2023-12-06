@@ -9,8 +9,7 @@ from ..ml_type import MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
 from .repository import get_dataset
-
-# from .text import TextDatasetCollection
+from .util import DatasetUtil  # noqa: F401
 
 
 def create_dataset_collection(
