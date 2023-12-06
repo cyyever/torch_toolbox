@@ -1,6 +1,4 @@
-from cyy_torch_toolbox.default_config import Config
-from cyy_torch_toolbox.dependency import has_torchvision
-from cyy_torch_toolbox.ml_type import ExecutorHookPoint, StopExecutingException
+from cyy_torch_toolbox import Config, ExecutorHookPoint, StopExecutingException
 
 
 def stop_training(*args, **kwargs):
@@ -8,8 +6,6 @@ def stop_training(*args, **kwargs):
 
 
 def test_vision_training() -> None:
-    if not has_torchvision:
-        return
     config = Config(dataset_name="MNIST", model_name="LeNet5")
     config.trainer_config.hook_config.debug = True
     config.hyper_parameter_config.epoch = 1
