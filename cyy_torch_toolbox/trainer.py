@@ -95,7 +95,7 @@ class Trainer(Executor):
                 inferencer.offload_from_device()
         super().offload_from_device()
 
-    def train(self, run_validation: bool = True) -> None:
+    def train(self, validate: bool = True) -> None:
         with (
             self.device_context,
             self.device_stream_context,
@@ -106,9 +106,7 @@ class Trainer(Executor):
                     self._execute_epoch(
                         epoch=epoch, evaluation_mode=EvaluationMode.Training
                     )
-                    if run_validation and self.__test(
-                        phase=MachineLearningPhase.Validation
-                    ):
+                    if validate and self.__test(phase=MachineLearningPhase.Validation):
                         self.exec_hooks(
                             ExecutorHookPoint.AFTER_VALIDATION,
                             epoch=epoch,
