@@ -303,7 +303,7 @@ class Executor(HookCollection, abc.ABC):
                 if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
                     self.exec_hooks(
                         hook_point=ExecutorHookPoint.MODEL_FORWARD,
-                        model_kwargs=evaluation_kwargs,
+                        evaluation_kwargs=evaluation_kwargs,
                     )
                     forward_result = self._data.pop("forward_result")
                 else:

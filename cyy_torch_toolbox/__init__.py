@@ -9,6 +9,7 @@ from .data_pipeline import *
 from .dataset import *
 from .default_config import *
 from .executor import *
+from .hyper_parameter import *
 from .inferencer import *
 from .ml_type import *
 from .model import *
