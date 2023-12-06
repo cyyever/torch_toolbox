@@ -95,49 +95,46 @@ class Trainer(Executor):
                 inferencer.offload_from_device()
         super().offload_from_device()
 
-    def train(self, run_validation: bool = True, **kwargs: Any) -> None:
+    def train(self, run_validation: bool = True) -> None:
         with (
             self.device_context,
             self.device_stream_context,
         ):
             try:
-                self._prepare_execution(**kwargs)
+                self._prepare_execution()
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
                     self._execute_epoch(
                         epoch=epoch, evaluation_mode=EvaluationMode.Training
                     )
-                    if not run_validation:
-                        continue
-                    for phase in (
-                        MachineLearningPhase.Validation,
-                        MachineLearningPhase.Test,
+                    if run_validation and self.__test(
+                        phase=MachineLearningPhase.Validation
                     ):
-                        if (
-                            phase not in self.__inferencers
-                            and self.dataset_collection.has_dataset(phase=phase)
-                        ):
-                            tmp_inferencer = self.get_inferencer(
-                                phase=phase, deepcopy_model=False
-                            )
-                            tmp_inferencer.hook_config.summarize_executor = False
-                            self.__inferencers[phase] = tmp_inferencer
-                        inferencer: None | Inferencer = self.__inferencers.get(
-                            phase, None
-                        )
-                        if inferencer is not None:
-                            inferencer.model.load_state_dict(self.model.state_dict())
-                            inferencer.inference()
-
                         self.exec_hooks(
                             ExecutorHookPoint.AFTER_VALIDATION,
                             epoch=epoch,
                         )
+                    self.__test(phase=MachineLearningPhase.Test)
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
             except StopExecutingException:
                 get_logger().warning("stop training")
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
             finally:
                 self.wait_stream()
+
+    def __test(self, phase: MachineLearningPhase) -> bool:
+        assert phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test)
+        if phase not in self.__inferencers and self.dataset_collection.has_dataset(
+            phase=phase
+        ):
+            tmp_inferencer = self.get_inferencer(phase=phase, deepcopy_model=False)
+            tmp_inferencer.hook_config.summarize_executor = False
+            self.__inferencers[phase] = tmp_inferencer
+        inferencer: None | Inferencer = self.__inferencers.get(phase, None)
+        if inferencer is None:
+            return False
+        inferencer.model.load_state_dict(self.model.state_dict())
+        inferencer.inference()
+        return True
 
     def _get_backward_loss(self, result) -> torch.Tensor:
         return result["loss"]

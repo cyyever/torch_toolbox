@@ -9,7 +9,6 @@ from cyy_naive_lib.algorithm.mapping_op import (
     get_mapping_items_by_key_order, get_mapping_values_by_key_order)
 
 
-
 def cat_tensors_to_vector(tensors: Iterable) -> torch.Tensor:
     return torch.cat([t.view(-1) for t in tensors])
 
@@ -73,21 +72,8 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
                 *recursive_tensor_op(data.args, fun, **kwargs),
                 **recursive_tensor_op(data.keywords, fun, **kwargs),
             )
-        # case dict():
-        #     try:
-        #         # we need to check in key order because that order may be useful
-        #         keys = sorted(data.keys())
-        #     except BaseException:
-        #         keys = list(data.keys())
-        #     return {k: recursive_tensor_op(data[k], fun, **kwargs) for k in keys}
-        # case _:
-        #     print("unsupported tensor type", type(data))
-    if (
-        "transformers" in data.__class__.__name__.lower()
-        and "BatchEncoding" in data.__class__.__name__
-    ):
+    if hasattr(data, "data"):
         data.data = recursive_tensor_op(data.data, fun, **kwargs)
-        return data
     return data
 
 
