@@ -35,16 +35,16 @@ class DatasetUtil:
     def get_subset(self, indices: Iterable) -> list[dict]:
         return subset_dp(self.dataset, indices)
 
+    def get_raw_samples(self, indices: Iterable | None = None) -> Iterable:
+        return select_item(dataset=self.dataset, indices=indices)
+
     def get_samples(self, indices: Iterable | None = None) -> Iterable:
-        items = select_item(dataset=self.dataset, indices=indices, mask=self.get_mask())
+        raw_samples = self.get_raw_samples(indices=indices)
         if self.__transforms is None:
-            return items
-        for idx, sample in items:
+            return raw_samples
+        for idx, sample in raw_samples:
             sample = self.__transforms.extract_data(sample)
             yield idx, sample
-
-    def get_mask(self) -> None | list[torch.Tensor]:
-        return None
 
     def get_sample(self, index: int) -> Any:
         for _, sample in self.get_samples(indices=[index]):
