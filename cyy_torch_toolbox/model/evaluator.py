@@ -78,9 +78,6 @@ class ModelEvaluator:
     def model_type(self) -> ModelType:
         return self.__model_type
 
-    def get_underlying_model_type(self) -> ModelType:
-        return self.model_type
-
     @property
     def loss_fun(self) -> Callable:
         if self.__loss_fun is None:
