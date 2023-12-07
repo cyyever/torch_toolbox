@@ -17,8 +17,7 @@ from .hyper_parameter import HyperParameter
 from .metric_visualizers.metric_visualizer import MetricVisualizer
 from .metrics.performance_metric import PerformanceMetric
 from .ml_type import EvaluationMode, ExecutorHookPoint, MachineLearningPhase
-from .model.evaluator import ModelEvaluator
-from .model.util import ModelUtil
+from .model import ModelEvaluator, ModelUtil
 
 
 class Executor(HookCollection, abc.ABC):

@@ -69,7 +69,7 @@ class ReproducibleEnv(ReproducibleRandomEnv):
 global_reproducible_env: ReproducibleEnv = ReproducibleEnv()
 
 
-@dataclass
+@dataclass(kw_only=True)
 class ReproducibleEnvConfig:
     make_reproducible_env: bool = True
     reproducible_env_load_path: str | None = None
