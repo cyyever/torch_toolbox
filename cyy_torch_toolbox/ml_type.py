@@ -49,7 +49,6 @@ class ExecutorHookPoint(StrEnum):
     BEFORE_FETCH_BATCH = auto()
     AFTER_FETCH_BATCH = auto()
     BEFORE_BATCH = auto()
-    AFTER_FORWARD = auto()
     AFTER_BATCH = auto()
     AFTER_VALIDATION = auto()
 
