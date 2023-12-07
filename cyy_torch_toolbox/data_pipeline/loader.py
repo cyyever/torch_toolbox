@@ -85,16 +85,4 @@ def get_dataloader(
         return constructor(
             dc=dc, model_evaluator=model_evaluator, phase=phase, **dataloader_kwargs
         )
-    # if has_dali and has_torchvision and dc.dataset_type == DatasetType.Vision:
-    #     dataloader = get_dali_dataloader(
-    #         dataset=dataset,
-    #         dc=dc,
-    #         phase=phase,
-    #         batch_size=hyper_parameter.batch_size,
-    #         device=device,
-    #         model_type=model_evaluator.model_type,
-    #     )
-    #     if dataloader is not None:
-    #         return dataloader
-
     return torch.utils.data.DataLoader(**dataloader_kwargs)
