@@ -12,6 +12,7 @@ def append_transforms_to_dc(dc, model_evaluator=None) -> None:
 
     if dc.dataset_type == DatasetType.Vision:
         from .vision import add_vision_extraction, add_vision_transforms
+
         if model_evaluator is None:
             add_vision_extraction(dc=dc)
         else:
