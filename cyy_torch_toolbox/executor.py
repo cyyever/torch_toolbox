@@ -8,8 +8,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from .data_pipeline.loader import get_dataloader
-from .dataset.collection import DatasetCollection
-from .dataset.util import DatasetUtil
+from .dataset import DatasetCollection, DatasetUtil
 from .device import get_device
 from .hook import HookCollection
 from .hook.config import HookConfig
