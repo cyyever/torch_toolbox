@@ -1,18 +1,12 @@
 import copy
 from typing import Callable
 
-import torch
 from cyy_naive_lib.log import get_logger
-from cyy_naive_lib.reflection import get_class_attrs, get_kwarg_names
+from cyy_naive_lib.reflection import get_kwarg_names
 
 from ..dataset.util import global_dataset_util_factor
-from ..dependency import has_torchvision
 from ..factory import Factory
 from ..ml_type import DatasetType, MachineLearningPhase
-
-if has_torchvision:
-    import torchvision
-
 
 global_dataset_constructors: dict[DatasetType, Factory] = {}
 
@@ -23,30 +17,6 @@ def register_dataset_constructors(
     if dataset_type not in global_dataset_constructors:
         global_dataset_constructors[dataset_type] = Factory()
     global_dataset_constructors[dataset_type].register(name, constructor)
-
-
-def register_default_dataset_constructors(dataset_type: DatasetType) -> None:
-    repositories = []
-    match dataset_type:
-        case DatasetType.Vision:
-            if has_torchvision:
-                repositories = [
-                    torchvision.datasets,
-                ]
-    dataset_constructors: dict = {}
-    for repository in repositories:
-        # if dataset_type == DatasetType.Text:
-        #     if hasattr(repository, "DATASETS"):
-        #         for name, dataset_constructor in repository.DATASETS.items():
-        #             dataset_constructors[name] = dataset_constructor
-        #         continue
-        dataset_constructors |= get_class_attrs(
-            repository,
-            filter_fun=lambda k, v: issubclass(v, torch.utils.data.Dataset),
-        )
-
-    for name, constructor in dataset_constructors.items():
-        register_dataset_constructors(dataset_type, name, constructor)
 
 
 def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> Callable:
@@ -198,7 +168,6 @@ def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, di
     similar_names = []
 
     for dataset_type in dataset_types:
-        register_default_dataset_constructors(dataset_type=dataset_type)
         if dataset_type not in global_dataset_constructors:
             continue
         constructor = global_dataset_constructors[dataset_type].get(
