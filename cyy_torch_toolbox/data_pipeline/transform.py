@@ -1,8 +1,9 @@
 import copy
 from collections.abc import Iterable
-from typing import Any, Callable
+from typing import Any, Callable, Self
 
 import torch
+import torch.utils.data
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.ml_type import TransformType
 from cyy_torch_toolbox.tensor import tensor_to
@@ -107,8 +108,8 @@ class Transforms:
         return res
 
     def cache_transforms(
-        self, dataset: Iterable, device: torch.device
-    ) -> tuple[dict, Any]:
+        self, dataset: torch.utils.data.Dataset, device: torch.device
+    ) -> tuple[dict, Self]:
         get_logger().debug("cache dataset to device: %s", device)
         transformed_dataset: dict = {}
         for k, item in select_item(dataset):

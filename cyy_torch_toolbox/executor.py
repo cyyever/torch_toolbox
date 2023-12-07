@@ -5,6 +5,7 @@ import os
 from typing import Any, Callable
 
 import torch
+import torch.utils.data
 from cyy_naive_lib.log import get_logger
 
 from .data_pipeline.loader import get_dataloader
@@ -38,7 +39,7 @@ class Executor(HookCollection, abc.ABC):
             hook_config = HookConfig()
         self.hook_config: HookConfig = hook_config
         self.__device: None | torch.device = None
-        self.__dataloader = None
+        self.__dataloader: None | torch.utils.data.DataLoader = None
         self.__dataloader_kwargs: dict = {}
         self.__device_stream: None | torch._C._CudaStreamBase = None
         self.__save_dir: None | str = None
@@ -125,7 +126,7 @@ class Executor(HookCollection, abc.ABC):
         self.__dataloader = None
 
     @property
-    def dataloader(self):
+    def dataloader(self) -> torch.utils.data.DataLoader:
         if self.__dataloader is None:
             self.__dataloader = get_dataloader(
                 dc=self.dataset_collection,
