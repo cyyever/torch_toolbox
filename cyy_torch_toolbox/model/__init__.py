@@ -11,6 +11,7 @@ from ..factory import Factory
 from ..ml_type import DatasetType, ModelType
 from .evaluator import ModelEvaluator, VisionModelEvaluator
 from .repositary import get_model_info
+from .util import ModelUtil  # noqa: F401
 
 global_model_evaluator_factory = Factory()
 

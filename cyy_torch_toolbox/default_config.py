@@ -7,13 +7,12 @@ from typing import Any
 from cyy_naive_lib.log import get_logger, set_level
 from omegaconf import OmegaConf
 
-from cyy_torch_toolbox.dataset import DatasetCollectionConfig
-from cyy_torch_toolbox.dataset.collection import DatasetCollection
+from cyy_torch_toolbox.dataset import (DatasetCollection,
+                                       DatasetCollectionConfig)
 from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
 from cyy_torch_toolbox.inferencer import Inferencer
 from cyy_torch_toolbox.ml_type import MachineLearningPhase
-from cyy_torch_toolbox.model import ModelConfig
-from cyy_torch_toolbox.model.evaluator import ModelEvaluator
+from cyy_torch_toolbox.model import ModelConfig, ModelEvaluator
 from cyy_torch_toolbox.reproducible_env import ReproducibleEnvConfig
 from cyy_torch_toolbox.trainer import Trainer, TrainerConfig
 
@@ -36,8 +35,6 @@ class Config:
         dc = self.dc_config.create_dataset_collection(
             save_dir=self.get_save_dir(),
         )
-        if hasattr(dc, "set_model_kwargs"):
-            dc.set_model_kwargs(self.model_config.model_kwargs)
         return dc
 
     def create_trainer(

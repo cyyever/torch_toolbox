@@ -5,7 +5,7 @@ import torch
 from cyy_naive_lib.log import get_logger
 
 from .classification_inferencer import ClassificationInferencer
-from .dataset.collection import DatasetCollection
+from .dataset import DatasetCollection
 from .executor import Executor
 from .hook.config import HookConfig
 from .hook.keep_model import KeepModelHook
@@ -14,7 +14,7 @@ from .inferencer import Inferencer
 from .metric_visualizers.batch_loss_logger import BatchLossLogger
 from .ml_type import (EvaluationMode, ExecutorHookPoint, MachineLearningPhase,
                       ModelType, StopExecutingException)
-from .model.evaluator import ModelEvaluator
+from .model import ModelEvaluator
 
 
 class Trainer(Executor):
