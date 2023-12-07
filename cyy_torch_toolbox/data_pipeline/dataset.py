@@ -64,16 +64,16 @@ def select_item(dataset: Any, indices: None | Iterable = None) -> Iterable:
         indices = set(indices)
     match dataset:
         case torch.utils.data.IterableDataset():
-            if hasattr(dataset, "reset"):
-                dataset.reset()
+            # if hasattr(dataset, "reset"):
+            #     dataset.reset()
             iterator = iter(dataset)
             for idx, item in enumerate(iterator):
                 if indices is None or idx in indices:
                     yield idx, item
                     if indices is not None:
                         indices.remove(idx)
-            if hasattr(dataset, "reset"):
-                dataset.reset()
+            # if hasattr(dataset, "reset"):
+            #     dataset.reset()
         case _:
             if indices is None:
                 indices = list(range(get_dataset_size(dataset)))

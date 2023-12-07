@@ -1,9 +1,7 @@
-from cyy_naive_lib.log import get_logger
+import torch
 from cyy_torch_toolbox.data_structure.torch_process_pool import \
     TorchProcessPool
-from cyy_torch_toolbox.default_config import Config
-from cyy_torch_toolbox.dependency import has_torchvision
-from cyy_torch_toolbox.ml_type import ExecutorHookPoint, StopExecutingException
+from cyy_torch_toolbox.ml_type import StopExecutingException
 
 
 def stop_training(*args, **kwargs):
@@ -11,15 +9,7 @@ def stop_training(*args, **kwargs):
 
 
 def train(worker_id) -> None:
-    if has_torchvision:
-        get_logger().info("worker_id is %s", worker_id)
-        trainer = Config("MNIST", "LeNet5").create_trainer()
-        trainer.hyper_parameter.epoch = 1
-        trainer.hyper_parameter.learning_rate = 0.01
-        trainer.append_named_hook(
-            ExecutorHookPoint.AFTER_BATCH, "stop_training", stop_training
-        )
-        trainer.train()
+    torch.ones((1, 2))
 
 
 def test_process_pool() -> None:

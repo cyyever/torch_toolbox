@@ -31,7 +31,7 @@ def __prepare_dataloader_kwargs(
             dataset, transforms = transforms.cache_transforms(
                 dataset=dataset, device=torch.device("cpu")
             )
-        case "gpu" | "cuda" | "device":
+        case "device":
             data_in_cpu = False
             assert device is not None
             dataset, transforms = transforms.cache_transforms(
