@@ -10,10 +10,6 @@ from ..ml_type import DatasetType
 def get_model_info() -> dict:
     model_info: dict = {}
     github_repos: dict[DatasetType, list] = {}
-    github_repos[DatasetType.Vision] = [
-        "pytorch/vision:main",
-        "huggingface/pytorch-image-models:main",
-    ]
     for dataset_type in DatasetType:
         if dataset_type not in github_repos:
             github_repos[dataset_type] = []
