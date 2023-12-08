@@ -144,9 +144,10 @@ class HyperParameter:
             "lr": self.__get_learning_rate(trainer),
             "foreach": foreach,
         }
-        if "fake_weight_decay" in self.optimizer_kwargs:
+        kwargs.pop("learning_rate")
+        if "fake_weight_decay" in kwargs:
             kwargs["weight_decay"] = (
-                self.optimizer_kwargs["fake_weight_decay"] / trainer.dataset_size,
+                kwargs.pop("fake_weight_decay") / trainer.dataset_size,
             )
         return call_fun(self._optimizer_factory, kwargs)
 
