@@ -176,14 +176,14 @@ def get_recommended_hyper_parameter(
             epoch=50,
             batch_size=64,
             learning_rate_scheduler_kwargs={"learning_rate": 0.01},
-            optimizer_kwargs={"weight_decay": 1},
+            optimizer_kwargs={"fake_weight_decay": 1},
         )
     elif dataset_name == "CIFAR10":
         hyper_parameter = HyperParameter(
             epoch=350,
             batch_size=64,
             learning_rate_scheduler_kwargs={"learning_rate": 0.1},
-            optimizer_kwargs={"weight_decay": 1},
+            optimizer_kwargs={"fake_weight_decay": 1},
         )
     elif dataset_name == "CIFAR100":
         hyper_parameter = HyperParameter(
@@ -192,14 +192,14 @@ def get_recommended_hyper_parameter(
             learning_rate_scheduler_kwargs={
                 "learning_rate": HyperParameterAction.FIND_LR
             },
-            optimizer_kwargs={"weight_decay": 1},
+            optimizer_kwargs={"fake_weight_decay": 1},
         )
     elif dataset_name == "SVHN":
         hyper_parameter = HyperParameter(
             epoch=50,
             batch_size=4,
             learning_rate_scheduler_kwargs={"learning_rate": 0.0001},
-            optimizer_kwargs={"weight_decay": 1},
+            optimizer_kwargs={"fake_weight_decay": 1},
         )
     else:
         hyper_parameter = HyperParameter(
@@ -208,7 +208,7 @@ def get_recommended_hyper_parameter(
             learning_rate_scheduler_kwargs={
                 "learning_rate": HyperParameterAction.FIND_LR
             },
-            optimizer_kwargs={"weight_decay": 0},
+            optimizer_kwargs={"fake_weight_decay": 0},
         )
     hyper_parameter.set_lr_scheduler_factory(name="ReduceLROnPlateau")
     hyper_parameter.set_optimizer_factory("Adam")
@@ -222,6 +222,7 @@ class HyperParameterConfig:
     learning_rate: None | float = None
     momentum: None | float = 0.9
     weight_decay: None | float = None
+    fake_weight_decay: None | float = None
     learning_rate_scheduler_name: str = "ReduceLROnPlateau"
     learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
     optimizer_name: str = "Adam"
@@ -235,6 +236,10 @@ class HyperParameterConfig:
         ] = self.learning_rate
         if self.momentum is not None:
             hyper_parameter.optimizer_kwargs["momentum"] = self.momentum
+        if self.fake_weight_decay is not None:
+            hyper_parameter.optimizer_kwargs[
+                "fake_weight_decay"
+            ] = self.fake_weight_decay
         if self.weight_decay is not None:
             hyper_parameter.optimizer_kwargs["fake_weight_decay"] = self.weight_decay
         hyper_parameter.set_optimizer_factory(self.optimizer_name)
