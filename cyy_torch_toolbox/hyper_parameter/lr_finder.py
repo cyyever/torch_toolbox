@@ -30,7 +30,7 @@ class LRFinder(Hook):
         trainer.remove_optimizer()
         trainer.remove_lr_scheduler()
         trainer.hyper_parameter.epoch = self.epoch
-        trainer.hyper_parameter.learning_rate = 1
+        trainer.hyper_parameter.learning_rate_scheduler_kwargs["learning_rate"] = 1
         self.total_batch_num = self.epoch * (
             (trainer.dataset_size + trainer.hyper_parameter.batch_size - 1)
             // trainer.hyper_parameter.batch_size
