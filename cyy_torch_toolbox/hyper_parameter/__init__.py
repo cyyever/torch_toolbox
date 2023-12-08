@@ -35,7 +35,6 @@ class HyperParameterAction(StrEnum):
 class HyperParameter:
     epoch: int
     batch_size: int = 8
-    momentum: float = 0.9
     _lr_scheduler_factory: None | Callable = None
     learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
     _optimizer_factory: None | Callable = None
@@ -145,7 +144,6 @@ class HyperParameter:
         kwargs |= {
             "params": trainer.model.parameters(),
             "lr": self.__get_learning_rate(trainer),
-            "momentum": self.momentum,
             "foreach": foreach,
         }
         if "fake_weight_decay" in self.optimizer_kwargs:
@@ -222,7 +220,7 @@ class HyperParameterConfig:
     epoch: int = 350
     batch_size: int = 64
     learning_rate: None | float = None
-    momentum: None | float = None
+    momentum: None | float = 0.9
     weight_decay: None | float = None
     learning_rate_scheduler_name: str = "ReduceLROnPlateau"
     learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
