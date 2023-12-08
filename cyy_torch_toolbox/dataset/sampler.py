@@ -61,15 +61,15 @@ class DatasetSampler:
         if labels is None:
             labels = list(self.label_sample_dict.keys())
         if excluded_indices:
-            set(excluded_indices)
+            excluded_indices = set(excluded_indices)
         indices = set()
         for label in labels:
             indices |= self.label_sample_dict[label]
-        indices = set().union(
-            self.get_indices_by_label(
-                labels=labels, excluded_indices=excluded_indices
-            ).values()
-        )
+        indices = set()
+        for i in self.get_indices_by_label(
+            labels=labels, excluded_indices=excluded_indices
+        ).values():
+            indices |= i
         index_list = list(indices)
         random.shuffle(index_list)
         return self.__split_index_list(parts, index_list)
