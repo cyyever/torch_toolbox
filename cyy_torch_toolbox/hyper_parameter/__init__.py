@@ -12,7 +12,7 @@ from ..data_structure.torch_thread_task_queue import TorchThreadTaskQueue
 from .lr_finder import LRFinder
 
 
-def determine_learning_rate(task: Any, **kwargs: Any) -> float:
+def determine_learning_rate(task: tuple[Any, Any], **kwargs: Any) -> float:
     tmp_trainer, device = task
     tmp_trainer.set_device(device)
     tmp_trainer.disable_stripable_hooks()
