@@ -37,9 +37,9 @@ class HyperParameter:
     batch_size: int = 8
     momentum: float = 0.9
     _lr_scheduler_factory: None | Callable = None
-    learning_rate_scheduler_kwargs: dict = {}
+    learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
     _optimizer_factory: None | Callable = None
-    optimizer_kwargs: dict = {}
+    optimizer_kwargs: dict = field(default_factory=lambda: {})
 
     def __get_learning_rate(self, trainer: Any) -> float:
         if isinstance(
