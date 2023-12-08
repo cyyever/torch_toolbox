@@ -46,9 +46,7 @@ class Config:
             dc = self.create_dataset_collection()
         if model_evaluator is None:
             model_evaluator = self.__create_model(dc)
-        hyper_parameter = self.hyper_parameter_config.create_hyper_parameter(
-            self.dc_config.dataset_name, self.model_config.model_name
-        )
+        hyper_parameter = self.hyper_parameter_config.create_hyper_parameter()
         trainer: Trainer = self.trainer_config.create_trainer(
             dataset_collection=dc,
             model_evaluator=model_evaluator,
