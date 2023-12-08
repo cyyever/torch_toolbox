@@ -35,7 +35,6 @@ class HyperParameterAction(StrEnum):
 class HyperParameter:
     epoch: int
     batch_size: int = 8
-    weight_decay: float = 0
     momentum: float = 0.9
     _lr_scheduler_factory: None | Callable = None
     learning_rate_scheduler_kwargs: dict = {}
@@ -142,13 +141,17 @@ class HyperParameter:
     def get_optimizer(self, trainer: Any) -> Any:
         assert self._optimizer_factory is not None
         foreach = not torch.backends.mps.is_available()
-        kwargs: dict = {
+        kwargs = copy.copy(self.optimizer_kwargs)
+        kwargs |= {
             "params": trainer.model.parameters(),
             "lr": self.__get_learning_rate(trainer),
             "momentum": self.momentum,
-            "weight_decay": self.weight_decay / trainer.dataset_size,
             "foreach": foreach,
         }
+        if "fake_weight_decay" in self.optimizer_kwargs:
+            kwargs["weight_decay"] = (
+                self.optimizer_kwargs["fake_weight_decay"] / trainer.dataset_size,
+            )
         return call_fun(self._optimizer_factory, kwargs)
 
     @staticmethod
