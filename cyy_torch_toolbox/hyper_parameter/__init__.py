@@ -12,9 +12,8 @@ from ..data_structure.torch_thread_task_queue import TorchThreadTaskQueue
 from .lr_finder import LRFinder
 
 
-def determine_learning_rate(task: tuple[Any, Any], **kwargs: Any) -> float:
-    tmp_trainer, device = task
-    tmp_trainer.set_device(device)
+def determine_learning_rate(task: Any, **kwargs: Any) -> float:
+    tmp_trainer = task
     tmp_trainer.disable_stripable_hooks()
     lr_finder = LRFinder()
     get_logger().warning("register lr_finder")
@@ -47,15 +46,13 @@ class HyperParameter:
         ):
             task_queue = TorchThreadTaskQueue()
             task_queue.start(worker_fun=determine_learning_rate)
-            device = trainer.device
             trainer.offload_from_device()
-            task_queue.add_task((copy.deepcopy(trainer), trainer.device))
+            task_queue.add_task(copy.deepcopy(trainer))
             data = task_queue.get_data()
             assert data is not None
             learning_rate = data[0]
             assert isinstance(learning_rate, float)
             self.optimizer_kwargs["learning_rate"] = learning_rate
-            trainer.set_device(device)
             task_queue.stop()
         return self.optimizer_kwargs["learning_rate"]
 
