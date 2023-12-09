@@ -261,7 +261,6 @@ class Executor(HookCollection, abc.ABC):
         epoch: int,
         evaluation_mode: EvaluationMode,
     ) -> dict | None:
-        self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
         self.exec_hooks(
             hook_point=ExecutorHookPoint.AFTER_FETCH_BATCH,
             batch_index=batch_index,
@@ -365,6 +364,9 @@ class Executor(HookCollection, abc.ABC):
         self.__refresh_dataset_size()
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
         for batch_index, batch in enumerate(self.dataloader):
+            self.exec_hooks(
+                hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0
+            )
             self.execute_batch(
                 batch_index=batch_index,
                 batch=batch,
