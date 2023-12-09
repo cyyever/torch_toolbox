@@ -1,5 +1,5 @@
 import copy
-from typing import Any, Generator
+from typing import Any, Generator, Self
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -37,6 +37,11 @@ class Trainer(Executor):
         if keep_model_hook.best_model is None:
             return None
         return keep_model_hook.best_model
+
+    def get_trainer(self, phase: MachineLearningPhase) -> Self:
+        new_trainer = copy.deepcopy(self)
+        new_trainer.__phase = phase
+        return new_trainer
 
     def get_cached_inferencer(self, phase: MachineLearningPhase) -> Inferencer | None:
         return self.__inferencers.get(phase, None)
