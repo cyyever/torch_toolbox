@@ -70,8 +70,8 @@ class HyperParameter:
         assert self._lr_scheduler_factory is not None
         return self._lr_scheduler_factory(trainer)
 
-    @staticmethod
-    def lr_scheduler_step_after_batch(lr_scheduler) -> bool:
+    @classmethod
+    def lr_scheduler_step_after_batch(cls, lr_scheduler: Any) -> bool:
         return isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR)
 
     def __get_lr_scheduler_factory(self, trainer: Any, name: str) -> Any:

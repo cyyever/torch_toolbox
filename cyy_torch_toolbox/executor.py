@@ -254,12 +254,110 @@ class Executor(HookCollection, abc.ABC):
             self._data["lr_scheduler"] = self.hyper_parameter.get_lr_scheduler(self)
         return self._data["lr_scheduler"]
 
+    def execute_batch(
+        self,
+        batch_index: int,
+        batch: Any,
+        epoch: int,
+        evaluation_mode: EvaluationMode,
+    ) -> dict | None:
+        self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
+        self.exec_hooks(
+            hook_point=ExecutorHookPoint.AFTER_FETCH_BATCH,
+            batch_index=batch_index,
+        )
+        batch["batch_index"] = batch_index
+        if evaluation_mode == EvaluationMode.Training:
+            if (
+                self.hyper_parameter.batch_size != 1
+                and batch.get("batch_size", None) == 1
+                and self.__model_evaluator.model_util.have_module(
+                    module_type=torch.nn.BatchNorm2d
+                )
+            ):
+                get_logger().debug("drop last one-batch for batchnorm")
+                return None
+            optimizer: torch.optim.Optimizer = self.get_optimizer()
+            lr_scheduler = self.get_lr_scheduler()
+
+        self.exec_hooks(
+            hook_point=ExecutorHookPoint.BEFORE_BATCH,
+            epoch=epoch,
+            **batch,
+        )
+        evaluation_kwargs = batch | {
+            "phase": self.phase,
+            "device": self.device,
+            "evaluation_mode": evaluation_mode,
+            "non_blocking": True,
+        }
+
+        forward_result: dict = {}
+
+        while True:
+            if evaluation_mode == EvaluationMode.Training:
+                optimizer.zero_grad(set_to_none=True)
+            elif evaluation_mode == EvaluationMode.TestWithGrad:
+                self.running_model_evaluator.model.zero_grad(set_to_none=True)
+
+            if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
+                self.exec_hooks(
+                    hook_point=ExecutorHookPoint.MODEL_FORWARD,
+                    evaluation_kwargs=evaluation_kwargs,
+                )
+                forward_result = self._data.pop("forward_result")
+            else:
+                forward_result = self.__model_evaluator(**evaluation_kwargs)
+
+            if forward_result["is_averaged_loss"]:
+                assert self._data["dataset_size"] > 1
+                forward_result["normalized_batch_loss"] = (
+                    forward_result["loss"]
+                    * forward_result["loss_batch_size"]
+                    / self._data["dataset_size"]
+                )
+
+            batch |= forward_result
+
+            if evaluation_mode != EvaluationMode.Test:
+                loss = self._get_backward_loss(result=forward_result)
+                assert loss is not None
+                if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):
+                    self.exec_hooks(
+                        hook_point=ExecutorHookPoint.MODEL_BACKWARD, loss=loss
+                    )
+                else:
+                    loss.backward()
+
+            if evaluation_mode != EvaluationMode.Training:
+                break
+            step_skipped: bool = False
+            if self.has_hook(ExecutorHookPoint.OPTIMIZER_STEP):
+                self._data["step_skipped"] = False
+                self.exec_hooks(ExecutorHookPoint.OPTIMIZER_STEP)
+                step_skipped = self._data["step_skipped"]
+            else:
+                optimizer.step()
+            if step_skipped:
+                continue
+            if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+                get_logger().debug("adjust lr after batch")
+                lr_scheduler.step()
+            break
+
+        self.exec_hooks(
+            hook_point=ExecutorHookPoint.AFTER_BATCH,
+            epoch=epoch,
+            result=forward_result,
+            **batch,
+        )
+        return None
+
     def _execute_epoch(
         self,
         epoch: int,
         evaluation_mode: EvaluationMode,
     ) -> None:
-        step_lr_after_epoch: bool = False
         self.exec_hooks(
             hook_point=ExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
@@ -267,114 +365,29 @@ class Executor(HookCollection, abc.ABC):
         self.__refresh_dataset_size()
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
         for batch_index, batch in enumerate(self.dataloader):
-            self.exec_hooks(
-                hook_point=ExecutorHookPoint.AFTER_FETCH_BATCH,
+            self.execute_batch(
                 batch_index=batch_index,
-            )
-            batch["batch_index"] = batch_index
-            if evaluation_mode == EvaluationMode.Training:
-                if (
-                    self.hyper_parameter.batch_size != 1
-                    and batch.get("batch_size", None) == 1
-                    and self.__model_evaluator.model_util.have_module(
-                        module_type=torch.nn.BatchNorm2d
-                    )
-                ):
-                    get_logger().debug("drop last one-batch for batchnorm")
-                    continue
-                optimizer: torch.optim.Optimizer = self.get_optimizer()
-                lr_scheduler = self.get_lr_scheduler()
-
-            self.exec_hooks(
-                hook_point=ExecutorHookPoint.BEFORE_BATCH,
+                batch=batch,
                 epoch=epoch,
-                **batch,
+                evaluation_mode=evaluation_mode,
             )
-            evaluation_kwargs = batch | {
-                "phase": self.phase,
-                "device": self.device,
-                "evaluation_mode": evaluation_mode,
-                "non_blocking": True,
-            }
-
-            forward_result: dict = {}
-
-            while True:
-                if evaluation_mode == EvaluationMode.Training:
-                    optimizer.zero_grad(set_to_none=True)
-                elif evaluation_mode == EvaluationMode.TestWithGrad:
-                    self.running_model_evaluator.model.zero_grad(set_to_none=True)
-
-                if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
-                    self.exec_hooks(
-                        hook_point=ExecutorHookPoint.MODEL_FORWARD,
-                        evaluation_kwargs=evaluation_kwargs,
-                    )
-                    forward_result = self._data.pop("forward_result")
-                else:
-                    forward_result = self.__model_evaluator(**evaluation_kwargs)
-
-                if forward_result["is_averaged_loss"]:
-                    assert self._data["dataset_size"] > 1
-                    forward_result["normalized_batch_loss"] = (
-                        forward_result["loss"]
-                        * forward_result["loss_batch_size"]
-                        / self._data["dataset_size"]
-                    )
-
-                batch |= forward_result
-
-                if evaluation_mode != EvaluationMode.Test:
-                    loss = self._get_backward_loss(result=forward_result)
-                    assert loss is not None
-                    if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):
-                        self.exec_hooks(
-                            hook_point=ExecutorHookPoint.MODEL_BACKWARD, loss=loss
-                        )
-                    else:
-                        loss.backward()
-
-                if evaluation_mode != EvaluationMode.Training:
-                    break
-                step_skipped: bool = False
-                if self.has_hook(ExecutorHookPoint.OPTIMIZER_STEP):
-                    self._data["step_skipped"] = False
-                    self.exec_hooks(ExecutorHookPoint.OPTIMIZER_STEP)
-                    step_skipped = self._data["step_skipped"]
-                else:
-                    optimizer.step()
-                if step_skipped:
-                    continue
-                if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
-                    get_logger().debug("adjust lr after batch")
-                    lr_scheduler.step()
-                    step_lr_after_epoch = False
-                else:
-                    step_lr_after_epoch = True
-                break
-
-            self.exec_hooks(
-                hook_point=ExecutorHookPoint.AFTER_BATCH,
-                epoch=epoch,
-                result=forward_result,
-                **batch,
-            )
-
             self.exec_hooks(
                 hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH,
                 batch_index=batch_index + 1,
             )
-        if step_lr_after_epoch:
-            match lr_scheduler:
-                case torch.optim.lr_scheduler.ReduceLROnPlateau():
-                    training_loss = self.performance_metric.get_loss(epoch)
-                    get_logger().debug(
-                        "call ReduceLROnPlateau for training loss %s",
-                        training_loss,
-                    )
-                    lr_scheduler.step(training_loss)
-                case _:
-                    lr_scheduler.step()
+        if evaluation_mode == EvaluationMode.Training:
+            lr_scheduler = self.get_lr_scheduler()
+            if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+                match lr_scheduler:
+                    case torch.optim.lr_scheduler.ReduceLROnPlateau():
+                        training_loss = self.performance_metric.get_loss(epoch)
+                        get_logger().debug(
+                            "call ReduceLROnPlateau for training loss %s",
+                            training_loss,
+                        )
+                        lr_scheduler.step(training_loss)
+                    case _:
+                        lr_scheduler.step()
 
         self.exec_hooks(
             hook_point=ExecutorHookPoint.AFTER_EPOCH,
