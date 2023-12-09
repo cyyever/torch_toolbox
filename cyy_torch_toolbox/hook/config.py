@@ -1,5 +1,5 @@
 import copy
-from typing import Any
+from typing import Any, Self
 
 import torch
 import torch.cuda
@@ -22,7 +22,7 @@ class HookConfig:
         self.summarize_executor = True
         self.debug = False
         self.profile = False
-        self.use_amp = torch.cuda.is_available()
+        self.use_amp = False
         self.benchmark_cudnn: bool = True
         self.use_performance_metric: bool = True
         self.use_extra_performance_metrics: bool = False
@@ -30,7 +30,7 @@ class HookConfig:
         self.save_performance_metric = False
         self.__old_config: Any = None
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         self.__old_config = copy.copy(self)
         return self
 
@@ -41,9 +41,11 @@ class HookConfig:
         self.__old_config = None
 
     def set_hooks(self, executor) -> None:
-        if executor.phase == MachineLearningPhase.Training:
-            if torch.cuda.is_available():
-                executor.append_or_disable_hook("AMP", self.use_amp, AMP())
+        if (
+            executor.phase == MachineLearningPhase.Training
+            and torch.cuda.is_available()
+        ):
+            executor.append_or_disable_hook("AMP", self.use_amp, AMP())
         executor.append_or_disable_hook("debugger", self.debug, Debugger())
         executor.append_or_disable_hook("profiler", self.profile, Profiler())
         executor.append_or_disable_hook(
