@@ -1,5 +1,5 @@
 import copy
-from typing import Any
+from typing import Any, Generator
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -29,11 +29,6 @@ class Trainer(Executor):
         self.__inferencers: dict[MachineLearningPhase, Inferencer] = {}
         self.append_hook(BatchLossLogger(), "batch_loss_logger")
         self.append_hook(KeepModelHook(), "keep_model_hook")
-
-    def set_device(self, device: torch.device) -> None:
-        super().set_device(device)
-        for inferencer in self.__inferencers.values():
-            inferencer.set_device(device)
 
     @property
     def best_model(self) -> Any:
@@ -89,12 +84,6 @@ class Trainer(Executor):
         self.model_util.load_parameter_dict(parameter_dict)
         self.remove_optimizer()
 
-    def offload_from_device(self) -> None:
-        if self.__inferencers:
-            for inferencer in self.__inferencers.values():
-                inferencer.offload_from_device()
-        super().offload_from_device()
-
     def train(self, validate: bool = True) -> None:
         with (
             self.device_context,
@@ -136,6 +125,9 @@ class Trainer(Executor):
 
     def _get_backward_loss(self, result) -> torch.Tensor:
         return result["loss"]
+
+    def _foreach_sub_executor(self) -> Generator:
+        yield from self.__inferencers.values()
 
 
 class TrainerConfig:

@@ -2,7 +2,7 @@ import abc
 import contextlib
 import copy
 import os
-from typing import Any, Callable
+from typing import Any, Callable, Generator
 
 import torch
 import torch.utils.data
@@ -82,11 +82,12 @@ class Executor(HookCollection, abc.ABC):
         super().exec_hooks(hook_point=hook_point, **kwargs)
 
     def set_save_dir(self, save_dir: str) -> None:
-        self.__save_dir = save_dir
         data_dir = os.path.join(save_dir, "visualizer")
         for hook in self._hooks.values():
             if isinstance(hook, MetricVisualizer):
                 hook.set_data_dir(data_dir)
+        for executor in self._foreach_sub_executor():
+            executor.set_save_dir(save_dir)
 
     def set_visualizer_prefix(self, prefix: str) -> None:
         for hook in self._hooks.values():
@@ -169,19 +170,18 @@ class Executor(HookCollection, abc.ABC):
     def _prepare_execution(self) -> None:
         self._data.clear()
         self.hook_config.set_hooks(self)
-        if self.__save_dir is not None:
-            self.set_save_dir(self.__save_dir)
-
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_EXECUTE)
 
     def set_device(self, device: torch.device) -> None:
-        if self.__device == device:
-            return
-        self.wait_stream()
-        self.__device = device
-        get_logger().debug("%s use device %s", str(self.__phase), self.__device)
-        self.__device_stream = None
-        self.__dataloader = None
+        if self.__device != device:
+            self.wait_stream()
+            self.__device = device
+            get_logger().debug("%s use device %s", str(self.__phase), self.__device)
+            self.__device_stream = None
+            self.__dataloader = None
+
+        for executor in self._foreach_sub_executor():
+            executor.set_device(device)
 
     def __getstate__(self):
         # capture what is normally pickled
@@ -224,6 +224,9 @@ class Executor(HookCollection, abc.ABC):
     def load_model(self, model_path: str) -> None:
         self.model.load_state_dict(torch.load(model_path, map_location=self.device))
 
+    def _foreach_sub_executor(self) -> Generator:
+        return
+
     def save_model(self, model_path: str) -> None:
         torch.save(self.model.state_dict(), model_path)
 
@@ -231,6 +234,8 @@ class Executor(HookCollection, abc.ABC):
         self.wait_stream()
         self.__model_evaluator.offload_from_device()
         torch.cuda.empty_cache()
+        for executor in self._foreach_sub_executor():
+            executor.offload_from_device()
 
     def has_optimizer(self) -> bool:
         return "optimizer" in self._data
