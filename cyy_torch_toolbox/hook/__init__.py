@@ -187,9 +187,8 @@ class HookCollection:
                 self.__disabled_hooks.add(name)
             hook.disable()
 
-    def remove_hook(self, hook: Hook, hook_name: str | None = None) -> None:
-        if hook_name is not None:
-            hook = self.__hook_objs.pop(hook_name)
+    def remove_hook(self, hook_name: str) -> None:
+        hook = self.__hook_objs.pop(hook_name)
         for hook_point, name, _ in hook.yield_hooks():
             self.remove_named_hook(name, hook_point)
 
