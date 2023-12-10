@@ -14,6 +14,8 @@ class BatchLossLogger(MetricVisualizer):
         if self.log_times == 0:
             return
         interval = executor._data["dataset_size"] // (self.log_times * batch_size)
+        if not executor.has_hook("performance_metric"):
+            return
         performance_metric = executor.get_hook("performance_metric")
         if not performance_metric.enabled:
             return
