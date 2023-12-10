@@ -1,5 +1,4 @@
 import copy
-import functools
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
 from typing import Any, Callable
@@ -34,7 +33,7 @@ class HyperParameterAction(StrEnum):
 class HyperParameter:
     epoch: int
     batch_size: int = 8
-    _lr_scheduler_factory: None | Callable = None
+    learning_rate_scheduler_name: str = "ReduceLROnPlateau"
     learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
     _optimizer_factory: None | Callable = None
     optimizer_kwargs: dict = field(default_factory=lambda: {})
@@ -57,25 +56,25 @@ class HyperParameter:
             task_queue.stop()
         return self.optimizer_kwargs["learning_rate"]
 
-    def set_lr_scheduler_factory(self, name: str) -> None:
-        self._lr_scheduler_factory = functools.partial(
-            self.__get_lr_scheduler_factory, name=name
-        )
-
     def get_iterations_per_epoch(self, dataset_size: int) -> int:
         if self.batch_size == 1:
             return dataset_size
         return (dataset_size + self.batch_size - 1) // self.batch_size
 
-    def get_lr_scheduler(self, trainer) -> Any:
-        assert self._lr_scheduler_factory is not None
-        return self._lr_scheduler_factory(trainer)
+    def get_lr_scheduler(self, trainer) -> torch.optim.lr_scheduler.LRScheduler:
+        return self.__get_lr_scheduler_factory(
+            trainer=trainer, name=self.learning_rate_scheduler_name
+        )
 
     @classmethod
-    def lr_scheduler_step_after_batch(cls, lr_scheduler: Any) -> bool:
+    def lr_scheduler_step_after_batch(
+        cls, lr_scheduler: torch.optim.lr_scheduler.LRScheduler
+    ) -> bool:
         return isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR)
 
-    def __get_lr_scheduler_factory(self, trainer: Any, name: str) -> Any:
+    def __get_lr_scheduler_factory(
+        self, trainer: Any, name: str
+    ) -> torch.optim.lr_scheduler.LRScheduler:
         optimizer = trainer.get_optimizer()
         training_dataset_size = trainer.dataset_size
         full_kwargs: dict = {}
@@ -217,7 +216,7 @@ def get_recommended_hyper_parameter(
             batch_size=64,
             optimizer_kwargs={"fake_weight_decay": 0},
         )
-    hyper_parameter.set_lr_scheduler_factory(name="ReduceLROnPlateau")
+    hyper_parameter.learning_rate_scheduler_name = "ReduceLROnPlateau"
     hyper_parameter.set_optimizer_factory("Adam")
     return hyper_parameter
 
@@ -248,11 +247,9 @@ class HyperParameterConfig:
         if self.weight_decay is not None:
             hyper_parameter.optimizer_kwargs["fake_weight_decay"] = self.weight_decay
         hyper_parameter.set_optimizer_factory(self.optimizer_name)
+        hyper_parameter.learning_rate_scheduler_name = self.learning_rate_scheduler_name
         hyper_parameter.learning_rate_scheduler_kwargs = (
             self.learning_rate_scheduler_kwargs
-        )
-        hyper_parameter.set_lr_scheduler_factory(
-            name=self.learning_rate_scheduler_name,
         )
         return hyper_parameter
         # get_recommended_hyper_parameter(dataset_name, model_name)

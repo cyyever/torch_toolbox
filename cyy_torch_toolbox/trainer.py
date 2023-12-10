@@ -27,6 +27,7 @@ class Trainer(Executor):
             **kwargs,
         )
         self.__inferencers: dict[MachineLearningPhase, Inferencer] = {}
+        self.__optimizer_parameters = None
         self.append_hook(BatchLossLogger(), "batch_loss_logger")
         self.append_hook(KeepModelHook(), "keep_model_hook")
 
@@ -68,6 +69,17 @@ class Trainer(Executor):
         if self.visualizer_prefix is not None:
             inferencer.set_visualizer_prefix(self.visualizer_prefix)
         return inferencer
+
+    def reset_optimizer_parameters(self, parameters: Any) -> None:
+        self.__optimizer_parameters = parameters
+        self.remove_optimizer()
+
+    def get_optimizer(self) -> torch.optim.Optimizer:
+        if "optimizer" not in self._data:
+            self._data["optimizer"] = self.hyper_parameter.get_optimizer(
+                self, parameters=self.__optimizer_parameters
+            )
+        return self._data["optimizer"]
 
     def remove_optimizer(self) -> None:
         self._data.pop("optimizer", None)
