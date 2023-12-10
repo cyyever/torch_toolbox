@@ -186,9 +186,8 @@ class ModelEvaluator:
             "loss": loss,
             "model_output": output,
             "is_averaged_loss": self.__is_averaged_loss(loss_fun),
+            "loss_batch_size": targets.shape[0],
         }
-        if res["is_averaged_loss"]:
-            res["loss_batch_size"] = targets.shape[0]
         return res
 
     def replace_model(self, model):
