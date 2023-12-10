@@ -39,6 +39,13 @@ class Trainer(Executor):
             return None
         return keep_model_hook.best_model
 
+    def __getstate__(self):
+        # capture what is normally pickled
+        state = super().__getstate__()
+        state["_Trainer__inferencers"] = {}
+        state["_Trainer__optimizer_parameters"] = None
+        return state
+
     def get_cached_inferencer(self, phase: MachineLearningPhase) -> Inferencer | None:
         return self.__inferencers.get(phase, None)
 
