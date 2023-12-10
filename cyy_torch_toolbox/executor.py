@@ -260,7 +260,7 @@ class Executor(HookCollection, abc.ABC):
         batch: Any,
         epoch: int,
         evaluation_mode: EvaluationMode,
-    ) -> dict | None:
+    ) -> None:
         self.exec_hooks(
             hook_point=ExecutorHookPoint.AFTER_FETCH_BATCH,
             batch_index=batch_index,
@@ -350,7 +350,6 @@ class Executor(HookCollection, abc.ABC):
             result=forward_result,
             **batch,
         )
-        return None
 
     def _execute_epoch(
         self,
