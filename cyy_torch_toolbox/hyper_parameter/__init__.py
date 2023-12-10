@@ -39,11 +39,12 @@ class HyperParameter:
     _optimizer_factory: None | Callable = None
     optimizer_kwargs: dict = field(default_factory=lambda: {})
 
-    def __get_learning_rate(self, trainer: Any) -> float:
+    def __get_learning_rate(self, trainer: Any | None = None) -> float:
         if isinstance(
             self.optimizer_kwargs.get("learning_rate", HyperParameterAction.FIND_LR),
             HyperParameterAction,
         ):
+            assert trainer is not None
             task_queue = TorchThreadTaskQueue()
             task_queue.start(worker_fun=determine_learning_rate)
             trainer.offload_from_device()
@@ -130,18 +131,37 @@ class HyperParameter:
 
     @staticmethod
     def get_lr_scheduler_names() -> list[str]:
-        return ["ReduceLROnPlateau", "OneCycleLR", "CosineAnnealingLR", "MultiStepLR"]
+        return [
+            "LambdaLR",
+            "MultiplicativeLR",
+            "StepLR",
+            "MultiStepLR",
+            "ConstantLR",
+            "LinearLR",
+            "ExponentialLR",
+            "SequentialLR",
+            "CosineAnnealingLR",
+            "ChainedScheduler",
+            "ReduceLROnPlateau",
+            "CyclicLR",
+            "CosineAnnealingWarmRestarts",
+            "OneCycleLR",
+            "PolynomialLR",
+            "LRScheduler",
+        ]
 
-    def get_optimizer(self, trainer: Any) -> Any:
+    def get_optimizer(self, trainer: Any, parameters=None) -> Any:
         assert self._optimizer_factory is not None
         foreach = not torch.backends.mps.is_available()
         kwargs = copy.copy(self.optimizer_kwargs)
+        if parameters is None:
+            parameters = trainer.model.parameters()
         kwargs |= {
-            "params": trainer.model.parameters(),
-            "lr": self.__get_learning_rate(trainer),
+            "params": parameters,
+            "lr": self.__get_learning_rate(trainer=trainer),
             "foreach": foreach,
         }
-        kwargs.pop("learning_rate")
+        kwargs.pop("learning_rate", None)
         if "fake_weight_decay" in kwargs:
             kwargs["weight_decay"] = (
                 kwargs.pop("fake_weight_decay") / trainer.dataset_size
