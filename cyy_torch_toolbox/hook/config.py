@@ -57,7 +57,7 @@ class HookConfig:
             "performance_metric",
             self.use_performance_metric,
             PerformanceMetric(
-                model_type=executor.running_model_evaluator.model_type,
+                executor=executor,
                 profile=self.profile,
                 extra_metrics=self.use_extra_performance_metrics,
             ),

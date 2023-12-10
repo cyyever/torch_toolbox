@@ -11,7 +11,7 @@ from ..data_structure.torch_thread_task_queue import TorchThreadTaskQueue
 from .lr_finder import LRFinder
 
 
-def __determine_learning_rate(task: Any, **kwargs: Any) -> float:
+def _determine_learning_rate(task: Any, **kwargs: Any) -> float:
     tmp_trainer = task
     tmp_trainer.disable_stripable_hooks()
     lr_finder = LRFinder()
@@ -51,7 +51,7 @@ class HyperParameter:
         ):
             assert trainer is not None
             task_queue = TorchThreadTaskQueue()
-            task_queue.start(worker_fun=__determine_learning_rate)
+            task_queue.start(worker_fun=_determine_learning_rate)
             trainer.offload_from_device()
             task_queue.add_task(copy.deepcopy(trainer))
             data = task_queue.get_data()
@@ -225,7 +225,7 @@ def get_recommended_hyper_parameter(
 class HyperParameterConfig:
     epoch: int = 350
     batch_size: int = 64
-    learning_rate: None | float = None
+    learning_rate: HyperParameterAction | float = HyperParameterAction.FIND_LR
     momentum: None | float = 0.9
     weight_decay: None | float = None
     fake_weight_decay: None | float = None
