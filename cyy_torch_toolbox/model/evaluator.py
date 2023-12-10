@@ -109,7 +109,7 @@ class ModelEvaluator:
         self,
         *,
         inputs: Any,
-        targets: Any,
+        targets: Any | None = None,
         device: None | torch.device = None,
         non_blocking: bool = False,
         evaluation_mode: EvaluationMode | None = None,
@@ -159,6 +159,12 @@ class ModelEvaluator:
         **kwargs: Any,
     ) -> dict:
         original_output = output
+        res = {
+            "original_output": original_output,
+            "model_output": output,
+        }
+        if targets is None:
+            return res
         convert_kwargs = {"device": output.device}
         assert isinstance(output, torch.Tensor)
         loss_fun = self.loss_fun
@@ -177,11 +183,8 @@ class ModelEvaluator:
                 )
                 output = output.view(-1)
         loss = loss_fun(output, targets)
-        res = {
+        res |= {
             "loss": loss,
-            "targets": targets,
-            "original_output": original_output,
-            "model_output": output,
             "is_averaged_loss": self.__is_averaged_loss(loss_fun),
         }
         if res["is_averaged_loss"]:
