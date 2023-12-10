@@ -11,7 +11,7 @@ from ..data_structure.torch_thread_task_queue import TorchThreadTaskQueue
 from .lr_finder import LRFinder
 
 
-def determine_learning_rate(task: Any, **kwargs: Any) -> float:
+def __determine_learning_rate(task: Any, **kwargs: Any) -> float:
     tmp_trainer = task
     tmp_trainer.disable_stripable_hooks()
     lr_finder = LRFinder()
@@ -23,6 +23,12 @@ def determine_learning_rate(task: Any, **kwargs: Any) -> float:
     )
     assert lr_finder.suggested_learning_rate is not None
     return lr_finder.suggested_learning_rate
+
+
+def lr_scheduler_step_after_batch(
+    lr_scheduler: torch.optim.lr_scheduler.LRScheduler,
+) -> bool:
+    return isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR)
 
 
 class HyperParameterAction(StrEnum):
@@ -45,7 +51,7 @@ class HyperParameter:
         ):
             assert trainer is not None
             task_queue = TorchThreadTaskQueue()
-            task_queue.start(worker_fun=determine_learning_rate)
+            task_queue.start(worker_fun=__determine_learning_rate)
             trainer.offload_from_device()
             task_queue.add_task(copy.deepcopy(trainer))
             data = task_queue.get_data()
@@ -65,12 +71,6 @@ class HyperParameter:
         return self.__get_lr_scheduler_factory(
             trainer=trainer, name=self.learning_rate_scheduler_name
         )
-
-    @classmethod
-    def lr_scheduler_step_after_batch(
-        cls, lr_scheduler: torch.optim.lr_scheduler.LRScheduler
-    ) -> bool:
-        return isinstance(lr_scheduler, torch.optim.lr_scheduler.OneCycleLR)
 
     def __get_lr_scheduler_factory(
         self, trainer: Any, name: str

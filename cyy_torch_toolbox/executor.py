@@ -13,7 +13,7 @@ from .dataset import DatasetCollection, DatasetUtil
 from .device import get_device
 from .hook import HookCollection
 from .hook.config import HookConfig
-from .hyper_parameter import HyperParameter
+from .hyper_parameter import HyperParameter, lr_scheduler_step_after_batch
 from .metric_visualizers.metric_visualizer import MetricVisualizer
 from .metrics.performance_metric import PerformanceMetric
 from .ml_type import EvaluationMode, ExecutorHookPoint, MachineLearningPhase
@@ -339,7 +339,7 @@ class Executor(HookCollection, abc.ABC):
             if step_skipped:
                 continue
             lr_scheduler = self.get_lr_scheduler()
-            if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+            if lr_scheduler_step_after_batch(lr_scheduler):
                 get_logger().debug("adjust lr after batch")
                 lr_scheduler.step()
             break
@@ -378,7 +378,7 @@ class Executor(HookCollection, abc.ABC):
             )
         if evaluation_mode == EvaluationMode.Training:
             lr_scheduler = self.get_lr_scheduler()
-            if not HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
+            if not lr_scheduler_step_after_batch(lr_scheduler):
                 match lr_scheduler:
                     case torch.optim.lr_scheduler.ReduceLROnPlateau():
                         training_loss = self.performance_metric.get_loss(epoch)
