@@ -151,15 +151,15 @@ class HyperParameter:
 
     def get_optimizer(self, trainer: Any, parameters=None) -> Any:
         assert self._optimizer_factory is not None
-        foreach = not torch.backends.mps.is_available()
         kwargs = copy.copy(self.optimizer_kwargs)
         if parameters is None:
             parameters = trainer.model.parameters()
         kwargs |= {
             "params": parameters,
             "lr": self.__get_learning_rate(trainer=trainer),
-            "foreach": foreach,
         }
+        if "foreach" not in kwargs:
+            kwargs["foreach"] = not torch.backends.mps.is_available()
         kwargs.pop("learning_rate", None)
         if "fake_weight_decay" in kwargs:
             kwargs["weight_decay"] = (
@@ -236,7 +236,7 @@ class HyperParameterConfig:
 
     def create_hyper_parameter(self) -> HyperParameter:
         hyper_parameter = HyperParameter(epoch=self.epoch, batch_size=self.batch_size)
-
+        hyper_parameter.optimizer_kwargs = self.optimizer_kwargs
         hyper_parameter.optimizer_kwargs["learning_rate"] = self.learning_rate
         if self.momentum is not None:
             hyper_parameter.optimizer_kwargs["momentum"] = self.momentum
