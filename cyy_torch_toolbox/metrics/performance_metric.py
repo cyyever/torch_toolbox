@@ -15,11 +15,11 @@ from .metric import Metric
 
 class PerformanceMetric(Metric):
     def __init__(
-        self, model_type, profile: bool = False, extra_metrics: bool = False, **kwargs
+        self, executor, profile: bool = False, extra_metrics: bool = False, **kwargs
     ) -> None:
         super().__init__(**kwargs)
         self.__loss_metric = LossMetric()
-        if model_type == ModelType.Classification:
+        if executor.running_model_evaluator.model_type == ModelType.Classification:
             self.__accuracy_metric = AccuracyMetric()
             if extra_metrics:
                 self.__f1_metric = F1Metric()
@@ -30,7 +30,8 @@ class PerformanceMetric(Metric):
             self.__grad_metric = GradMetric()
         if profile:
             self.__dataloader_profiler = DataloaderProfiler()
-        self.__lr_metric = LearningRateMetric()
+        if hasattr(executor, "train"):
+            self.__lr_metric = LearningRateMetric()
 
     def _before_epoch(self, **kwargs) -> None:
         self.__epoch_time_point = time.time()
