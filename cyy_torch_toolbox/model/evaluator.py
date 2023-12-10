@@ -219,10 +219,10 @@ class ModelEvaluator:
                 (
                     torch.quantization.QuantStub,
                     torch.quantization.DeQuantStub,
-                    torch.quantization.stubs.QuantWrapper,
-                    torch.quantization.fake_quantize.FakeQuantize,
-                    torch.quantization.observer.MovingAverageMinMaxObserver,
-                    torch.quantization.observer.MovingAveragePerChannelMinMaxObserver,
+                    torch.quantization.QuantWrapper,
+                    torch.quantization.FakeQuantize,
+                    torch.quantization.MovingAverageMinMaxObserver,
+                    torch.quantization.MovingAveragePerChannelMinMaxObserver,
                     torch.nn.modules.dropout.Dropout,
                 ),
             )
@@ -252,7 +252,7 @@ class ModelEvaluator:
 
     def get_underlying_model(self) -> torch.nn.Module:
         match self.model:
-            case torch.quantization.stubs.QuantWrapper():
+            case torch.quantization.QuantWrapper():
                 return self.model.module
             case _:
                 return self.model
@@ -299,17 +299,6 @@ class ModelEvaluator:
 #             if inputs is not None:
 #                 inputs.requires_grad_()
 #         return self.__model_evaluator.__call__(**kwargs)
-
-
-class VisionModelEvaluator(ModelEvaluator):
-    pass
-    # def __call__(self, inputs, **kwargs):
-    #     inputs = tensor_to(inputs, non_blocking=True, memory_format=torch.channels_last)
-    #     return super().__call__(inputs=inputs, **kwargs)
-
-    # def to(self, device, non_blocking=False):
-    #     self.model.to(non_blocking=non_blocking, memory_format=torch.channels_last)
-    #     super().to(device=device, non_blocking=non_blocking)
 
 
 # class ParallelModelWithLoss(ModelEvaluator):
