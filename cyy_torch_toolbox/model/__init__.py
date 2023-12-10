@@ -5,6 +5,7 @@ import sys
 import torch
 from cyy_naive_lib.log import get_logger
 
+from ..dataset.classification_collection import ClassificationDatasetCollection
 from ..dataset.collection import DatasetCollection
 from ..factory import Factory
 from ..ml_type import DatasetType, ModelType
@@ -15,11 +16,15 @@ global_model_evaluator_factory = Factory()
 
 
 def get_model_evaluator(
-    model: torch.nn.Module, dataset_collection: DatasetCollection, **model_kwargs
+    model: torch.nn.Module,
+    dataset_collection: DatasetCollection | None = None,
+    **model_kwargs,
 ) -> ModelEvaluator:
-    model_evaluator_fun = global_model_evaluator_factory.get(
-        dataset_collection.dataset_type
-    )
+    model_evaluator_fun = ModelEvaluator
+    if dataset_collection is not None:
+        model_evaluator_fun = global_model_evaluator_factory.get(
+            dataset_collection.dataset_type
+        )
     model_evaluator = model_evaluator_fun(
         model=model,
         loss_fun=model_kwargs.pop("loss_fun_name", None),
@@ -64,6 +69,7 @@ def get_model(
     if "rcnn" in name.lower():
         model_type = ModelType.Detection
     if model_type in (ModelType.Classification, ModelType.Detection):
+        assert isinstance(dataset_collection, ClassificationDatasetCollection)
         if "num_classes" not in model_kwargs:
             model_kwargs["num_classes"] = dataset_collection.label_number  # E:
             get_logger().debug("detect %s classes", model_kwargs["num_classes"])
