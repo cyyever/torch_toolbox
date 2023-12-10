@@ -274,10 +274,8 @@ class Executor(HookCollection, abc.ABC):
                     module_type=torch.nn.BatchNorm2d
                 )
             ):
-                get_logger().debug("drop last one-batch for batchnorm")
+                get_logger().debug("drop last one-sized batch for batch norm")
                 return None
-            optimizer: torch.optim.Optimizer = self.get_optimizer()
-            lr_scheduler = self.get_lr_scheduler()
 
         self.exec_hooks(
             hook_point=ExecutorHookPoint.BEFORE_BATCH,
@@ -295,6 +293,7 @@ class Executor(HookCollection, abc.ABC):
 
         while True:
             if evaluation_mode == EvaluationMode.Training:
+                optimizer: torch.optim.Optimizer = self.get_optimizer()
                 optimizer.zero_grad(set_to_none=True)
             elif evaluation_mode == EvaluationMode.TestWithGrad:
                 self.running_model_evaluator.model.zero_grad(set_to_none=True)
@@ -339,6 +338,7 @@ class Executor(HookCollection, abc.ABC):
                 optimizer.step()
             if step_skipped:
                 continue
+            lr_scheduler = self.get_lr_scheduler()
             if HyperParameter.lr_scheduler_step_after_batch(lr_scheduler):
                 get_logger().debug("adjust lr after batch")
                 lr_scheduler.step()
