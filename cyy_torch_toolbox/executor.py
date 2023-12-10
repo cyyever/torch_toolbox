@@ -249,7 +249,7 @@ class Executor(HookCollection, abc.ABC):
             self._data["optimizer"] = self.hyper_parameter.get_optimizer(self)
         return self._data["optimizer"]
 
-    def get_lr_scheduler(self) -> Any:
+    def get_lr_scheduler(self) -> torch.optim.lr_scheduler.LRScheduler:
         if "lr_scheduler" not in self._data:
             self._data["lr_scheduler"] = self.hyper_parameter.get_lr_scheduler(self)
         return self._data["lr_scheduler"]
@@ -266,16 +266,16 @@ class Executor(HookCollection, abc.ABC):
             batch_index=batch_index,
         )
         batch["batch_index"] = batch_index
-        if evaluation_mode == EvaluationMode.Training:
-            if (
-                self.hyper_parameter.batch_size != 1
-                and batch.get("batch_size", None) == 1
-                and self.__model_evaluator.model_util.have_module(
-                    module_type=torch.nn.BatchNorm2d
-                )
-            ):
-                get_logger().debug("drop last one-sized batch for batch norm")
-                return None
+        if (
+            evaluation_mode == EvaluationMode.Training
+            and self.hyper_parameter.batch_size != 1
+            and batch.get("batch_size", None) == 1
+            and self.__model_evaluator.model_util.have_module(
+                module_type=torch.nn.BatchNorm2d
+            )
+        ):
+            get_logger().debug("drop last one-sized batch for batch norm")
+            return None
 
         self.exec_hooks(
             hook_point=ExecutorHookPoint.BEFORE_BATCH,
