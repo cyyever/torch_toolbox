@@ -161,7 +161,6 @@ class ModelEvaluator:
         original_output = output
         res = {
             "original_output": original_output,
-            "model_output": output,
         }
         if targets is None:
             return res
@@ -185,6 +184,7 @@ class ModelEvaluator:
         loss = loss_fun(output, targets)
         res |= {
             "loss": loss,
+            "model_output": output,
             "is_averaged_loss": self.__is_averaged_loss(loss_fun),
         }
         if res["is_averaged_loss"]:
