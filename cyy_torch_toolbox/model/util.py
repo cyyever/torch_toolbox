@@ -1,6 +1,7 @@
 from typing import Any, Callable, Generator, Type
 
 import torch
+import torch.nn
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 from cyy_naive_lib.log import get_logger
 
@@ -25,12 +26,13 @@ class ModelUtil:
         self,
         parameter_dict: dict,
         check_parameter: bool = False,
+        keep_grad: bool = False,
     ) -> None:
         assert parameter_dict
         for name, parameter in parameter_dict.items():
             if check_parameter:
                 assert self.has_attr(name)
-            self.set_attr(name, parameter, as_parameter=True)
+            self.set_attr(name, parameter, as_parameter=True, keep_grad=keep_grad)
 
     def get_buffer_dict(self) -> dict:
         return dict(self.model.named_buffers())
@@ -83,7 +85,9 @@ class ModelUtil:
             module = self.get_attr(".".join(components[:-1]))
             module.register_module(components[-1], module)
 
-    def set_attr(self, name: str, value: Any, as_parameter: bool = True) -> None:
+    def set_attr(
+        self, name: str, value: Any, as_parameter: bool = True, keep_grad: bool = False
+    ) -> None:
         model = self.model
         components = name.split(".")
         for i, component in enumerate(components):
@@ -93,7 +97,11 @@ class ModelUtil:
                 if hasattr(model, component):
                     delattr(model, component)
                 if as_parameter:
-                    model.register_parameter(component, torch.nn.Parameter(value))
+                    if keep_grad:
+                        setattr(value, "_is_param", True)
+                        model._parameters[component] = value
+                    else:
+                        model.register_parameter(component, torch.nn.Parameter(value))
                 else:
                     model.register_buffer(component, value)
 
