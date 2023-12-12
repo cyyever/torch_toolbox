@@ -18,7 +18,7 @@ class ExecutorLogger(Hook):
         )
         get_logger().info("model type is %s", executor.model.__class__)
         get_logger().debug("model is %s", executor.model)
-        get_logger().debug("loss function is %s", executor.loss_fun)
+        # get_logger().debug("loss function is %s", executor.loss_fun)
         get_logger().info(
             "parameter number is %s",
             sum(a.numel() for a in executor.model_util.get_parameter_seq()),
