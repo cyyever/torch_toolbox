@@ -162,9 +162,6 @@ class Executor(HookCollection, abc.ABC):
     def model(self) -> torch.nn.Module:
         return self.running_model_evaluator.model
 
-    def replace_model_evaluator(self, fun: Callable) -> None:
-        self.__model_evaluator = fun(self.model_evaluator)
-
     def replace_model(self, fun: Callable) -> None:
         self.__model_evaluator = self.model_evaluator.replace_model(fun(self.model))
 
