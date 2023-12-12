@@ -41,12 +41,12 @@ class ModelUtil:
         for name, parameter in buffer_dict.items():
             self.set_attr(name, parameter, as_parameter=False)
 
-    # def clear_parameters(self) -> None:
-    #     def clear(module: torch.nn.Module) -> None:
-    #         module._parameters = {k: None for k in module._parameters}
+    def clear_parameters(self) -> None:
+        def clear(module: torch.nn.Module) -> None:
+            module._parameters = {k: None for k in module._parameters}
 
-    #     for _, module in self.get_modules():
-    #         clear(module)
+        for _, module in self.get_modules():
+            clear(module)
 
     def get_parameter_dict(self, detach: bool = True) -> dict:
         res: dict = {}
