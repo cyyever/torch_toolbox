@@ -13,7 +13,7 @@ class PerformanceMetricLogger(MetricVisualizer):
             phase_str = "test"
         performance_metric = executor.performance_metric
 
-        epoch_metrics = performance_metric.get_epoch_metric(epoch)
+        epoch_metrics = performance_metric.get_epoch_metrics(epoch)
 
         if not epoch_metrics:
             return
