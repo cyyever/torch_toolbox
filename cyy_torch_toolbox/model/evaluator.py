@@ -79,7 +79,7 @@ class ModelEvaluator:
     @property
     def loss_fun(self) -> Callable:
         if self.__loss_fun is None:
-            self.__loss_fun = self.__choose_loss_function()
+            self.__loss_fun = self._choose_loss_function()
         return self.__loss_fun
 
     def set_loss_fun(self, loss_fun: Callable | str) -> None:
@@ -212,7 +212,7 @@ class ModelEvaluator:
                 model.to(device=device, non_blocking=non_blocking)
             return
 
-    def __choose_loss_function(self, reduction: bool = True) -> Callable:
+    def _choose_loss_function(self) -> Callable:
         layers = [
             m
             for _, m in self.model_util.get_modules()
@@ -248,9 +248,7 @@ class ModelEvaluator:
         if loss_fun_type is None:
             get_logger().error("can't choose a loss function, model is %s", self._model)
             raise NotImplementedError(type(last_layer))
-        if reduction:
-            return loss_fun_type()
-        return loss_fun_type(reduction="none")
+        return loss_fun_type()
 
     def get_underlying_model(self) -> torch.nn.Module:
         match self.model:
