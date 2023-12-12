@@ -6,12 +6,12 @@ from .metric import Metric
 
 
 class AccuracyMetric(Metric):
-    __correct_count: int | torch.Tensor = 0
+    __correct_count: int | torch.Tensor | None = None
     __dataset_size: int | torch.Tensor = 0
 
     def _before_epoch(self, **kwargs: Any) -> None:
         self.__dataset_size = 0
-        self.__correct_count = 0
+        self.__correct_count = None
 
     def _after_batch(self, result: dict, **kwargs: Any) -> None:
         output = result["model_output"]
@@ -35,7 +35,7 @@ class AccuracyMetric(Metric):
             correct_count = (
                 torch.eq(torch.max(output, dim=1)[1], targets).view(-1).sum()
             )
-        if self.__correct_count == 0:
+        if self.__correct_count is None:
             self.__correct_count = correct_count
         else:
             self.__correct_count += correct_count
