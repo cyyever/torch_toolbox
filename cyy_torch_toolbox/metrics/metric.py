@@ -11,11 +11,16 @@ class Metric(Hook):
         self.__epoch_metrics: dict = {}
         self.__batch_metrics: dict = {}
 
-    def get_epoch_metric(self, epoch: int, name: str | None = None) -> dict | Any:
-        return self.get_metrics(metric_type="epoch", key=epoch, name=name)
+    def get_epoch_metric(self, epoch: int, name: str, to_item: bool = True) -> Any:
+        return self.get_metric(
+            metric_type="epoch", key=epoch, name=name, to_item=to_item
+        )
+
+    def get_epoch_metrics(self, epoch: int, to_item: bool = True) -> dict | Any:
+        return self.get_metrics(metric_type="epoch", key=epoch, to_item=to_item)
 
     def get_metrics(
-        self, metric_type: str, key: int, name: str | None = None
+        self, metric_type: str, key: int, to_item: bool = True
     ) -> dict | Any:
         metric: dict = {}
         match metric_type:
@@ -25,28 +30,45 @@ class Metric(Hook):
                 metric = copy.copy(self.__batch_metrics.get(key, {}))
             case _:
                 raise RuntimeError(metric_type)
-        if name is not None and name in metric:
+        if to_item:
+            for k, v in metric.items():
+                if isinstance(v, torch.Tensor):
+                    metric[k] = v.item()
+        for sub_hook in self._sub_hooks:
+            sub_metric = sub_hook.get_metrics(
+                metric_type=metric_type, key=key, to_item=to_item
+            )
+            for k, v in sub_metric.items():
+                assert k not in metric
+                metric[k] = v
+        return metric
+
+    def get_metric(
+        self, metric_type: str, key: int, name: str, to_item: bool = True
+    ) -> Any:
+        metric: dict = {}
+        match metric_type:
+            case "epoch":
+                metric = copy.copy(self.__epoch_metrics.get(key, {}))
+            case "batch":
+                metric = copy.copy(self.__batch_metrics.get(key, {}))
+            case _:
+                raise RuntimeError(metric_type)
+        if name in metric:
             res = metric[name]
-            if isinstance(res, torch.Tensor):
+            if to_item and isinstance(res, torch.Tensor):
                 return res.item()
             return res
         for sub_hook in self._sub_hooks:
             sub_metric = sub_hook.get_metrics(
-                metric_type=metric_type, key=key, name=None
+                metric_type=metric_type, key=key, to_item=to_item
             )
-            if sub_metric:
-                for k, v in sub_metric.items():
-                    assert k not in metric
-                    metric[k] = v
-        if name is not None:
-            res = metric.get(name, None)
-            if isinstance(res, torch.Tensor):
-                return res.item()
-            return res
-        for k, v in metric.items():
-            if isinstance(v, torch.Tensor):
-                metric[k] = v.item()
-        return metric
+            if name in sub_metric:
+                res = sub_metric[name]
+                if to_item and isinstance(res, torch.Tensor):
+                    return res.item()
+                return res
+        return None
 
     def _set_epoch_metric(self, epoch, name, data) -> None:
         if epoch not in self.__epoch_metrics:
@@ -56,7 +78,7 @@ class Metric(Hook):
         self.__epoch_metrics[epoch][name] = data
 
     def get_batch_metric(self, batch: int, name: str) -> Any:
-        return self.get_metrics(metric_type="batch", key=batch, name=name)
+        return self.get_metric(metric_type="batch", key=batch, name=name)
 
     def _set_batch_metric(self, batch_index, name, data) -> None:
         if batch_index not in self.__batch_metrics:
