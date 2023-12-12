@@ -6,7 +6,7 @@ from .metric import Metric
 class LossMetric(Metric):
     def _after_batch(self, epoch, executor, result, **kwargs) -> None:
         normalized_batch_loss = result["normalized_batch_loss"].clone().detach()
-        epoch_loss = self.get_epoch_metric(epoch, "loss")
+        epoch_loss = self.get_epoch_metric(epoch, "loss", to_item=False)
         if epoch_loss is None:
             epoch_loss = normalized_batch_loss
         else:
