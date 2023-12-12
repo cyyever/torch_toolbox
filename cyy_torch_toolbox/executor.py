@@ -60,6 +60,9 @@ class Executor(HookCollection, abc.ABC):
     def hyper_parameter(self) -> HyperParameter:
         return self.__hyper_parameters[self.phase]
 
+    def set_phase(self, phase: MachineLearningPhase):
+        self.__phase = phase
+
     def set_hyper_parameter(
         self, hyper_parameter: HyperParameter, phase: MachineLearningPhase | None = None
     ) -> None:
