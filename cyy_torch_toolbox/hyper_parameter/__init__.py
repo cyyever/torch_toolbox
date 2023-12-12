@@ -4,7 +4,6 @@ from enum import StrEnum, auto
 from typing import Any, Callable
 
 import torch
-from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.reflection import call_fun, get_class_attrs
 
@@ -154,11 +153,7 @@ class HyperParameter:
         assert self._optimizer_factory is not None
         kwargs = copy.copy(self.optimizer_kwargs)
         if parameters is None:
-            parameters = list(
-                get_mapping_values_by_key_order(
-                    trainer.model_util.get_parameter_dict(detach=False)
-                )
-            )
+            parameters = list(trainer.model.parameters())
         kwargs |= {
             "params": parameters,
             "lr": self.__get_learning_rate(trainer=trainer),
