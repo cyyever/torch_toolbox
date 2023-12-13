@@ -41,7 +41,7 @@ class KeepModelHook(Hook):
             return
         metric = trainer.get_cached_inferencer(
             MachineLearningPhase.Validation
-        ).performance_metric.get_epoch_metric(1)
+        ).performance_metric.get_epoch_metrics(1)
         if (
             self.best_model is not None
             and metric["accuracy"]
@@ -61,7 +61,7 @@ class KeepModelHook(Hook):
                     ),
                 ),
                 "performance_metric": {
-                    MachineLearningPhase.Training: trainer.performance_metric.get_epoch_metric(
+                    MachineLearningPhase.Training: trainer.performance_metric.get_epoch_metrics(
                         epoch
                     ),
                     MachineLearningPhase.Validation: metric,
