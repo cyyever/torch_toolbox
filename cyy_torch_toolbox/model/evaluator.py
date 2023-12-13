@@ -126,7 +126,6 @@ class ModelEvaluator:
         return self._forward_model(
             inputs=inputs,
             targets=targets,
-            non_blocking=True,
             device=device,
             **(kwargs | self.__evaluation_kwargs),
         ) | {"inputs": inputs, "targets": targets, "raw_inputs": raw_inputs}
