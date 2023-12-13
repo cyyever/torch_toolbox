@@ -320,7 +320,7 @@ class Executor(HookCollection, abc.ABC):
         if evaluation_mode == EvaluationMode.Training:
             optimizer: torch.optim.Optimizer = self.get_optimizer()
 
-        if evaluation_mode != EvaluationMode.Test:
+        if evaluation_mode in (EvaluationMode.Training, EvaluationMode.TestWithGrad):
             loss = self._get_backward_loss(result=forward_result)
             assert loss is not None
             if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):
