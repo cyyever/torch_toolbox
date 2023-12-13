@@ -78,7 +78,7 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
 
 
 def tensor_to(
-    data: Any, non_blocking: bool = True, check_slowdown: bool = True, **kwargs: Any
+    data: Any, non_blocking: bool = True, check_slowdown: bool = False, **kwargs: Any
 ) -> Any:
     def fun(data, check_slowdown, **kwargs):
         if check_slowdown:
