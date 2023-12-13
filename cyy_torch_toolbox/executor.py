@@ -254,6 +254,12 @@ class Executor(HookCollection, abc.ABC):
             self._data["lr_scheduler"] = self.hyper_parameter.get_lr_scheduler(self)
         return self._data["lr_scheduler"]
 
+    def get_forward_context(self):
+        if not self._data["forward_contexts"]:
+            return contextlib.nullcontext()
+        assert len(self._data["forward_contexts"]) == 1
+        return self._data["forward_contexts"][0]
+
     def execute_batch(
         self,
         batch_index: int,
@@ -291,13 +297,13 @@ class Executor(HookCollection, abc.ABC):
 
         forward_result: dict = {}
 
-        while True:
-            if evaluation_mode == EvaluationMode.Training:
-                optimizer: torch.optim.Optimizer = self.get_optimizer()
-                optimizer.zero_grad(set_to_none=True)
-            elif evaluation_mode == EvaluationMode.TestWithGrad:
-                self.running_model_evaluator.model.zero_grad(set_to_none=True)
-
+        self._data["forward_contexts"] = []
+        if self.has_hook(ExecutorHookPoint.BEFORE_MODEL_FORWARD):
+            self.exec_hooks(
+                hook_point=ExecutorHookPoint.BEFORE_MODEL_FORWARD,
+                evaluation_kwargs=evaluation_kwargs,
+            )
+        with self.get_forward_context():
             if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
                 self.exec_hooks(
                     hook_point=ExecutorHookPoint.MODEL_FORWARD,
@@ -317,32 +323,29 @@ class Executor(HookCollection, abc.ABC):
 
             batch |= forward_result
 
-            if evaluation_mode != EvaluationMode.Test:
-                loss = self._get_backward_loss(result=forward_result)
-                assert loss is not None
-                if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):
-                    self.exec_hooks(
-                        hook_point=ExecutorHookPoint.MODEL_BACKWARD, loss=loss
-                    )
-                else:
-                    loss.backward()
 
-            if evaluation_mode != EvaluationMode.Training:
-                break
-            step_skipped: bool = False
+        if evaluation_mode != EvaluationMode.Test:
+            if evaluation_mode == EvaluationMode.Training:
+                optimizer: torch.optim.Optimizer = self.get_optimizer()
+                optimizer.zero_grad(set_to_none=True)
+            elif evaluation_mode == EvaluationMode.TestWithGrad:
+                self.running_model_evaluator.model.zero_grad(set_to_none=True)
+            loss = self._get_backward_loss(result=forward_result)
+            assert loss is not None
+            if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):
+                self.exec_hooks(hook_point=ExecutorHookPoint.MODEL_BACKWARD, loss=loss)
+            else:
+                loss.backward()
+
+        if evaluation_mode == EvaluationMode.Training:
             if self.has_hook(ExecutorHookPoint.OPTIMIZER_STEP):
-                self._data["step_skipped"] = False
-                self.exec_hooks(ExecutorHookPoint.OPTIMIZER_STEP)
-                step_skipped = self._data["step_skipped"]
+                self.exec_hooks(ExecutorHookPoint.OPTIMIZER_STEP, optimizer=optimizer)
             else:
                 optimizer.step()
-            if step_skipped:
-                continue
             lr_scheduler = self.get_lr_scheduler()
             if lr_scheduler_step_after_batch(lr_scheduler):
                 get_logger().debug("adjust lr after batch")
                 lr_scheduler.step()
-            break
 
         self.exec_hooks(
             hook_point=ExecutorHookPoint.AFTER_BATCH,
