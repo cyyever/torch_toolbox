@@ -78,7 +78,7 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
 
 
 def tensor_to(
-    data: Any, non_blocking: bool = True, check_slowdown: bool = False, **kwargs: Any
+    data: Any, non_blocking: bool = True, check_slowdown: bool = True, **kwargs: Any
 ) -> Any:
     def fun(data, check_slowdown, **kwargs):
         if check_slowdown:
@@ -89,8 +89,8 @@ def tensor_to(
                 and device is not None
                 and str(device) != str(data.device)
             ):
-                if not data.is_pinned():
-                    raise RuntimeError("tensor is not pinned")
+                # if not data.is_pinned():
+                #     raise RuntimeError("tensor is not pinned")
                 if not non_blocking:
                     raise RuntimeError(
                         "copy is blocking",
@@ -100,6 +100,7 @@ def tensor_to(
                     raise RuntimeError(
                         "device to device copy is blocking",
                     )
+            assert str(device) != str(data.device)
         return data.to(**kwargs)
 
     return recursive_tensor_op(
