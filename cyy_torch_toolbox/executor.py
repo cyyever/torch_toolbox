@@ -324,22 +324,21 @@ class Executor(HookCollection, abc.ABC):
             batch |= forward_result
 
         if evaluation_mode != EvaluationMode.Test:
-            if evaluation_mode == EvaluationMode.Training:
-                optimizer: torch.optim.Optimizer = self.get_optimizer()
-                optimizer.zero_grad(set_to_none=True)
-            elif evaluation_mode == EvaluationMode.TestWithGrad:
-                self.running_model_evaluator.model.zero_grad(set_to_none=True)
             loss = self._get_backward_loss(result=forward_result)
             assert loss is not None
             if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):
                 self.exec_hooks(hook_point=ExecutorHookPoint.MODEL_BACKWARD, loss=loss)
             else:
+                if evaluation_mode == EvaluationMode.TestWithGrad:
+                    self.running_model_evaluator.model.zero_grad(set_to_none=True)
                 loss.backward()
 
         if evaluation_mode == EvaluationMode.Training:
+            optimizer: torch.optim.Optimizer = self.get_optimizer()
             if self.has_hook(ExecutorHookPoint.OPTIMIZER_STEP):
                 self.exec_hooks(ExecutorHookPoint.OPTIMIZER_STEP, optimizer=optimizer)
             else:
+                optimizer.zero_grad(set_to_none=True)
                 optimizer.step()
             lr_scheduler = self.get_lr_scheduler()
             if lr_scheduler_step_after_batch(lr_scheduler):
