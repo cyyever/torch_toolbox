@@ -323,7 +323,6 @@ class Executor(HookCollection, abc.ABC):
 
             batch |= forward_result
 
-
         if evaluation_mode != EvaluationMode.Test:
             if evaluation_mode == EvaluationMode.Training:
                 optimizer: torch.optim.Optimizer = self.get_optimizer()
