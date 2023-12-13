@@ -56,10 +56,10 @@ class LRFinder(Hook):
         stop_training = False
         if batch_loss > 10 * self.best_loss and kwargs["epoch"] > 1 and self.stop_div:
             stop_training = True
-        if self.batch_index + 1 == self.total_batch_num:
+        self.batch_index += 1
+        if self.batch_index == self.total_batch_num:
             stop_training = True
 
-        self.batch_index += 1
         if stop_training:
             self.learning_rates = self.learning_rates[self.total_batch_num // 10:]
             self.losses = self.losses[self.total_batch_num // 10:]
