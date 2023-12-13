@@ -16,6 +16,16 @@ class ModelUtil:
     def model(self) -> torch.nn.Module:
         return self.__model
 
+    def to_device(self, device: torch.device, non_blocking: bool = True) -> None:
+        for param in self.model.parameters():
+            if param.device != device:
+                self.model.to(device=device, non_blocking=non_blocking)
+                return
+        for buffer in self.model.buffers():
+            if buffer.device != device:
+                self.model.to(device=device, non_blocking=non_blocking)
+                return
+
     def get_parameter_seq(self, **kwargs: Any) -> Generator:
         return get_mapping_values_by_key_order(self.get_parameter_dict(**kwargs))
 

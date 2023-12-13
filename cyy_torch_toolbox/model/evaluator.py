@@ -95,7 +95,7 @@ class ModelEvaluator:
 
     def offload_from_device(self) -> None:
         self.model.zero_grad(set_to_none=True)
-        self.to(device=torch.device("cpu"))
+        self.model_util.to_device(device=torch.device("cpu"))
 
     def get_input_feature(self, inputs: Any) -> Any:
         if hasattr(self.model, "get_input_feature"):
@@ -111,7 +111,6 @@ class ModelEvaluator:
         inputs: Any,
         targets: Any | None = None,
         device: None | torch.device = None,
-        non_blocking: bool = False,
         evaluation_mode: EvaluationMode | None = None,
         **kwargs: Any,
     ) -> dict:
@@ -120,14 +119,14 @@ class ModelEvaluator:
         raw_inputs = inputs
 
         if device is not None:
-            inputs = tensor_to(inputs, device=device, non_blocking=non_blocking)
-            targets = tensor_to(targets, device=device, non_blocking=non_blocking)
-            self.to(device=device, non_blocking=non_blocking)
+            inputs = tensor_to(inputs, device=device, non_blocking=True)
+            targets = tensor_to(targets, device=device, non_blocking=True)
+            self.model_util.to_device(device=device)
 
         return self._forward_model(
             inputs=inputs,
             targets=targets,
-            non_blocking=non_blocking,
+            non_blocking=True,
             device=device,
             **(kwargs | self.__evaluation_kwargs),
         ) | {"inputs": inputs, "targets": targets, "raw_inputs": raw_inputs}
@@ -154,7 +153,6 @@ class ModelEvaluator:
         *,
         output: Any,
         targets: Any,
-        non_blocking: bool,
         reduce_loss: bool = True,
         **kwargs: Any,
     ) -> dict:
@@ -174,12 +172,10 @@ class ModelEvaluator:
             case nn.CrossEntropyLoss():
                 if len(targets.shape) > 1:
                     convert_kwargs["dtype"] = torch.float
-                targets = targets.to(**convert_kwargs, non_blocking=non_blocking)
+                targets = targets.to(**convert_kwargs, non_blocking=True)
             case nn.BCEWithLogitsLoss():
                 convert_kwargs["dtype"] = output.dtype
-                targets = targets.to(**convert_kwargs, non_blocking=non_blocking).view(
-                    -1
-                )
+                targets = targets.to(**convert_kwargs, non_blocking=True).view(-1)
                 output = output.view(-1)
         loss = loss_fun(output, targets)
         res |= {
@@ -196,21 +192,6 @@ class ModelEvaluator:
             loss_fun=self.loss_fun,
             model_type=self.model_type,
         )
-
-    def to(self, device: torch.device, non_blocking: bool = False) -> None:
-        self._to(model=self.model, device=device, non_blocking=non_blocking)
-
-    def _to(
-        self, model: torch.nn.Module, device: torch.device, non_blocking: bool
-    ) -> None:
-        for param in model.parameters():
-            if param.device != device:
-                model.to(device=device, non_blocking=non_blocking)
-            break
-        for buffer in model.buffers():
-            if buffer.device != device:
-                model.to(device=device, non_blocking=non_blocking)
-            return
 
     def _choose_loss_function(self) -> Callable:
         layers = [
