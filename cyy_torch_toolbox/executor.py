@@ -316,7 +316,6 @@ class Executor(HookCollection, abc.ABC):
                     * forward_result["loss_batch_size"]
                     / self.dataset_size
                 )
-
             batch |= forward_result
         if evaluation_mode == EvaluationMode.Training:
             optimizer: torch.optim.Optimizer = self.get_optimizer()

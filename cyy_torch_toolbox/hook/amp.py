@@ -40,9 +40,15 @@ class AMP(Hook):
             optimizer.zero_grad(set_to_none=True)
             self.__scaler.scale(self.__last_loss).backward(retain_graph=True)
             self.__scaler.step(optimizer)
+            has_inf = sum(
+                found_inf.item()
+                for state in self.__scaler._per_optimizer_states.values()
+                for found_inf in state["found_inf_per_device"].values()
+            )
+
             # Updates the scale for next iteration.
             self.__scaler.update()
-            if self.__scaler._get_growth_tracker() == 0:
+            if has_inf > 0:
                 get_logger().warning(
                     "found inf in AMP, scale is %s", self.__scaler._scale
                 )
