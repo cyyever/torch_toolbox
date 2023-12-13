@@ -12,9 +12,9 @@ class AMP(Hook):
         self.__scaler = None
         self.__last_loss = None
 
-    def _before_model_forward(self, executor, **kwargs) -> None:
+    def _before_batch(self, executor, **kwargs) -> None:
         assert self._enabled
-        device: torch.device = kwargs["evaluation_kwargs"]["device"]
+        device: torch.device = kwargs["device"]
         if self.__ctx is None or device.type != self.__ctx.device:
             self.__ctx = torch.autocast(device_type=device.type)
             executor._data["forward_contexts"].append(self.__ctx)

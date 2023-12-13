@@ -271,7 +271,13 @@ class Executor(HookCollection, abc.ABC):
             hook_point=ExecutorHookPoint.AFTER_FETCH_BATCH,
             batch_index=batch_index,
         )
-        batch["batch_index"] = batch_index
+        batch |= {
+            "batch_index": batch_index,
+            "phase": self.phase,
+            "device": self.device,
+            "evaluation_mode": evaluation_mode,
+            "non_blocking": True,
+        }
         if (
             evaluation_mode == EvaluationMode.Training
             and self.hyper_parameter.batch_size != 1
@@ -283,27 +289,17 @@ class Executor(HookCollection, abc.ABC):
             get_logger().debug("drop last one-sized batch for batch norm")
             return None
 
+        self._data["forward_contexts"] = []
         self.exec_hooks(
             hook_point=ExecutorHookPoint.BEFORE_BATCH,
             epoch=epoch,
             **batch,
         )
-        evaluation_kwargs = batch | {
-            "phase": self.phase,
-            "device": self.device,
-            "evaluation_mode": evaluation_mode,
-            "non_blocking": True,
-        }
 
         forward_result: dict = {}
 
-        self._data["forward_contexts"] = []
-        if self.has_hook(ExecutorHookPoint.BEFORE_MODEL_FORWARD):
-            self.exec_hooks(
-                hook_point=ExecutorHookPoint.BEFORE_MODEL_FORWARD,
-                evaluation_kwargs=evaluation_kwargs,
-            )
         with self.get_forward_context():
+            evaluation_kwargs = batch
             if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
                 self.exec_hooks(
                     hook_point=ExecutorHookPoint.MODEL_FORWARD,
