@@ -38,7 +38,7 @@ class AMP(Hook):
         assert self.__last_loss is not None
         while True:
             optimizer.zero_grad(set_to_none=True)
-            self.__scaler.scale(self.__last_loss).backward()
+            self.__scaler.scale(self.__last_loss).backward(retain_graph=True)
             self.__scaler.step(optimizer)
             # Updates the scale for next iteration.
             self.__scaler.update()

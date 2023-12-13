@@ -318,6 +318,8 @@ class Executor(HookCollection, abc.ABC):
                 )
 
             batch |= forward_result
+        if evaluation_mode == EvaluationMode.Training:
+            optimizer: torch.optim.Optimizer = self.get_optimizer()
 
         if evaluation_mode != EvaluationMode.Test:
             loss = self._get_backward_loss(result=forward_result)
@@ -328,7 +330,6 @@ class Executor(HookCollection, abc.ABC):
                 if evaluation_mode == EvaluationMode.TestWithGrad:
                     self.running_model_evaluator.model.zero_grad(set_to_none=True)
                 elif evaluation_mode == EvaluationMode.Training:
-                    optimizer: torch.optim.Optimizer = self.get_optimizer()
                     optimizer.zero_grad(set_to_none=True)
                 loss.backward()
 
