@@ -3,23 +3,18 @@ import os
 import re
 
 import torch
-from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
 from .metric_visualizer import MetricVisualizer
 
 
 class PerformanceMetricRecorder(MetricVisualizer):
     def _after_epoch(self, executor, epoch, **kwargs) -> None:
-        phase_str = "training"
-        if executor.phase == MachineLearningPhase.Validation:
-            phase_str = "validation"
-        elif executor.phase == MachineLearningPhase.Test:
-            phase_str = "test"
         prefix = re.sub(r"[: ,]+$", "", self._prefix)
         prefix = re.sub(r"[: ,]+", "_", prefix)
 
+        assert self._data_dir is not None
         json_filename = os.path.join(
-            self._data_dir, prefix, phase_str, "performance_metric.json"
+            self._data_dir, prefix, str(executor.phase), "performance_metric.json"
         )
         os.makedirs(os.path.dirname(json_filename), exist_ok=True)
         json_record = {}
