@@ -3,50 +3,58 @@ import functools
 import torch
 from cyy_naive_lib.log import get_logger
 from cyy_torch_toolbox.hook import Hook
-from torch.nn.modules.activation import ReLU
 
 
 class CUDAMemoryProfiler(Hook):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self.__hooks: list = []
+        self.__used_memory: dict = {}
+        self.__last_used_memory = 0
+
+    def _before_execute(self, **kwargs) -> None:
         self.__hooks = []
-        self.__used_memory = None
+        self.__used_memory = {}
+        self.__last_used_memory = 0
 
     def _before_batch(self, executor, batch_index, **kwargs) -> None:
         assert not self.__hooks
-        self.__used_memory = None
         if batch_index != 2:
             return
         for module_name, module in executor.model.named_modules():
+            if not module_name:
+                continue
+            if not any(True for _ in module.parameters()):
+                continue
             self.__hooks.append(
                 module.register_forward_hook(
-                    functools.partial(self.__compute_gpu_memory_assumption, module_name)
+                    functools.partial(
+                        self.__compute_gpu_memory_assumption,
+                        module_name,
+                        len(self.__hooks),
+                    )
                 )
             )
 
-    def __compute_gpu_memory_assumption(self, module_name, module, _, __) -> None:
-        if not module_name:
-            return
-        if isinstance(module, ReLU):
-            return
+    def __compute_gpu_memory_assumption(
+        self, module_name, hook_idx, module, _, __
+    ) -> None:
         cur_used_memory = torch.cuda.memory_allocated()
-        if self.__used_memory is None:
+        if not self.__used_memory:
+            self.__used_memory[module_name] = float(cur_used_memory) / 1024 / 1024
             get_logger().info(
-                "%.1f MB CUDA memory is used after first module %s",
-                float(cur_used_memory) / 1024 / 1024,
+                "%.1f MB CUDA memory is used for first module %s",
+                self.__used_memory[module_name],
                 module_name,
             )
         else:
-            get_logger().info(
-                "%.1f MB CUDA memory is used after module %s, difference is %.1f MB",
-                float(cur_used_memory) / 1024 / 1024,
-                module_name,
-                float(cur_used_memory - self.__used_memory) / 1024 / 1024,
+            self.__used_memory[module_name] = (
+                float(cur_used_memory - self.__last_used_memory) / 1024 / 1024
             )
-        self.__used_memory = cur_used_memory
-
-    def _after_batch(self, **kwargs) -> None:
-        for h in self.__hooks:
-            h.remove()
-        self.__hooks = []
-        self.__used_memory = None
+            get_logger().info(
+                "%.1f MB CUDA memory is used for module %s",
+                self.__used_memory[module_name],
+                module_name,
+            )
+        self.__hooks[hook_idx].remove()
+        self.__last_used_memory = cur_used_memory
