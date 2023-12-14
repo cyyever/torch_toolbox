@@ -13,9 +13,9 @@ class MetaAdam(MetaOptimizer):
         for group in self.__optimizer.param_groups:
             params = group["params"]
             weight_decay = group["weight_decay"]
+            assert weight_decay != 0
             maximize = group["maximize"]
             lr = group["lr"]
-            weight_decay = group["weight_decay"]
             beta1, beta2 = group["betas"]
             eps = group["eps"]
 
@@ -48,9 +48,7 @@ class MetaAdam(MetaOptimizer):
 
                 # Decay the first and second moment running average coefficient
                 exp_avg = exp_avg.lerp(grad, 1 - beta1)
-                exp_avg_sq = exp_avg_sq.mul(beta2).addcmul(
-                    grad, grad.conj(), value=1 - beta2
-                )
+                exp_avg_sq = exp_avg_sq.mul(beta2).addcmul(grad, grad, value=1 - beta2)
 
                 bias_correction1 = 1 - beta1**step
                 bias_correction2 = 1 - beta2**step
@@ -74,6 +72,7 @@ class MetaAdam(MetaOptimizer):
                     denom = (exp_avg_sq.sqrt() / bias_correction2_sqrt).add(eps)
 
                 param = param.addcdiv(exp_avg, denom, value=-step_size)
+                assert not param.view(-1).isnan().any()
                 new_params.append(param)
             results.append(new_params)
         return results
