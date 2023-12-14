@@ -12,10 +12,8 @@ class Debugger(Hook):
         super().__init__(**kwargs)
         self.gradient_sanitizer = GradientSanitizer()
 
-    def _before_execute(self, **kwargs: Any) -> None:
+    def _before_execute(self, executor, **kwargs: Any) -> None:
         torch.autograd.set_detect_anomaly(True)
-        if torch.cuda.is_available():
-            torch.cuda.set_sync_debug_mode(1)
         get_logger().warning("model executor in debugging mode")
 
     def _after_execute(self, **kwargs: Any) -> None:
