@@ -27,7 +27,7 @@ class DatasetSampler:
                     label_sample_dict[label].add(index)
         return label_sample_dict
 
-    def get_indices_by_label(
+    def __get_indices_by_label(
         self,
         labels: list | None = None,
         excluded_indices: Iterable[int] | None = None,
@@ -109,14 +109,29 @@ class DatasetSampler:
 
         return sub_index_list
 
-    def randomize_label(self, percent: float) -> dict:
+    def randomize_label(self, percent: float, **kwargs) -> dict[int, set]:
+        randomized_label_map: dict[int, set] = {}
         labels: set = set(self.label_sample_dict.keys())
-        randomized_label_map: dict = {}
-        for index in self.iid_sample_indices(percent):
-            other_labels = list(labels - self.sample_label_dict[index])
-            randomized_label_map[index] = random.sample(
-                other_labels, min(len(other_labels), len(self.sample_label_dict[index]))
+
+        def __randomize(label, indices):
+            if not indices:
+                return indices
+
+            flipped_indices = random.sample(
+                list(indices), k=int(len(indices) * percent)
             )
+            for index in flipped_indices:
+                other_labels = list(labels - self.sample_label_dict[index])
+                randomized_label_map[index] = set(
+                    random.sample(
+                        other_labels,
+                        min(len(other_labels), len(self.sample_label_dict[index])),
+                    )
+                )
+            return indices
+
+        self.__split_indices(callback=__randomize, **kwargs)
+
         return randomized_label_map
 
     @classmethod
@@ -163,7 +178,7 @@ class DatasetSampler:
         else:
             excluded_indices = copy.copy(set(excluded_indices))
 
-        label_sample_sub_dict: dict = self.get_indices_by_label(
+        label_sample_sub_dict: dict = self.__get_indices_by_label(
             labels=labels, excluded_indices=excluded_indices
         )
         for label, indices in label_sample_sub_dict.items():
