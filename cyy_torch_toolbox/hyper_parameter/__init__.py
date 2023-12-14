@@ -165,6 +165,7 @@ class HyperParameter:
             kwargs["weight_decay"] = (
                 kwargs.pop("fake_weight_decay") / trainer.dataset_size
             )
+        assert "weight_decay" in kwargs
         return call_fun(self._optimizer_factory, kwargs)
 
     @staticmethod
