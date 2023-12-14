@@ -227,8 +227,8 @@ class HyperParameterConfig:
     batch_size: int = 64
     learning_rate: HyperParameterAction | float = HyperParameterAction.FIND_LR
     momentum: None | float = 0.9
-    weight_decay: None | float = None
-    fake_weight_decay: None | float = None
+    weight_decay: None | float = 1.0
+    fake_weight_decay: None | float = 1.0
     learning_rate_scheduler_name: str = "ReduceLROnPlateau"
     learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
     optimizer_name: str = "Adam"
