@@ -1,7 +1,7 @@
 import copy
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
-from typing import Any, Callable
+from typing import Any
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -37,18 +37,18 @@ class HyperParameterAction(StrEnum):
 
 @dataclass(kw_only=True)
 class HyperParameter:
-    epoch: int
-    batch_size: int = 8
+    epoch: int = 350
+    batch_size: int = 64
+    learning_rate: HyperParameterAction | float = HyperParameterAction.FIND_LR
     learning_rate_scheduler_name: str = "ReduceLROnPlateau"
     learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
-    _optimizer_factory: None | Callable = None
-    optimizer_kwargs: dict = field(default_factory=lambda: {})
+    optimizer_name: str = "Adam"
+    optimizer_kwargs: dict = field(
+        default_factory=lambda: {"momentum": 0.9, "fake_weight_decay": 1.0}
+    )
 
     def __get_learning_rate(self, trainer: Any | None = None) -> float:
-        if isinstance(
-            self.optimizer_kwargs.get("learning_rate", HyperParameterAction.FIND_LR),
-            HyperParameterAction,
-        ):
+        if isinstance(self.learning_rate, HyperParameterAction):
             assert trainer is not None
             task_queue = TorchThreadTaskQueue()
             task_queue.start(worker_fun=_determine_learning_rate)
@@ -58,9 +58,9 @@ class HyperParameter:
             assert data is not None
             learning_rate = data[0]
             assert isinstance(learning_rate, float)
-            self.optimizer_kwargs["learning_rate"] = learning_rate
+            self.learning_rate = learning_rate
             task_queue.stop()
-        return self.optimizer_kwargs["learning_rate"]
+        return self.learning_rate
 
     def get_iterations_per_epoch(self, dataset_size: int) -> int:
         if self.batch_size == 1:
@@ -115,42 +115,22 @@ class HyperParameter:
 
         raise RuntimeError("unknown learning rate scheduler:" + name)
 
-    def set_optimizer_factory(self, name: str) -> None:
-        optimizer_class = self.__get_optimizer_classes().get(name, None)
-        if optimizer_class is None:
-            raise RuntimeError(
-                f"unknown optimizer:{name}, supported names are:"
-                + str(HyperParameter.get_optimizer_names())
-            )
-        self._optimizer_factory = optimizer_class
-
     @staticmethod
     def get_optimizer_names() -> list[str]:
         return sorted(HyperParameter.__get_optimizer_classes().keys())
 
     @staticmethod
     def get_lr_scheduler_names() -> list[str]:
-        return [
-            "LambdaLR",
-            "MultiplicativeLR",
-            "StepLR",
-            "MultiStepLR",
-            "ConstantLR",
-            "LinearLR",
-            "ExponentialLR",
-            "SequentialLR",
-            "CosineAnnealingLR",
-            "ChainedScheduler",
-            "ReduceLROnPlateau",
-            "CyclicLR",
-            "CosineAnnealingWarmRestarts",
-            "OneCycleLR",
-            "PolynomialLR",
-            "LRScheduler",
-        ]
+        return sorted(HyperParameter.__get_learning_rate_scheduler_classes().keys())
 
     def get_optimizer(self, trainer: Any, parameters=None) -> Any:
-        assert self._optimizer_factory is not None
+
+        optimizer_class = self.__get_optimizer_classes().get(self.optimizer_name, None)
+        if optimizer_class is None:
+            raise RuntimeError(
+                f"unknown optimizer:{self.optimizer_name}, supported names are: {list(self.__get_optimizer_classes().keys())}"
+            )
+
         kwargs = copy.copy(self.optimizer_kwargs)
         if parameters is None:
             parameters = list(trainer.model.parameters())
@@ -166,7 +146,14 @@ class HyperParameter:
                 kwargs.pop("fake_weight_decay") / trainer.dataset_size
             )
         assert "weight_decay" in kwargs
-        return call_fun(self._optimizer_factory, kwargs)
+        return call_fun(optimizer_class, kwargs)
+
+    @staticmethod
+    def __get_learning_rate_scheduler_classes() -> dict:
+        return get_class_attrs(
+            torch.optim.lr_scheduler,
+            filter_fun=lambda _, v: issubclass(v, torch.optim.Optimizer),
+        )
 
     @staticmethod
     def __get_optimizer_classes() -> dict:
@@ -212,33 +199,18 @@ def get_recommended_hyper_parameter(
             optimizer_kwargs={"learning_rate": 0.0001, "fake_weight_decay": 1},
         )
     else:
-        hyper_parameter = HyperParameter(
-            epoch=350,
-            batch_size=64,
-            optimizer_kwargs={"fake_weight_decay": 0},
-        )
-    hyper_parameter.learning_rate_scheduler_name = "ReduceLROnPlateau"
-    hyper_parameter.set_optimizer_factory("Adam")
+        hyper_parameter = HyperParameter()
     return hyper_parameter
 
 
 @dataclass(kw_only=True)
-class HyperParameterConfig:
-    epoch: int = 350
-    batch_size: int = 64
-    learning_rate: HyperParameterAction | float = HyperParameterAction.FIND_LR
+class HyperParameterConfig(HyperParameter):
     momentum: None | float = 0.9
     weight_decay: None | float = 1.0
     fake_weight_decay: None | float = 1.0
-    learning_rate_scheduler_name: str = "ReduceLROnPlateau"
-    learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
-    optimizer_name: str = "Adam"
-    optimizer_kwargs: dict = field(default_factory=lambda: {})
 
     def create_hyper_parameter(self) -> HyperParameter:
-        hyper_parameter = HyperParameter(epoch=self.epoch, batch_size=self.batch_size)
-        hyper_parameter.optimizer_kwargs = self.optimizer_kwargs
-        hyper_parameter.optimizer_kwargs["learning_rate"] = self.learning_rate
+        hyper_parameter = copy.copy(self)
         if self.momentum is not None:
             hyper_parameter.optimizer_kwargs["momentum"] = self.momentum
         if self.fake_weight_decay is not None:
@@ -247,10 +219,5 @@ class HyperParameterConfig:
             ] = self.fake_weight_decay
         if self.weight_decay is not None:
             hyper_parameter.optimizer_kwargs["fake_weight_decay"] = self.weight_decay
-        hyper_parameter.set_optimizer_factory(self.optimizer_name)
-        hyper_parameter.learning_rate_scheduler_name = self.learning_rate_scheduler_name
-        hyper_parameter.learning_rate_scheduler_kwargs = (
-            self.learning_rate_scheduler_kwargs
-        )
         return hyper_parameter
         # get_recommended_hyper_parameter(dataset_name, model_name)
