@@ -8,6 +8,7 @@ if module_dir not in sys.path:
 from .config import *
 from .data_pipeline import *
 from .dataset import *
+from .dataset.sampler import *
 from .executor import *
 from .hyper_parameter import *
 from .inferencer import *
