@@ -67,41 +67,54 @@ class DatasetUtil:
                 raise NotImplementedError(f"Unsupported target {target}")
             case dict():
                 if "labels" in target:
-                    return set(target["labels"].tolist())
+                    return cls.__decode_target(target["labels"].tolist())
                 if all(isinstance(s, str) and s.isnumeric() for s in target):
-                    return {int(s) for s in target}
+                    return cls.__decode_target({int(s) for s in target})
             case Iterable():
                 return set(target)
         raise RuntimeError("can't extract labels from target: " + str(target))
 
-    def replace_target(old_target: Any, new_target: set) -> Any:
+    @classmethod
+    def replace_target(cls, old_target: Any, new_target: dict) -> Any:
         match old_target:
             case int() | str():
-                assert len(new_target) == 1
-                return type(old_target)(list(new_target)[0])
+                old_target_value = list(cls.__decode_target(old_target))[0]
+                if old_target_value not in new_target:
+                    return old_target
+                return type(old_target)(new_target[old_target_value])
             case torch.Tensor():
+                old_target_value = cls.__decode_target(old_target)
                 if old_target.numel() == 1:
-                    assert len(new_target) == 1
+                    old_target_value = list(old_target_value)[0]
+                    if old_target_value not in new_target:
+                        return old_target
                     new_target_tensor = old_target.clone()
-                    new_target_tensor = new_target
+                    new_target_tensor = new_target[old_target_value]
                     return new_target_tensor
                 # one hot vector
                 if (0 <= old_target <= 1).all().item():
-                    new_target = torch.nn.functional.one_hot(
-                        torch.tensor(list(new_target)), num_classes=old_target.shape[-1]
+                    old_target_value = {
+                        new_target.get(old_t, old_t) for old_t in old_target_value
+                    }
+                    return torch.nn.functional.one_hot(
+                        torch.tensor(list(old_target_value)),
+                        num_classes=old_target.shape[-1],
                     )
-                    return new_target
                 raise NotImplementedError(f"Unsupported target {old_target}")
             case dict():
                 if "labels" in old_target:
                     new_target_dict = copy.deepcopy(old_target)
-                    return set(target["labels"].tolist())
-                if all(isinstance(s, str) and s.isnumeric() for s in target):
-                    return {int(s) for s in target}
+                    new_target_dict["labels"] = cls.replace_target(
+                        new_target_dict["labels"], new_target
+                    )
+                    return new_target_dict
             case Iterable():
-                assert new_target
-                return type(old_target)(new_target)
-        raise RuntimeError("can't extract labels from target: " + str(target))
+                old_target_value = cls.__decode_target(old_target)
+                return type(old_target)(
+                    new_target.get(old_t, old_t) for old_t in old_target_value
+                )
+
+        raise RuntimeError(f"can't convert labels {new_target} for target {old_target}")
 
     def _get_sample_input(self, index: int, apply_transform: bool = True) -> Any:
         sample = self.get_sample(index)
