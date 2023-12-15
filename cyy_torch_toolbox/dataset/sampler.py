@@ -109,7 +109,7 @@ class DatasetSampler:
 
         return sub_index_list
 
-    def randomize_label_impl(self, indices: set, percent: float) -> dict[int, set]:
+    def randomize_label(self, indices: list, percent: float) -> dict[int, set]:
         randomized_label_map: dict[int, set] = {}
 
         flipped_indices = random.sample(list(indices), k=int(len(indices) * percent))
@@ -125,14 +125,14 @@ class DatasetSampler:
 
         return randomized_label_map
 
-    def randomize_label(self, percent: float, **kwargs) -> dict[int, set]:
+    def iid_randomize_label(self, percent: float, **kwargs) -> dict[int, set]:
         randomized_label_map: dict[int, set] = {}
 
         def __randomize(indices):
             nonlocal randomized_label_map
             if not indices:
                 return indices
-            randomized_label_map |= self.randomize_label_impl(
+            randomized_label_map |= self.randomize_label(
                 indices=indices, percent=percent
             )
 

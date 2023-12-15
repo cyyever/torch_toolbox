@@ -1,8 +1,10 @@
+import copy
 import functools
 from collections.abc import Iterable
 from typing import Any, Generator, Type
 
 import torch
+import torch.nn.functional
 import torch.utils.data
 
 from ..data_pipeline.dataset import get_dataset_size, select_item, subset_dp
@@ -18,7 +20,7 @@ class DatasetUtil:
         transforms: Transforms | None = None,
         cache_dir: None | str = None,
     ) -> None:
-        self.dataset: torch.utils.data.Dataset | list = dataset
+        self.dataset: torch.utils.data.Dataset = dataset
         self.__len: None | int = None
         self._name: str = name if name else ""
         self.__transforms: Transforms | None = transforms
@@ -32,7 +34,7 @@ class DatasetUtil:
     def decompose(self) -> None | dict:
         return None
 
-    def get_subset(self, indices: Iterable) -> list[dict]:
+    def get_subset(self, indices: Iterable) -> torch.utils.data.MapDataPipe:
         return subset_dp(self.dataset, indices)
 
     def get_raw_samples(self, indices: Iterable | None = None) -> Iterable:
@@ -56,13 +58,11 @@ class DatasetUtil:
         match target:
             case int() | str():
                 return {target}
-            case list():
-                return set(target)
             case torch.Tensor():
                 if target.numel() == 1:
                     return {target.item()}
-                if (target <= 1).all().item() and (target >= 0).all().item():
-                    # one hot vector
+                # one hot vector
+                if (0 <= target <= 1).all().item():
                     return set(target.nonzero().view(-1).tolist())
                 raise NotImplementedError(f"Unsupported target {target}")
             case dict():
@@ -70,6 +70,37 @@ class DatasetUtil:
                     return set(target["labels"].tolist())
                 if all(isinstance(s, str) and s.isnumeric() for s in target):
                     return {int(s) for s in target}
+            case Iterable():
+                return set(target)
+        raise RuntimeError("can't extract labels from target: " + str(target))
+
+    def replace_target(old_target: Any, new_target: set) -> Any:
+        match old_target:
+            case int() | str():
+                assert len(new_target) == 1
+                return type(old_target)(list(new_target)[0])
+            case torch.Tensor():
+                if old_target.numel() == 1:
+                    assert len(new_target) == 1
+                    new_target_tensor = old_target.clone()
+                    new_target_tensor = new_target
+                    return new_target_tensor
+                # one hot vector
+                if (0 <= old_target <= 1).all().item():
+                    new_target = torch.nn.functional.one_hot(
+                        torch.tensor(list(new_target)), num_classes=old_target.shape[-1]
+                    )
+                    return new_target
+                raise NotImplementedError(f"Unsupported target {old_target}")
+            case dict():
+                if "labels" in old_target:
+                    new_target_dict = copy.deepcopy(old_target)
+                    return set(target["labels"].tolist())
+                if all(isinstance(s, str) and s.isnumeric() for s in target):
+                    return {int(s) for s in target}
+            case Iterable():
+                assert new_target
+                return type(old_target)(new_target)
         raise RuntimeError("can't extract labels from target: " + str(target))
 
     def _get_sample_input(self, index: int, apply_transform: bool = True) -> Any:
@@ -82,18 +113,17 @@ class DatasetUtil:
             )
         return sample_input
 
-    def get_batch_labels(self, indices: None | Iterable = None) -> Generator:
+    def get_batch_labels(self, indices: None | Iterable[int] = None) -> Generator:
         for idx, sample in self.get_samples(indices):
             target = sample["target"]
             if self.__transforms is not None:
                 target = self.__transforms.transform_target(target)
             yield idx, DatasetUtil.__decode_target(target)
 
-    def get_sample_label(self, index):
-        for _, labels in self.get_batch_labels(indices=[index]):
-            assert len(labels) == 1
-            return next(iter(labels))
-        return None
+    def get_sample_label(self, index: int) -> Any:
+        labels = list(self.get_batch_labels(indices=[index]))[0][1]
+        assert len(labels) == 1
+        return next(iter(labels))
 
     def get_labels(self) -> set:
         return set().union(*tuple(set(labels) for _, labels in self.get_batch_labels()))
