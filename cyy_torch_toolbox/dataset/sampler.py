@@ -44,7 +44,7 @@ class DatasetSampler:
 
     def iid_split_indices(
         self,
-        parts: list,
+        parts: list[float],
         labels: list | None = None,
         excluded_indices: Iterable[int] | None = None,
     ) -> list[set]:
@@ -69,7 +69,7 @@ class DatasetSampler:
 
     def random_split_indices(
         self,
-        parts: list,
+        parts: list[float],
         labels: list | None = None,
         excluded_indices: Iterable[int] | None = None,
     ) -> list[list]:
@@ -87,7 +87,7 @@ class DatasetSampler:
         random.shuffle(index_list)
         return self.__split_index_list(parts, index_list)
 
-    def iid_split(self, parts: list, labels: list | None = None) -> list:
+    def iid_split(self, parts: list[float], labels: list | None = None) -> list:
         return self.get_subsets(self.iid_split_indices(parts, labels=labels))
 
     def get_subsets(self, indices_list: list) -> list:
@@ -143,7 +143,7 @@ class DatasetSampler:
         return randomized_label_map
 
     @classmethod
-    def __split_index_list(cls, parts: list, indices_list: list) -> list[list]:
+    def __split_index_list(cls, parts: list[float], indices_list: list) -> list[list]:
         assert indices_list
         if len(parts) == 1:
             return [indices_list]
