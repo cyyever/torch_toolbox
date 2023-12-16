@@ -8,7 +8,9 @@ from ..factory import Factory
 from ..ml_type import MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
+from .collection_sampler import *  # noqa: F401
 from .repository import get_dataset
+from .sampler import DatasetSampler  # noqa: F401
 from .util import DatasetUtil  # noqa: F401
 
 global_dataset_collection_factory: Factory = Factory()
