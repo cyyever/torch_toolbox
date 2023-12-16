@@ -79,9 +79,11 @@ class DatasetUtil:
         match old_target:
             case int() | str():
                 old_target_value = list(cls.__decode_target(old_target))[0]
-                if old_target_value not in new_target:
+                new_target_value = new_target.get(old_target_value, None)
+                if new_target_value is None:
                     return old_target
-                return type(old_target)(new_target[old_target_value])
+                assert len(new_target_value) == 1
+                return type(old_target)(list(new_target_value)[0])
             case torch.Tensor():
                 old_target_value = cls.__decode_target(old_target)
                 if old_target.numel() == 1:
