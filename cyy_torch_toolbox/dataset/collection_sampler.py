@@ -18,7 +18,6 @@ class DatasetCollectionSampler:
         }
 
     def set_dataset_collection(self, dataset_collection: DatasetCollection):
-        assert self._dc is None
         self._dc = dataset_collection
 
     def __getstate__(self) -> dict:
