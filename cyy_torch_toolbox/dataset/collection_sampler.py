@@ -11,22 +11,28 @@ class DatasetCollectionSampler:
     def __init__(self, dataset_collection: DatasetCollection) -> None:
         self._dataset_indices: dict[MachineLearningPhase, dict] = {}
         self._flipped_indices: dict = {}
+        self._dc = dataset_collection
         self._samplers: dict[MachineLearningPhase, DatasetSampler] = {
             phase: DatasetSampler(dataset_collection.get_dataset_util(phase))
             for phase in MachineLearningPhase
         }
 
+    def set_dataset_collection(self, dataset_collection: DatasetCollection):
+        assert self._dc is None
+        self._dc = dataset_collection
+
     def __getstate__(self) -> dict:
         # capture what is normally pickled
         state = self.__dict__.copy()
         state["_samplers"] = None
+        state["_dc"] = None
         return state
 
-    def sample(self, worker_id: int, dataset_collection: DatasetCollection) -> None:
+    def sample(self, worker_id: int) -> None:
         for phase in MachineLearningPhase:
             indices = self._dataset_indices[phase][worker_id]
             assert indices
-            dataset_collection.set_subset(phase=phase, indices=indices)
+            self._dc.set_subset(phase=phase, indices=indices)
 
 
 class IIDSampler(DatasetCollectionSampler):
@@ -63,8 +69,8 @@ class IIDFlipSampler(IIDSampler):
             return DatasetUtil.replace_target(target, flipped_indices[index])
         return target
 
-    def sample(self, worker_id: int, dataset_collection: DatasetCollection) -> None:
-        super().sample(worker_id=worker_id, dataset_collection=dataset_collection)
+    def sample(self, worker_id: int) -> None:
+        super().sample(worker_id=worker_id)
         for phase in MachineLearningPhase:
             indices = self._dataset_indices[phase][worker_id]
             assert indices
@@ -74,7 +80,7 @@ class IIDFlipSampler(IIDSampler):
                 if idx in self._flipped_indices:
                     new_flipped_dict[new_idx] = self._flipped_indices[idx]
             assert new_flipped_dict
-            dataset_collection.append_transform(
+            self._dc.append_transform(
                 transform=functools.partial(self.__transform_target, new_flipped_dict),
                 key=TransformType.Target,
                 phases=[phase],
