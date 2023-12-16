@@ -66,7 +66,7 @@ class IIDFlipSampler(IIDSampler):
     @classmethod
     def __transform_target(cls, flipped_indices, target, index):
         if index in flipped_indices:
-            return DatasetUtil.replace_target(target, flipped_indices[index])
+            return DatasetUtil.replace_target(target, {target: flipped_indices[index]})
         return target
 
     def sample(self, worker_id: int) -> None:
