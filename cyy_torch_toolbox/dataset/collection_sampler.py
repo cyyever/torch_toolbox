@@ -1,5 +1,6 @@
 import functools
 
+from ..factory import Factory
 from ..ml_type import MachineLearningPhase, TransformType
 from .collection import DatasetCollection
 from .sampler import DatasetSampler
@@ -88,3 +89,18 @@ class RandomSampler(DatasetCollectionSampler):
             self._dataset_indices[phase] = dict(
                 enumerate(self._samplers[phase].random_split_indices(parts))
             )
+
+
+global_sampler_factory = Factory()
+global_sampler_factory.register("iid", IIDSampler)
+global_sampler_factory.register("iid_flip", IIDFlipSampler)
+global_sampler_factory.register("random", RandomSampler)
+
+
+def get_dataset_collection_sampler(
+    name: str, dataset_collection: DatasetCollection, **kwargs
+) -> DatasetCollectionSampler:
+    constructor = global_sampler_factory.get(name.lower())
+    if constructor is None:
+        raise NotImplementedError(name)
+    return constructor(dataset_collection=dataset_collection, **kwargs)
