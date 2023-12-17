@@ -166,7 +166,10 @@ class Executor(HookCollection, abc.ABC):
         return self.running_model_evaluator.model
 
     def replace_model(self, fun: Callable) -> None:
-        self.__model_evaluator = self.model_evaluator.replace_model(fun(self.model))
+        self.__model_evaluator.set_model(fun(self.model))
+
+    def replace_model_evaluator(self, fun: Callable) -> None:
+        self.__model_evaluator = fun(self.model_evaluator)
 
     def _prepare_execution(self) -> None:
         self._data.clear()
@@ -254,12 +257,6 @@ class Executor(HookCollection, abc.ABC):
             self._data["lr_scheduler"] = self.hyper_parameter.get_lr_scheduler(self)
         return self._data["lr_scheduler"]
 
-    def get_forward_context(self):
-        if not self._data["forward_contexts"]:
-            return contextlib.nullcontext()
-        assert len(self._data["forward_contexts"]) == 1
-        return self._data["forward_contexts"][0]
-
     def execute_batch(
         self,
         batch_index: int,
@@ -289,51 +286,37 @@ class Executor(HookCollection, abc.ABC):
             get_logger().debug("drop last one-sized batch for batch norm")
             return None
 
-        self._data["forward_contexts"] = []
         self.exec_hooks(
             hook_point=ExecutorHookPoint.BEFORE_BATCH,
             epoch=epoch,
             **batch,
         )
 
-        with self.get_forward_context():
-            evaluation_kwargs = batch
-            forward_result: dict = {}
-            if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
-                self.exec_hooks(
-                    hook_point=ExecutorHookPoint.MODEL_FORWARD,
-                    evaluation_kwargs=evaluation_kwargs,
-                )
-                forward_result = self._data.pop("forward_result")
-            else:
-                forward_result = self.__model_evaluator(**evaluation_kwargs)
-
-            forward_result[
-                "normalized_batch_loss"
-            ] = self.__model_evaluator.get_normalized_batch_loss(
-                dataset_size=self.dataset_size, forward_result=forward_result
+        evaluation_kwargs = batch
+        forward_result: dict = {}
+        if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
+            self.exec_hooks(
+                hook_point=ExecutorHookPoint.MODEL_FORWARD,
+                evaluation_kwargs=evaluation_kwargs,
             )
-            batch |= forward_result
-        if evaluation_mode == EvaluationMode.Training:
-            optimizer: torch.optim.Optimizer = self.get_optimizer()
+            forward_result = self._data.pop("forward_result")
+        else:
+            forward_result = self.__model_evaluator(**evaluation_kwargs)
 
-        if evaluation_mode in (EvaluationMode.Training, EvaluationMode.TestWithGrad):
-            loss = self._get_backward_loss(result=batch)
-            assert loss is not None
-            if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):
-                self.exec_hooks(hook_point=ExecutorHookPoint.MODEL_BACKWARD, loss=loss)
-            else:
-                if evaluation_mode == EvaluationMode.TestWithGrad:
-                    self.running_model_evaluator.model.zero_grad(set_to_none=True)
-                elif evaluation_mode == EvaluationMode.Training:
-                    optimizer.zero_grad(set_to_none=True)
-                loss.backward()
+        forward_result[
+            "normalized_batch_loss"
+        ] = self.__model_evaluator.get_normalized_batch_loss(
+            dataset_size=self.dataset_size, forward_result=forward_result
+        )
+        batch |= forward_result
+        optimizer: torch.optim.Optimizer | None = None
+        if evaluation_mode == EvaluationMode.Training:
+            optimizer = self.get_optimizer()
+        self.__model_evaluator.backward_and_may_step(
+            self._get_backward_loss(result=batch), optimizer=optimizer
+        )
 
         if evaluation_mode == EvaluationMode.Training:
-            if self.has_hook(ExecutorHookPoint.OPTIMIZER_STEP):
-                self.exec_hooks(ExecutorHookPoint.OPTIMIZER_STEP, optimizer=optimizer)
-            else:
-                optimizer.step()
             lr_scheduler = self.get_lr_scheduler()
             if lr_scheduler_step_after_batch(lr_scheduler):
                 get_logger().debug("adjust lr after batch")
