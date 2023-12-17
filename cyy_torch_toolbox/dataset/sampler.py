@@ -27,6 +27,12 @@ class DatasetSampler:
                     label_sample_dict[label].add(index)
         return label_sample_dict
 
+    @functools.cached_property
+    def all_labels(self) -> set[set]:
+        return set().union(
+            *tuple(set(labels) for labels in self.sample_label_dict.values())
+        )
+
     def __get_indices_by_label(
         self,
         labels: list | None = None,
@@ -113,9 +119,8 @@ class DatasetSampler:
         randomized_label_map: dict[int, set] = {}
 
         flipped_indices = random.sample(list(indices), k=int(len(indices) * percent))
-        labels: set = set(self.label_sample_dict.keys())
         for index in flipped_indices:
-            other_labels = list(labels - self.sample_label_dict[index])
+            other_labels = list(self.all_labels - self.sample_label_dict[index])
             randomized_label_map[index] = set(
                 random.sample(
                     other_labels,
