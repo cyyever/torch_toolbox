@@ -83,7 +83,6 @@ class HyperParameter:
             patience = min(10, self.epoch + 9 // 10)
             full_kwargs["patience"] = patience
             full_kwargs["factor"] = 0.1
-            full_kwargs["verbose"] = True
             full_kwargs.update(self.learning_rate_scheduler_kwargs)
             get_logger().debug(
                 "ReduceLROnPlateau patience is %s", full_kwargs["patience"]
