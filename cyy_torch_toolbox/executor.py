@@ -296,10 +296,9 @@ class Executor(HookCollection, abc.ABC):
             **batch,
         )
 
-        forward_result: dict = {}
-
         with self.get_forward_context():
             evaluation_kwargs = batch
+            forward_result: dict = {}
             if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
                 self.exec_hooks(
                     hook_point=ExecutorHookPoint.MODEL_FORWARD,
@@ -309,19 +308,17 @@ class Executor(HookCollection, abc.ABC):
             else:
                 forward_result = self.__model_evaluator(**evaluation_kwargs)
 
-            if forward_result["is_averaged_loss"]:
-                assert self.dataset_size > 1
-                forward_result["normalized_batch_loss"] = (
-                    forward_result["loss"]
-                    * forward_result["loss_batch_size"]
-                    / self.dataset_size
-                )
+            forward_result[
+                "normalized_batch_loss"
+            ] = self.__model_evaluator.get_normalized_batch_loss(
+                dataset_size=self.dataset_size, forward_result=forward_result
+            )
             batch |= forward_result
         if evaluation_mode == EvaluationMode.Training:
             optimizer: torch.optim.Optimizer = self.get_optimizer()
 
         if evaluation_mode in (EvaluationMode.Training, EvaluationMode.TestWithGrad):
-            loss = self._get_backward_loss(result=forward_result)
+            loss = self._get_backward_loss(result=batch)
             assert loss is not None
             if self.has_hook(ExecutorHookPoint.MODEL_BACKWARD):
                 self.exec_hooks(hook_point=ExecutorHookPoint.MODEL_BACKWARD, loss=loss)
