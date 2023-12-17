@@ -185,6 +185,20 @@ class ModelEvaluator:
         }
         return res
 
+    def backward_and_may_step(
+        self,
+        loss,
+        optimizer: None | torch.optim.Optimizer = None,
+        **backward_kwargs,
+    ) -> None:
+        if optimizer is not None:
+            optimizer.zero_grad(set_to_none=True)
+        else:
+            self._model.zero_grad(set_to_none=True)
+        loss.backward(**backward_kwargs)
+        if optimizer is not None:
+            optimizer.step()
+
     def get_normalized_batch_loss(self, dataset_size: int, forward_result: dict) -> Any:
         if forward_result["is_averaged_loss"]:
             assert dataset_size > 0
@@ -195,12 +209,8 @@ class ModelEvaluator:
             )
         return None
 
-    def replace_model(self, model):
-        return ModelEvaluator(
-            model=model,
-            loss_fun=self.loss_fun,
-            model_type=self.model_type,
-        )
+    def set_model(self, model) -> None:
+        self._model = model
 
     def _choose_loss_function(self) -> Callable:
         layers = [

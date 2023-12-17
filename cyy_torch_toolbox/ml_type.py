@@ -44,8 +44,6 @@ class ExecutorHookPoint(StrEnum):
     BEFORE_EPOCH = auto()
     AFTER_EPOCH = auto()
     MODEL_FORWARD = auto()
-    MODEL_BACKWARD = auto()
-    OPTIMIZER_STEP = auto()
     BEFORE_FETCH_BATCH = auto()
     AFTER_FETCH_BATCH = auto()
     BEFORE_BATCH = auto()

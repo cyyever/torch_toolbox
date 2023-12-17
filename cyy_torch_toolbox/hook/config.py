@@ -10,7 +10,7 @@ from ..metric_visualizers.performance_metric_recorder import \
     PerformanceMetricRecorder
 from ..metrics.performance_metric import PerformanceMetric
 from ..ml_type import MachineLearningPhase
-from .amp import AMP
+from ..model.amp import AMPModelEvaluator
 from .cudnn import CUDNNHook
 from .debugger import Debugger
 from .executor_logger import ExecutorLogger
@@ -42,10 +42,20 @@ class HookConfig:
 
     def set_hooks(self, executor) -> None:
         if (
-            executor.phase == MachineLearningPhase.Training
-            and torch.cuda.is_available()
+            executor.phase != MachineLearningPhase.Training
+            or not torch.cuda.is_available()
         ):
-            executor.append_or_disable_hook("AMP", self.use_amp, AMP())
+            self.use_amp = False
+        if self.use_amp:
+            if not isinstance(executor.model_evaluator, AMPModelEvaluator):
+                print("use amp")
+                executor.replace_model_evaluator(AMPModelEvaluator)
+        else:
+            if isinstance(executor.model_evaluator, AMPModelEvaluator):
+                executor.replace_model_evaluator(
+                    lambda amp_evaluator: amp_evaluator.evaluator
+                )
+
         executor.append_or_disable_hook("debugger", self.debug, Debugger())
         executor.append_or_disable_hook("profiler", self.profile, Profiler())
         executor.append_or_disable_hook(
