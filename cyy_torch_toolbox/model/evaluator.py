@@ -185,6 +185,16 @@ class ModelEvaluator:
         }
         return res
 
+    def get_normalized_batch_loss(self, dataset_size: int, forward_result: dict) -> Any:
+        if forward_result["is_averaged_loss"]:
+            assert dataset_size > 0
+            return (
+                forward_result["loss"]
+                * forward_result["loss_batch_size"]
+                / dataset_size
+            )
+        return None
+
     def replace_model(self, model):
         return ModelEvaluator(
             model=model,
