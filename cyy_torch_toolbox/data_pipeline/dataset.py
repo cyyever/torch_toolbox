@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Mapping
+from typing import Any, Generator, Iterable, Mapping
 
 import torch
 import torch.utils.data
@@ -40,7 +40,7 @@ def __add_index_to_map_item(item) -> dict:
 
 def dataset_with_indices(
     dataset: torch.utils.data.Dataset,
-) -> torch.utils.data.MapDataPipe:
+) -> torch.utils.data.Dataset:
     old_dataset = dataset
     match dataset:
         case list():
@@ -50,16 +50,18 @@ def dataset_with_indices(
     match dataset:
         case torch.utils.data.IterDataPipe():
             dataset = dataset.enumerate()
-        case _:
+        case Mapping():
             dataset = torch.utils.data.datapipes.map.Mapper(
                 KeyPipe(dataset), __add_index_to_map_item
             )
+        case _:
+            raise RuntimeError(type(dataset))
     assert not hasattr(dataset, "original_dataset")
     setattr(dataset, "original_dataset", old_dataset)
     return dataset
 
 
-def select_item(dataset: Any, indices: None | Iterable = None) -> Iterable:
+def select_item(dataset: Any, indices: None | Iterable = None) -> Generator:
     if indices is not None:
         indices = set(indices)
     match dataset:

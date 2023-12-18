@@ -27,15 +27,16 @@ def __prepare_dataloader_kwargs(
     data_in_cpu: bool = True
     if dc.dataset_type == DatasetType.Graph:
         cache_transforms = None
+    transformed_dataset: dict | torch.utils.data.Dataset = dataset
     match cache_transforms:
         case "cpu":
-            dataset, transforms = transforms.cache_transforms(
+            transformed_dataset, transforms = transforms.cache_transforms(
                 dataset=dataset, device=torch.device("cpu")
             )
         case "device":
             data_in_cpu = False
             assert device is not None
-            dataset, transforms = transforms.cache_transforms(
+            transformed_dataset, transforms = transforms.cache_transforms(
                 dataset=dataset, device=device
             )
         case None:
@@ -63,7 +64,7 @@ def __prepare_dataloader_kwargs(
     kwargs["shuffle"] = phase == MachineLearningPhase.Training
     kwargs["pin_memory"] = False
     kwargs["collate_fn"] = transforms.collate_batch
-    kwargs["dataset"] = dataset
+    kwargs["dataset"] = transformed_dataset
     return kwargs
 
 
