@@ -108,7 +108,7 @@ class ModelUtil:
                     delattr(model, component)
                 if as_parameter:
                     if keep_grad:
-                        setattr(value, "_is_param", True)
+                        value._is_param = True
                         model._parameters[component] = value
                     else:
                         model.register_parameter(component, torch.nn.Parameter(value))

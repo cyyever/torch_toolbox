@@ -9,6 +9,7 @@ from ..dataset.collection import DatasetCollection
 from ..factory import Factory
 from ..hyper_parameter import HyperParameter
 from ..ml_type import DatasetType, MachineLearningPhase
+from ..model import ModelEvaluator
 
 global_dataloader_factory = Factory()
 
@@ -17,8 +18,8 @@ def __prepare_dataloader_kwargs(
     dc: DatasetCollection,
     phase: MachineLearningPhase,
     hyper_parameter: HyperParameter,
-    cache_transforms: str | None = None,
-    device: torch.device | None = None,
+    cache_transforms: str | None,
+    device: torch.device,
     **kwargs,
 ) -> dict:
     dataset = dc.get_dataset(phase=phase)
@@ -37,9 +38,10 @@ def __prepare_dataloader_kwargs(
             dataset, transforms = transforms.cache_transforms(
                 dataset=dataset, device=device
             )
+        case None:
+            pass
         case _:
-            if cache_transforms is not None:
-                raise RuntimeError(cache_transforms)
+            raise RuntimeError(cache_transforms)
     use_process: bool = "USE_THREAD_DATALOADER" not in os.environ
     if dc.dataset_type == DatasetType.Graph:
         # don't pass large graphs around processes
@@ -68,18 +70,12 @@ def __prepare_dataloader_kwargs(
 def get_dataloader(
     dc: DatasetCollection,
     phase: MachineLearningPhase,
-    hyper_parameter: HyperParameter,
-    cache_transforms: str | None = None,
-    device: torch.device | None = None,
-    model_evaluator=None,
+    model_evaluator: ModelEvaluator,
     **kwargs,
 ) -> torch.utils.data.DataLoader:
     dataloader_kwargs = __prepare_dataloader_kwargs(
         dc=dc,
         phase=phase,
-        hyper_parameter=hyper_parameter,
-        cache_transforms=cache_transforms,
-        device=device,
         **kwargs,
     )
     constructor = global_dataloader_factory.get(dc.dataset_type)
