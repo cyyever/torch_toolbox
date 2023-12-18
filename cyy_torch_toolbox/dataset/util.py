@@ -128,17 +128,17 @@ class DatasetUtil:
             )
         return sample_input
 
-    def get_batch_labels(self, indices: None | Iterable[int] = None) -> Generator:
+    def get_batch_labels(
+        self, indices: None | Iterable[int] = None
+    ) -> Generator[tuple[int, set], None, None]:
         for idx, sample in self.get_samples(indices):
             target = sample["target"]
             if self.__transforms is not None:
                 target = self.__transforms.transform_target(target)
             yield idx, DatasetUtil.__decode_target(target)
 
-    def get_sample_label(self, index: int) -> Any:
-        labels = list(self.get_batch_labels(indices=[index]))[0][1]
-        assert len(labels) == 1
-        return next(iter(labels))
+    def get_sample_label(self, index: int) -> set:
+        return list(self.get_batch_labels(indices=[index]))[0][1]
 
     def get_labels(self) -> set:
         return set().union(*tuple(set(labels) for _, labels in self.get_batch_labels()))
@@ -155,13 +155,13 @@ class DatasetUtil:
         ):
             return dict(enumerate(original_dataset.classes))
 
-        def get_label_name(container: set, index: int) -> set:
-            label = self.get_sample_label(index)
-            if isinstance(label, str):
-                container.add(label)
+        def get_label_name(container: set, idx_and_labels: tuple[int, set]) -> set:
+            container.update(idx_and_labels[1])
             return container
 
-        label_names: set = functools.reduce(get_label_name, range(len(self)), set())
+        label_names: set = functools.reduce(
+            get_label_name, self.get_batch_labels(), set()
+        )
         if label_names:
             return dict(enumerate(sorted(label_names)))
         raise RuntimeError("no label names detected")

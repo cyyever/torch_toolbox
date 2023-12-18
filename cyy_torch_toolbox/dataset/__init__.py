@@ -33,19 +33,20 @@ def create_dataset_collection(
         constructor = global_dataset_collection_factory.get(dataset_type)
         if constructor is None:
             constructor = DatasetCollection
-        dc: DatasetCollection = constructor(
+        dc: DatasetCollection | ClassificationDatasetCollection = constructor(
             datasets=datasets,
             dataset_type=dataset_type,
             name=name,
             dataset_kwargs=dataset_kwargs,
         )
         if dc.is_classification_dataset():
-            cls = dc.__class__
-            dc.__class__ = cls.__class__(
-                cls.__name__ + "WithClassification",
-                (cls, ClassificationDatasetCollection),
-                {},
-            )
+            dc = ClassificationDatasetCollection(dc=dc)
+            # cls = dc.__class__
+            # dc.__class__ = cls.__class__(
+            #     cls.__name__ + "WithClassification",
+            #     (cls, ClassificationDatasetCollection),
+            #     {},
+            # )
 
         if not dc.has_dataset(MachineLearningPhase.Validation):
             dc.iid_split(

@@ -2,6 +2,7 @@ import functools
 
 from ..factory import Factory
 from ..ml_type import MachineLearningPhase, TransformType
+from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
 from .sampler import DatasetSampler
 from .util import DatasetUtil
@@ -47,7 +48,7 @@ class IIDSampler(DatasetCollectionSampler):
 class IIDFlipSampler(IIDSampler):
     def __init__(
         self,
-        dataset_collection: DatasetCollection,
+        dataset_collection: ClassificationDatasetCollection,
         part_number: int,
         flip_percent: float,
     ) -> None:
@@ -58,7 +59,9 @@ class IIDFlipSampler(IIDSampler):
                 continue
             for indices in tmp.values():
                 self._flipped_indices |= self._samplers[phase].randomize_label(
-                    indices=indices, percent=flip_percent
+                    indices=indices,
+                    percent=flip_percent,
+                    all_labels=dataset_collection.get_labels(),
                 )
         assert self._flipped_indices
 
