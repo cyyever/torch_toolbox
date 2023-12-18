@@ -37,16 +37,17 @@ class DatasetUtil:
     def get_subset(self, indices: Iterable) -> torch.utils.data.MapDataPipe:
         return subset_dp(self.dataset, indices)
 
-    def get_raw_samples(self, indices: Iterable | None = None) -> Iterable:
+    def get_raw_samples(self, indices: Iterable | None = None) -> Generator:
         return select_item(dataset=self.dataset, indices=indices)
 
-    def get_samples(self, indices: Iterable | None = None) -> Iterable:
+    def get_samples(self, indices: Iterable | None = None) -> Generator:
         raw_samples = self.get_raw_samples(indices=indices)
         if self.__transforms is None:
             return raw_samples
         for idx, sample in raw_samples:
             sample = self.__transforms.extract_data(sample)
             yield idx, sample
+        return
 
     def get_sample(self, index: int) -> Any:
         for _, sample in self.get_samples(indices=[index]):
@@ -110,7 +111,7 @@ class DatasetUtil:
                         new_target_dict["labels"], new_target
                     )
                     return new_target_dict
-            case Iterable():
+            case list() | tuple():
                 old_target_value = cls.__decode_target(old_target)
                 return type(old_target)(
                     new_target.get(old_t, old_t) for old_t in old_target_value

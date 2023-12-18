@@ -3,13 +3,12 @@ import functools
 from ..factory import Factory
 from ..ml_type import MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
-from .collection import DatasetCollection
 from .sampler import DatasetSampler
 from .util import DatasetUtil
 
 
 class DatasetCollectionSampler:
-    def __init__(self, dataset_collection: DatasetCollection) -> None:
+    def __init__(self, dataset_collection: ClassificationDatasetCollection) -> None:
         self._dataset_indices: dict[MachineLearningPhase, dict] = {}
         self._flipped_indices: dict = {}
         self._dc = dataset_collection
@@ -18,7 +17,9 @@ class DatasetCollectionSampler:
             for phase in MachineLearningPhase
         }
 
-    def set_dataset_collection(self, dataset_collection: DatasetCollection):
+    def set_dataset_collection(
+        self, dataset_collection: ClassificationDatasetCollection
+    ):
         self._dc = dataset_collection
 
     def __getstate__(self) -> dict:
@@ -36,7 +37,9 @@ class DatasetCollectionSampler:
 
 
 class IIDSampler(DatasetCollectionSampler):
-    def __init__(self, dataset_collection: DatasetCollection, part_number: int) -> None:
+    def __init__(
+        self, dataset_collection: ClassificationDatasetCollection, part_number: int
+    ) -> None:
         super().__init__(dataset_collection=dataset_collection)
         parts: list[float] = [1] * part_number
         for phase in MachineLearningPhase:
@@ -92,7 +95,9 @@ class IIDFlipSampler(IIDSampler):
 
 
 class RandomSampler(DatasetCollectionSampler):
-    def __init__(self, dataset_collection: DatasetCollection, part_number: int) -> None:
+    def __init__(
+        self, dataset_collection: ClassificationDatasetCollection, part_number: int
+    ) -> None:
         super().__init__(dataset_collection=dataset_collection)
         parts: list[float] = [1] * part_number
         for phase in MachineLearningPhase:
@@ -108,7 +113,7 @@ global_sampler_factory.register("random", RandomSampler)
 
 
 def get_dataset_collection_sampler(
-    name: str, dataset_collection: DatasetCollection, **kwargs
+    name: str, dataset_collection: ClassificationDatasetCollection, **kwargs
 ) -> DatasetCollectionSampler:
     constructor = global_sampler_factory.get(name.lower())
     if constructor is None:
