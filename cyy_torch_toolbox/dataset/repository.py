@@ -161,13 +161,12 @@ def __create_dataset(
 
 
 def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, dict]:
-    dataset_types: tuple[DatasetType] = tuple(DatasetType)
-    match dataset_kwargs.get("dataset_type", None):
-        case "text":
-            dataset_types = (DatasetType.Text,)
+    real_dataset_type = dataset_kwargs.get("dataset_type", None)
     similar_names = []
 
-    for dataset_type in dataset_types:
+    for dataset_type in DatasetType:
+        if real_dataset_type is not None and real_dataset_type != dataset_type:
+            continue
         if dataset_type not in global_dataset_constructors:
             continue
         constructor = global_dataset_constructors[dataset_type].get(

@@ -12,7 +12,7 @@ class AMPModelEvaluator:
         assert torch.cuda.is_available()
         self.evaluator = evaluator
         self.__amp_ctx: None | torch.autocast = None
-        self.__scaler = None
+        self.__scaler: None | torch.cuda.amp.GradScaler = None
 
     def __getattr__(self, name):
         if name == "evaluator":

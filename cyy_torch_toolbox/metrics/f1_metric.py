@@ -30,4 +30,5 @@ class F1Metric(ClassificationMetric):
 
     def _after_epoch(self, **kwargs) -> None:
         epoch = kwargs["epoch"]
+        assert self.__f1 is not None
         self._set_epoch_metric(epoch, "F1", self.__f1.compute())

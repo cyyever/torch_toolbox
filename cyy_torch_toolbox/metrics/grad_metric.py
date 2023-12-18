@@ -1,12 +1,14 @@
+from typing import Any
+
 import torch
 
 from .metric import Metric
 
 
 class GradMetric(Metric):
-    __prev_parameter_list = None
+    __prev_parameter_list: Any = None
 
-    def _before_epoch(self, executor, **kwargs) -> None:
+    def _before_epoch(self, executor, **kwargs: Any) -> None:
         if self.__prev_parameter_list is None:
             self.__prev_parameter_list = executor.model_util.get_parameter_list()
 
