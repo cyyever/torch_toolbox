@@ -1,5 +1,4 @@
 import functools
-from typing import Any
 
 import torch
 from cyy_naive_lib.log import get_logger
@@ -30,9 +29,6 @@ class Inferencer(Executor):
             finally:
                 self.wait_stream()
             return succ_flag
-
-    def _get_backward_loss(self, result: dict) -> Any:
-        return result["normalized_batch_loss"]
 
     def get_gradient(self) -> dict:
         with self.hook_config:

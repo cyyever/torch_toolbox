@@ -142,9 +142,6 @@ class Trainer(Executor):
         inferencer.inference()
         return True
 
-    def _get_backward_loss(self, result) -> torch.Tensor:
-        return result["loss"]
-
     def _foreach_sub_executor(self) -> Generator:
         yield from self.__inferencers.values()
 

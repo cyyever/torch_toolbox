@@ -265,17 +265,6 @@ class Executor(HookCollection, abc.ABC):
         epoch: int,
         evaluation_mode: EvaluationMode,
     ) -> None:
-        self.exec_hooks(
-            hook_point=ExecutorHookPoint.AFTER_FETCH_BATCH,
-            batch_index=batch_index,
-        )
-        batch |= {
-            "batch_index": batch_index,
-            "phase": self.phase,
-            "device": self.device,
-            "evaluation_mode": evaluation_mode,
-            "non_blocking": True,
-        }
         if (
             evaluation_mode == EvaluationMode.Training
             and self.hyper_parameter.batch_size != 1
@@ -286,6 +275,13 @@ class Executor(HookCollection, abc.ABC):
         ):
             get_logger().debug("drop last one-sized batch for batch norm")
             return
+        batch |= {
+            "batch_index": batch_index,
+            "phase": self.phase,
+            "device": self.device,
+            "evaluation_mode": evaluation_mode,
+            "non_blocking": True,
+        }
 
         self.exec_hooks(
             hook_point=ExecutorHookPoint.BEFORE_BATCH,
@@ -310,18 +306,21 @@ class Executor(HookCollection, abc.ABC):
             dataset_size=self.dataset_size, forward_result=forward_result
         )
         batch |= forward_result
-        optimizer: torch.optim.Optimizer | None = None
-        if evaluation_mode == EvaluationMode.Training:
-            optimizer = self.get_optimizer()
-        self.__model_evaluator.backward_and_may_step(
-            self._get_backward_loss(result=batch), optimizer=optimizer
-        )
+        if evaluation_mode != EvaluationMode.Test:
+            optimizer: torch.optim.Optimizer | None = None
+            backward_loss: torch.Tensor = forward_result["normalized_batch_loss"]
+            if evaluation_mode == EvaluationMode.Training:
+                optimizer = self.get_optimizer()
+                backward_loss = forward_result["loss"]
+            self.__model_evaluator.backward_and_may_step(
+                loss=backward_loss, optimizer=optimizer
+            )
 
-        if evaluation_mode == EvaluationMode.Training:
-            lr_scheduler = self.get_lr_scheduler()
-            if lr_scheduler_step_after_batch(lr_scheduler):
-                get_logger().debug("adjust lr after batch")
-                lr_scheduler.step()
+            if evaluation_mode == EvaluationMode.Training:
+                lr_scheduler = self.get_lr_scheduler()
+                if lr_scheduler_step_after_batch(lr_scheduler):
+                    get_logger().debug("adjust lr after batch")
+                    lr_scheduler.step()
 
         self.exec_hooks(
             hook_point=ExecutorHookPoint.AFTER_BATCH,
@@ -343,7 +342,8 @@ class Executor(HookCollection, abc.ABC):
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
         for batch_index, batch in enumerate(self.dataloader):
             self.exec_hooks(
-                hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0
+                hook_point=ExecutorHookPoint.AFTER_FETCH_BATCH,
+                batch_index=batch_index,
             )
             self.execute_batch(
                 batch_index=batch_index,
@@ -373,6 +373,3 @@ class Executor(HookCollection, abc.ABC):
             hook_point=ExecutorHookPoint.AFTER_EPOCH,
             epoch=epoch,
         )
-
-    def _get_backward_loss(self, result):
-        raise NotImplementedError()
