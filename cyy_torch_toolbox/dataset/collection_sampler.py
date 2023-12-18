@@ -71,6 +71,8 @@ class IIDFlipSampler(IIDSampler):
     def sample(self, worker_id: int) -> None:
         super().sample(worker_id=worker_id)
         for phase in MachineLearningPhase:
+            if phase != MachineLearningPhase.Training:
+                continue
             indices = self._dataset_indices[phase][worker_id]
             assert indices
             index_list = sorted(indices)
