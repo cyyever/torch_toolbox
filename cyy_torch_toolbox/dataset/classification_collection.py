@@ -1,10 +1,18 @@
 import functools
-from typing import Generator
 
 from ..ml_type import MachineLearningPhase
+from .collection import DatasetCollection
 
 
 class ClassificationDatasetCollection:
+    def __init__(self, dc: DatasetCollection):
+        self.dc = dc
+
+    def __getattr__(self, name):
+        if name == "dc":
+            raise AttributeError()
+        return getattr(self.dc, name)
+
     @functools.cached_property
     def label_number(self) -> int:
         return len(self.get_labels())
@@ -13,9 +21,7 @@ class ClassificationDatasetCollection:
         def computation_fun() -> set:
             if self.name.lower() == "imagenet":
                 return set(range(1000))
-            return self.get_dataset_util(
-                phase=MachineLearningPhase.Training
-            ).get_labels()
+            return self.__get_first_dataset_util().get_labels()
 
         if not use_cache:
             return computation_fun()
@@ -53,24 +59,24 @@ class ClassificationDatasetCollection:
             MachineLearningPhase.Validation,
             MachineLearningPhase.Test,
         ):
-            if self.has_dataset(phase):
-                return self.get_dataset_util(phase)
+            if self.dc.has_dataset(phase):
+                return self.dc.get_dataset_util(phase)
         raise RuntimeError("no dataset")
 
-    def get_raw_data(self, phase: MachineLearningPhase, index: int) -> tuple:
-        dataset_util = self.get_dataset_util(phase)
-        return (
-            dataset_util.get_sample_raw_input(index),
-            dataset_util.get_sample_label(index),
-        )
+    # def get_raw_data(self, phase: MachineLearningPhase, index: int) -> tuple[Any, set]:
+    #     dataset_util = self.dc.get_dataset_util(phase)
+    #     return (
+    #         dataset_util.get_sample_raw_input(index),
+    #         dataset_util.get_sample_label(index),
+    #     )
 
-    def generate_raw_data(self, phase: MachineLearningPhase) -> Generator:
-        dataset_util = self.get_dataset_util(phase)
-        return (
-            self.get_raw_data(phase=phase, index=i) for i in range(len(dataset_util))
-        )
+    # def generate_raw_data(self, phase: MachineLearningPhase) -> Generator:
+    #     dataset_util = self.dc.get_dataset_util(phase)
+    #     return (
+    #         self.get_raw_data(phase=phase, index=i) for i in range(len(dataset_util))
+    #     )
 
-    @classmethod
-    def get_label(cls, label_name, label_names):
-        reversed_label_names = {v: k for k, v in label_names.items()}
-        return reversed_label_names[label_name]
+    # @classmethod
+    # def get_label(cls, label_name, label_names):
+    #     reversed_label_names = {v: k for k, v in label_names.items()}
+    #     return reversed_label_names[label_name]

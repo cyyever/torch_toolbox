@@ -154,9 +154,10 @@ class DatasetCollection:
         return cache_dir
 
     def is_classification_dataset(self) -> bool:
+        return True
         if self.dataset_type == DatasetType.Graph:
             return True
-        labels = next(
+        labels = list(
             self.get_dataset_util(phase=MachineLearningPhase.Training).get_batch_labels(
                 indices=[0]
             )
