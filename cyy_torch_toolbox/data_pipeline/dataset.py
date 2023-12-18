@@ -1,4 +1,4 @@
-from typing import Any, Generator, Iterable, Mapping
+from typing import Any, Generator, Iterable
 
 import torch
 import torch.utils.data
@@ -21,12 +21,12 @@ def get_dataset_size(dataset: Any) -> int:
 
 
 class KeyPipe(torch.utils.data.MapDataPipe):
-    def __init__(self, dp: Mapping) -> None:
+    def __init__(self, dp: Any) -> None:
         super().__init__()
         self.__dp = dp
 
     def __getitem__(self, index) -> tuple:
-        item = self.__dp.__getitem__(index)
+        item = self.__dp[index]
         return (index, item)
 
     def __len__(self) -> int:
@@ -50,12 +50,10 @@ def dataset_with_indices(
     match dataset:
         case torch.utils.data.IterDataPipe():
             dataset = dataset.enumerate()
-        case Mapping():
+        case _:
             dataset = torch.utils.data.datapipes.map.Mapper(
                 KeyPipe(dataset), __add_index_to_map_item
             )
-        case _:
-            raise RuntimeError(type(dataset))
     assert not hasattr(dataset, "original_dataset")
     setattr(dataset, "original_dataset", old_dataset)
     return dataset
