@@ -135,11 +135,7 @@ class DatasetSampler:
         return randomized_label_map
 
     def randomize_label_by_class(
-        self,
-        percent: float | dict[Any, float],
-        checked_indices: list | None = None,
-        all_labels: set | None = None,
-        **kwargs
+        self, percent: float | dict[Any, float], all_labels: set | None = None, **kwargs
     ) -> dict[int, set]:
         randomized_label_map: dict[int, set] = {}
 
@@ -156,7 +152,7 @@ class DatasetSampler:
             assert isinstance(new_percent, float | int)
 
             randomized_label_map |= self.randomize_label(
-                indices=checked_indices if checked_indices is not None else indices,
+                indices=indices,
                 percent=new_percent,
                 all_labels=all_labels,
             )
@@ -204,6 +200,7 @@ class DatasetSampler:
         self,
         callback: Callable,
         labels: list | None = None,
+        checked_indices: Iterable[int] | None = None,
         excluded_indices: Iterable[int] | None = None,
     ) -> None:
         if not excluded_indices:
@@ -215,7 +212,12 @@ class DatasetSampler:
             labels=labels, excluded_indices=excluded_indices
         )
         for label, indices in label_sample_sub_dict.items():
-            resulting_indices = callback(
-                label=label, indices=set(indices) - excluded_indices
-            )
-            excluded_indices.update(resulting_indices)
+            if checked_indices is None:
+                remaining_indices = set(indices) - excluded_indices
+            else:
+                remaining_indices = (
+                    set(indices).intersection(checked_indices) - excluded_indices
+                )
+            if remaining_indices:
+                resulting_indices = callback(label=label, indices=remaining_indices)
+                excluded_indices.update(resulting_indices)
