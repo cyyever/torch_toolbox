@@ -1,4 +1,5 @@
 import functools
+from typing import Any
 
 from ..factory import Factory
 from ..ml_type import MachineLearningPhase, TransformType
@@ -53,19 +54,30 @@ class IIDFlipSampler(IIDSampler):
         self,
         dataset_collection: ClassificationDatasetCollection,
         part_number: int,
-        flip_percent: float,
+        flip_percent: float | list[dict[Any, float]],
     ) -> None:
         super().__init__(dataset_collection=dataset_collection, part_number=part_number)
-        assert flip_percent > 0
-        for phase, tmp in self._dataset_indices.items():
+        # assert flip_percent > 0
+        for phase, part_indices in self._dataset_indices.items():
             if phase != MachineLearningPhase.Training:
                 continue
-            for indices in tmp.values():
-                self._flipped_indices |= self._samplers[phase].randomize_label(
-                    indices=indices,
-                    percent=flip_percent,
-                    all_labels=dataset_collection.get_labels(),
-                )
+            if isinstance(flip_percent, dict):
+                for part_index, indices in part_indices.items():
+                    self._flipped_indices |= self._samplers[
+                        phase
+                    ].randomize_label_by_class(
+                        indices=indices,
+                        percent=flip_percent[part_index],
+                        all_labels=dataset_collection.get_labels(),
+                    )
+            else:
+                assert isinstance(flip_percent, float)
+                for indices in part_indices.values():
+                    self._flipped_indices |= self._samplers[phase].randomize_label(
+                        indices=indices,
+                        percent=flip_percent,
+                        all_labels=dataset_collection.get_labels(),
+                    )
         assert self._flipped_indices
 
     @classmethod
