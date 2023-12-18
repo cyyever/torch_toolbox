@@ -61,7 +61,7 @@ class IIDFlipSampler(IIDSampler):
         for phase, part_indices in self._dataset_indices.items():
             if phase != MachineLearningPhase.Training:
                 continue
-            if isinstance(flip_percent, dict):
+            if isinstance(flip_percent, list) or isinstance(flip_percent, dict):
                 for part_index, indices in part_indices.items():
                     self._flipped_indices |= self._samplers[
                         phase
