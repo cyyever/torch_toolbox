@@ -30,4 +30,5 @@ class AUROCMetric(ClassificationMetric):
 
     def _after_epoch(self, **kwargs) -> None:
         epoch = kwargs["epoch"]
+        assert self.__auroc is not None
         self._set_epoch_metric(epoch, "AUROC", self.__auroc.compute())

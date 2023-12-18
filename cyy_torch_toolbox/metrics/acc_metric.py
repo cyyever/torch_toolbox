@@ -43,5 +43,6 @@ class AccuracyMetric(Metric):
 
     def _after_epoch(self, **kwargs) -> None:
         epoch = kwargs["epoch"]
+        assert self.__correct_count is not None
         accuracy = self.__correct_count / self.__dataset_size
         self._set_epoch_metric(epoch, "accuracy", accuracy)

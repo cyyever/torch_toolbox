@@ -5,6 +5,7 @@ import os
 from typing import Any, Callable, Generator
 
 import torch
+import torch.cuda
 import torch.utils.data
 from cyy_naive_lib.log import get_logger
 
@@ -41,7 +42,7 @@ class Executor(HookCollection, abc.ABC):
         self.__device: None | torch.device = None
         self.__dataloader: None | torch.utils.data.DataLoader = None
         self.__dataloader_kwargs: dict = {}
-        self.__device_stream: None | torch._C._CudaStreamBase = None
+        self.__device_stream: None | torch.cuda.Stream = None
         self.__save_dir: None | str = None
         self.cache_transforms: None | str = "cpu"
 
@@ -284,7 +285,7 @@ class Executor(HookCollection, abc.ABC):
             )
         ):
             get_logger().debug("drop last one-sized batch for batch norm")
-            return None
+            return
 
         self.exec_hooks(
             hook_point=ExecutorHookPoint.BEFORE_BATCH,
