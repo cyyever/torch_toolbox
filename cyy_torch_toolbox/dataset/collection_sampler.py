@@ -66,7 +66,7 @@ class IIDFlipSampler(IIDSampler):
                     self._flipped_indices |= self._samplers[
                         phase
                     ].randomize_label_by_class(
-                        indices=indices,
+                        checked_indices=indices,
                         percent=flip_percent[part_index],
                         all_labels=dataset_collection.get_labels(),
                     )
