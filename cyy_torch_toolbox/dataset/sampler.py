@@ -135,7 +135,11 @@ class DatasetSampler:
         return randomized_label_map
 
     def randomize_label_by_class(
-        self, percent: float | dict[Any, float], **kwargs
+        self,
+        percent: float | dict[Any, float],
+        checked_indices: list | None = None,
+        all_labels: set | None = None,
+        **kwargs
     ) -> dict[int, set]:
         randomized_label_map: dict[int, set] = {}
 
@@ -154,7 +158,9 @@ class DatasetSampler:
             assert isinstance(new_percent, float)
 
             randomized_label_map |= self.randomize_label(
-                indices=indices, percent=new_percent
+                indices=checked_indices if checked_indices is not None else indices,
+                percent=new_percent,
+                all_labels=all_labels,
             )
 
             return indices
