@@ -58,7 +58,7 @@ class DatasetSampler:
 
         sub_index_list: list[set] = [set()] * len(parts)
 
-        def __iid_spilit(indices):
+        def __iid_spilit(label, indices):
             if not indices:
                 return indices
             index_list = list(indices)
@@ -81,7 +81,7 @@ class DatasetSampler:
     ) -> list[list]:
         collected_indices = set()
 
-        def __collect(indices):
+        def __collect(label, indices):
             collected_indices.update(indices)
             return indices
 
@@ -104,7 +104,7 @@ class DatasetSampler:
     def iid_sample_indices(self, percent: float, **kwargs) -> set:
         sub_index_list: set = set()
 
-        def __sample(indices):
+        def __sample(label, indices):
             if not indices:
                 return indices
             sample_size = int(len(indices) * percent)
@@ -134,15 +134,27 @@ class DatasetSampler:
 
         return randomized_label_map
 
-    def iid_randomize_label(self, percent: float, **kwargs) -> dict[int, set]:
+    def randomize_label_by_class(
+        self, percent: float | dict[Any, float], **kwargs
+    ) -> dict[int, set]:
         randomized_label_map: dict[int, set] = {}
 
-        def __randomize(indices):
+        def __randomize(label: set, indices):
             nonlocal randomized_label_map
+            nonlocal percent
             if not indices:
                 return indices
+
+            if isinstance(percent, dict):
+                if len(label) == 1:
+                    label = list[label][0]
+                new_percent = percent[label]
+            else:
+                new_percent = percent
+            assert isinstance(new_percent, float)
+
             randomized_label_map |= self.randomize_label(
-                indices=indices, percent=percent
+                indices=indices, percent=new_percent
             )
 
             return indices
@@ -198,6 +210,8 @@ class DatasetSampler:
         label_sample_sub_dict: dict = self.__get_indices_by_label(
             labels=labels, excluded_indices=excluded_indices
         )
-        for indices in label_sample_sub_dict.values():
-            resulting_indices = callback(indices=set(indices) - excluded_indices)
+        for label, indices in label_sample_sub_dict.items():
+            resulting_indices = callback(
+                label=label, indices=set(indices) - excluded_indices
+            )
             excluded_indices.update(resulting_indices)
