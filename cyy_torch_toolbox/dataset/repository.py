@@ -108,7 +108,7 @@ def __create_dataset(
                     if dataset_type == DatasetType.Graph:
                         assert len(dataset) == 1
                     __dataset_cache[cache_key] = dataset
-                    get_logger().warning(
+                    get_logger().debug(
                         "create and cache dataset %s, id %s with kwargs %s",
                         cache_key,
                         id(dataset),
