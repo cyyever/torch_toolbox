@@ -4,24 +4,31 @@ from typing import Any
 from ..factory import Factory
 from ..ml_type import MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
+from .collection import DatasetCollection
 from .sampler import DatasetSampler
 from .util import DatasetUtil
 
 
 class DatasetCollectionSampler:
-    def __init__(self, dataset_collection: ClassificationDatasetCollection) -> None:
+    def __init__(
+        self,
+        dataset_collection: DatasetCollection | ClassificationDatasetCollection,
+        part_number: int,
+    ) -> None:
         self._dataset_indices: dict[MachineLearningPhase, dict] = {}
-        self._flipped_indices: dict = {}
         self._dc = dataset_collection
-        self._samplers: dict[MachineLearningPhase, DatasetSampler] = {
+        self._part_number = part_number
+        self._samplers: dict[MachineLearningPhase, DatasetSampler] = {}
+        self.set_dataset_collection(dataset_collection)
+
+    def set_dataset_collection(
+        self, dataset_collection: DatasetCollection | ClassificationDatasetCollection
+    ) -> None:
+        self._dc = dataset_collection
+        self._samplers = {
             phase: DatasetSampler(dataset_collection.get_dataset_util(phase))
             for phase in MachineLearningPhase
         }
-
-    def set_dataset_collection(
-        self, dataset_collection: ClassificationDatasetCollection
-    ):
-        self._dc = dataset_collection
 
     def __getstate__(self) -> dict:
         # capture what is normally pickled
@@ -30,19 +37,17 @@ class DatasetCollectionSampler:
         state["_dc"] = None
         return state
 
-    def sample(self, worker_id: int) -> None:
+    def sample(self, part_id: int) -> None:
         for phase in MachineLearningPhase:
-            indices = self._dataset_indices[phase][worker_id]
+            indices = self._dataset_indices[phase][part_id]
             assert indices
             self._dc.set_subset(phase=phase, indices=indices)
 
 
 class IIDSampler(DatasetCollectionSampler):
-    def __init__(
-        self, dataset_collection: ClassificationDatasetCollection, part_number: int
-    ) -> None:
-        super().__init__(dataset_collection=dataset_collection)
-        parts: list[float] = [1] * part_number
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        parts: list[float] = [1] * self._part_number
         for phase in MachineLearningPhase:
             self._dataset_indices[phase] = dict(
                 enumerate(self._samplers[phase].iid_split_indices(parts))
@@ -57,7 +62,7 @@ class IIDFlipSampler(IIDSampler):
         flip_percent: float | list[dict[Any, float]],
     ) -> None:
         super().__init__(dataset_collection=dataset_collection, part_number=part_number)
-        # assert flip_percent > 0
+        self._flipped_indices: dict = {}
         for phase, part_indices in self._dataset_indices.items():
             if phase != MachineLearningPhase.Training:
                 continue
@@ -86,12 +91,12 @@ class IIDFlipSampler(IIDSampler):
             return DatasetUtil.replace_target(target, {target: flipped_indices[index]})
         return target
 
-    def sample(self, worker_id: int) -> None:
-        super().sample(worker_id=worker_id)
+    def sample(self, part_id: int) -> None:
+        super().sample(part_id=part_id)
         for phase in MachineLearningPhase:
             if phase != MachineLearningPhase.Training:
                 continue
-            indices = self._dataset_indices[phase][worker_id]
+            indices = self._dataset_indices[phase][part_id]
             assert indices
             index_list = sorted(indices)
             new_flipped_dict = {}
@@ -107,11 +112,9 @@ class IIDFlipSampler(IIDSampler):
 
 
 class RandomSampler(DatasetCollectionSampler):
-    def __init__(
-        self, dataset_collection: ClassificationDatasetCollection, part_number: int
-    ) -> None:
-        super().__init__(dataset_collection=dataset_collection)
-        parts: list[float] = [1] * part_number
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        parts: list[float] = [1] * self._part_number
         for phase in MachineLearningPhase:
             self._dataset_indices[phase] = dict(
                 enumerate(self._samplers[phase].random_split_indices(parts))
