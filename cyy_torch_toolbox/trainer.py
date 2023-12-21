@@ -8,7 +8,6 @@ from .classification_inferencer import ClassificationInferencer
 from .dataset import DatasetCollection
 from .executor import Executor
 from .hook.config import HookConfig
-from .hook.keep_model import KeepModelHook
 from .hyper_parameter import HyperParameter
 from .inferencer import Inferencer
 from .metric_visualizers.batch_loss_logger import BatchLossLogger
@@ -29,15 +28,6 @@ class Trainer(Executor):
         self.__inferencers: dict[MachineLearningPhase, Inferencer] = {}
         self.__optimizer_parameters = None
         self.append_hook(BatchLossLogger(), "batch_loss_logger")
-        self.append_hook(KeepModelHook(), "keep_model_hook")
-
-    @property
-    def best_model(self) -> Any:
-        keep_model_hook = self.get_hook("keep_model_hook")
-        assert isinstance(keep_model_hook, KeepModelHook)
-        if keep_model_hook.best_model is None:
-            return None
-        return keep_model_hook.best_model
 
     def __getstate__(self):
         # capture what is normally pickled
