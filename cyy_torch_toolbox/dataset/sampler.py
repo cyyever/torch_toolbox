@@ -1,7 +1,7 @@
 import copy
 import functools
 import random
-from typing import Any, Callable, Iterable
+from typing import Any, Callable
 
 from cyy_naive_lib.log import get_logger
 
@@ -11,6 +11,8 @@ from .util import DatasetUtil
 class DatasetSampler:
     def __init__(self, dataset_util: DatasetUtil) -> None:
         self.__dataset_util: DatasetUtil = dataset_util
+        self._excluded_indices: set = set()
+        self._checked_indices: set | None = None
 
     @functools.cached_property
     def sample_label_dict(self) -> dict[int, set]:
@@ -33,12 +35,15 @@ class DatasetSampler:
             *tuple(set(labels) for labels in self.sample_label_dict.values())
         )
 
-    def split_by_label_parts(
+    def get_subsets(self, index_list: list) -> list:
+        return [
+            self.__dataset_util.get_subset(indices=indices) for indices in index_list
+        ]
+
+    def split_indices(
         self,
         parts: list[dict[Any, float]],
         labels: list | None = None,
-        checked_indices: Iterable[int] | None = None,
-        excluded_indices: Iterable[int] | None = None,
     ) -> list[set]:
         assert parts
 
@@ -56,11 +61,9 @@ class DatasetSampler:
                 sub_index_list[i] = sub_index_list[i] | set(part_index_list)
             return indices
 
-        self.__split_by_label(
+        self.__check_sample_by_label(
             callback=__split_per_label,
             labels=labels,
-            checked_indices=checked_indices,
-            excluded_indices=excluded_indices,
         )
         return sub_index_list
 
@@ -68,25 +71,20 @@ class DatasetSampler:
         self,
         parts: list[float],
         labels: list | None = None,
-        checked_indices: Iterable[int] | None = None,
-        excluded_indices: Iterable[int] | None = None,
     ) -> list[set]:
         assert parts
 
         if labels is None:
             labels = list(self.label_sample_dict.keys())
-        return self.split_by_label_parts(
+        return self.split_indices(
             parts=[{label: part for label in labels} for part in parts],
             labels=labels,
-            checked_indices=checked_indices,
-            excluded_indices=excluded_indices,
         )
 
     def random_split_indices(
         self,
         parts: list[float],
         labels: list | None = None,
-        excluded_indices: Iterable[int] | None = None,
     ) -> list[list]:
         collected_indices = set()
 
@@ -94,20 +92,11 @@ class DatasetSampler:
             collected_indices.update(indices)
             return indices
 
-        self.__split_by_label(
-            callback=__collect, labels=labels, excluded_indices=excluded_indices
-        )
-
-        index_list = list(collected_indices)
-        return self.__split_index_list(parts, index_list, shuffle=True)
+        self.__check_sample_by_label(callback=__collect, labels=labels)
+        return self.__split_index_list(parts, list(collected_indices), shuffle=True)
 
     def iid_split(self, parts: list[float], labels: list | None = None) -> list:
         return self.get_subsets(self.iid_split_indices(parts, labels=labels))
-
-    def get_subsets(self, index_list: list) -> list:
-        return [
-            self.__dataset_util.get_subset(indices=indices) for indices in index_list
-        ]
 
     def iid_sample_indices(self, percent: float, **kwargs) -> set:
         sub_index_list: set = set()
@@ -119,7 +108,7 @@ class DatasetSampler:
             sub_index_list.update(random.sample(list(indices), k=sample_size))
             return indices
 
-        self.__split_by_label(callback=__sample, **kwargs)
+        self.__check_sample_by_label(callback=__sample, **kwargs)
 
         return sub_index_list
 
@@ -167,7 +156,7 @@ class DatasetSampler:
 
             return indices
 
-        self.__split_by_label(callback=__randomize, **kwargs)
+        self.__check_sample_by_label(callback=__randomize, **kwargs)
 
         return randomized_label_map
 
@@ -209,26 +198,21 @@ class DatasetSampler:
                 part_indices.append([])
         return part_indices
 
-    def __split_by_label(
+    def __check_sample_by_label(
         self,
         callback: Callable,
         labels: list | None = None,
-        checked_indices: Iterable[int] | None = None,
-        excluded_indices: Iterable[int] | None = None,
     ) -> None:
-        if not excluded_indices:
-            excluded_indices = set()
-        else:
-            excluded_indices = copy.copy(set(excluded_indices))
+        excluded_indices = copy.copy(self._excluded_indices)
 
         if labels is None:
             labels = list(self.label_sample_dict.keys())
         for label in labels:
             indices = self.label_sample_dict[label] - excluded_indices
-            if checked_indices is None:
+            if self._checked_indices is None:
                 remaining_indices = set(indices)
             else:
-                remaining_indices = set(indices).intersection(checked_indices)
+                remaining_indices = set(indices).intersection(self._checked_indices)
             if remaining_indices:
                 resulting_indices = callback(label=label, indices=remaining_indices)
                 excluded_indices.update(resulting_indices)
