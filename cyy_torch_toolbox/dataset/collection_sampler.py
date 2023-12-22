@@ -44,7 +44,7 @@ class DatasetCollectionSampler:
             self._dc.set_subset(phase=phase, indices=indices)
 
 
-class IIDSampler(DatasetCollectionSampler):
+class IIDSplit(DatasetCollectionSampler):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         parts: list[float] = [1] * self._part_number
@@ -54,7 +54,7 @@ class IIDSampler(DatasetCollectionSampler):
             )
 
 
-class IIDFlipSampler(IIDSampler):
+class IIDSplitWithFlip(IIDSplit):
     def __init__(
         self,
         dataset_collection: ClassificationDatasetCollection,
@@ -111,7 +111,7 @@ class IIDFlipSampler(IIDSampler):
             )
 
 
-class RandomSampler(DatasetCollectionSampler):
+class RandomSplit(DatasetCollectionSampler):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         parts: list[float] = [1] * self._part_number
@@ -122,9 +122,9 @@ class RandomSampler(DatasetCollectionSampler):
 
 
 global_sampler_factory = Factory()
-global_sampler_factory.register("iid", IIDSampler)
-global_sampler_factory.register("iid_flip", IIDFlipSampler)
-global_sampler_factory.register("random", RandomSampler)
+global_sampler_factory.register("iid", IIDSplit)
+global_sampler_factory.register("iid_flip", IIDSplitWithFlip)
+global_sampler_factory.register("random", RandomSplit)
 
 
 def get_dataset_collection_sampler(
