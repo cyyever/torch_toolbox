@@ -121,7 +121,7 @@ class DatasetSampler:
     def iid_split(self, parts: list[float], labels: list | None = None) -> list:
         return self.get_subsets(self.iid_split_indices(parts, labels=labels))
 
-    def iid_sample_indices(self, percent: float, **kwargs) -> set:
+    def iid_sample_indices(self, percent: float) -> set:
         labels = list(self.label_sample_dict.keys())
         return self.sample_indices(
             [{label: percent for label in labels}], labels=labels
