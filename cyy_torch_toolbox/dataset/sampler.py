@@ -14,6 +14,9 @@ class DatasetSampler:
         self._excluded_indices: set = set()
         self._checked_indices: set | None = None
 
+    def set_excluded_indices(self, excluded_indices):
+        self._excluded_indices = excluded_indices
+
     @functools.cached_property
     def sample_label_dict(self) -> dict[int, set]:
         return dict(self.__dataset_util.get_batch_labels())
