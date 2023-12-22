@@ -32,12 +32,6 @@ class DatasetSampler:
                     label_sample_dict[label].add(index)
         return label_sample_dict
 
-    @functools.cached_property
-    def all_labels(self) -> set[set]:
-        return set().union(
-            *tuple(set(labels) for labels in self.sample_label_dict.values())
-        )
-
     def get_subsets(self, index_list: list) -> list:
         return [
             self.__dataset_util.get_subset(indices=indices) for indices in index_list
@@ -57,15 +51,41 @@ class DatasetSampler:
             label_part = [part.get(label, 0) for part in parts]
             if sum(label_part) == 0:
                 return set()
-            part_index_lists = self.__split_index_list(
-                label_part, list(indices), shuffle=True
-            )
+            part_index_lists = self.__split_index_list(label_part, list(indices))
             for i, part_index_list in enumerate(part_index_lists):
                 sub_index_list[i] = sub_index_list[i] | set(part_index_list)
             return indices
 
         self.__check_sample_by_label(
             callback=__split_per_label,
+            labels=labels,
+        )
+        return sub_index_list
+
+    def sample_indices(
+        self,
+        parts: list[dict[Any, float]],
+        labels: list | None = None,
+    ) -> list[set]:
+        assert parts
+
+        sub_index_list: list[set] = [set()] * len(parts)
+
+        def __sample_per_label(label, indices):
+            nonlocal parts
+            label_part = [part.get(label, 0) for part in parts]
+            if sum(label_part) == 0:
+                return set()
+            part_index_lists = self.__split_index_list(label_part, list(indices))
+            sampled_indices = set()
+            for i, part_index_list in enumerate(part_index_lists):
+                part_index_list = set(part_index_list[: int(label_part * len(indices))])
+                sampled_indices.update(part_index_list)
+                sub_index_list[i] = sub_index_list[i] | part_index_list
+            return sampled_indices
+
+        self.__check_sample_by_label(
+            callback=__sample_per_label,
             labels=labels,
         )
         return sub_index_list
@@ -96,31 +116,23 @@ class DatasetSampler:
             return indices
 
         self.__check_sample_by_label(callback=__collect, labels=labels)
-        return self.__split_index_list(parts, list(collected_indices), shuffle=True)
+        return self.__split_index_list(parts, list(collected_indices))
 
     def iid_split(self, parts: list[float], labels: list | None = None) -> list:
         return self.get_subsets(self.iid_split_indices(parts, labels=labels))
 
     def iid_sample_indices(self, percent: float, **kwargs) -> set:
-        sub_index_list: set = set()
-
-        def __sample(label, indices):
-            if not indices:
-                return indices
-            sample_size = int(len(indices) * percent)
-            sub_index_list.update(random.sample(list(indices), k=sample_size))
-            return indices
-
-        self.__check_sample_by_label(callback=__sample, **kwargs)
-
-        return sub_index_list
+        labels = list(self.label_sample_dict.keys())
+        return self.sample_indices(
+            [{label: percent for label in labels}], labels=labels
+        )[0]
 
     def randomize_label(
         self, indices: list, percent: float, all_labels: set | None = None
     ) -> dict[int, set]:
         randomized_label_map: dict[int, set] = {}
         if all_labels is None:
-            all_labels = self.all_labels
+            all_labels = set(self.label_sample_dict.keys())
 
         flipped_indices = random.sample(list(indices), k=int(len(indices) * percent))
         for index in flipped_indices:
@@ -164,15 +176,12 @@ class DatasetSampler:
         return randomized_label_map
 
     @classmethod
-    def __split_index_list(
-        cls, parts: list[float], index_list: list, shuffle: bool
-    ) -> list[list]:
+    def __split_index_list(cls, parts: list[float], index_list: list) -> list[list]:
         assert index_list
         if len(parts) == 1:
             assert parts[0] != 0
             return [index_list]
-        if shuffle:
-            random.shuffle(index_list)
+        random.shuffle(index_list)
         part_lens: list[int] = []
         first_assert = True
         index_num = len(index_list)
