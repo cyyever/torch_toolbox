@@ -12,6 +12,7 @@ class DatasetSampler:
     def __init__(self, dataset_util: DatasetUtil) -> None:
         self.__dataset_util: DatasetUtil = dataset_util
         self._excluded_indices: set = set()
+        self.checked_indices: set | None = None
 
     def set_excluded_indices(self, excluded_indices):
         self._excluded_indices = excluded_indices
@@ -222,6 +223,8 @@ class DatasetSampler:
             labels = list(self.label_sample_dict.keys())
         for label in labels:
             indices = self.label_sample_dict[label] - excluded_indices
+            if self.checked_indices is not None:
+                indices = indices.intersection(self.checked_indices)
             if indices:
                 resulting_indices = callback(label=label, indices=indices)
                 excluded_indices.update(resulting_indices)
