@@ -17,7 +17,9 @@ global_dataset_collection_factory: Factory = Factory()
 
 
 def create_dataset_collection(
-    name: str, dataset_kwargs: dict | None = None
+    name: str,
+    dataset_kwargs: dict | None = None,
+    merge_validation_to_training: bool = False,
 ) -> DatasetCollection:
     if dataset_kwargs is None:
         dataset_kwargs = {}
@@ -42,24 +44,28 @@ def create_dataset_collection(
         if dc.is_classification_dataset():
             assert isinstance(dc, DatasetCollection)
             dc = ClassificationDatasetCollection(dc=dc)
-
-        if not dc.has_dataset(MachineLearningPhase.Validation):
-            dc.iid_split(
-                from_phase=MachineLearningPhase.Training,
-                parts={
-                    MachineLearningPhase.Training: 8,
-                    MachineLearningPhase.Validation: 1,
-                    MachineLearningPhase.Test: 1,
-                },
-            )
-        if not dc.has_dataset(MachineLearningPhase.Test):
-            dc.iid_split(
-                from_phase=MachineLearningPhase.Validation,
-                parts={
-                    MachineLearningPhase.Validation: 1,
-                    MachineLearningPhase.Test: 1,
-                },
-            )
+        if not merge_validation_to_training:
+            if not dc.has_dataset(MachineLearningPhase.Validation):
+                dc.iid_split(
+                    from_phase=MachineLearningPhase.Training,
+                    parts={
+                        MachineLearningPhase.Training: 8,
+                        MachineLearningPhase.Validation: 1,
+                        MachineLearningPhase.Test: 1,
+                    },
+                )
+            if not dc.has_dataset(MachineLearningPhase.Test):
+                dc.iid_split(
+                    from_phase=MachineLearningPhase.Validation,
+                    parts={
+                        MachineLearningPhase.Validation: 1,
+                        MachineLearningPhase.Test: 1,
+                    },
+                )
+        else:
+            assert not dc.has_dataset(
+                MachineLearningPhase.Validation
+            ) or not dc.has_dataset(MachineLearningPhase.Test)
         return dc
 
 
