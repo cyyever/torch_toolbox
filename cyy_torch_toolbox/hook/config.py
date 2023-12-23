@@ -25,7 +25,7 @@ class HookConfig:
         self.use_amp = False
         self.benchmark_cudnn: bool = True
         self.use_performance_metric: bool = True
-        self.use_extra_performance_metrics: bool = False
+        self.use_slow_performance_metrics: bool = False
         self.log_performance_metric: bool = True
         self.save_performance_metric = False
         self.__old_config: Any = None
@@ -69,7 +69,7 @@ class HookConfig:
             PerformanceMetric(
                 executor=executor,
                 profile=self.profile,
-                extra_metrics=self.use_extra_performance_metrics,
+                extra_metrics=self.use_slow_performance_metrics,
             ),
         )
         if self.use_performance_metric:
