@@ -12,7 +12,6 @@ class DatasetSampler:
     def __init__(self, dataset_util: DatasetUtil) -> None:
         self.__dataset_util: DatasetUtil = dataset_util
         self._excluded_indices: set = set()
-        self._checked_indices: set | None = None
 
     def set_excluded_indices(self, excluded_indices):
         self._excluded_indices = excluded_indices
@@ -71,7 +70,7 @@ class DatasetSampler:
 
         sub_index_list: list[set] = [set()] * len(parts)
 
-        def __sample_per_label(label, indices):
+        def __sample_per_label(label: Any, indices: set):
             nonlocal parts
             label_part = [part.get(label, 0) for part in parts]
             if sum(label_part) == 0:
@@ -79,9 +78,11 @@ class DatasetSampler:
             part_index_lists = self.__split_index_list(label_part, list(indices))
             sampled_indices = set()
             for i, part_index_list in enumerate(part_index_lists):
-                part_index_list = set(part_index_list[: int(label_part * len(indices))])
-                sampled_indices.update(part_index_list)
-                sub_index_list[i] = sub_index_list[i] | part_index_list
+                part_index_set = set(
+                    part_index_list[: int(label_part[i] * len(indices))]
+                )
+                sampled_indices.update(part_index_set)
+                sub_index_list[i] = sub_index_list[i] | part_index_set
             return sampled_indices
 
         self.__check_sample_by_label(
@@ -111,7 +112,7 @@ class DatasetSampler:
     ) -> list[list]:
         collected_indices = set()
 
-        def __collect(label, indices):
+        def __collect(label: Any, indices: set):
             collected_indices.update(indices)
             return indices
 
@@ -221,10 +222,6 @@ class DatasetSampler:
             labels = list(self.label_sample_dict.keys())
         for label in labels:
             indices = self.label_sample_dict[label] - excluded_indices
-            if self._checked_indices is None:
-                remaining_indices = set(indices)
-            else:
-                remaining_indices = set(indices).intersection(self._checked_indices)
-            if remaining_indices:
-                resulting_indices = callback(label=label, indices=remaining_indices)
+            if indices:
+                resulting_indices = callback(label=label, indices=indices)
                 excluded_indices.update(resulting_indices)
