@@ -67,11 +67,12 @@ class IIDSplitWithFlip(IIDSplit):
             if phase != MachineLearningPhase.Training:
                 continue
             if isinstance(flip_percent, (dict, list)):
+                assert len(flip_percent) == part_number
                 for part_index, indices in part_indices.items():
+                    self._samplers[phase].checked_indices = indices
                     self._flipped_indices |= self._samplers[
                         phase
                     ].randomize_label_by_class(
-                        checked_indices=indices,
                         percent=flip_percent[part_index],
                         all_labels=dataset_collection.get_labels(),
                     )
@@ -109,6 +110,23 @@ class IIDSplitWithFlip(IIDSplit):
                 key=TransformType.Target,
                 phases=[phase],
             )
+
+
+class IIDSplitWithSample(IIDSplit):
+    def __init__(
+        self,
+        dataset_collection: ClassificationDatasetCollection,
+        part_number: int,
+        sample_probs: list[dict[Any, float]],
+    ) -> None:
+        assert len(sample_probs) == part_number
+        super().__init__(dataset_collection=dataset_collection, part_number=part_number)
+        for phase, part_indices in self._dataset_indices.items():
+            for part_index, indices in part_indices.items():
+                self._samplers[phase].checked_indices = indices
+                part_indices[part_index] = self._samplers[phase].sample_indices(
+                    parts=[sample_probs[part_index]],
+                )[0]
 
 
 class RandomSplit(DatasetCollectionSampler):
