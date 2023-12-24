@@ -141,7 +141,8 @@ class RandomSplit(DatasetCollectionSampler):
 
 global_sampler_factory = Factory()
 global_sampler_factory.register("iid", IIDSplit)
-global_sampler_factory.register("iid_flip", IIDSplitWithFlip)
+global_sampler_factory.register("iid_split_and_flip", IIDSplitWithFlip)
+global_sampler_factory.register("iid_split_and_sample", IIDSplitWithSample)
 global_sampler_factory.register("random", RandomSplit)
 
 
