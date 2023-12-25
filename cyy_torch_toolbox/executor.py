@@ -96,17 +96,14 @@ class Executor(HookCollection, abc.ABC):
             executor.set_save_dir(save_dir)
 
     def set_visualizer_prefix(self, prefix: str) -> None:
-        self.__visualizer_prefix: prefix
+        self.__visualizer_prefix = prefix
         for hook in self._hooks.values():
             if isinstance(hook, MetricVisualizer):
                 hook.set_prefix(prefix)
 
     @property
-    def visualizer_prefix(self) -> None | str:
-        for hook in self._hooks.values():
-            if isinstance(hook, MetricVisualizer):
-                return hook.prefix
-        return None
+    def visualizer_prefix(self) -> str:
+        return self.__visualizer_prefix
 
     @property
     def save_dir(self) -> None | str:
