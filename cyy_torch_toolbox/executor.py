@@ -44,6 +44,7 @@ class Executor(HookCollection, abc.ABC):
         self.__dataloader_kwargs: dict = {}
         self.__device_stream: None | torch.cuda.Stream = None
         self.__save_dir: None | str = None
+        self.__visualizer_prefix: str = ""
         self.cache_transforms: None | str = "cpu"
 
     @property
@@ -95,6 +96,7 @@ class Executor(HookCollection, abc.ABC):
             executor.set_save_dir(save_dir)
 
     def set_visualizer_prefix(self, prefix: str) -> None:
+        self.__visualizer_prefix: prefix
         for hook in self._hooks.values():
             if isinstance(hook, MetricVisualizer):
                 hook.set_prefix(prefix)
@@ -175,6 +177,10 @@ class Executor(HookCollection, abc.ABC):
     def _prepare_execution(self) -> None:
         self._data.clear()
         self.hook_config.set_hooks(self)
+        if self.save_dir:
+            self.set_save_dir(self.save_dir)
+        if self.__visualizer_prefix:
+            self.set_visualizer_prefix(self.__visualizer_prefix)
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_EXECUTE)
 
     def set_device(self, device: torch.device) -> None:
