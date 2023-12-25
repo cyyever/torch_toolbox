@@ -97,7 +97,7 @@ class Executor(HookCollection, abc.ABC):
 
     def set_visualizer_prefix(self, prefix: str) -> None:
         self.__visualizer_prefix = prefix
-        for hook in self._hooks.values():
+        for hook in self._hook_objs.values():
             if isinstance(hook, MetricVisualizer):
                 hook.set_prefix(prefix)
 
