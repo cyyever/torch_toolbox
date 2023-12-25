@@ -10,7 +10,7 @@ try:
             name="iid", dataset_collection=mnist, part_number=3
         )
         get_dataset_collection_sampler(
-            name="iid_flip", dataset_collection=mnist, part_number=3, flip_percent=0.5
+            name="iid_split_and_flip", dataset_collection=mnist, part_number=3, flip_percent=0.5
         )
         get_dataset_collection_sampler(
             name="random", dataset_collection=mnist, part_number=3
