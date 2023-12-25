@@ -70,7 +70,7 @@ class HookCollection:
         self._hooks: dict[ExecutorHookPoint, list[dict[str, Callable]]] = {}
         self.__stripable_hooks: set = set()
         self.__disabled_hooks: set = set()
-        self.__hook_objs: dict = {}
+        self._hook_objs: dict = {}
 
     def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
         for hook in copy.copy(self._hooks.get(hook_point, [])):
@@ -136,8 +136,8 @@ class HookCollection:
 
     def insert_hook(self, pos: int, hook: Hook, hook_name: str | None = None) -> None:
         if hook_name is not None:
-            assert hook_name not in self.__hook_objs
-            self.__hook_objs[hook_name] = hook
+            assert hook_name not in self._hook_objs
+            self._hook_objs[hook_name] = hook
         flag = False
         for hook_point, name, fun in hook.yield_hooks():
             self.__insert_hook(pos, hook_point, name, fun, hook.stripable)
@@ -146,10 +146,10 @@ class HookCollection:
         assert flag
 
     def get_hook(self, hook_name: str) -> Hook:
-        return self.__hook_objs[hook_name]
+        return self._hook_objs[hook_name]
 
     def has_hook_obj(self, hook_name: str) -> bool:
-        return hook_name in self.__hook_objs
+        return hook_name in self._hook_objs
 
     def append_hook(self, hook: Hook, hook_name: str | None = None) -> None:
         self.insert_hook(-1, hook, hook_name)
@@ -188,7 +188,7 @@ class HookCollection:
             hook.disable()
 
     def remove_hook(self, hook_name: str) -> None:
-        hook = self.__hook_objs.pop(hook_name)
+        hook = self._hook_objs.pop(hook_name)
         for hook_point, name, _ in hook.yield_hooks():
             self.remove_named_hook(name, hook_point)
 
