@@ -63,8 +63,7 @@ class Trainer(Executor):
         inferencer.set_device(self.device)
         if self.save_dir is not None:
             inferencer.set_save_dir(self.save_dir)
-        if self.visualizer_prefix is not None:
-            inferencer.set_visualizer_prefix(self.visualizer_prefix)
+        inferencer.set_visualizer_prefix(self.visualizer_prefix)
         return inferencer
 
     def reset_optimizer_parameters(self, parameters: Any) -> None:
@@ -129,6 +128,7 @@ class Trainer(Executor):
         if inferencer is None:
             return False
         inferencer.model.load_state_dict(self.model.state_dict())
+        inferencer.set_visualizer_prefix(self.visualizer_prefix)
         inferencer.inference()
         return True
 
