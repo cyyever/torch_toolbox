@@ -44,6 +44,25 @@ class DatasetCollectionSampler:
             self._dc.set_subset(phase=phase, indices=indices)
 
 
+class SplitSampler(DatasetCollectionSampler):
+    def __init__(
+        self,
+        dataset_collection: DatasetCollection | ClassificationDatasetCollection,
+        part_proportions: list[dict[Any, float]],
+    ) -> None:
+        super().__init__(
+            dataset_collection=dataset_collection, part_number=len(part_proportions)
+        )
+        for phase in MachineLearningPhase:
+            self._dataset_indices[phase] = dict(
+                enumerate(
+                    self._samplers[phase].split_indices(
+                        part_proportions=part_proportions
+                    )
+                )
+            )
+
+
 class IIDSplit(DatasetCollectionSampler):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
