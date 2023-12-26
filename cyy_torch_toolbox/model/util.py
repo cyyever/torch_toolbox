@@ -6,6 +6,7 @@ from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 from cyy_naive_lib.log import get_logger
 
 from ..tensor import cat_tensors_to_vector
+from ..typing import TensorDict
 
 
 class ModelUtil:
@@ -34,7 +35,7 @@ class ModelUtil:
 
     def load_parameter_dict(
         self,
-        parameter_dict: dict,
+        parameter_dict: TensorDict,
         check_parameter: bool = False,
         keep_grad: bool = False,
     ) -> None:
@@ -44,10 +45,10 @@ class ModelUtil:
                 assert self.has_attr(name)
             self.set_attr(name, parameter, as_parameter=True, keep_grad=keep_grad)
 
-    def get_buffer_dict(self) -> dict:
+    def get_buffer_dict(self) -> TensorDict:
         return dict(self.model.named_buffers())
 
-    def load_buffer_dict(self, buffer_dict: dict) -> None:
+    def load_buffer_dict(self, buffer_dict: TensorDict) -> None:
         for name, parameter in buffer_dict.items():
             self.set_attr(name, parameter, as_parameter=False)
 
@@ -58,7 +59,7 @@ class ModelUtil:
         for _, module in self.get_modules():
             clear(module)
 
-    def get_parameter_dict(self, detach: bool = True) -> dict:
+    def get_parameter_dict(self, detach: bool = True) -> TensorDict:
         res: dict = {}
         for name, parameter in self.model.named_parameters():
             if detach:
@@ -66,7 +67,7 @@ class ModelUtil:
             res[name] = parameter
         return res
 
-    def get_gradient_dict(self) -> dict:
+    def get_gradient_dict(self) -> TensorDict:
         return {
             k: v.grad
             for k, v in self.get_parameter_dict(detach=False).items()
@@ -96,7 +97,11 @@ class ModelUtil:
             module.register_module(components[-1], module)
 
     def set_attr(
-        self, name: str, value: Any, as_parameter: bool = True, keep_grad: bool = False
+        self,
+        name: str,
+        value: torch.Tensor,
+        as_parameter: bool = True,
+        keep_grad: bool = False,
     ) -> None:
         model = self.model
         components = name.split(".")
