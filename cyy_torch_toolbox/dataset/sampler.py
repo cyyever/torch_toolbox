@@ -39,16 +39,18 @@ class DatasetSampler:
 
     def split_indices(
         self,
-        parts: list[dict[Any, float]],
+        part_proportions: list[dict[Any, float]],
         labels: list | None = None,
     ) -> list[set]:
-        assert parts
+        assert part_proportions
 
-        sub_index_list: list[set] = [set()] * len(parts)
+        sub_index_list: list[set] = [set()] * len(part_proportions)
 
         def __split_per_label(label, indices):
-            nonlocal parts
-            label_part = [part.get(label, 0) for part in parts]
+            nonlocal part_proportions
+            label_part = [
+                part_proportion.get(label, 0) for part_proportion in part_proportions
+            ]
             if sum(label_part) == 0:
                 return set()
             part_index_lists = self.__split_index_list(label_part, list(indices))
