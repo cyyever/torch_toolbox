@@ -363,7 +363,9 @@ class Executor(HookCollection, abc.ABC):
             if not lr_scheduler_step_after_batch(lr_scheduler):
                 match lr_scheduler:
                     case torch.optim.lr_scheduler.ReduceLROnPlateau():
-                        training_loss = self.performance_metric.get_loss(epoch)
+                        training_loss = self.performance_metric.get_loss(
+                            epoch, to_item=False
+                        )
                         get_logger().debug(
                             "call ReduceLROnPlateau for training loss %s",
                             training_loss,
