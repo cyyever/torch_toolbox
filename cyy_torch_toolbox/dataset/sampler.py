@@ -41,6 +41,7 @@ class DatasetSampler:
         self,
         parts: list[dict[Any, float]],
         labels: list | None = None,
+        is_iid: bool = False,
     ) -> list[set]:
         assert parts
 
@@ -51,7 +52,9 @@ class DatasetSampler:
             label_part = [part.get(label, 0) for part in parts]
             if sum(label_part) == 0:
                 return set()
-            part_index_lists = self.__split_index_list(label_part, list(indices))
+            part_index_lists = self.__split_index_list(
+                label_part, list(indices), is_iid=is_iid
+            )
             for i, part_index_list in enumerate(part_index_lists):
                 sub_index_list[i] = sub_index_list[i] | set(part_index_list)
             return indices
@@ -76,7 +79,9 @@ class DatasetSampler:
             label_part = [part.get(label, 0) for part in parts]
             if sum(label_part) == 0:
                 return set()
-            part_index_lists = self.__split_index_list(label_part, list(indices))
+            part_index_lists = self.__split_index_list(
+                label_part, list(indices), is_iid=False
+            )
             sampled_indices = set()
             for i, part_index_list in enumerate(part_index_lists):
                 part_index_set = set(
@@ -118,7 +123,7 @@ class DatasetSampler:
             return indices
 
         self.__check_sample_by_label(callback=__collect, labels=labels)
-        return self.__split_index_list(parts, list(collected_indices))
+        return self.__split_index_list(parts, list(collected_indices), is_iid=False)
 
     def iid_split(self, parts: list[float], labels: list | None = None) -> list:
         return self.get_subsets(self.iid_split_indices(parts, labels=labels))
@@ -178,7 +183,9 @@ class DatasetSampler:
         return randomized_label_map
 
     @classmethod
-    def __split_index_list(cls, parts: list[float], index_list: list) -> list[list]:
+    def __split_index_list(
+        cls, parts: list[float], index_list: list, is_iid: bool
+    ) -> list[list]:
         assert index_list
         if len(parts) == 1:
             assert parts[0] != 0
@@ -191,7 +198,7 @@ class DatasetSampler:
         for part in parts:
             assert part > 0
             part_len = int(index_num * part / sum(parts))
-            if part_len == 0:
+            if part_len == 0 and is_iid:
                 if sum(part_lens, start=0) < index_num:
                     part_len = 1
                 elif first_assert:
