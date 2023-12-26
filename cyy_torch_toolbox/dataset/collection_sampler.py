@@ -48,12 +48,18 @@ class SplitSampler(DatasetCollectionSampler):
     def __init__(
         self,
         dataset_collection: DatasetCollection | ClassificationDatasetCollection,
-        parts: list[dict[Any, float]],
+        part_proportions: list[dict[Any, float]],
     ) -> None:
-        super().__init__(dataset_collection=dataset_collection, part_number=len(parts))
+        super().__init__(
+            dataset_collection=dataset_collection, part_number=len(part_proportions)
+        )
         for phase in MachineLearningPhase:
             self._dataset_indices[phase] = dict(
-                enumerate(self._samplers[phase].split_indices(parts))
+                enumerate(
+                    self._samplers[phase].split_indices(
+                        part_proportions=part_proportions
+                    )
+                )
             )
 
 
