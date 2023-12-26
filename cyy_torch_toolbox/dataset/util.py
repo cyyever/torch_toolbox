@@ -63,7 +63,7 @@ class DatasetUtil:
                 if target.numel() == 1:
                     return {target.item()}
                 # one hot vector
-                if (0 <= target <= 1).all().item():
+                if (target <= 1).all().item() and (target >= 0).all().item():
                     return set(target.nonzero().view(-1).tolist())
                 raise NotImplementedError(f"Unsupported target {target}")
             case dict():
