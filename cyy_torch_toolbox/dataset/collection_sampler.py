@@ -44,7 +44,7 @@ class DatasetCollectionSampler:
             self._dc.set_subset(phase=phase, indices=indices)
 
 
-class SplitSampler(DatasetCollectionSampler):
+class DatasetCollectionSplit(DatasetCollectionSampler):
     def __init__(
         self,
         dataset_collection: DatasetCollection | ClassificationDatasetCollection,
@@ -158,11 +158,29 @@ class RandomSplit(DatasetCollectionSampler):
             )
 
 
+class ProbabilitySampler(DatasetCollectionSampler):
+    def __init__(
+        self,
+        dataset_collection: DatasetCollection | ClassificationDatasetCollection,
+        part_number: int,
+        sample_probs: list[dict[Any, float]],
+    ) -> None:
+        assert len(sample_probs) == part_number
+        super().__init__(dataset_collection=dataset_collection, part_number=part_number)
+        for phase in MachineLearningPhase:
+            self._dataset_indices[phase] = {}
+            for part_id in range(part_number):
+                self._dataset_indices[phase][part_id] = self._samplers[
+                    phase
+                ].sample_indices(parts=[sample_probs[part_id]])[0]
+
+
 global_sampler_factory = Factory()
 global_sampler_factory.register("iid", IIDSplit)
 global_sampler_factory.register("iid_split_and_flip", IIDSplitWithFlip)
 global_sampler_factory.register("iid_split_and_sample", IIDSplitWithSample)
 global_sampler_factory.register("random", RandomSplit)
+global_sampler_factory.register("prob_sampler", ProbabilitySampler)
 
 
 def get_dataset_collection_sampler(
