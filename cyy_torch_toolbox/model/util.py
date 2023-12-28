@@ -74,6 +74,11 @@ class ModelUtil:
             if v.grad is not None
         }
 
+    def load_gradient_dict(self, grad_dict: TensorDict) -> None:
+        assert grad_dict
+        for name, grad in grad_dict.items():
+            self.set_grad(name, grad)
+
     def disable_running_stats(self) -> None:
         def impl(_, module, __) -> None:
             module.track_running_stats = False
@@ -95,6 +100,19 @@ class ModelUtil:
             components = name.split(".")
             module = self.get_attr(".".join(components[:-1]))
             module.register_module(components[-1], module)
+
+    def set_grad(
+        self,
+        name: str,
+        grad: torch.Tensor,
+    ) -> None:
+        model = self.model
+        components = name.split(".")
+        for i, component in enumerate(components):
+            if i + 1 != len(components):
+                model = getattr(model, component)
+            else:
+                setattr(getattr(model, component), "grad", grad)
 
     def set_attr(
         self,
