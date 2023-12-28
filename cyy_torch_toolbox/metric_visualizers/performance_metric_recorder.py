@@ -4,6 +4,7 @@ import re
 
 import torch
 
+from ..ml_type import MachineLearningPhase
 from .metric_visualizer import MetricVisualizer
 
 
@@ -22,6 +23,8 @@ class PerformanceMetricRecorder(MetricVisualizer):
             with open(json_filename, "rt", encoding="utf8") as f:
                 json_record = json.load(f)
         epoch_metrics = executor.performance_metric.get_epoch_metrics(epoch)
+        if not epoch_metrics and executor.phase != MachineLearningPhase.Training:
+            epoch_metrics = executor.performance_metric.get_epoch_metrics(epoch=1)
         if not epoch_metrics:
             return
         for k, value in epoch_metrics.items():
