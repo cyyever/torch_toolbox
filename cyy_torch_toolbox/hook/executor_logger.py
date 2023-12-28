@@ -16,6 +16,7 @@ class ExecutorLogger(Hook):
                 MachineLearningPhase.Training
             ),
         )
+        get_logger().info("device is %s", executor.device)
         get_logger().info("model type is %s", executor.model.__class__)
         get_logger().debug("model is %s", executor.model)
         # get_logger().debug("loss function is %s", executor.loss_fun)
