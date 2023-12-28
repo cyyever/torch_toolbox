@@ -185,7 +185,7 @@ class ModelEvaluator:
         }
         return res
 
-    def backward_and_may_step(
+    def backward(
         self,
         loss,
         optimizer: None | torch.optim.Optimizer = None,
@@ -196,8 +196,15 @@ class ModelEvaluator:
         else:
             self._model.zero_grad(set_to_none=True)
         loss.backward(**backward_kwargs)
-        if optimizer is not None:
-            optimizer.step()
+
+    def backward_and_step(
+        self,
+        loss,
+        optimizer: torch.optim.Optimizer,
+        **backward_kwargs,
+    ) -> None:
+        self.backward(loss=loss, optimizer=optimizer, **backward_kwargs)
+        optimizer.step()
 
     def get_normalized_batch_loss(self, dataset_size: int, forward_result: dict) -> Any:
         if forward_result["is_averaged_loss"]:

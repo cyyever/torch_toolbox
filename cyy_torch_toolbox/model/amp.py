@@ -26,16 +26,12 @@ class AMPModelEvaluator:
         with self.__amp_ctx:
             return self.evaluator.__call__(*args, **kwargs)
 
-    def backward_and_may_step(
+    def backward_and_step(
         self,
         loss,
-        optimizer: None | torch.optim.Optimizer = None,
+        optimizer: torch.optim.Optimizer,
         **backward_kwargs,
     ) -> Any:
-        if optimizer is None:
-            return self.evaluator.backward_and_may_step(
-                loss=loss, optimizer=optimizer, **backward_kwargs
-            )
         assert self.__amp_ctx is not None
         if (
             self.__scaler is None
@@ -44,12 +40,12 @@ class AMPModelEvaluator:
         ):
             self.__scaler = torch.cuda.amp.GradScaler()
         if self.__scaler is None:
-            return self.evaluator.backward_and_may_step(
+            return self.evaluator.backward_and_step(
                 loss=loss, optimizer=optimizer, **backward_kwargs
             )
         while True:
             optimizer.zero_grad(set_to_none=True)
-            self.evaluator.backward_and_may_step(
+            self.evaluator.backward(
                 loss=self.__scaler.scale(loss), retain_graph=True, **backward_kwargs
             )
             self.__scaler.step(optimizer)
