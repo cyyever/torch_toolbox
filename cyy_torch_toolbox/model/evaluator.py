@@ -94,7 +94,6 @@ class ModelEvaluator:
                 self.__loss_fun = loss_fun
 
     def offload_from_device(self) -> None:
-        self.model.zero_grad(set_to_none=True)
         self.model_util.to_device(device=torch.device("cpu"))
 
     def get_input_feature(self, inputs: Any) -> Any:
