@@ -1,5 +1,5 @@
-from cyy_torch_toolbox.hook import Hook
-from cyy_torch_toolbox.ml_type import MachineLearningPhase
+from ..ml_type import MachineLearningPhase
+from . import Hook
 
 
 class GradientSanitizer(Hook):

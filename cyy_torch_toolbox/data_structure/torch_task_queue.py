@@ -4,7 +4,8 @@ from typing import Any
 import torch
 import torch.multiprocessing
 from cyy_naive_lib.data_structure.task_queue import BatchPolicy, TaskQueue
-from cyy_torch_toolbox.device import get_device_memory_info, get_devices
+
+from ..device import get_device_memory_info, get_devices
 
 
 class CUDABatchPolicy(BatchPolicy):

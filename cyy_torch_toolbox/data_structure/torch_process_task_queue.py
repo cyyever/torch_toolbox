@@ -1,8 +1,7 @@
 from typing import Any
 
-from cyy_torch_toolbox.data_structure.torch_task_queue import TorchTaskQueue
-
 from .torch_process_context import TorchProcessContext
+from .torch_task_queue import TorchTaskQueue
 
 
 class TorchProcessTaskQueue(TorchTaskQueue):

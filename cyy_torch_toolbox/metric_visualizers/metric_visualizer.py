@@ -1,4 +1,4 @@
-from cyy_torch_toolbox.hook import Hook
+from ..hook import Hook
 
 
 class MetricVisualizer(Hook):

@@ -1,5 +1,4 @@
-from cyy_torch_toolbox.ml_type import DatasetType
-
+from ..ml_type import DatasetType
 from .metric import Metric
 
 
