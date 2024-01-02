@@ -18,8 +18,8 @@ def __prepare_dataloader_kwargs(
     dc: DatasetCollection,
     phase: MachineLearningPhase,
     hyper_parameter: HyperParameter,
-    cache_transforms: str | None,
     device: torch.device,
+    cache_transforms: str | None = None,
     **kwargs,
 ) -> dict:
     dataset = dc.get_dataset(phase=phase)
