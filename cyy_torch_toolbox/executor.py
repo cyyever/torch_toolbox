@@ -30,6 +30,7 @@ class Executor(HookCollection, abc.ABC):
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
         hook_config: HookConfig | None = None,
+        dataloader_kwargs: dict | None = None,
     ) -> None:
         super().__init__()
         self._data: dict = {}
@@ -39,14 +40,15 @@ class Executor(HookCollection, abc.ABC):
         self.__hyper_parameters: dict = {phase: copy.deepcopy(hyper_parameter)}
         if not hook_config:
             hook_config = HookConfig()
-        self.hook_config: HookConfig = hook_config
+        self.hook_config: HookConfig = copy.deepcopy(hook_config)
         self.__device: None | torch.device = None
         self.__dataloader: None | torch.utils.data.DataLoader = None
-        self.__dataloader_kwargs: dict = {}
+        self.__dataloader_kwargs: dict = (
+            copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
+        )
         self.__device_stream: None | torch.cuda.Stream = None
         self.__save_dir: None | str = None
         self.__visualizer_prefix: str = ""
-        self.cache_transforms: None | str = "cpu"
 
     @property
     def dataset_collection(self) -> DatasetCollection:
@@ -58,6 +60,10 @@ class Executor(HookCollection, abc.ABC):
             self.set_device(get_device())
         assert self.__device is not None
         return self.__device
+
+    @property
+    def dataloader_kwargs(self) -> dict:
+        return self.__dataloader_kwargs
 
     @property
     def hyper_parameter(self) -> HyperParameter:
@@ -138,7 +144,6 @@ class Executor(HookCollection, abc.ABC):
                 hyper_parameter=self.hyper_parameter,
                 device=self.device,
                 model_evaluator=self.running_model_evaluator,
-                cache_transforms=self.cache_transforms,
                 **self.__dataloader_kwargs,
             )
         return self.__dataloader
@@ -396,15 +401,14 @@ class ExecutorConfig:
         dataset_collection.add_transforms(
             model_evaluator=model_evaluator,
         )
+        if self.cache_transforms is not None:
+            assert "cache_transforms" not in self.dataloader_kwargs
+            self.dataloader_kwargs["cache_transforms"] = self.cache_transforms
         executor = cls(
             model_evaluator=model_evaluator,
             dataset_collection=dataset_collection,
             hyper_parameter=hyper_parameter,
             hook_config=self.hook_config,
+            dataloader_kwargs=self.dataloader_kwargs,
         )
-        if self.cache_transforms is not None:
-            assert "cache_transforms" not in self.dataloader_kwargs
-            self.dataloader_kwargs["cache_transforms"] = self.cache_transforms
-        if self.dataloader_kwargs:
-            executor.update_dataloader_kwargs(**self.dataloader_kwargs)
         return executor
