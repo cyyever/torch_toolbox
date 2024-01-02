@@ -383,7 +383,7 @@ class Executor(HookCollection, abc.ABC):
 @dataclass(kw_only=True)
 class ExecutorConfig:
     hook_config: HookConfig = HookConfig()
-    dataloder_kwargs: dict = field(default_factory=lambda: {})
+    dataloader_kwargs: dict = field(default_factory=lambda: {})
     cache_transforms: None | str = None
 
     def create_executor(
@@ -403,8 +403,8 @@ class ExecutorConfig:
             hook_config=self.hook_config,
         )
         if self.cache_transforms is not None:
-            assert "cache_transforms" not in self.dataloder_kwargs
-            self.dataloder_kwargs["cache_transforms"] = self.cache_transforms
-        if self.dataloder_kwargs:
-            executor.update_dataloader_kwargs(**self.dataloder_kwargs)
+            assert "cache_transforms" not in self.dataloader_kwargs
+            self.dataloader_kwargs["cache_transforms"] = self.cache_transforms
+        if self.dataloader_kwargs:
+            executor.update_dataloader_kwargs(**self.dataloader_kwargs)
         return executor
