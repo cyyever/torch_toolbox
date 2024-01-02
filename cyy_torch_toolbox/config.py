@@ -42,8 +42,10 @@ class Config:
         dc: DatasetCollection | None = None,
         model_evaluator: ModelEvaluator | None = None,
     ) -> Trainer:
+        assert dc is None
         if dc is None:
             dc = self.create_dataset_collection()
+        assert model_evaluator is None
         if model_evaluator is None:
             model_evaluator = self.__create_model(dc)
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter()
@@ -86,15 +88,8 @@ class Config:
                         setattr(obj, attr, value | getattr(obj, attr))
                     case _:
                         setattr(obj, attr, value)
-        for attr in (
-            "dc_config",
-            "hyper_parameter_config",
-            "model_config",
-            "trainer_config",
-            "hook_config",
-            "reproducible_env_config",
-        ):
-            if hasattr(obj, attr):
+        for attr in dir(obj):
+            if "config" in attr:
                 conf_container = cls.__load_config(
                     getattr(obj, attr), conf_container, check_config=False
                 )
