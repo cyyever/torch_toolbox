@@ -126,6 +126,8 @@ class Executor(HookCollection, abc.ABC):
 
     @property
     def dataset_size(self) -> int:
+        if "dataset_size" not in self._data:
+            self.__refresh_dataset_size()
         return self._data["dataset_size"]
 
     def __refresh_dataset_size(self) -> None:
