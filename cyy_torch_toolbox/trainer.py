@@ -6,8 +6,7 @@ from cyy_naive_lib.log import get_logger
 
 from .classification_inferencer import ClassificationInferencer
 from .dataset import DatasetCollection
-from .executor import Executor
-from .hook.config import HookConfig
+from .executor import Executor, ExecutorConfig
 from .hyper_parameter import HyperParameter
 from .inferencer import Inferencer
 from .metric_visualizers.batch_loss_logger import BatchLossLogger
@@ -26,10 +25,9 @@ class Trainer(Executor):
             **kwargs,
         )
         self.__inferencers: dict[MachineLearningPhase, Inferencer] = {}
-        self.__optimizer_parameters = None
         self.append_hook(BatchLossLogger(), "batch_loss_logger")
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict:
         # capture what is normally pickled
         state = super().__getstate__()
         state["_Trainer__inferencers"] = {}
@@ -67,13 +65,13 @@ class Trainer(Executor):
         return inferencer
 
     def reset_optimizer_parameters(self, parameters: Any) -> None:
-        self.__optimizer_parameters = parameters
+        self._data["optimizer_parameters"] = parameters
         self.remove_optimizer()
 
     def get_optimizer(self) -> torch.optim.Optimizer:
         if "optimizer" not in self._data:
             self._data["optimizer"] = self.hyper_parameter.get_optimizer(
-                self, parameters=self.__optimizer_parameters
+                self, parameters=self._data.get("optimizer_parameters", None)
             )
         return self._data["optimizer"]
 
@@ -136,25 +134,16 @@ class Trainer(Executor):
         yield from self.__inferencers.values()
 
 
-class TrainerConfig:
-    def __init__(self) -> None:
-        self.hook_config: HookConfig = HookConfig()
-        self.cache_transforms: None | str = None
-
+class TrainerConfig(ExecutorConfig):
     def create_trainer(
         self,
         dataset_collection: DatasetCollection,
         model_evaluator: ModelEvaluator,
         hyper_parameter: HyperParameter,
     ) -> Trainer:
-        dataset_collection.add_transforms(
-            model_evaluator=model_evaluator,
-        )
-        trainer = Trainer(
-            model_evaluator=model_evaluator,
+        return self.create_executor(
+            cls=Trainer,
             dataset_collection=dataset_collection,
+            model_evaluator=model_evaluator,
             hyper_parameter=hyper_parameter,
-            hook_config=self.hook_config,
         )
-        trainer.cache_transforms = self.cache_transforms
-        return trainer
