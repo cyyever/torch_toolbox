@@ -41,10 +41,8 @@ class Config:
         dc: DatasetCollection | None = None,
         model_evaluator: ModelEvaluator | None = None,
     ) -> Trainer:
-        assert dc is None
         if dc is None:
             dc = self.create_dataset_collection()
-        assert model_evaluator is None
         if model_evaluator is None:
             model_evaluator = self.__create_model(dc)
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter()
