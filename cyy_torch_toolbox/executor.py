@@ -2,6 +2,7 @@ import abc
 import contextlib
 import copy
 import os
+from dataclasses import dataclass, field
 from typing import Any, Callable, Generator
 
 import torch
@@ -119,8 +120,6 @@ class Executor(HookCollection, abc.ABC):
 
     @property
     def dataset_size(self) -> int:
-        if "dataset_size" not in self._data:
-            self.__refresh_dataset_size()
         return self._data["dataset_size"]
 
     def __refresh_dataset_size(self) -> None:
@@ -379,3 +378,33 @@ class Executor(HookCollection, abc.ABC):
             hook_point=ExecutorHookPoint.AFTER_EPOCH,
             epoch=epoch,
         )
+
+
+@dataclass(kw_only=True)
+class ExecutorConfig:
+    hook_config: HookConfig = HookConfig()
+    dataloder_kwargs: dict = field(default_factory=lambda: {})
+    cache_transforms: None | str = None
+
+    def create_executor(
+        self,
+        cls: Callable,
+        dataset_collection: DatasetCollection,
+        model_evaluator: ModelEvaluator,
+        hyper_parameter: HyperParameter,
+    ) -> Any:
+        dataset_collection.add_transforms(
+            model_evaluator=model_evaluator,
+        )
+        executor = cls(
+            model_evaluator=model_evaluator,
+            dataset_collection=dataset_collection,
+            hyper_parameter=hyper_parameter,
+            hook_config=self.hook_config,
+        )
+        if self.cache_transforms is not None:
+            assert "cache_transforms" not in self.dataloder_kwargs
+            self.dataloder_kwargs["cache_transforms"] = self.cache_transforms
+        if self.dataloder_kwargs:
+            executor.update_dataloader_kwargs(**self.dataloder_kwargs)
+        return executor
