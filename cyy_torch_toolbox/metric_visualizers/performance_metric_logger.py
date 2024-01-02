@@ -1,6 +1,6 @@
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
+from ..ml_type import MachineLearningPhase
 from .metric_visualizer import MetricVisualizer
 
 

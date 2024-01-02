@@ -1,4 +1,4 @@
-from cyy_torch_toolbox.inferencer import Inferencer
+from .inferencer import Inferencer
 
 # from cyy_torch_toolbox.metrics.prob_metric import ProbabilityMetric
 

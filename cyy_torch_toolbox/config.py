@@ -7,14 +7,13 @@ from typing import Any
 from cyy_naive_lib.log import get_logger, set_level
 from omegaconf import OmegaConf
 
-from cyy_torch_toolbox.dataset import (DatasetCollection,
-                                       DatasetCollectionConfig)
-from cyy_torch_toolbox.hyper_parameter import HyperParameterConfig
-from cyy_torch_toolbox.inferencer import Inferencer
-from cyy_torch_toolbox.ml_type import MachineLearningPhase
-from cyy_torch_toolbox.model import ModelConfig, ModelEvaluator
-from cyy_torch_toolbox.reproducible_env import ReproducibleEnvConfig
-from cyy_torch_toolbox.trainer import Trainer, TrainerConfig
+from .dataset import DatasetCollection, DatasetCollectionConfig
+from .hyper_parameter import HyperParameterConfig
+from .inferencer import Inferencer
+from .ml_type import MachineLearningPhase
+from .model import ModelConfig, ModelEvaluator
+from .reproducible_env import ReproducibleEnvConfig
+from .trainer import Trainer, TrainerConfig
 
 
 class Config:

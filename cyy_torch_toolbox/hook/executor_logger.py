@@ -1,8 +1,7 @@
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.hook import Hook
-from cyy_torch_toolbox.ml_type import MachineLearningPhase
 
-# import os
+from ..ml_type import MachineLearningPhase
+from . import Hook
 
 
 class ExecutorLogger(Hook):

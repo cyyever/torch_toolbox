@@ -2,7 +2,8 @@ import copy
 from typing import Any
 
 import torch
-from cyy_torch_toolbox.hook import Hook
+
+from ..hook import Hook
 
 
 class Metric(Hook):

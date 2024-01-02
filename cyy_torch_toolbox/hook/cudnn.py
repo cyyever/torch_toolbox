@@ -1,6 +1,7 @@
 import torch
 from cyy_naive_lib.log import get_logger
-from cyy_torch_toolbox.hook import Hook
+
+from . import Hook
 
 
 class CUDNNHook(Hook):

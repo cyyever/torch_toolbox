@@ -1,10 +1,11 @@
 import os
 
 from cyy_naive_lib.storage import DataStorage
-from cyy_torch_toolbox.device import get_cpu_device
-from cyy_torch_toolbox.hook import Hook
-from cyy_torch_toolbox.ml_type import MachineLearningPhase
-from cyy_torch_toolbox.tensor import tensor_clone, tensor_to
+
+from ..device import get_cpu_device
+from ..ml_type import MachineLearningPhase
+from ..tensor import tensor_clone, tensor_to
+from . import Hook
 
 
 class KeepModelHook(Hook):

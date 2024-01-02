@@ -1,5 +1,6 @@
 import torch
-from cyy_torch_toolbox.hook import Hook
+
+from . import Hook
 
 
 class CUDAStreamProfiler(Hook):
