@@ -51,13 +51,13 @@ class Trainer(Executor):
                 self.dataset_collection,
                 phase=phase,
                 hyper_parameter=self.hyper_parameter,
-                hook_config=copy.copy(self.hook_config),
+                hook_config=self.hook_config,
+                dataloader_kwargs=self.dataloader_kwargs,
             )
         if inferencer is None:
             raise RuntimeError(
                 "Unsupported model type:" + str(model_evaluator.model_type)
             )
-        inferencer.cache_transforms = self.cache_transforms
         inferencer.set_device(self.device)
         if self.save_dir is not None:
             inferencer.set_save_dir(self.save_dir)
