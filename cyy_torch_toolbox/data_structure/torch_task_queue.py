@@ -29,6 +29,7 @@ class TorchTaskQueue(TaskQueue):
             worker_num = len(self._devices)
             if "cpu" in self._devices[0].type.lower():
                 worker_num = os.cpu_count()
+        assert worker_num is not None
         super().__init__(worker_num=worker_num, **kwargs)
 
     def _get_task_kwargs(self, worker_id: int) -> dict:
