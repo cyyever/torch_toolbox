@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cyy_torch_toolbox"
+version = "0.2"
+requires-python = ">=3.11"
+readme = {file = "README.md", content-type = "text/markdown"}
+authors = [
+  {name = "cyy", email = "cyyever@outloo.com"},
+]
+license = {text = "BSD License"}
+classifiers = [
+  "Programming Language :: Python"
+]
+
+
+[project.urls]
+Repository = "https://github.com/cyyever/torch_toolbox"
+
+[tool.pyright]
+include = ["cyy_torch_toolbox"]
+defineConstant = { DEBUG = true }
+
+reportMissingImports = true
+reportMissingTypeStubs = true
