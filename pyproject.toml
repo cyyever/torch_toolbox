@@ -24,4 +24,4 @@ include = ["cyy_torch_toolbox"]
 defineConstant = { DEBUG = true }
 
 reportMissingImports = true
-reportMissingTypeStubs = true
+reportMissingTypeStubs = false
