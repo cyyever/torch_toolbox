@@ -103,7 +103,6 @@ class HyperParameter:
             full_kwargs.update(self.learning_rate_scheduler_kwargs)
             return torch.optim.lr_scheduler.CosineAnnealingLR(**full_kwargs)
         if name == "MultiStepLR":
-            full_kwargs["T_max"] = self.epoch
             full_kwargs["milestones"] = [30, 80]
             full_kwargs.update(self.learning_rate_scheduler_kwargs)
             return torch.optim.lr_scheduler.MultiStepLR(**full_kwargs)
