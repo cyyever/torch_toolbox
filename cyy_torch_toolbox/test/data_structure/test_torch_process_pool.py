@@ -1,6 +1,5 @@
 import torch
-from cyy_torch_toolbox.data_structure.torch_process_pool import \
-    TorchProcessPool
+from cyy_torch_toolbox.data_structure import TorchProcessPool
 from cyy_torch_toolbox.ml_type import StopExecutingException
 
 
