@@ -21,6 +21,10 @@ class DatasetCollectionSampler:
         self._samplers: dict[MachineLearningPhase, DatasetSampler] = {}
         self.set_dataset_collection(dataset_collection)
 
+    @property
+    def dataset_collection(self):
+        return self._dc
+
     def set_dataset_collection(
         self, dataset_collection: DatasetCollection | ClassificationDatasetCollection
     ) -> None:
