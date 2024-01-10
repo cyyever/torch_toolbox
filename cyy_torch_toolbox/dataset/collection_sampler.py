@@ -9,20 +9,16 @@ from .sampler import DatasetSampler
 from .util import DatasetUtil
 
 
-class DatasetCollectionSampler:
+class Base:
     def __init__(
-        self,
-        dataset_collection: DatasetCollection | ClassificationDatasetCollection,
-        part_number: int,
+        self, dataset_collection: DatasetCollection | ClassificationDatasetCollection
     ) -> None:
-        self._dataset_indices: dict[MachineLearningPhase, dict] = {}
         self._dc = dataset_collection
-        self._part_number = part_number
         self._samplers: dict[MachineLearningPhase, DatasetSampler] = {}
         self.set_dataset_collection(dataset_collection)
 
     @property
-    def dataset_collection(self):
+    def dataset_collection(self) -> DatasetCollection | ClassificationDatasetCollection:
         return self._dc
 
     def set_dataset_collection(
@@ -41,6 +37,32 @@ class DatasetCollectionSampler:
         state["_dc"] = None
         return state
 
+
+class SamplerBase(Base):
+    def __init__(
+        self,
+        dataset_collection: DatasetCollection | ClassificationDatasetCollection,
+    ) -> None:
+        super().__init__(dataset_collection=dataset_collection)
+        self._dataset_indices: dict[MachineLearningPhase, set] = {}
+
+    def sample(self) -> None:
+        for phase in MachineLearningPhase:
+            indices = self._dataset_indices[phase]
+            assert indices
+            self._dc.set_subset(phase=phase, indices=indices)
+
+
+class SplitBase(Base):
+    def __init__(
+        self,
+        dataset_collection: DatasetCollection | ClassificationDatasetCollection,
+        part_number: int,
+    ) -> None:
+        super().__init__(dataset_collection=dataset_collection)
+        self._part_number = part_number
+        self._dataset_indices: dict[MachineLearningPhase, dict] = {}
+
     def sample(self, part_id: int) -> None:
         for phase in MachineLearningPhase:
             indices = self._dataset_indices[phase][part_id]
@@ -48,7 +70,7 @@ class DatasetCollectionSampler:
             self._dc.set_subset(phase=phase, indices=indices)
 
 
-class DatasetCollectionSplit(DatasetCollectionSampler):
+class DatasetCollectionSplit(SplitBase):
     def __init__(
         self,
         dataset_collection: DatasetCollection | ClassificationDatasetCollection,
@@ -67,7 +89,7 @@ class DatasetCollectionSplit(DatasetCollectionSampler):
             )
 
 
-class IIDSplit(DatasetCollectionSampler):
+class IIDSplit(SplitBase):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         parts: list[float] = [1] * self._part_number
@@ -152,7 +174,7 @@ class IIDSplitWithSample(IIDSplit):
                 )[0]
 
 
-class RandomSplit(DatasetCollectionSampler):
+class RandomSplit(SplitBase):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         parts: list[float] = [1] * self._part_number
@@ -162,21 +184,17 @@ class RandomSplit(DatasetCollectionSampler):
             )
 
 
-class ProbabilitySampler(DatasetCollectionSampler):
+class ProbabilitySampler(SamplerBase):
     def __init__(
         self,
         dataset_collection: DatasetCollection | ClassificationDatasetCollection,
-        part_number: int,
-        sample_probs: list[dict[Any, float]],
+        sample_prob: dict[Any, float],
     ) -> None:
-        assert len(sample_probs) == part_number
-        super().__init__(dataset_collection=dataset_collection, part_number=part_number)
+        super().__init__(dataset_collection=dataset_collection)
         for phase in MachineLearningPhase:
-            self._dataset_indices[phase] = {}
-            for part_id in range(part_number):
-                self._dataset_indices[phase][part_id] = self._samplers[
-                    phase
-                ].sample_indices(parts=[sample_probs[part_id]])[0]
+            self._dataset_indices[phase] = self._samplers[phase].sample_indices(
+                parts=[sample_prob]
+            )[0]
 
 
 global_sampler_factory = Factory()
@@ -187,9 +205,18 @@ global_sampler_factory.register("random", RandomSplit)
 global_sampler_factory.register("prob_sampler", ProbabilitySampler)
 
 
+def get_dataset_collection_split(
+    name: str, dataset_collection: ClassificationDatasetCollection, **kwargs
+) -> SplitBase:
+    constructor = global_sampler_factory.get(name.lower())
+    if constructor is None:
+        raise NotImplementedError(name)
+    return constructor(dataset_collection=dataset_collection, **kwargs)
+
+
 def get_dataset_collection_sampler(
     name: str, dataset_collection: ClassificationDatasetCollection, **kwargs
-) -> DatasetCollectionSampler:
+) -> SamplerBase:
     constructor = global_sampler_factory.get(name.lower())
     if constructor is None:
         raise NotImplementedError(name)
