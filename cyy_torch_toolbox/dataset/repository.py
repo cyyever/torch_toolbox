@@ -24,7 +24,9 @@ def register_dataset_constructors(
     global_dataset_constructors[dataset_type].register(name, constructor)
 
 
-def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> Callable:
+def __prepare_dataset_kwargs(
+    constructor_kwargs: set, dataset_kwargs: dict, cache_dir: str
+) -> Callable:
     new_dataset_kwargs: dict = copy.deepcopy(dataset_kwargs)
     if "download" not in new_dataset_kwargs:
         new_dataset_kwargs["download"] = True
@@ -32,8 +34,12 @@ def __prepare_dataset_kwargs(constructor_kwargs: set, dataset_kwargs: dict) -> C
     def get_dataset_kwargs_of_phase(
         dataset_type: DatasetType, phase: MachineLearningPhase
     ) -> dict | None:
-        if "data_dir" in constructor_kwargs and "data_dir" not in new_dataset_kwargs:
-            new_dataset_kwargs["data_dir"] = new_dataset_kwargs.get("root", None)
+        if "cache_dir" in constructor_kwargs and "cache_dir" not in new_dataset_kwargs:
+            new_dataset_kwargs["cache_dir"] = cache_dir
+        if "root" in constructor_kwargs and "root" not in new_dataset_kwargs:
+            new_dataset_kwargs["root"] = cache_dir
+        else:
+            new_dataset_kwargs["cache_dir"] = cache_dir
         if "train" in constructor_kwargs:
             # Some dataset only have train and test parts
             if phase == MachineLearningPhase.Validation:
@@ -87,12 +93,15 @@ def __create_dataset(
     dataset_type: DatasetType,
     dataset_constructor: Callable,
     dataset_kwargs: dict,
+    cache_dir: str,
 ) -> tuple[DatasetType, dict] | None:
     if dataset_kwargs is None:
         dataset_kwargs = {}
     constructor_kwargs = get_kwarg_names(dataset_constructor)
     dataset_kwargs_fun = __prepare_dataset_kwargs(
-        constructor_kwargs=constructor_kwargs, dataset_kwargs=dataset_kwargs
+        constructor_kwargs=constructor_kwargs,
+        dataset_kwargs=dataset_kwargs,
+        cache_dir=cache_dir,
     )
     training_dataset = None
     validation_dataset = None
@@ -165,7 +174,9 @@ def __create_dataset(
     return dataset_type, datasets
 
 
-def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, dict]:
+def get_dataset(
+    name: str, dataset_kwargs: dict, cache_dir: str
+) -> None | tuple[DatasetType, dict]:
     real_dataset_type = dataset_kwargs.get("dataset_type", None)
     similar_names = []
 
@@ -183,6 +194,7 @@ def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, di
                 dataset_type=dataset_type,
                 dataset_constructor=constructor,
                 dataset_kwargs=dataset_kwargs,
+                cache_dir=cache_dir,
             )
         similar_names += global_dataset_constructors[dataset_type].get_similar_keys(
             name
