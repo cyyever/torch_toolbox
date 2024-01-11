@@ -24,11 +24,11 @@ def create_dataset_collection(
     if dataset_kwargs is None:
         dataset_kwargs = {}
     with DatasetCollection.lock:
-        if "root" not in dataset_kwargs:
-            dataset_kwargs["root"] = DatasetCollection.get_dataset_dir(name)
-        if "download" not in dataset_kwargs:
-            dataset_kwargs["download"] = True
-        res = get_dataset(name=name, dataset_kwargs=dataset_kwargs)
+        res = get_dataset(
+            name=name,
+            dataset_kwargs=dataset_kwargs,
+            cache_dir=DatasetCollection.get_dataset_dir(name),
+        )
         if res is None:
             raise NotImplementedError(name)
         dataset_type, datasets = res
