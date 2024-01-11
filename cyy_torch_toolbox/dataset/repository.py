@@ -11,6 +11,11 @@ from ..ml_type import DatasetType, MachineLearningPhase
 global_dataset_constructors: dict[DatasetType, Factory] = {}
 
 
+def register_dataset_factory(dataset_type: DatasetType, factory: Factory) -> None:
+    assert dataset_type not in global_dataset_constructors
+    global_dataset_constructors[dataset_type] = factory
+
+
 def register_dataset_constructors(
     dataset_type: DatasetType, name: str, constructor: Callable
 ) -> None:
@@ -182,8 +187,15 @@ def get_dataset(name: str, dataset_kwargs: dict) -> None | tuple[DatasetType, di
         similar_names += global_dataset_constructors[dataset_type].get_similar_keys(
             name
         )
-
-    get_logger().error(
-        "can't find dataset %s, similar datasets are %s", name, sorted(similar_names)
-    )
+    if similar_names:
+        get_logger().error(
+            "can't find dataset %s, similar datasets are %s",
+            name,
+            sorted(similar_names),
+        )
+    else:
+        get_logger().error(
+            "can't find dataset %s",
+            name,
+        )
     return None
