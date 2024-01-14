@@ -5,6 +5,7 @@ from cyy_naive_lib.log import get_logger
 
 from .executor import Executor
 from .ml_type import EvaluationMode, ExecutorHookPoint, StopExecutingException
+from .typing import TensorDict
 
 
 class Inferencer(Executor):
@@ -30,7 +31,7 @@ class Inferencer(Executor):
                 self.wait_stream()
             return succ_flag
 
-    def get_gradient(self) -> dict:
+    def get_gradient(self) -> TensorDict:
         with self.hook_config:
             self.hook_config.use_performance_metric = False
             self.hook_config.summarize_executor = False
@@ -66,7 +67,7 @@ class Inferencer(Executor):
             return sample_loss
 
     def _collect_sample_loss(
-        self, sample_loss, result, sample_indices, **kwargs
+        self, sample_loss: dict, result, sample_indices, **kwargs
     ) -> None:
         assert not result["is_averaged_loss"]
         sample_loss.update(zip(sample_indices, result["loss"]))
