@@ -9,6 +9,8 @@ import torch
 from cyy_naive_lib.algorithm.mapping_op import (
     get_mapping_items_by_key_order, get_mapping_values_by_key_order)
 
+from .typing import TensorDict
+
 
 def cat_tensors_to_vector(tensors: Iterable) -> torch.Tensor:
     return torch.cat([t.view(-1) for t in tensors])
@@ -174,3 +176,23 @@ def disassemble_tensor(
         return data
 
     return recursive_tensor_op(data, fun, __check_recursive_point=True)
+
+
+def dot_product(a: TensorDict | torch.Tensor, b: TensorDict | torch.Tensor) -> float:
+    match b:
+        case dict():
+            assert isinstance(a, dict)
+            product = 0
+            for k, v in b.items():
+                if v.device == a[k].device:
+                    product += v.view(-1).dot(a[k].view(-1)).item()
+                else:
+                    product += v.cpu().view(-1).dot(a[k].cpu().view(-1)).item()
+            return product
+        case _:
+            assert isinstance(a, torch.Tensor)
+            a = a.view(-1)
+            b = b.view(-1)
+            if a.device == b.device:
+                return a.dot(b).item()
+            return a.cpu().dot(b.cpu()).item()
