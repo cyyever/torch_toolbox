@@ -53,3 +53,9 @@ class ExecutorHookPoint(StrEnum):
 
 class StopExecutingException(Exception):
     pass
+
+
+class IterationUnit(StrEnum):
+    Batch = auto()
+    Epoch = auto()
+    Round = auto()
