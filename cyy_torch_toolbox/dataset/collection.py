@@ -155,19 +155,19 @@ class DatasetCollection:
 
     def is_classification_dataset(self) -> bool:
         return True
-        if self.dataset_type == DatasetType.Graph:
-            return True
-        labels = list(
-            self.get_dataset_util(phase=MachineLearningPhase.Training).get_batch_labels(
-                indices=[0]
-            )
-        )[1]
-        if len(labels) != 1:
-            return False
-        match next(iter(labels)):
-            case int():
-                return True
-        return False
+        # if self.dataset_type == DatasetType.Graph:
+        #     return True
+        # labels = list(
+        #     self.get_dataset_util(phase=MachineLearningPhase.Training).get_batch_labels(
+        #         indices=[0]
+        #     )
+        # )[1]
+        # if len(labels) != 1:
+        #     return False
+        # match next(iter(labels)):
+        #     case int():
+        #         return True
+        # return False
 
     def iid_split(
         self,
