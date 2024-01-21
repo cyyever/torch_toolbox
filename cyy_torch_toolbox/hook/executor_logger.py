@@ -9,12 +9,7 @@ class ExecutorLogger(Hook):
         super().__init__(stripable=True)
 
     def _before_execute(self, executor, **kwargs) -> None:
-        get_logger().info(
-            "dataset type is %s",
-            executor.dataset_collection.get_original_dataset(
-                MachineLearningPhase.Training
-            ),
-        )
+        get_logger().info("dataset is %s", executor.dataset_collection.name)
         get_logger().info("device is %s", executor.device)
         get_logger().info("model type is %s", executor.model.__class__)
         get_logger().debug("model is %s", executor.model)
@@ -32,7 +27,7 @@ class ExecutorLogger(Hook):
         for phase in MachineLearningPhase:
             if executor.dataset_collection.has_dataset(phase):
                 get_logger().info(
-                    "%s dataset len %s",
+                    "%s dataset size %s",
                     phase,
                     len(executor.dataset_collection.get_dataset_util(phase=phase)),
                 )
