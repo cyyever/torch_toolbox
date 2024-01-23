@@ -9,9 +9,8 @@ from cyy_naive_lib.fs.ssd import is_ssd
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.storage import get_cached_data
 
-from ..data_pipeline import append_transforms_to_dc
-from ..data_pipeline.dataset import dataset_with_indices
-from ..data_pipeline.transform import Transforms
+from ..data_pipeline import (Transforms, append_transforms_to_dc,
+                             dataset_with_indices)
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 from .sampler import DatasetSampler
 from .util import DatasetUtil, global_dataset_util_factor
