@@ -82,7 +82,7 @@ def get_device_memory_info(
                     used=vm.used,
                 )
             }
-    raise NotImplementedError()
+    raise NotImplementedError(device_type)
 
 
 def get_cpu_device() -> torch.device:
