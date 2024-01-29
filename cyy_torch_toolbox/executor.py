@@ -178,7 +178,6 @@ class Executor(HookCollection, abc.ABC):
         self.__model_evaluator = fun(self.model_evaluator)
 
     def _prepare_execution(self) -> None:
-        self._data.clear()
         self.hook_config.set_hooks(self)
         if self.save_dir:
             self.set_save_dir(self.save_dir)
