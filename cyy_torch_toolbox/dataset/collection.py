@@ -39,6 +39,11 @@ class DatasetCollection:
         )
         append_transforms_to_dc(self)
 
+    def __copy__(self):
+        new_obj = copy.deepcopy(self)
+        new_obj.__datasets = self.__datasets.copy()
+        return new_obj
+
     @property
     def name(self) -> str:
         return self.__name

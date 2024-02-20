@@ -1,4 +1,6 @@
+import copy
 import functools
+from typing import Self
 
 from ..ml_type import MachineLearningPhase
 from .collection import DatasetCollection
@@ -7,6 +9,9 @@ from .collection import DatasetCollection
 class ClassificationDatasetCollection:
     def __init__(self, dc: DatasetCollection):
         self.dc = dc
+
+    def __copy__(self) -> Self:
+        return type(self)(dc=copy.copy(self.dc))
 
     def __getattr__(self, name):
         if name == "dc":
