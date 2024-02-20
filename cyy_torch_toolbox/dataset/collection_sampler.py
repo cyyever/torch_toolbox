@@ -48,6 +48,9 @@ class SamplerBase(Base):
 
     def sample(self) -> DatasetCollection | ClassificationDatasetCollection:
         dc = copy.deepcopy(self._dc)
+        assert id(dc.get_dataset(phase=MachineLearningPhase.Training)) == id(
+            self._dc.get_dataset(phase=MachineLearningPhase.Training)
+        )
         for phase in MachineLearningPhase:
             indices = self._dataset_indices[phase]
             assert indices
@@ -68,7 +71,10 @@ class SplitBase(Base):
     def sample(
         self, part_id: int
     ) -> DatasetCollection | ClassificationDatasetCollection:
-        dc = copy.deepcopy(self._dc)
+        dc = copy.copy(self._dc)
+        assert id(dc.get_dataset(phase=MachineLearningPhase.Training)) == id(
+            self._dc.get_dataset(phase=MachineLearningPhase.Training)
+        )
         for phase in MachineLearningPhase:
             indices = self._dataset_indices[phase][part_id]
             assert indices
