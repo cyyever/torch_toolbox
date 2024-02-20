@@ -1,3 +1,4 @@
+import copy
 import functools
 from typing import Any
 
@@ -34,7 +35,6 @@ class Base:
         # capture what is normally pickled
         state = self.__dict__.copy()
         state["_samplers"] = None
-        state["_dc"] = None
         return state
 
 
@@ -46,11 +46,13 @@ class SamplerBase(Base):
         super().__init__(dataset_collection=dataset_collection)
         self._dataset_indices: dict[MachineLearningPhase, set] = {}
 
-    def sample(self) -> None:
+    def sample(self) -> DatasetCollection | ClassificationDatasetCollection:
+        dc = copy.deepcopy(self._dc)
         for phase in MachineLearningPhase:
             indices = self._dataset_indices[phase]
             assert indices
-            self._dc.set_subset(phase=phase, indices=indices)
+            dc.set_subset(phase=phase, indices=indices)
+        return dc
 
 
 class SplitBase(Base):
@@ -63,11 +65,15 @@ class SplitBase(Base):
         self._part_number = part_number
         self._dataset_indices: dict[MachineLearningPhase, dict] = {}
 
-    def sample(self, part_id: int) -> None:
+    def sample(
+        self, part_id: int
+    ) -> DatasetCollection | ClassificationDatasetCollection:
+        dc = copy.deepcopy(self._dc)
         for phase in MachineLearningPhase:
             indices = self._dataset_indices[phase][part_id]
             assert indices
-            self._dc.set_subset(phase=phase, indices=indices)
+            dc.set_subset(phase=phase, indices=indices)
+        return dc
 
 
 class DatasetCollectionSplit(SplitBase):
