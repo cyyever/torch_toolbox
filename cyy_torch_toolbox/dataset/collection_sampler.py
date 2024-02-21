@@ -47,7 +47,7 @@ class SamplerBase(Base):
         self._dataset_indices: dict[MachineLearningPhase, set] = {}
 
     def sample(self) -> DatasetCollection | ClassificationDatasetCollection:
-        dc = copy.deepcopy(self._dc)
+        dc = copy.copy(self._dc)
         assert id(dc.get_dataset(phase=MachineLearningPhase.Training)) == id(
             self._dc.get_dataset(phase=MachineLearningPhase.Training)
         )
