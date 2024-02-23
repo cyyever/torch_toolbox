@@ -26,7 +26,15 @@ class ClassificationDatasetCollection:
         def computation_fun() -> set:
             if self.name.lower() == "imagenet":
                 return set(range(1000))
-            return self.__get_first_dataset_util().get_labels()
+            labels = set()
+            for phase in (
+                MachineLearningPhase.Training,
+                MachineLearningPhase.Validation,
+                MachineLearningPhase.Test,
+            ):
+                if self.dc.has_dataset(phase):
+                    labels |= self.dc.get_dataset_util(phase).get_labels()
+            return labels
 
         if not use_cache:
             return computation_fun()
