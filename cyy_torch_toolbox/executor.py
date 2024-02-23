@@ -133,6 +133,10 @@ class Executor(HookCollection, abc.ABC):
     def __refresh_dataset_size(self) -> None:
         self._data["dataset_size"] = len(self.dataset_util)
 
+    def remove_dataloader_kwargs(self, key: str) -> None:
+        self.__dataloader_kwargs.pop(key, None)
+        self.__dataloader = None
+
     def update_dataloader_kwargs(self, **kwargs: Any) -> None:
         self.__dataloader_kwargs.update(kwargs)
         self.__dataloader = None
