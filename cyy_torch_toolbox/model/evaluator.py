@@ -168,6 +168,8 @@ class ModelEvaluator:
 
         match loss_fun:
             case nn.CrossEntropyLoss():
+                if len(targets.shape) == 2 and targets.shape[-1] == 1:
+                    targets = targets.view(-1)
                 if len(targets.shape) > 1:
                     convert_kwargs["dtype"] = torch.float
                 targets = targets.to(**convert_kwargs, non_blocking=True)
