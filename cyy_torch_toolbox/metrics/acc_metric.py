@@ -13,6 +13,7 @@ class AccuracyMetric(Metric):
         self.__dataset_size = 0
         self.__correct_count = None
 
+    @torch.no_grad()
     def _after_batch(self, result: dict, **kwargs: Any) -> None:
         output = result["model_output"]
         logits = result.get("logits", None)
@@ -32,8 +33,9 @@ class AccuracyMetric(Metric):
             else:
                 raise NotImplementedError()
         else:
+            assert len(output.shape) == 2
             correct_count = (
-                torch.eq(torch.max(output, dim=1)[1], targets).view(-1).sum()
+                torch.eq(torch.max(output, dim=1)[1], targets.view(-1)).view(-1).sum()
             )
         if self.__correct_count is None:
             self.__correct_count = correct_count
