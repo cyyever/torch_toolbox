@@ -122,12 +122,16 @@ class ModelEvaluator:
             targets = tensor_to(targets, device=device, non_blocking=True)
             self.model_util.to_device(device=device)
 
-        return self._forward_model(
+        return {
+            "inputs": inputs,
+            "targets": targets,
+            "raw_inputs": raw_inputs,
+        } | self._forward_model(
             inputs=inputs,
             targets=targets,
             device=device,
             **(kwargs | self.__evaluation_kwargs),
-        ) | {"inputs": inputs, "targets": targets, "raw_inputs": raw_inputs}
+        )
 
     def _forward_model(self, inputs: Any, **kwargs: Any) -> dict:
         fun: Callable = self.model
@@ -170,6 +174,7 @@ class ModelEvaluator:
             case nn.CrossEntropyLoss():
                 if len(targets.shape) == 2 and targets.shape[-1] == 1:
                     targets = targets.view(-1)
+                    res["targets"] = targets
                 if len(targets.shape) > 1:
                     convert_kwargs["dtype"] = torch.float
                 targets = targets.to(**convert_kwargs, non_blocking=True)
