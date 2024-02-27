@@ -211,7 +211,10 @@ class DatasetSampler:
                         parts,
                     )
             part_lens.append(part_len)
-        part_lens[-1] += index_num - sum(part_lens)
+        for _ in range(index_num - sum(part_lens)):
+            idx = random.choice(range(len(part_lens)))
+            part_lens[idx] = part_lens[idx] + 1
+        assert sum(part_lens) == index_num
         part_indices = []
         for part_len in part_lens:
             if part_len != 0:
