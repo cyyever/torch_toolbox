@@ -42,6 +42,7 @@ class Executor(HookCollection, abc.ABC):
             hook_config = HookConfig()
         self.hook_config: HookConfig = copy.deepcopy(hook_config)
         self.__device: None | torch.device = None
+        self.__device_fun: Callable = get_device
         self.__dataloader: None | torch.utils.data.DataLoader = None
         self.__dataloader_kwargs: dict = (
             copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
@@ -57,7 +58,7 @@ class Executor(HookCollection, abc.ABC):
     @property
     def device(self) -> torch.device:
         if self.__device is None:
-            self.set_device(get_device())
+            self.set_device(self.__device_fun())
         assert self.__device is not None
         return self.__device
 
@@ -188,6 +189,9 @@ class Executor(HookCollection, abc.ABC):
         if self.__visualizer_prefix:
             self.set_visualizer_prefix(self.__visualizer_prefix)
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_EXECUTE)
+
+    def set_device_fun(self, device_fun: Callable) -> None:
+        self.__device_fun = device_fun
 
     def set_device(self, device: torch.device) -> None:
         if self.__device != device:
