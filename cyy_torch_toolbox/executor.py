@@ -316,10 +316,10 @@ class Executor(HookCollection, abc.ABC):
         else:
             forward_result = self.__model_evaluator(**evaluation_kwargs)
 
-        forward_result[
-            "normalized_batch_loss"
-        ] = self.__model_evaluator.get_normalized_batch_loss(
-            dataset_size=self.dataset_size, forward_result=forward_result
+        forward_result["normalized_batch_loss"] = (
+            self.__model_evaluator.get_normalized_batch_loss(
+                dataset_size=self.dataset_size, forward_result=forward_result
+            )
         )
         batch |= forward_result
         if evaluation_mode != EvaluationMode.Test:
@@ -410,8 +410,10 @@ class ExecutorConfig:
         dataset_collection.add_transforms(
             model_evaluator=model_evaluator,
         )
-        if self.cache_transforms is not None:
-            assert "cache_transforms" not in self.dataloader_kwargs
+        if (
+            self.cache_transforms is not None
+            and "cache_transforms" not in self.dataloader_kwargs
+        ):
             self.dataloader_kwargs["cache_transforms"] = self.cache_transforms
         executor = cls(
             model_evaluator=model_evaluator,
