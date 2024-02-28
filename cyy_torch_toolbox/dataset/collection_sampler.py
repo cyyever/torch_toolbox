@@ -149,8 +149,10 @@ class IIDSplitWithFlip(IIDSplit):
             return DatasetUtil.replace_target(target, {target: flipped_indices[index]})
         return target
 
-    def sample(self, part_id: int) -> None:
-        super().sample(part_id=part_id)
+    def sample(
+        self, part_id: int
+    ) -> DatasetCollection | ClassificationDatasetCollection:
+        dc = super().sample(part_id=part_id)
         for phase in MachineLearningPhase:
             if phase != MachineLearningPhase.Training:
                 continue
@@ -162,11 +164,12 @@ class IIDSplitWithFlip(IIDSplit):
                 if idx in self._flipped_indices:
                     new_flipped_dict[new_idx] = self._flipped_indices[idx]
             assert new_flipped_dict
-            self._dc.append_transform(
+            dc.append_transform(
                 transform=functools.partial(self.__transform_target, new_flipped_dict),
                 key=TransformType.Target,
                 phases=[phase],
             )
+        return dc
 
 
 class IIDSplitWithSample(IIDSplit):
