@@ -8,7 +8,7 @@ from cyy_naive_lib.reflection import get_kwarg_names
 from ..ml_type import DatasetType
 
 
-def get_torch_hub_model_info(dataset_type: DatasetType, repo: str) -> dict:
+def get_torch_hub_model_info(repo: str) -> dict:
     model_info: dict = {}
     kwargs = {
         "force_reload": False,
@@ -21,10 +21,8 @@ def get_torch_hub_model_info(dataset_type: DatasetType, repo: str) -> dict:
 
     torch_hub_models = torch.hub.list(repo, **kwargs)
     for model_name in torch_hub_models:
-        if dataset_type not in model_info:
-            model_info[dataset_type] = {}
-        if model_name.lower() not in model_info[dataset_type]:
-            model_info[dataset_type][model_name.lower()] = {
+        if model_name.lower() not in model_info:
+            model_info[model_name.lower()] = {
                 "name": model_name,
                 "constructor": functools.partial(
                     torch.hub.load,
@@ -46,7 +44,7 @@ def get_torch_hub_model_info(dataset_type: DatasetType, repo: str) -> dict:
 def get_model_info() -> dict:
     model_info: dict = {}
     for dataset_type in DatasetType:
-        model_info |= get_torch_hub_model_info(
-            dataset_type=dataset_type, repo="cyyever/torch_models:main"
+        model_info[dataset_type] = get_torch_hub_model_info(
+            repo="cyyever/torch_models:main"
         )
     return model_info
