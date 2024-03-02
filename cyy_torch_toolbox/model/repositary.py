@@ -3,6 +3,7 @@ import functools
 import torch
 import torch.nn
 from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.reflection import get_kwarg_names
 
 from ..ml_type import DatasetType
 
@@ -17,10 +18,17 @@ def get_model_info() -> dict:
 
     for dataset_type, repos in github_repos.items():
         for repo in repos:
-            entrypoints = torch.hub.list(
-                repo, force_reload=False, trust_repo=True, skip_validation=True
-            )
-            for model_name in entrypoints:
+            kwargs = {
+                "force_reload": False,
+                "trust_repo": True,
+                "skip_validation": True,
+            }
+
+            if "verbose" in get_kwarg_names(torch.hub.list):
+                kwargs["verbose"] = False
+
+            torch_hub_models = torch.hub.list(repo, **kwargs)
+            for model_name in torch_hub_models:
                 if dataset_type not in model_info:
                     model_info[dataset_type] = {}
                 if model_name.lower() not in model_info[dataset_type]:
