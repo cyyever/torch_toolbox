@@ -75,20 +75,18 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
                 *recursive_tensor_op(data.args, fun, **kwargs),
                 **recursive_tensor_op(data.keywords, fun, **kwargs),
             )
-    dataclass_fileds = None
     try:
-        dataclass_fileds = dataclasses.fields(data)
-    except AttributeError:
-        dataclass_fileds = None
-
-    if dataclass_fileds is not None:
         for field in dataclasses.fields(data):
             setattr(
                 data,
                 field.name,
                 recursive_tensor_op(getattr(data, field.name), fun, **kwargs),
             )
-    elif hasattr(data, "data"):
+        return data
+    # pylint: disable=broad-exception-caught
+    except BaseException:
+        pass
+    if hasattr(data, "data"):
         data.data = recursive_tensor_op(data.data, fun, **kwargs)
     return data
 
