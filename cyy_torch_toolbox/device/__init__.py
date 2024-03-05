@@ -1,53 +1,13 @@
-from dataclasses import dataclass
 from typing import Any
 
 import psutil
 import torch
 from cyy_naive_lib.log import get_logger
 
-from .dependency import has_pynvml
+from .base import MemoryInfo
 
-if has_pynvml:
-    import pynvml
-
-
-@dataclass(kw_only=True)
-class MemoryInfo:
-    total: int
-    free: int
-    used: int
-
-
-def _get_cuda_memory_info(
-    device_idx: int | None = None, consider_cache: bool = True
-) -> dict[torch.device, MemoryInfo]:
-    assert torch.cuda.is_available()
-    assert has_pynvml
-    result = {}
-    pynvml.nvmlInit()
-    if device_idx is not None:
-        device_indices = [device_idx]
-    else:
-        device_indices = list(range(torch.cuda.device_count()))
-    for d_idx in device_indices:
-        handle = pynvml.nvmlDeviceGetHandleByIndex(d_idx)
-        mode = pynvml.nvmlDeviceGetComputeMode(handle)
-        if mode == pynvml.NVML_COMPUTEMODE_EXCLUSIVE_PROCESS:
-            processes = pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
-            if processes:
-                continue
-        info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-        if consider_cache:
-            cache_size = torch.cuda.memory_reserved(device=d_idx)
-            info.used -= cache_size
-            info.free += cache_size
-        result[torch.device(f"cuda:{d_idx}")] = MemoryInfo(
-            used=info.used,
-            free=info.free,
-            total=info.total,
-        )
-    pynvml.nvmlShutdown()
-    return result
+if torch.cuda.is_available():
+    from .cuda import get_cuda_memory_info
 
 
 def get_device_memory_info(
@@ -69,7 +29,7 @@ def get_device_memory_info(
             device_type = "cpu"
     match device_type:
         case "cuda":
-            return _get_cuda_memory_info(
+            return get_cuda_memory_info(
                 device_idx=device_idx, consider_cache=consider_cache
             )
         case "cpu" | "mps" | "vulkan":
