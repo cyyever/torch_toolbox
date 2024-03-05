@@ -41,6 +41,7 @@ class DatasetCollection:
 
     def __copy__(self):
         new_obj = copy.deepcopy(self)
+        # pylint: disable=protected-access, unused-private-member
         new_obj.__datasets = self.__datasets.copy()
         return new_obj
 

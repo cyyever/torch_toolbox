@@ -52,20 +52,21 @@ class ModelUtil:
         for name, parameter in buffer_dict.items():
             self.set_attr(name, parameter, as_parameter=False)
 
-    def clear_parameters(self) -> None:
-        def clear(module: torch.nn.Module) -> None:
-            module._parameters = {k: None for k in module._parameters}
+    # def clear_parameters(self) -> None:
+    #     def clear(module: torch.nn.Module) -> None:
+    #         module._parameters = {k: None for k in module._parameters}
 
-        for _, module in self.get_modules():
-            clear(module)
+    #     for _, module in self.get_modules():
+    #         clear(module)
 
     def get_parameter_dict(self, detach: bool = True) -> TensorDict:
-        res: dict = {}
-        for name, parameter in self.model.named_parameters():
-            if detach:
-                parameter = parameter.detach()
-            res[name] = parameter
-        return res
+        if not detach:
+            return dict(self.model.named_parameters())
+
+        return {
+            name: parameter.detach()
+            for name, parameter in self.model.named_parameters()
+        }
 
     def get_gradient_dict(self) -> TensorDict:
         return {
@@ -213,7 +214,7 @@ class ModelUtil:
     def get_modules(self) -> Generator:
         def get_module_impl(model: torch.nn.Module, prefix: str) -> Generator:
             yield prefix, model
-            for name, module in model._modules.items():
+            for name, module in model.named_children():
                 if module is None:
                     continue
                 module_prefix: str = prefix + ("." if prefix else "") + name
