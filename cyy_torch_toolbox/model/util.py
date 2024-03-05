@@ -110,10 +110,9 @@ class ModelUtil:
         model = self.model
         components = name.split(".")
         for i, component in enumerate(components):
-            if i + 1 != len(components):
-                model = getattr(model, component)
-            else:
-                setattr(getattr(model, component), "grad", grad)
+            model = getattr(model, component)
+            if i + 1 == len(components):
+                setattr(model, "grad", grad)
 
     def set_attr(
         self,
