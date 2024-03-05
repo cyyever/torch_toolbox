@@ -78,7 +78,7 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
     dataclass_fileds = None
     try:
         dataclass_fileds = dataclasses.fields(data)
-    except BaseException:
+    except AttributeError:
         dataclass_fileds = None
 
     if dataclass_fileds is not None:
@@ -163,7 +163,7 @@ def assemble_tensors(data: Any) -> tuple[torch.Tensor | None, Any]:
 def disassemble_tensor(
     concatenated_tensor: torch.Tensor, data: Any, clone: bool = True
 ) -> Any:
-    def fun(data: __RecursiveCheckPoint) -> Any:
+    def fun(data: torch.Tensor) -> Any:
         if len(data) == 1:
             return data[0]
         shape, offset = data
