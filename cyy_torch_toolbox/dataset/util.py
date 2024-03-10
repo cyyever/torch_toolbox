@@ -23,7 +23,7 @@ class DatasetUtil:
         self.dataset: torch.utils.data.Dataset = dataset
         self.__len: None | int = None
         self._name: str = name if name else ""
-        self.__transforms: Transforms | None = transforms
+        self._transforms: Transforms | None = transforms
         self._cache_dir = cache_dir
 
     def __len__(self) -> int:
@@ -42,10 +42,10 @@ class DatasetUtil:
 
     def get_samples(self, indices: Iterable | None = None) -> Generator:
         raw_samples = self.get_raw_samples(indices=indices)
-        if self.__transforms is None:
+        if self._transforms is None:
             return raw_samples
         for idx, sample in raw_samples:
-            sample = self.__transforms.extract_data(sample)
+            sample = self._transforms.extract_data(sample)
             yield idx, sample
         return
 
@@ -123,8 +123,8 @@ class DatasetUtil:
         sample = self.get_sample(index)
         sample_input = sample["input"]
         if apply_transform:
-            assert self.__transforms is not None
-            sample_input = self.__transforms.transform_input(
+            assert self._transforms is not None
+            sample_input = self._transforms.transform_input(
                 sample_input, apply_random=False
             )
         return sample_input
@@ -134,8 +134,8 @@ class DatasetUtil:
     ) -> Generator[tuple[int, set], None, None]:
         for idx, sample in self.get_samples(indices):
             target = sample["target"]
-            if self.__transforms is not None:
-                target = self.__transforms.transform_target(target)
+            if self._transforms is not None:
+                target = self._transforms.transform_target(target)
             yield idx, DatasetUtil.__decode_target(target)
 
     def get_sample_label(self, index: int) -> set:
