@@ -29,7 +29,6 @@ class KeepModelHook(Hook):
 
     def clear(self) -> None:
         self.__best_model.clear()
-        self.__best_model = DataStorage(data=None)
 
     def _after_validation(self, executor, epoch, **kwargs) -> None:
         trainer = executor
