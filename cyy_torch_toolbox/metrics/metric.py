@@ -17,12 +17,10 @@ class Metric(Hook):
             metric_type="epoch", key=epoch, name=name, to_item=to_item
         )
 
-    def get_epoch_metrics(self, epoch: int, to_item: bool = True) -> dict | Any:
+    def get_epoch_metrics(self, epoch: int, to_item: bool = True) -> dict:
         return self.get_metrics(metric_type="epoch", key=epoch, to_item=to_item)
 
-    def get_metrics(
-        self, metric_type: str, key: int, to_item: bool = True
-    ) -> dict | Any:
+    def get_metrics(self, metric_type: str, key: int, to_item: bool = True) -> dict:
         metric: dict = {}
         match metric_type:
             case "epoch":
