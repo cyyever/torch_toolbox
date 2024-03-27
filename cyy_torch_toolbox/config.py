@@ -55,10 +55,12 @@ class Config:
         return trainer
 
     def create_inferencer(
-        self, phase: MachineLearningPhase = MachineLearningPhase.Test
+        self,
+        phase: MachineLearningPhase = MachineLearningPhase.Test,
+        inherent_device: bool = True,
     ) -> Inferencer:
         trainer = self.create_trainer()
-        return trainer.get_inferencer(phase)
+        return trainer.get_inferencer(phase=phase, inherent_device=inherent_device)
 
     def apply_global_config(self) -> None:
         if self.log_level is not None:
