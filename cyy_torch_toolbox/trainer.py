@@ -39,7 +39,10 @@ class Trainer(Executor):
         return self.__inferencers.get(phase, None)
 
     def get_inferencer(
-        self, phase: MachineLearningPhase, deepcopy_model: bool = False
+        self,
+        phase: MachineLearningPhase,
+        deepcopy_model: bool = False,
+        inherent_device: bool = True,
     ) -> Inferencer:
         if deepcopy_model:
             model_evaluator: ModelEvaluator = copy.deepcopy(self.model_evaluator)
@@ -59,7 +62,8 @@ class Trainer(Executor):
             raise RuntimeError(
                 "Unsupported model type:" + str(model_evaluator.model_type)
             )
-        inferencer.set_device(self.device)
+        if inherent_device:
+            inferencer.set_device(self.device)
         if self.save_dir is not None:
             inferencer.set_save_dir(self.save_dir)
         inferencer.set_visualizer_prefix(self.visualizer_prefix)
