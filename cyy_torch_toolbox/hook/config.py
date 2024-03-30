@@ -42,18 +42,15 @@ class HookConfig:
         self.__old_config = None
 
     def set_hooks(self, executor) -> None:
-        if (
-            executor.phase != MachineLearningPhase.Training
-            or not torch.cuda.is_available()
-        ):
+        if executor.phase != MachineLearningPhase.Training:
             self.use_amp = False
         if self.use_amp:
             if not isinstance(executor.model_evaluator, AMPModelEvaluator):
                 get_logger().info("use amp")
                 executor.replace_model_evaluator(AMPModelEvaluator)
         else:
-            get_logger().info("disable amp")
             if isinstance(executor.model_evaluator, AMPModelEvaluator):
+                get_logger().info("disable amp")
                 executor.replace_model_evaluator(
                     lambda amp_evaluator: amp_evaluator.evaluator
                 )
