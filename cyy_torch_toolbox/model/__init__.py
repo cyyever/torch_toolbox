@@ -1,4 +1,5 @@
 import copy
+import importlib
 import os
 import sys
 
@@ -11,6 +12,13 @@ from ..factory import Factory
 from ..ml_type import DatasetType, ModelType
 from .evaluator import ModelEvaluator
 from .util import ModelUtil  # noqa: F401
+
+has_amp: bool = importlib.util.find_spec("torch.amp.grad_scaler") is not None
+if has_amp:
+    from .new_amp import \
+        NewAMPModelEvaluator as AMPModelEvaluator  # noqa: F401
+else:
+    from .amp import AMPModelEvaluator  # noqa: F401
 
 global_model_evaluator_factory = Factory()
 

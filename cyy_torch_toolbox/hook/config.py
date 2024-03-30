@@ -10,7 +10,7 @@ from ..metric_visualizers.performance_metric_recorder import \
     PerformanceMetricRecorder
 from ..metrics.performance_metric import PerformanceMetric
 from ..ml_type import MachineLearningPhase
-from ..model.amp import AMPModelEvaluator
+from ..model import AMPModelEvaluator
 from .cudnn import CUDNNHook
 from .debugger import Debugger
 from .executor_logger import ExecutorLogger
