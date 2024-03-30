@@ -14,6 +14,7 @@ from .lr_finder import LRFinder
 def _determine_learning_rate(task: Any, **kwargs: Any) -> float:
     tmp_trainer = task
     tmp_trainer.disable_stripable_hooks()
+    tmp_trainer.hook_config.use_amp = False
     lr_finder = LRFinder()
     get_logger().warning("register lr_finder %s", id(tmp_trainer))
     tmp_trainer.prepend_hook(lr_finder)

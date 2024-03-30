@@ -3,6 +3,7 @@ from typing import Any, Self
 
 import torch
 import torch.cuda
+from cyy_naive_lib.log import get_logger
 
 from ..metric_visualizers.performance_metric_logger import \
     PerformanceMetricLogger
@@ -48,9 +49,10 @@ class HookConfig:
             self.use_amp = False
         if self.use_amp:
             if not isinstance(executor.model_evaluator, AMPModelEvaluator):
-                print("use amp")
+                get_logger().info("use amp")
                 executor.replace_model_evaluator(AMPModelEvaluator)
         else:
+            get_logger().info("disable amp")
             if isinstance(executor.model_evaluator, AMPModelEvaluator):
                 executor.replace_model_evaluator(
                     lambda amp_evaluator: amp_evaluator.evaluator
