@@ -8,7 +8,7 @@ import torch.utils.data
 from cyy_naive_lib.fs.ssd import is_ssd
 from cyy_naive_lib.log import get_logger
 from cyy_naive_lib.storage import get_cached_data
-from cyy_naive_lib.system_info import get_operating_system
+from cyy_naive_lib.system_info import OSType, get_operating_system_type
 
 from ..data_pipeline import (Transforms, append_transforms_to_dc,
                              dataset_with_indices)
@@ -136,7 +136,7 @@ class DatasetCollection:
         dataset_dir = os.path.join(cls.get_dataset_root_dir(), name)
         if not os.path.isdir(dataset_dir):
             os.makedirs(dataset_dir, exist_ok=True)
-        if get_operating_system() != "windows" and not is_ssd(dataset_dir):
+        if get_operating_system_type() != OSType.Windows and not is_ssd(dataset_dir):
             get_logger().warning(
                 "dataset %s is not on a SSD disk: %s", name, dataset_dir
             )
