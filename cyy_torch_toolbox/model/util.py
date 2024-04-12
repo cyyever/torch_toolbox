@@ -1,4 +1,4 @@
-from typing import Any, Callable, Generator, Type
+from typing import Any, Callable, Generator, Iterable, Type
 
 import torch
 import torch.nn
@@ -167,10 +167,15 @@ class ModelUtil:
         self,
         module_type: Type | None = None,
         module_name: str | None = None,
+        module_names: Iterable[str] | None = None,
     ) -> Generator:
+        if module_names is not None:
+            module_names = set(module_names)
         for name, module in self.get_modules():
-            if (module_type is not None and isinstance(module, module_type)) or (
-                module_name is not None and name == module_name
+            if (
+                (module_type is not None and isinstance(module, module_type))
+                or (module_name is not None and name == module_name)
+                or (module_names is not None and name in module_names)
             ):
                 yield name, module
 
