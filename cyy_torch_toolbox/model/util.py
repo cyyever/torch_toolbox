@@ -6,7 +6,7 @@ from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 from cyy_naive_lib.log import get_logger
 
 from ..tensor import cat_tensors_to_vector
-from ..typing import TensorDict
+from ..typing import BlockType, TensorDict
 
 
 class ModelUtil:
@@ -237,7 +237,7 @@ class ModelUtil:
     def get_module_blocks(
         self,
         block_types: set,
-    ) -> list:
+    ) -> list[BlockType]:
         def module_has_type(module, module_type) -> bool:
             match module_type:
                 case str():
@@ -249,7 +249,7 @@ class ModelUtil:
                 case _:
                     return isinstance(module, module_type)
 
-        blocks: list = []
+        blocks: list[BlockType] = []
         modules = list(self.get_modules())
         while modules:
             end_index = None
