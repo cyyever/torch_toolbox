@@ -133,12 +133,17 @@ class ModelEvaluator:
             **(kwargs | self.__evaluation_kwargs),
         )
 
-    def _forward_model(self, inputs: Any, **kwargs: Any) -> dict:
+    def _get_forward_fun(self) -> Callable:
         fun: Callable = self.model
         if "forward_fun" in self.__evaluation_kwargs:
-            forward_fun_name = self.__evaluation_kwargs["forward_fun"]
-            fun = getattr(self.model, forward_fun_name)
-            get_logger().debug("forward with function %s", forward_fun_name)
+            fun = self.__evaluation_kwargs["forward_fun"]
+            if isinstance(fun, str):
+                fun = getattr(self.model, fun)
+            get_logger().debug("forward with function %s", fun)
+        return fun
+
+    def _forward_model(self, inputs: Any, **kwargs: Any) -> dict:
+        fun: Callable = self._get_forward_fun()
         match inputs:
             case torch.Tensor():
                 output = fun(inputs)
