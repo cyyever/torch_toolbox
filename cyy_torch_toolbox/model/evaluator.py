@@ -133,7 +133,7 @@ class ModelEvaluator:
             **(kwargs | self.__evaluation_kwargs),
         )
 
-    def _get_forward_fun(self) -> Callable:
+    def __get_forward_fun(self) -> Callable:
         fun: Callable = self.model
         if "forward_fun" in self.__evaluation_kwargs:
             fun = self.__evaluation_kwargs["forward_fun"]
@@ -143,7 +143,7 @@ class ModelEvaluator:
         return fun
 
     def _forward_model(self, inputs: Any, **kwargs: Any) -> dict:
-        fun: Callable = self._get_forward_fun()
+        fun: Callable = self.__get_forward_fun()
         match inputs:
             case torch.Tensor():
                 output = fun(inputs)
