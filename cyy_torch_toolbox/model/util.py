@@ -3,7 +3,7 @@ from typing import Any, Callable, Generator, Iterable, Type
 import torch
 import torch.nn
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
-from cyy_naive_lib.log import log_info
+from cyy_naive_lib.log import log_debug
 
 from ..tensor import cat_tensors_to_vector
 from ..typing import BlockType, TensorDict
@@ -188,7 +188,7 @@ class ModelUtil:
 
     def freeze_modules(self, **kwargs: Any) -> bool:
         def freeze(name, module, model_util) -> None:
-            log_info("freeze %s", name)
+            log_debug("freeze %s", name)
             parameter_dict = {}
             for param_name, parameter in module.named_parameters():
                 parameter_dict[name + "." + param_name] = parameter.data
@@ -199,7 +199,7 @@ class ModelUtil:
 
     def unfreeze_modules(self, **kwargs: Any) -> bool:
         def unfreeze(name, module, model_util) -> None:
-            log_info("unfreeze %s", name)
+            log_debug("unfreeze %s", name)
             parameter_dict = {}
             for param_name, parameter in module.named_parameters():
                 parameter_dict[name + "." + param_name] = parameter.data
