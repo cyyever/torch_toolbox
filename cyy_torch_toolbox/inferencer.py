@@ -1,7 +1,7 @@
 import functools
 
 import torch
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_warning
 
 from .executor import Executor
 from .ml_type import EvaluationMode, ExecutorHookPoint, StopExecutingException
@@ -26,7 +26,7 @@ class Inferencer(Executor):
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
                 succ_flag = True
             except StopExecutingException:
-                get_logger().warning("stop inference")
+                log_warning("stop inference")
             finally:
                 self.wait_stream()
             return succ_flag

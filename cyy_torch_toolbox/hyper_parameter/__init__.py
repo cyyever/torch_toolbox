@@ -4,7 +4,7 @@ from enum import StrEnum, auto
 from typing import Any
 
 import torch
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_debug, log_warning
 from cyy_naive_lib.reflection import call_fun, get_class_attrs
 
 from ..data_structure.torch_thread_task_queue import TorchThreadTaskQueue
@@ -16,12 +16,10 @@ def _determine_learning_rate(task: Any, **kwargs: Any) -> float:
     tmp_trainer.disable_stripable_hooks()
     tmp_trainer.hook_config.use_amp = False
     lr_finder = LRFinder()
-    get_logger().warning("register lr_finder %s", id(tmp_trainer))
+    log_warning("register lr_finder %s", id(tmp_trainer))
     tmp_trainer.prepend_hook(lr_finder)
     tmp_trainer.train()
-    get_logger().warning(
-        "suggested_learning_rate is %s", lr_finder.suggested_learning_rate
-    )
+    log_warning("suggested_learning_rate is %s", lr_finder.suggested_learning_rate)
     assert lr_finder.suggested_learning_rate is not None
     return lr_finder.suggested_learning_rate
 
@@ -82,9 +80,7 @@ class HyperParameter:
                 full_kwargs["patience"] = patience
                 full_kwargs["factor"] = 0.1
                 full_kwargs.update(self.learning_rate_scheduler_kwargs)
-                get_logger().debug(
-                    "ReduceLROnPlateau patience is %s", full_kwargs["patience"]
-                )
+                log_debug("ReduceLROnPlateau patience is %s", full_kwargs["patience"])
             case "OneCycleLR":
                 full_kwargs["pct_start"] = 0.4
                 full_kwargs["max_lr"] = 10 * self.__get_learning_rate(trainer)
@@ -196,9 +192,9 @@ class HyperParameterConfig(HyperParameter):
     def create_hyper_parameter(self) -> HyperParameter:
         hyper_parameter = copy.copy(self)
         if self.fake_weight_decay is not None:
-            hyper_parameter.optimizer_kwargs[
-                "fake_weight_decay"
-            ] = self.fake_weight_decay
+            hyper_parameter.optimizer_kwargs["fake_weight_decay"] = (
+                self.fake_weight_decay
+            )
         if self.weight_decay is not None:
             hyper_parameter.optimizer_kwargs["fake_weight_decay"] = self.weight_decay
         return hyper_parameter

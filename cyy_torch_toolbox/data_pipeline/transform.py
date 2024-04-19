@@ -4,7 +4,7 @@ from typing import Any, Callable, Self
 
 import torch
 import torch.utils.data
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_debug
 from torch.utils.data import default_collate
 
 from ..ml_type import TransformType
@@ -110,7 +110,7 @@ class Transforms:
     def cache_transforms(
         self, dataset: torch.utils.data.Dataset, device: torch.device
     ) -> tuple[dict, Self]:
-        get_logger().debug("cache dataset to device: %s", device)
+        log_debug("cache dataset to device: %s", device)
         transformed_dataset: dict = {}
         for k, item in select_item(dataset):
             item = self.extract_data(item)

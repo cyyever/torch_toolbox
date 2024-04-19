@@ -4,7 +4,7 @@ import os
 import uuid
 from typing import Any
 
-from cyy_naive_lib.log import get_logger, set_level
+from cyy_naive_lib.log import log_debug, set_level
 from omegaconf import OmegaConf
 
 from .dataset import DatasetCollection, DatasetCollectionConfig
@@ -30,7 +30,7 @@ class Config:
         return self.__load_config(self, conf, check_config)
 
     def create_dataset_collection(self) -> DatasetCollection:
-        get_logger().debug("use dataset %s", self.dc_config.dataset_name)
+        log_debug("use dataset %s", self.dc_config.dataset_name)
         dc = self.dc_config.create_dataset_collection(
             save_dir=self.get_save_dir(),
         )
@@ -94,7 +94,7 @@ class Config:
                 )
         if check_config:
             if conf_container:
-                get_logger().error("remain config %s", conf_container)
+                log_error("remain config %s", conf_container)
             assert not conf_container
         return conf_container
 

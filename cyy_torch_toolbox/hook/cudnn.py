@@ -1,5 +1,5 @@
 import torch
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_debug
 
 from . import Hook
 
@@ -12,7 +12,7 @@ class CUDNNHook(Hook):
     def _before_execute(self, **kwargs) -> None:
         if not torch.are_deterministic_algorithms_enabled():
             torch.backends.cudnn.benchmark = True
-            get_logger().debug("benchmark cudnn")
+            log_debug("benchmark cudnn")
 
     def _after_execute(self, **kwargs) -> None:
         torch.backends.cudnn.benchmark = False

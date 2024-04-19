@@ -3,7 +3,7 @@ import functools
 import random
 from typing import Any, Callable
 
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_warning
 
 from .util import DatasetUtil
 
@@ -205,7 +205,7 @@ class DatasetSampler:
                     part_len = 1
                 elif first_assert:
                     first_assert = False
-                    get_logger().warning(
+                    log_warning(
                         "has zero part when splitting list, %s %s",
                         index_num,
                         parts,
