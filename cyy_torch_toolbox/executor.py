@@ -265,9 +265,7 @@ class Executor(HookCollection, abc.ABC):
         return "lr_scheduler" in self._data
 
     def get_optimizer(self) -> torch.optim.Optimizer:
-        if "optimizer" not in self._data:
-            self._data["optimizer"] = self.hyper_parameter.get_optimizer(self)
-        return self._data["optimizer"]
+        raise NotImplementedError()
 
     def get_lr_scheduler(self) -> torch.optim.lr_scheduler.LRScheduler:
         if "lr_scheduler" not in self._data:
