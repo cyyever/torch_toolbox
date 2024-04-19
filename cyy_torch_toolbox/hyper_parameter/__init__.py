@@ -4,7 +4,7 @@ from enum import StrEnum, auto
 from typing import Any
 
 import torch
-from cyy_naive_lib.log import log_debug, log_warning
+from cyy_naive_lib.log import log_debug, log_info, log_warning
 from cyy_naive_lib.reflection import call_fun, get_class_attrs
 
 from ..data_structure.torch_thread_task_queue import TorchThreadTaskQueue
@@ -115,6 +115,8 @@ class HyperParameter:
         kwargs = copy.copy(self.optimizer_kwargs)
         if parameters is None:
             parameters = list(trainer.model.parameters())
+        else:
+            log_info("pass provided parameters to optimizer")
         kwargs |= {
             "params": parameters,
             "lr": self.__get_learning_rate(trainer=trainer),
