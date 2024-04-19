@@ -1,7 +1,7 @@
 import functools
 from typing import Any, Callable
 
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_info
 
 
 def default_data_extraction(data: Any) -> dict:
@@ -33,7 +33,7 @@ def __get_int_target(
 
 def str_target_to_int(label_names: dict) -> Callable:
     reversed_label_names = {v: k for k, v in label_names.items()}
-    get_logger().info("map string targets by %s", reversed_label_names)
+    log_info("map string targets by %s", reversed_label_names)
     return functools.partial(__get_int_target, reversed_label_names)
 
 

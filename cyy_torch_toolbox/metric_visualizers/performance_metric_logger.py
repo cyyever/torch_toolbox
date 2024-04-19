@@ -1,4 +1,4 @@
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_info
 
 from ..ml_type import MachineLearningPhase
 from .metric_visualizer import MetricVisualizer
@@ -28,7 +28,7 @@ class PerformanceMetricLogger(MetricVisualizer):
                 metric_str = metric_str + f"{k}:{value}, "
         metric_str = metric_str[:-2]
         if executor.phase == MachineLearningPhase.Training:
-            get_logger().info(
+            log_info(
                 "%sepoch: %s, %s %s",
                 self.prefix + " " if self.prefix else "",
                 epoch,
@@ -37,7 +37,7 @@ class PerformanceMetricLogger(MetricVisualizer):
             )
         else:
             assert epoch == 1
-            get_logger().info(
+            log_info(
                 "%s%s %s",
                 self.prefix + " " if self.prefix else "",
                 str(executor.phase),

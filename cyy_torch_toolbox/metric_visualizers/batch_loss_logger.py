@@ -1,4 +1,4 @@
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_info
 
 from .metric_visualizer import MetricVisualizer
 
@@ -26,7 +26,7 @@ class BatchLossLogger(MetricVisualizer):
         )
         if len(learning_rates) == 1:
             learning_rates = learning_rates[0]
-        get_logger().info(
+        log_info(
             "%sepoch: %s, batch: %s, learning rate: %e, batch loss: %e",
             self.prefix + " " if self.prefix else "",
             epoch,

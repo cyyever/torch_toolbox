@@ -2,7 +2,7 @@ import functools
 
 import torch
 import torch.nn
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_debug
 from cyy_naive_lib.reflection import get_kwarg_names
 
 from ..ml_type import DatasetType
@@ -36,7 +36,7 @@ def get_torch_hub_model_info(repo: str) -> dict:
                 "repo": repo,
             }
         else:
-            get_logger().debug("ignore model_name %s", model_name)
+            log_debug("ignore model_name %s", model_name)
 
     return model_info
 

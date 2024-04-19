@@ -8,7 +8,7 @@ from typing import Any, Callable, Generator
 import torch
 import torch.cuda
 import torch.utils.data
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_debug
 
 from .data_pipeline.loader import get_dataloader
 from .dataset import DatasetCollection, DatasetUtil
@@ -197,7 +197,7 @@ class Executor(HookCollection, abc.ABC):
         if self.__device != device:
             self.wait_stream()
             self.__device = device
-            get_logger().debug("%s use device %s", str(self.__phase), self.__device)
+            log_debug("%s use device %s", str(self.__phase), self.__device)
             self.__device_stream = None
             self.__dataloader = None
 
@@ -289,7 +289,7 @@ class Executor(HookCollection, abc.ABC):
                 module_type=torch.nn.BatchNorm2d
             )
         ):
-            get_logger().debug("drop last one-sized batch for batch norm")
+            log_debug("drop last one-sized batch for batch norm")
             return
         batch |= {
             "batch_index": batch_index,
@@ -336,7 +336,7 @@ class Executor(HookCollection, abc.ABC):
             if evaluation_mode == EvaluationMode.Training:
                 lr_scheduler = self.get_lr_scheduler()
                 if lr_scheduler_step_after_batch(lr_scheduler):
-                    get_logger().debug("adjust lr after batch")
+                    log_debug("adjust lr after batch")
                     lr_scheduler.step()
 
         self.exec_hooks(
@@ -380,7 +380,7 @@ class Executor(HookCollection, abc.ABC):
                         training_loss = self.performance_metric.get_loss(
                             epoch, to_item=False
                         )
-                        get_logger().debug(
+                        log_debug(
                             "call ReduceLROnPlateau for training loss %s",
                             training_loss,
                         )

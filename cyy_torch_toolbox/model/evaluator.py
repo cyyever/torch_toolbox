@@ -2,7 +2,7 @@ import functools
 from typing import Any, Callable, Iterable, Type
 
 import torch
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_debug, log_error
 from torch import nn
 
 from ..ml_type import EvaluationMode, ModelType
@@ -139,7 +139,7 @@ class ModelEvaluator:
             fun = self.__evaluation_kwargs["forward_fun"]
             if isinstance(fun, str):
                 fun = getattr(self.model, fun)
-            get_logger().debug("forward with function %s", fun)
+            log_debug("forward with function %s", fun)
         return fun
 
     def _forward_model(self, inputs: Any, **kwargs: Any) -> dict:
@@ -250,21 +250,21 @@ class ModelEvaluator:
         ]
         last_layer = layers[-1]
 
-        get_logger().debug("last module is %s", last_layer.__class__)
+        log_debug("last module is %s", last_layer.__class__)
         loss_fun_type: None | Type = None
         match last_layer:
             case nn.LogSoftmax():
-                get_logger().debug("choose loss function NLLLoss")
+                log_debug("choose loss function NLLLoss")
                 loss_fun_type = nn.NLLLoss
             case nn.Linear():
                 if last_layer.out_features > 1:
-                    get_logger().debug("choose loss function CrossEntropyLoss")
+                    log_debug("choose loss function CrossEntropyLoss")
                     loss_fun_type = nn.CrossEntropyLoss
                 else:
-                    get_logger().debug("choose loss function BCEWithLogitsLoss")
+                    log_debug("choose loss function BCEWithLogitsLoss")
                     loss_fun_type = nn.BCEWithLogitsLoss
         if loss_fun_type is None:
-            get_logger().error("can't choose a loss function, model is %s", self._model)
+            log_error("can't choose a loss function, model is %s", self._model)
             raise NotImplementedError(type(last_layer))
         return loss_fun_type()
 

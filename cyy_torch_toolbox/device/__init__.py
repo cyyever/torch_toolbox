@@ -2,7 +2,7 @@ from typing import Any
 
 import psutil
 import torch
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_error
 
 from .base import MemoryInfo
 
@@ -76,7 +76,7 @@ def get_devices(max_needed_bytes: None | int = None) -> list[torch.device]:
     devices = DeviceGreedyAllocator.get_devices(max_needed_bytes=max_needed_bytes)
     if "cpu" not in devices[0].type.lower():
         return devices
-    get_logger().error(
+    log_error(
         "max_needed_bytes is %s, only CPU device is available, which we don't want",
         max_needed_bytes,
     )

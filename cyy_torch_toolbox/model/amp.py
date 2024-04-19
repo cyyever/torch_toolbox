@@ -2,7 +2,7 @@ from typing import Any
 
 import torch
 import torch.cuda.amp
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_warning
 
 from .evaluator import ModelEvaluator
 
@@ -58,8 +58,6 @@ class AMPModelEvaluator:
             # Updates the scale for next iteration.
             self.__scaler.update()
             if has_inf > 0:
-                get_logger().warning(
-                    "found inf in AMP, scale is %s", self.__scaler._scale
-                )
+                log_warning("found inf in AMP, scale is %s", self.__scaler._scale)
                 continue
             break

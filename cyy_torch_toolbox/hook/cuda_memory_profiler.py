@@ -1,7 +1,7 @@
 import functools
 
 import torch
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_info
 
 from . import Hook
 
@@ -43,7 +43,7 @@ class CUDAMemoryProfiler(Hook):
         cur_used_memory = torch.cuda.memory_allocated()
         if not self.__used_memory:
             self.__used_memory[module_name] = float(cur_used_memory) / 1024 / 1024
-            get_logger().info(
+            log_info(
                 "%.1f MB CUDA memory is used for first module %s",
                 self.__used_memory[module_name],
                 module_name,
@@ -52,7 +52,7 @@ class CUDAMemoryProfiler(Hook):
             self.__used_memory[module_name] = (
                 float(cur_used_memory - self.__last_used_memory) / 1024 / 1024
             )
-            get_logger().info(
+            log_info(
                 "%.1f MB CUDA memory is used for module %s",
                 self.__used_memory[module_name],
                 module_name,

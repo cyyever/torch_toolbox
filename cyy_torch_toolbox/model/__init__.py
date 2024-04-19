@@ -4,7 +4,7 @@ import os
 import sys
 
 import torch
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_debug
 
 from ..dataset.classification_collection import ClassificationDatasetCollection
 from ..dataset.collection import DatasetCollection
@@ -49,13 +49,13 @@ def create_model(constructor, **kwargs):
     while True:
         try:
             res = constructor(**kwargs)
-            get_logger().debug("use model arguments %s for model", kwargs)
+            log_debug("use model arguments %s for model", kwargs)
             return res
         except TypeError as e:
             retry = False
             for k in copy.copy(kwargs):
                 if k in str(e):
-                    get_logger().debug("%s so remove %s", e, k)
+                    log_debug("%s so remove %s", e, k)
                     kwargs.pop(k, None)
                     retry = True
                     break
@@ -80,7 +80,7 @@ def get_model(
         assert isinstance(dataset_collection, ClassificationDatasetCollection)
         if "num_classes" not in model_kwargs:
             model_kwargs["num_classes"] = dataset_collection.label_number  # E:
-            get_logger().debug("detect %s classes", model_kwargs["num_classes"])
+            log_debug("detect %s classes", model_kwargs["num_classes"])
         else:
             assert model_kwargs["num_classes"] == dataset_collection.label_number  # E:
     if model_type == ModelType.Detection:

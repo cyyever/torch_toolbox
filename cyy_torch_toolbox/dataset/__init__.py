@@ -1,7 +1,7 @@
 import json
 import os
 
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_info
 
 from ..data_pipeline.common import replace_target
 from ..factory import Factory
@@ -106,7 +106,7 @@ class DatasetCollectionConfig:
 
         if self.training_dataset_indices_path is not None:
             assert subset_indices is None
-            get_logger().info(
+            log_info(
                 "use training_dataset_indices_path %s",
                 self.training_dataset_indices_path,
             )
@@ -133,7 +133,7 @@ class DatasetCollectionConfig:
 
         if self.training_dataset_label_map_path is not None:
             assert label_map is not None
-            get_logger().info(
+            log_info(
                 "use training_dataset_label_map_path %s",
                 self.training_dataset_label_map_path,
             )

@@ -2,7 +2,7 @@ import os
 
 import torch
 import torch.utils.data
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_debug
 
 from ..data_structure.torch_process_context import TorchProcessContext
 from ..dataset.collection import DatasetCollection
@@ -56,7 +56,7 @@ def __prepare_dataloader_kwargs(
             kwargs["multiprocessing_context"] = TorchProcessContext().get_ctx()
         kwargs["persistent_workers"] = True
     else:
-        get_logger().debug("use threads")
+        log_debug("use threads")
         kwargs["num_workers"] = 0
         kwargs["prefetch_factor"] = None
         kwargs["persistent_workers"] = False

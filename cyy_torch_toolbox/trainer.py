@@ -2,7 +2,7 @@ import copy
 from typing import Any, Generator
 
 import torch
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_warning
 
 from .classification_inferencer import ClassificationInferencer
 from .dataset import DatasetCollection
@@ -114,7 +114,7 @@ class Trainer(Executor):
                     self.__test(phase=MachineLearningPhase.Test)
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
             except StopExecutingException:
-                get_logger().warning("stop training")
+                log_warning("stop training")
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
             finally:
                 self.wait_stream()

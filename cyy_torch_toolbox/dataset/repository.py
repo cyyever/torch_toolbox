@@ -1,7 +1,7 @@
 import copy
 from typing import Callable
 
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_debug, log_error
 from cyy_naive_lib.reflection import get_kwarg_names
 
 from ..dataset.util import global_dataset_util_factor
@@ -77,7 +77,7 @@ def __prepare_dataset_kwargs(
             if k not in constructor_kwargs:
                 discarded_dataset_kwargs.add(k)
         if discarded_dataset_kwargs:
-            get_logger().debug("discarded_dataset_kwargs %s", discarded_dataset_kwargs)
+            log_debug("discarded_dataset_kwargs %s", discarded_dataset_kwargs)
             for k in discarded_dataset_kwargs:
                 new_dataset_kwargs.pop(k)
         return new_dataset_kwargs
@@ -122,14 +122,14 @@ def __create_dataset(
                     if dataset_type == DatasetType.Graph:
                         assert len(dataset) == 1
                     __dataset_cache[cache_key] = dataset
-                    get_logger().debug(
+                    log_debug(
                         "create and cache dataset %s, id %s with kwargs %s",
                         cache_key,
                         id(dataset),
                         processed_dataset_kwargs,
                     )
                 else:
-                    get_logger().debug(
+                    log_debug(
                         "use cached dataset %s, id %s with kwargs %s",
                         cache_key,
                         id(dataset),
@@ -143,7 +143,7 @@ def __create_dataset(
                     test_dataset = dataset
                 break
             except Exception as e:
-                get_logger().debug("has exception %s", e)
+                log_debug("has exception %s", e)
                 if "of splits is not supported for dataset" in str(e):
                     break
                 if "for argument split. Valid values are" in str(e):
@@ -200,13 +200,13 @@ def get_dataset(
             name
         )
     if similar_names:
-        get_logger().error(
+        log_error(
             "can't find dataset %s, similar datasets are %s",
             name,
             sorted(similar_names),
         )
     else:
-        get_logger().error(
+        log_error(
             "can't find dataset %s",
             name,
         )

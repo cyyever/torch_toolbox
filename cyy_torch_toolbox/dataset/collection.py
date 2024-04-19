@@ -6,7 +6,7 @@ from typing import Any, Callable, Generator, Iterable
 import torch
 import torch.utils.data
 from cyy_naive_lib.fs.ssd import is_ssd
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_debug, log_warning
 from cyy_naive_lib.storage import get_cached_data
 from cyy_naive_lib.system_info import OSType, get_operating_system_type
 
@@ -82,7 +82,7 @@ class DatasetCollection:
         )
 
     def remove_dataset(self, phase: MachineLearningPhase) -> None:
-        get_logger().debug("remove dataset %s", phase)
+        log_debug("remove dataset %s", phase)
         self.__datasets.pop(phase, None)
 
     def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
@@ -137,9 +137,7 @@ class DatasetCollection:
         if not os.path.isdir(dataset_dir):
             os.makedirs(dataset_dir, exist_ok=True)
         if get_operating_system_type() != OSType.Windows and not is_ssd(dataset_dir):
-            get_logger().warning(
-                "dataset %s is not on a SSD disk: %s", name, dataset_dir
-            )
+            log_warning("dataset %s is not on a SSD disk: %s", name, dataset_dir)
         return dataset_dir
 
     def _get_dataset_cache_dir(self) -> str:
@@ -171,7 +169,7 @@ class DatasetCollection:
     ) -> None:
         assert self.has_dataset(phase=from_phase)
         assert parts
-        get_logger().debug("split %s dataset for %s", from_phase, self.name)
+        log_debug("split %s dataset for %s", from_phase, self.name)
         part_list = list(parts.items())
 
         sampler = DatasetSampler(dataset_util=self.get_dataset_util(phase=from_phase))
