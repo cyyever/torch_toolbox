@@ -4,7 +4,7 @@ from enum import StrEnum, auto
 from typing import Any
 
 import torch
-from cyy_naive_lib.log import log_debug, log_info, log_warning
+from cyy_naive_lib.log import log_debug, log_warning
 from cyy_naive_lib.reflection import call_fun, get_class_attrs
 
 from ..data_structure.torch_thread_task_queue import TorchThreadTaskQueue
@@ -116,7 +116,7 @@ class HyperParameter:
         if parameters is None:
             parameters = list(trainer.model.parameters())
         else:
-            log_info("pass provided parameters to optimizer")
+            log_debug("pass provided parameters to optimizer")
         kwargs |= {
             "params": parameters,
             "lr": self.__get_learning_rate(trainer=trainer),
@@ -194,9 +194,9 @@ class HyperParameterConfig(HyperParameter):
     def create_hyper_parameter(self) -> HyperParameter:
         hyper_parameter = copy.copy(self)
         if self.fake_weight_decay is not None:
-            hyper_parameter.optimizer_kwargs["fake_weight_decay"] = (
-                self.fake_weight_decay
-            )
+            hyper_parameter.optimizer_kwargs[
+                "fake_weight_decay"
+            ] = self.fake_weight_decay
         if self.weight_decay is not None:
             hyper_parameter.optimizer_kwargs["fake_weight_decay"] = self.weight_decay
         return hyper_parameter
