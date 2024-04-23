@@ -203,6 +203,8 @@ class ModelUtil:
             parameter_dict = {}
             for param_name, parameter in module.named_parameters():
                 parameter_dict[name + "." + param_name] = parameter.data
+            for param_name, parameter in module.named_buffers():
+                parameter_dict[name + "." + param_name] = parameter.data
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=True)
 
