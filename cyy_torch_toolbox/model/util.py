@@ -201,8 +201,6 @@ class ModelUtil:
         def unfreeze(name, module, model_util) -> None:
             log_debug("unfreeze %s", name)
             parameter_dict = {}
-            for param_name, parameter in module.named_parameters():
-                parameter_dict[name + "." + param_name] = parameter.data
             for param_name, parameter in module.named_buffers():
                 parameter_dict[name + "." + param_name] = parameter.data
             for k, v in parameter_dict.items():
