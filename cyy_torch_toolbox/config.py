@@ -4,7 +4,7 @@ import os
 import uuid
 from typing import Any
 
-from cyy_naive_lib.log import log_debug, set_level
+from cyy_naive_lib.log import log_debug, log_error, set_level
 from omegaconf import OmegaConf
 
 from .dataset import DatasetCollection, DatasetCollectionConfig
