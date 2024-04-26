@@ -189,9 +189,12 @@ class ModelUtil:
     def freeze_modules(self, **kwargs: Any) -> bool:
         def freeze(name, module, model_util) -> None:
             log_debug("freeze %s", name)
+            module.fronzen_parameters = set()
             parameter_dict = {}
             for param_name, parameter in module.named_parameters():
                 parameter_dict[name + "." + param_name] = parameter.data
+                module.fronzen_parameters.add(param_name)
+
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=False)
 
@@ -199,10 +202,18 @@ class ModelUtil:
 
     def unfreeze_modules(self, **kwargs: Any) -> bool:
         def unfreeze(name, module, model_util) -> None:
-            log_debug("unfreeze %s", name)
             parameter_dict = {}
-            for param_name, parameter in module.named_buffers():
-                parameter_dict[name + "." + param_name] = parameter.data
+            if not hasattr(module, "fronzen_parameters"):
+                log_debug("nothing to unfreeze")
+                return
+            assert module.fronzen_parameters
+            parameter_dict = {
+                f"{name}.{param_name}": getattr(module, param_name)
+                for param_name in module.fronzen_parameters
+            }
+            delattr(module, "fronzen_parameters")
+            assert parameter_dict
+            log_debug("unfreeze %s %s", name, parameter_dict.keys())
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=True)
 
