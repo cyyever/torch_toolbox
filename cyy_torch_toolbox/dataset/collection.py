@@ -21,7 +21,7 @@ class DatasetCollection:
     def __init__(
         self,
         datasets: dict[MachineLearningPhase, torch.utils.data.Dataset],
-        dataset_type: DatasetType,
+        dataset_type: DatasetType | None = None,
         name: str | None = None,
         dataset_kwargs: dict | None = None,
         add_index: bool = True,
@@ -31,7 +31,7 @@ class DatasetCollection:
         if add_index:
             for k, v in self.__datasets.items():
                 self.__datasets[k] = dataset_with_indices(v)
-        self.__dataset_type: DatasetType = dataset_type
+        self.__dataset_type: DatasetType | None = dataset_type
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
@@ -56,6 +56,7 @@ class DatasetCollection:
 
     @property
     def dataset_type(self) -> DatasetType:
+        assert self.__dataset_type is not None
         return self.__dataset_type
 
     def foreach_dataset(self) -> Generator:
@@ -104,10 +105,9 @@ class DatasetCollection:
     def get_original_dataset(
         self, phase: MachineLearningPhase
     ) -> torch.utils.data.Dataset:
-        dataset_util = self.get_dataset_util(phase=phase)
-        return dataset_util.get_original_dataset()
+        return self.get_dataset_util(phase=phase).get_original_dataset()
 
-    def foreach_transform(self):
+    def foreach_transform(self) -> Generator:
         yield from self.__transforms.items()
 
     def append_transform(
