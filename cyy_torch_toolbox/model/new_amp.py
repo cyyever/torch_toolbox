@@ -9,7 +9,7 @@ from .evaluator import ModelEvaluator
 
 class NewAMPModelEvaluator:
     def __init__(self, evaluator: ModelEvaluator) -> None:
-        self.evaluator = evaluator
+        self.evaluator: ModelEvaluator = evaluator
         self.__amp_ctx: None | torch.autocast = None
         self.__scaler: None | torch.amp.grad_scaler.GradScaler = None
 
@@ -56,3 +56,4 @@ class NewAMPModelEvaluator:
                 log_warning("found inf in AMP, scale is %s", self.__scaler._scale)
                 continue
             break
+        return None
