@@ -230,6 +230,7 @@ class ModelEvaluator:
     def set_model(self, model) -> None:
         self._model = model
 
+
     def _choose_loss_function(self) -> Callable:
         layers = [
             m

@@ -42,7 +42,7 @@ class ModelUtil:
         assert parameter_dict
         for name, parameter in parameter_dict.items():
             if check_parameter:
-                assert self.has_attr(name)
+                self.model.get_parameter(name)
             self.set_attr(name, parameter, as_parameter=True, keep_grad=keep_grad)
 
     def get_buffer_dict(self) -> TensorDict:
@@ -52,19 +52,9 @@ class ModelUtil:
         for name, parameter in buffer_dict.items():
             self.set_attr(name, parameter, as_parameter=False)
 
-    # def clear_parameters(self) -> None:
-    #     def clear(module: torch.nn.Module) -> None:
-    #         module._parameters = {k: None for k in module._parameters}
-
-    #     for _, module in self.get_modules():
-    #         clear(module)
-
     def get_parameter_dict(self, detach: bool = True) -> TensorDict:
-        if not detach:
-            return dict(self.model.named_parameters())
-
         return {
-            name: parameter.detach()
+            name: parameter.detach() if detach else parameter
             for name, parameter in self.model.named_parameters()
         }
 
@@ -81,93 +71,55 @@ class ModelUtil:
             self.set_grad(name, grad)
 
     def disable_running_stats(self) -> None:
-        def impl(_, module, __) -> None:
-            module.track_running_stats = False
-            module.register_buffer("running_mean", None)
-            module.register_buffer("running_var", None)
-            module.register_buffer("num_batches_tracked", None)
-
-        self.change_modules(f=impl, module_type=torch.nn.modules.batchnorm._NormBase)
+        for _, module in self.get_modules():
+            if hasattr(module, "track_running_stats"):
+                module.track_running_stats = False
+                module.register_buffer("running_mean", None)
+                module.register_buffer("running_var", None)
+                module.register_buffer("num_batches_tracked", None)
 
     def reset_running_stats(self) -> None:
         for _, module in self.get_modules():
             if hasattr(module, "reset_running_stats"):
                 module.reset_running_stats()
 
-    def register_module(self, name: str, module: Any) -> None:
-        if "." not in name:
-            self.model.register_module(name, module)
-        else:
-            components = name.split(".")
-            module = self.get_attr(".".join(components[:-1]))
-            module.register_module(components[-1], module)
-
     def set_grad(
         self,
         name: str,
         grad: torch.Tensor,
     ) -> None:
-        model = self.model
-        components = name.split(".")
-        for i, component in enumerate(components):
-            model = getattr(model, component)
-            if i + 1 == len(components):
-                setattr(model, "grad", grad)
+        module = self.model.get_submodule(name)
+        module.grad = grad
 
     def set_attr(
         self,
         name: str,
-        value: torch.Tensor,
+        value: Any,
         as_parameter: bool = True,
         keep_grad: bool = False,
     ) -> None:
-        model = self.model
+        module: torch.nn.Module = self.model
         components = name.split(".")
-        for i, component in enumerate(components):
-            if i + 1 != len(components):
-                model = getattr(model, component)
+        assert len(components) >= 2
+        module = self.model.get_submodule(".".join(components[0:-1]))
+        component = components[-1]
+        if hasattr(module, component):
+            delattr(module, component)
+        if as_parameter:
+            if keep_grad:
+                value._is_param = True
+                module._parameters[component] = value
             else:
-                if hasattr(model, component):
-                    delattr(model, component)
-                if as_parameter:
-                    if keep_grad:
-                        value._is_param = True
-                        model._parameters[component] = value
-                    else:
-                        model.register_parameter(component, torch.nn.Parameter(value))
-                else:
-                    model.register_buffer(component, value)
-
-    def get_attr(self, name: str) -> Any:
-        val = self.model
-        components = name.split(".")
-        for component in components:
-            val = getattr(val, component)
-        return val
-
-    def del_attr(self, name: str) -> None:
-        model = self.model
-        components = name.split(".")
-        for i, component in enumerate(components):
-            if i + 1 != len(components):
-                model = getattr(model, component)
-            else:
-                delattr(model, component)
-
-    def has_attr(self, name: str) -> bool:
-        model = self.model
-        components = name.split(".")
-        for component in components:
-            if not hasattr(model, component):
-                return False
-            model = getattr(model, component)
-        return True
+                module.register_parameter(component, torch.nn.Parameter(value))
+        else:
+            module.register_buffer(component, value)
 
     def filter_modules(
         self,
         module_type: Type | None = None,
         module_name: str | None = None,
         module_names: Iterable[str] | None = None,
+        module_criterion: Callable | None = None,
     ) -> Generator:
         if module_names is not None:
             module_names = set(module_names)
@@ -176,6 +128,10 @@ class ModelUtil:
                 (module_type is not None and isinstance(module, module_type))
                 or (module_name is not None and name == module_name)
                 or (module_names is not None and name in module_names)
+                or (
+                    module_criterion is not None
+                    and module_criterion(name=name, module=module)
+                )
             ):
                 yield name, module
 
@@ -244,6 +200,26 @@ class ModelUtil:
                     yield module_prefix, module
 
         return get_module_impl(self.model, "")
+
+    def get_last_underlying_module(self) -> torch.nn.Module:
+        module_pairs = [
+            (name, module)
+            for name, module in self.get_modules()
+            if not isinstance(
+                module,
+                (
+                    torch.quantization.QuantStub,
+                    torch.quantization.DeQuantStub,
+                    torch.quantization.QuantWrapper,
+                    torch.quantization.FakeQuantize,
+                    torch.quantization.MovingAverageMinMaxObserver,
+                    torch.quantization.MovingAveragePerChannelMinMaxObserver,
+                    torch.nn.modules.dropout.Dropout,
+                ),
+            )
+            and "MemoryEfficientSwish" not in str(module)
+        ]
+        return module_pairs[0][1]
 
     def get_module_blocks(
         self,
