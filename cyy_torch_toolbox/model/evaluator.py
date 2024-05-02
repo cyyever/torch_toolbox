@@ -230,35 +230,17 @@ class ModelEvaluator:
     def set_model(self, model) -> None:
         self._model = model
 
-
     def _choose_loss_function(self) -> Callable:
-        layers = [
-            m
-            for _, m in self.model_util.get_modules()
-            if not isinstance(
-                m,
-                (
-                    torch.quantization.QuantStub,
-                    torch.quantization.DeQuantStub,
-                    torch.quantization.QuantWrapper,
-                    torch.quantization.FakeQuantize,
-                    torch.quantization.MovingAverageMinMaxObserver,
-                    torch.quantization.MovingAveragePerChannelMinMaxObserver,
-                    torch.nn.modules.dropout.Dropout,
-                ),
-            )
-            and "MemoryEfficientSwish" not in str(m)
-        ]
-        last_layer = layers[-1]
+        last_module = self.model_util.get_last_underlying_module()
 
-        log_debug("last module is %s", last_layer.__class__)
+        log_debug("last module is %s", last_module.__class__)
         loss_fun_type: None | Type = None
-        match last_layer:
+        match last_module:
             case nn.LogSoftmax():
                 log_debug("choose loss function NLLLoss")
                 loss_fun_type = nn.NLLLoss
             case nn.Linear():
-                if last_layer.out_features > 1:
+                if last_module.out_features > 1:
                     log_debug("choose loss function CrossEntropyLoss")
                     loss_fun_type = nn.CrossEntropyLoss
                 else:
@@ -266,7 +248,7 @@ class ModelEvaluator:
                     loss_fun_type = nn.BCEWithLogitsLoss
         if loss_fun_type is None:
             log_error("can't choose a loss function, model is %s", self._model)
-            raise NotImplementedError(type(last_layer))
+            raise NotImplementedError(type(last_module))
         return loss_fun_type()
 
     def get_underlying_model(self) -> torch.nn.Module:

@@ -202,24 +202,31 @@ class ModelUtil:
         return get_module_impl(self.model, "")
 
     def get_last_underlying_module(self) -> torch.nn.Module:
-        module_pairs = [
-            (name, module)
-            for name, module in self.get_modules()
-            if not isinstance(
-                module,
-                (
-                    torch.quantization.QuantStub,
-                    torch.quantization.DeQuantStub,
-                    torch.quantization.QuantWrapper,
-                    torch.quantization.FakeQuantize,
-                    torch.quantization.MovingAverageMinMaxObserver,
-                    torch.quantization.MovingAveragePerChannelMinMaxObserver,
-                    torch.nn.modules.dropout.Dropout,
-                ),
+        module_pairs = list(
+            reversed(
+                [
+                    (name, module)
+                    for name, module in self.get_modules()
+                    if not isinstance(
+                        module,
+                        (
+                            torch.quantization.QuantStub,
+                            torch.quantization.DeQuantStub,
+                            torch.quantization.QuantWrapper,
+                            torch.quantization.FakeQuantize,
+                            torch.quantization.MovingAverageMinMaxObserver,
+                            torch.quantization.MovingAveragePerChannelMinMaxObserver,
+                            torch.nn.modules.dropout.Dropout,
+                        ),
+                    )
+                ]
             )
-            and "MemoryEfficientSwish" not in str(module)
-        ]
-        return module_pairs[0][1]
+        )
+        for name, module in module_pairs:
+            if any(name2.startswith(f"{name}.") for name2, _ in module_pairs):
+                continue
+            return module
+        raise RuntimeError()
 
     def get_module_blocks(
         self,
