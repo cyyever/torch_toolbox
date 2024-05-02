@@ -9,7 +9,7 @@ from .dataset import DatasetCollection
 from .executor import Executor, ExecutorConfig
 from .hyper_parameter import HyperParameter
 from .inferencer import Inferencer
-from .metric_visualizers.batch_loss_logger import BatchLossLogger
+from .metric_visualizers import BatchLossLogger
 from .ml_type import (EvaluationMode, ExecutorHookPoint, MachineLearningPhase,
                       ModelType, StopExecutingException)
 from .model import ModelEvaluator
