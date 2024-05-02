@@ -16,8 +16,8 @@ from .device import get_device
 from .hook import HookCollection
 from .hook.config import HookConfig
 from .hyper_parameter import HyperParameter, lr_scheduler_step_after_batch
-from .metric_visualizers.metric_visualizer import MetricVisualizer
-from .metrics.performance_metric import PerformanceMetric
+from .metric_visualizers import MetricVisualizer
+from .metrics import PerformanceMetric
 from .ml_type import EvaluationMode, ExecutorHookPoint, MachineLearningPhase
 from .model import ModelEvaluator, ModelUtil
 
