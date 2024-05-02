@@ -4,7 +4,6 @@ import pickle
 from collections.abc import Iterable
 from typing import Any, Callable
 
-import numpy
 import torch
 from cyy_naive_lib.algorithm.mapping_op import (
     get_mapping_items_by_key_order, get_mapping_values_by_key_order)
@@ -24,7 +23,7 @@ def decompose_like_tensor_dict(tensor_dict: dict, tensor: torch.Tensor) -> dict:
     result = {}
     bias = 0
     for key, component in get_mapping_items_by_key_order(tensor_dict):
-        param_element_num = numpy.prod(component.shape)
+        param_element_num = torch.prod(component.shape).item()
         result[key] = tensor[bias: bias + param_element_num].view(*component.shape)
         bias += param_element_num
     assert bias == tensor.shape[0]
@@ -35,7 +34,7 @@ def decompose_tensor_to_list(shapes: list, tensor: torch.Tensor) -> list:
     result = []
     bias = 0
     for shape in shapes:
-        param_element_num = numpy.prod(shape)
+        param_element_num = torch.prod(shape).item()
         result.append(tensor[bias: bias + param_element_num].view(*shape))
         bias += param_element_num
     assert bias == tensor.shape[0]
@@ -165,7 +164,9 @@ def disassemble_tensor(
         if len(data) == 1:
             return data[0]
         shape, offset = data
-        tensor = concatenated_tensor[offset: offset + numpy.prod(shape)].view(*shape)
+        tensor = concatenated_tensor[offset: offset + torch.prod(shape).item()].view(
+            *shape
+        )
         if clone:
             tensor = tensor.clone()
         return tensor
