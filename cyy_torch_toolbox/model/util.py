@@ -100,9 +100,12 @@ class ModelUtil:
     ) -> None:
         module: torch.nn.Module = self.model
         components = name.split(".")
-        assert len(components) >= 2
-        module = self.model.get_submodule(".".join(components[0:-1]))
-        component = components[-1]
+
+        if len(components) >= 2:
+            module = self.model.get_submodule(".".join(components[0:-1]))
+            component = components[-1]
+        else:
+            component = name
         if hasattr(module, component):
             delattr(module, component)
         if as_parameter:
