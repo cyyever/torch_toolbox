@@ -117,21 +117,13 @@ class ModelUtil:
     def filter_modules(
         self,
         module_type: Type | None = None,
-        module_name: str | None = None,
         module_names: Iterable[str] | None = None,
-        module_criterion: Callable | None = None,
     ) -> Generator:
         if module_names is not None:
             module_names = set(module_names)
         for name, module in self.get_modules():
-            if (
-                (module_type is not None and isinstance(module, module_type))
-                or (module_name is not None and name == module_name)
-                or (module_names is not None and name in module_names)
-                or (
-                    module_criterion is not None
-                    and module_criterion(name=name, module=module)
-                )
+            if (module_type is not None and isinstance(module, module_type)) or (
+                module_names is not None and name in module_names
             ):
                 yield name, module
 
@@ -175,10 +167,8 @@ class ModelUtil:
 
         return self.change_modules(f=unfreeze, **kwargs)
 
-    def have_module(
-        self, module_type: Type | None = None, module_name: str | None = None
-    ) -> bool:
-        for _ in self.filter_modules(module_type=module_type, module_name=module_name):
+    def have_module(self, module_type: Type) -> bool:
+        for _ in self.filter_modules(module_type=module_type):
             return True
         return False
 
