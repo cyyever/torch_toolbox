@@ -42,23 +42,12 @@ class ModelEvaluator:
                 for t in types:
                     assert self.model_util.freeze_modules(module_type=t)
             case {"names": names}:
-                for name in names:
-                    assert self.model_util.freeze_modules(module_name=name)
+                assert self.model_util.freeze_modules(module_names=names)
             case None:
                 pass
             case _:
                 raise NotImplementedError(frozen_modules)
         self.__evaluation_kwargs: dict = {}
-
-    def set_forward_fun(self, forward_fun: str) -> None:
-        self.add_evaluation_kwargs(forward_fun=forward_fun)
-
-    def add_evaluation_kwargs(self, **kwargs) -> None:
-        self.__evaluation_kwargs.update(kwargs)
-
-    def remove_evaluation_kwargs(self, keys: Iterable[str]) -> None:
-        for key in keys:
-            self.__evaluation_kwargs.pop(key, None)
 
     @property
     def model_name(self) -> str | None:
@@ -82,6 +71,19 @@ class ModelEvaluator:
             self.__loss_fun = self._choose_loss_function()
         return self.__loss_fun
 
+    def set_model(self, model) -> None:
+        self._model = model
+
+    def set_forward_fun(self, forward_fun: str) -> None:
+        self.add_evaluation_kwargs(forward_fun=forward_fun)
+
+    def add_evaluation_kwargs(self, **kwargs) -> None:
+        self.__evaluation_kwargs.update(kwargs)
+
+    def remove_evaluation_kwargs(self, keys: Iterable[str]) -> None:
+        for key in keys:
+            self.__evaluation_kwargs.pop(key, None)
+
     def set_loss_fun(self, loss_fun: Callable | str) -> None:
         match loss_fun:
             case "CrossEntropyLoss":
@@ -103,6 +105,44 @@ class ModelEvaluator:
 
     def split_batch_input(self, inputs: Any, batch_size: int) -> dict:
         return {"inputs": inputs, "batch_dim": 0}
+
+    def backward(
+        self,
+        loss,
+        optimizer: None | torch.optim.Optimizer = None,
+        **backward_kwargs,
+    ) -> None:
+        if optimizer is not None:
+            optimizer.zero_grad(set_to_none=True)
+        else:
+            self._model.zero_grad(set_to_none=True)
+        loss.backward(**backward_kwargs)
+
+    def backward_and_step(
+        self,
+        loss,
+        optimizer: torch.optim.Optimizer,
+        **backward_kwargs,
+    ) -> None:
+        self.backward(loss=loss, optimizer=optimizer, **backward_kwargs)
+        optimizer.step()
+
+    def get_underlying_model(self) -> torch.nn.Module:
+        match self.model:
+            case torch.quantization.QuantWrapper():
+                return self.model.module
+            case _:
+                return self.model
+
+    def get_normalized_batch_loss(self, dataset_size: int, forward_result: dict) -> Any:
+        if forward_result["is_averaged_loss"]:
+            assert dataset_size > 0
+            return (
+                forward_result["loss"]
+                * forward_result["loss_batch_size"]
+                / dataset_size
+            )
+        return None
 
     def __call__(
         self,
@@ -196,40 +236,6 @@ class ModelEvaluator:
         }
         return res
 
-    def backward(
-        self,
-        loss,
-        optimizer: None | torch.optim.Optimizer = None,
-        **backward_kwargs,
-    ) -> None:
-        if optimizer is not None:
-            optimizer.zero_grad(set_to_none=True)
-        else:
-            self._model.zero_grad(set_to_none=True)
-        loss.backward(**backward_kwargs)
-
-    def backward_and_step(
-        self,
-        loss,
-        optimizer: torch.optim.Optimizer,
-        **backward_kwargs,
-    ) -> None:
-        self.backward(loss=loss, optimizer=optimizer, **backward_kwargs)
-        optimizer.step()
-
-    def get_normalized_batch_loss(self, dataset_size: int, forward_result: dict) -> Any:
-        if forward_result["is_averaged_loss"]:
-            assert dataset_size > 0
-            return (
-                forward_result["loss"]
-                * forward_result["loss_batch_size"]
-                / dataset_size
-            )
-        return None
-
-    def set_model(self, model) -> None:
-        self._model = model
-
     def _choose_loss_function(self) -> Callable:
         last_module = self.model_util.get_last_underlying_module()
 
@@ -250,13 +256,6 @@ class ModelEvaluator:
             log_error("can't choose a loss function, model is %s", self._model)
             raise NotImplementedError(type(last_module))
         return loss_fun_type()
-
-    def get_underlying_model(self) -> torch.nn.Module:
-        match self.model:
-            case torch.quantization.QuantWrapper():
-                return self.model.module
-            case _:
-                return self.model
 
     @classmethod
     def __is_averaged_loss(cls, loss_fun) -> bool:
