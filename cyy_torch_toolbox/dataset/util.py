@@ -10,6 +10,7 @@ import torch.utils.data
 from ..data_pipeline.dataset import get_dataset_size, select_item, subset_dp
 from ..data_pipeline.transform import Transforms
 from ..factory import Factory
+from ..typing import OptionalIndicesType
 
 
 class DatasetUtil:
@@ -130,7 +131,7 @@ class DatasetUtil:
         return sample_input
 
     def get_batch_labels(
-        self, indices: None | Iterable[int] = None
+        self, indices: OptionalIndicesType = None
     ) -> Generator[tuple[int, set], None, None]:
         for idx, sample in self.get_samples(indices):
             target = sample["target"]
