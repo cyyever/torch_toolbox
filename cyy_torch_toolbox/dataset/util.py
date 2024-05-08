@@ -10,7 +10,7 @@ import torch.utils.data
 from ..data_pipeline.dataset import get_dataset_size, select_item, subset_dp
 from ..data_pipeline.transform import Transforms
 from ..factory import Factory
-from ..typing import OptionalIndicesType
+from ..typing import IndicesType, OptionalIndicesType
 
 
 class DatasetUtil:
@@ -35,13 +35,13 @@ class DatasetUtil:
     def decompose(self) -> None | dict:
         return None
 
-    def get_subset(self, indices: Iterable) -> torch.utils.data.MapDataPipe:
+    def get_subset(self, indices: IndicesType) -> torch.utils.data.MapDataPipe:
         return subset_dp(self.dataset, indices)
 
-    def get_raw_samples(self, indices: Iterable | None = None) -> Generator:
+    def get_raw_samples(self, indices: OptionalIndicesType = None) -> Generator:
         return select_item(dataset=self.dataset, indices=indices)
 
-    def get_samples(self, indices: Iterable | None = None) -> Generator:
+    def get_samples(self, indices: OptionalIndicesType = None) -> Generator:
         raw_samples = self.get_raw_samples(indices=indices)
         if self._transforms is None:
             return raw_samples
