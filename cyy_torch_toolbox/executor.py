@@ -92,8 +92,7 @@ class Executor(HookCollection, abc.ABC):
         return self.__phase
 
     def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
-        kwargs["executor"] = self
-        super().exec_hooks(hook_point=hook_point, **kwargs)
+        asyncio.run(self.async_exec_hooks(hook_point=hook_point, **kwargs))
 
     async def async_exec_hooks(
         self, hook_point: ExecutorHookPoint, **kwargs: Any
@@ -189,13 +188,13 @@ class Executor(HookCollection, abc.ABC):
     def replace_model_evaluator(self, fun: Callable) -> None:
         self.__model_evaluator = fun(self.model_evaluator)
 
-    def _prepare_execution(self) -> None:
+    async def _prepare_execution(self) -> None:
         self.hook_config.set_hooks(self)
         if self.save_dir:
             self.set_save_dir(self.save_dir)
         if self.__visualizer_prefix:
             self.set_visualizer_prefix(self.__visualizer_prefix)
-        self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_EXECUTE)
+        await self.async_exec_hooks(hook_point=ExecutorHookPoint.BEFORE_EXECUTE)
 
     def set_device_fun(self, device_fun: Callable) -> None:
         self.__device_fun = device_fun
@@ -287,7 +286,7 @@ class Executor(HookCollection, abc.ABC):
         evaluation_mode: EvaluationMode,
     ) -> None:
         asyncio.run(
-            self.async_execute_batch(
+            self.__async_execute_batch(
                 batch_index=batch_index,
                 batch=batch,
                 epoch=epoch,
@@ -295,7 +294,7 @@ class Executor(HookCollection, abc.ABC):
             )
         )
 
-    async def async_execute_batch(
+    async def __async_execute_batch(
         self,
         batch_index: int,
         batch: Any,
@@ -367,29 +366,29 @@ class Executor(HookCollection, abc.ABC):
             **batch,
         )
 
-    def _execute_epoch(
+    async def _execute_epoch(
         self,
         epoch: int,
         evaluation_mode: EvaluationMode,
     ) -> None:
-        self.exec_hooks(
+        await self.async_exec_hooks(
             hook_point=ExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
         )
         self.__refresh_dataset_size()
-        self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
+        await self.async_exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
         for batch_index, batch in enumerate(self.dataloader):
-            self.exec_hooks(
+            await self.async_exec_hooks(
                 hook_point=ExecutorHookPoint.AFTER_FETCH_BATCH,
                 batch_index=batch_index,
             )
-            self.execute_batch(
+            await self.__async_execute_batch(
                 batch_index=batch_index,
                 batch=batch,
                 epoch=epoch,
                 evaluation_mode=evaluation_mode,
             )
-            self.exec_hooks(
+            await self.async_exec_hooks(
                 hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH,
                 batch_index=batch_index + 1,
             )
@@ -409,7 +408,7 @@ class Executor(HookCollection, abc.ABC):
                     case _:
                         lr_scheduler.step()
 
-        self.exec_hooks(
+        await self.async_exec_hooks(
             hook_point=ExecutorHookPoint.AFTER_EPOCH,
             epoch=epoch,
         )
