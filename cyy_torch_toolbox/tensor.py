@@ -34,7 +34,7 @@ def decompose_tensor_to_list(shapes: list, tensor: torch.Tensor) -> list:
     result = []
     bias = 0
     for shape in shapes:
-        param_element_num = torch.prod(shape).item()
+        param_element_num = torch.prod(torch.tensor(shape, dtype=torch.long)).item()
         result.append(tensor[bias: bias + param_element_num].view(*shape))
         bias += param_element_num
     assert bias == tensor.shape[0]
