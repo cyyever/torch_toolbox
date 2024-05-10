@@ -1,6 +1,6 @@
 import torch
-from cyy_torch_toolbox.data_structure import TorchProcessPool
-from cyy_torch_toolbox.ml_type import StopExecutingException
+from cyy_torch_toolbox import StopExecutingException
+from cyy_torch_toolbox.concurrency import TorchProcessPool
 
 
 def stop_training(*args, **kwargs):
