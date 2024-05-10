@@ -97,14 +97,7 @@ class Trainer(Executor):
         self.remove_optimizer()
 
     def train(self, validate: bool = True) -> None:
-        try:
-            loop = asyncio.get_running_loop()
-            new_loop=asyncio.new_event_loop()
-            asyncio.set_event_loop(new_loop)
-            asyncio.run(self.async_train(validate=validate))
-            asyncio.set_event_loop(loop)
-        except BaseException:
-            asyncio.run(self.async_train(validate=validate))
+        asyncio.run(self.async_train(validate=validate))
 
     async def async_train(self, validate: bool = True) -> None:
         with (
