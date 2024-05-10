@@ -1,4 +1,5 @@
 import abc
+import asyncio
 import contextlib
 import copy
 import os
@@ -91,7 +92,14 @@ class Executor(HookCollection, abc.ABC):
         return self.__phase
 
     def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
-        super().exec_hooks(hook_point=hook_point, **kwargs, executor=self)
+        kwargs["executor"] = self
+        super().exec_hooks(hook_point=hook_point, **kwargs)
+
+    async def async_exec_hooks(
+        self, hook_point: ExecutorHookPoint, **kwargs: Any
+    ) -> None:
+        kwargs["executor"] = self
+        await super().async_exec_hooks(hook_point=hook_point, **kwargs)
 
     def set_save_dir(self, save_dir: str) -> None:
         self.__save_dir = save_dir
@@ -278,6 +286,22 @@ class Executor(HookCollection, abc.ABC):
         epoch: int,
         evaluation_mode: EvaluationMode,
     ) -> None:
+        asyncio.run(
+            self.async_execute_batch(
+                batch_index=batch_index,
+                batch=batch,
+                epoch=epoch,
+                evaluation_mode=evaluation_mode,
+            )
+        )
+
+    async def async_execute_batch(
+        self,
+        batch_index: int,
+        batch: Any,
+        epoch: int,
+        evaluation_mode: EvaluationMode,
+    ) -> None:
         if (
             evaluation_mode == EvaluationMode.Training
             and self.hyper_parameter.batch_size != 1
@@ -296,7 +320,7 @@ class Executor(HookCollection, abc.ABC):
             "non_blocking": True,
         }
 
-        self.exec_hooks(
+        await self.async_exec_hooks(
             hook_point=ExecutorHookPoint.BEFORE_BATCH,
             epoch=epoch,
             **batch,
@@ -305,7 +329,7 @@ class Executor(HookCollection, abc.ABC):
         evaluation_kwargs = batch
         forward_result: dict = {}
         if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
-            self.exec_hooks(
+            await self.async_exec_hooks(
                 hook_point=ExecutorHookPoint.MODEL_FORWARD,
                 evaluation_kwargs=evaluation_kwargs,
             )
@@ -336,7 +360,7 @@ class Executor(HookCollection, abc.ABC):
                     log_debug("adjust lr after batch")
                     lr_scheduler.step()
 
-        self.exec_hooks(
+        await self.async_exec_hooks(
             hook_point=ExecutorHookPoint.AFTER_BATCH,
             epoch=epoch,
             result=forward_result,
