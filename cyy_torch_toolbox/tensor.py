@@ -164,9 +164,9 @@ def disassemble_tensor(
         if len(data) == 1:
             return data[0]
         shape, offset = data
-        tensor = concatenated_tensor[offset: offset + torch.prod(shape).item()].view(
-            *shape
-        )
+        tensor = concatenated_tensor[
+            offset: offset + torch.prod(torch.tensor(shape, dtype=torch.long)).item()
+        ].view(*shape)
         if clone:
             tensor = tensor.clone()
         return tensor
