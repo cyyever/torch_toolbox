@@ -72,11 +72,21 @@ class HookCollection:
         self.__disabled_hooks: set = set()
         self._hook_objs: dict = {}
 
-    def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
+    def __iterate_hooks(self, hook_point: ExecutorHookPoint) -> Generator:
         for hook in copy.copy(self._hooks.get(hook_point, [])):
             for name, fun in copy.copy(hook).items():
                 if name not in self.__disabled_hooks:
-                    fun(**kwargs)
+                    yield fun
+
+    def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
+        for fun in self.__iterate_hooks(hook_point=hook_point):
+            fun(**kwargs)
+
+    async def async_exec_hooks(
+        self, hook_point: ExecutorHookPoint, **kwargs: Any
+    ) -> None:
+        for fun in self.__iterate_hooks(hook_point=hook_point):
+            await fun(**kwargs)
 
     def has_hook(
         self,
