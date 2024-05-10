@@ -91,8 +91,7 @@ class Executor(HookCollection, abc.ABC):
         return self.__phase
 
     def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
-        kwargs["executor"] = self
-        super().exec_hooks(hook_point=hook_point, **kwargs)
+        super().exec_hooks(hook_point=hook_point, **kwargs, executor=self)
 
     def set_save_dir(self, save_dir: str) -> None:
         self.__save_dir = save_dir
