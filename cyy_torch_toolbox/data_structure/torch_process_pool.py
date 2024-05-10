@@ -1,6 +1,6 @@
 from typing import Any
 
-from cyy_naive_lib.data_structure.process_pool import ProcessPool
+from cyy_naive_lib.concurrency import ProcessPool
 
 from .torch_process_context import TorchProcessContext
 
