@@ -99,7 +99,10 @@ class Trainer(Executor):
     def train(self, validate: bool = True) -> None:
         try:
             loop = asyncio.get_running_loop()
-            loop.run_until_complete(self.async_train(validate=validate))
+            new_loop=asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+            asyncio.run(self.async_train(validate=validate))
+            asyncio.set_event_loop(loop)
         except BaseException:
             asyncio.run(self.async_train(validate=validate))
 
