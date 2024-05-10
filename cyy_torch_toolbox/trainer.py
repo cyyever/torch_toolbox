@@ -110,7 +110,9 @@ class Trainer(Executor):
                     await self._execute_epoch(
                         epoch=epoch, evaluation_mode=EvaluationMode.Training
                     )
-                    if validate and self.__test(phase=MachineLearningPhase.Validation):
+                    if validate and await self.__test(
+                        phase=MachineLearningPhase.Validation
+                    ):
                         await self.async_exec_hooks(
                             ExecutorHookPoint.AFTER_VALIDATION,
                             epoch=epoch,
