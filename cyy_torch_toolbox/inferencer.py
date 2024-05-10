@@ -1,3 +1,4 @@
+import asyncio
 import functools
 
 import torch
@@ -9,7 +10,10 @@ from .typing import TensorDict
 
 
 class Inferencer(Executor):
-    def inference(
+    def inference(self, evaluation_mode: EvaluationMode = EvaluationMode.Test) -> bool:
+        return asyncio.run(self.async_inference(evaluation_mode=evaluation_mode))
+
+    async def async_inference(
         self,
         evaluation_mode: EvaluationMode = EvaluationMode.Test,
     ) -> bool:
@@ -21,9 +25,9 @@ class Inferencer(Executor):
             self.device_stream_context,
         ):
             try:
-                self._prepare_execution()
-                self._execute_epoch(epoch=1, evaluation_mode=evaluation_mode)
-                self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
+                await self._prepare_execution()
+                await self._execute_epoch(epoch=1, evaluation_mode=evaluation_mode)
+                await self.async_exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
                 succ_flag = True
             except StopExecutingException:
                 log_warning("stop inference")
