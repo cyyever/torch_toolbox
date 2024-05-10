@@ -3,7 +3,7 @@ from typing import Any
 
 import torch
 import torch.multiprocessing
-from cyy_naive_lib.data_structure.task_queue import BatchPolicy, TaskQueue
+from cyy_naive_lib.concurrency import BatchPolicy, TaskQueue
 
 from ..device import get_device_memory_info, get_devices
 
