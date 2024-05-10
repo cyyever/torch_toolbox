@@ -7,7 +7,7 @@ import torch
 from cyy_naive_lib.log import log_debug, log_warning
 from cyy_naive_lib.reflection import call_fun, get_class_attrs
 
-from ..data_structure.torch_thread_task_queue import TorchThreadTaskQueue
+from ..concurrency import TorchThreadTaskQueue
 from .lr_finder import LRFinder
 
 
@@ -194,9 +194,9 @@ class HyperParameterConfig(HyperParameter):
     def create_hyper_parameter(self) -> HyperParameter:
         hyper_parameter = copy.copy(self)
         if self.fake_weight_decay is not None:
-            hyper_parameter.optimizer_kwargs[
-                "fake_weight_decay"
-            ] = self.fake_weight_decay
+            hyper_parameter.optimizer_kwargs["fake_weight_decay"] = (
+                self.fake_weight_decay
+            )
         if self.weight_decay is not None:
             hyper_parameter.optimizer_kwargs["fake_weight_decay"] = self.weight_decay
         return hyper_parameter
