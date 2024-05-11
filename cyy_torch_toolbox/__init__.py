@@ -8,3 +8,4 @@ from .inferencer import *
 from .ml_type import *
 from .model import *
 from .trainer import *
+from .typing import *
