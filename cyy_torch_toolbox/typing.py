@@ -8,3 +8,4 @@ OptionalTensorDict: TypeAlias = TensorDict | None
 BlockType: TypeAlias = list[tuple[str, torch.nn.Module]]
 IndicesType: TypeAlias = Iterable[int]
 OptionalIndicesType: TypeAlias = IndicesType | None
+ModelGradient: TypeAlias = TensorDict
