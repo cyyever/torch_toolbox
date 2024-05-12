@@ -12,16 +12,15 @@ from .typing import TensorDict
 
 class Inferencer(Executor):
     def inference(self, evaluation_mode: EvaluationMode = EvaluationMode.Test) -> bool:
+        co = self.async_inference(evaluation_mode=evaluation_mode)
         try:
-            return asyncio.run(self.async_inference(evaluation_mode=evaluation_mode))
+            return asyncio.run(co)
         except BaseException as e:
             if "a running event loop" not in str(e):
                 raise e
             self.wait_stream()
             pool = ThreadPool()
-            pool.submit(
-                asyncio.run, self.async_inference(evaluation_mode=evaluation_mode)
-            )
+            pool.submit(asyncio.run, co)
             done, _ = pool.wait_results()
             pool.shutdown()
             assert done
