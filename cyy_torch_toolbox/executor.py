@@ -228,12 +228,12 @@ class Executor(HookCollection, abc.ABC):
 
     @property
     def device_stream_context(self) -> torch.cuda.StreamContext:
-        if "cuda" in self.device.type.lower():
-            if self.__device_stream is None:
-                self.__device_stream = torch.cuda.Stream(device=self.device)
-                self.__device_stream.wait_stream(torch.cuda.current_stream())
-            return torch.cuda.stream(self.__device_stream)
-        return torch.cuda.stream(None)
+        if "cuda" not in self.device.type.lower():
+            return torch.cuda.stream(None)
+        if self.__device_stream is None:
+            self.__device_stream = torch.cuda.Stream(device=self.device)
+            self.__device_stream.wait_stream(torch.cuda.current_stream())
+        return torch.cuda.stream(self.__device_stream)
 
     def wait_stream(self) -> None:
         if self.__device_stream is not None:
@@ -376,7 +376,9 @@ class Executor(HookCollection, abc.ABC):
             epoch=epoch,
         )
         self.__refresh_dataset_size()
-        await self.async_exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
+        await self.async_exec_hooks(
+            hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0
+        )
         for batch_index, batch in enumerate(self.dataloader):
             await self.async_exec_hooks(
                 hook_point=ExecutorHookPoint.AFTER_FETCH_BATCH,
