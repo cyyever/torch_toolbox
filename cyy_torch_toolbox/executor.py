@@ -58,6 +58,11 @@ class Executor(HookCollection, abc.ABC):
         return self.__dataset_collection
 
     @property
+    def mutable_dataset_collection(self) -> DatasetCollection:
+        self.__dataloader = None
+        return self.__dataset_collection
+
+    @property
     def device(self) -> torch.device:
         if self.__device is None:
             self.set_device(self.__device_fun())
