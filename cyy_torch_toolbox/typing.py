@@ -11,3 +11,4 @@ OptionalIndicesType: TypeAlias = IndicesType | None
 ModelGradient: TypeAlias = TensorDict
 SampleTensors: TypeAlias = dict[int, torch.Tensor]
 SampleGradients: TypeAlias = dict[int, ModelGradient]
+ModelParameter: TypeAlias = TensorDict
