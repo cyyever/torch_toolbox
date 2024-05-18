@@ -7,7 +7,7 @@ from cyy_naive_lib.log import log_warning
 
 from .executor import Executor
 from .ml_type import EvaluationMode, ExecutorHookPoint, StopExecutingException
-from .typing import TensorDict
+from .typing import ModelGradient
 
 
 class Inferencer(Executor):
@@ -48,7 +48,7 @@ class Inferencer(Executor):
                 self.wait_stream()
             return succ_flag
 
-    def get_gradient(self) -> TensorDict:
+    def get_gradient(self) -> ModelGradient:
         with self.hook_config:
             self.hook_config.use_performance_metric = False
             self.hook_config.summarize_executor = False
@@ -56,7 +56,7 @@ class Inferencer(Executor):
                 evaluation_mode=EvaluationMode.TestWithGrad,
             )
             assert succ
-            return self.model_util.get_gradient_dict()
+            return self.model_util.get_gradients()
 
     def get_sample_loss(self) -> dict:
         sample_loss: dict = {}
