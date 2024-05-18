@@ -12,4 +12,4 @@ from .tensor import (cat_tensor_dict, cat_tensors_to_vector, tensor_clone,
 from .trainer import *
 from .typing import (BlockType, IndicesType, ModelGradient,
                      OptionalIndicesType, OptionalTensor, OptionalTensorDict,
-                     TensorDict)
+                     SampleGradients, SampleTensors, TensorDict)
