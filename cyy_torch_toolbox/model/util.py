@@ -48,8 +48,8 @@ class ModelUtil:
     def get_buffers(self) -> TensorDict:
         return dict(self.model.named_buffers())
 
-    def load_buffers(self, buffer_dict: TensorDict) -> None:
-        for name, parameter in buffer_dict.items():
+    def load_buffers(self, buffers: TensorDict) -> None:
+        for name, parameter in buffers.items():
             self.set_attr(name, parameter, as_parameter=False)
 
     def get_parameters(self, detach: bool = True) -> ModelParameter:
@@ -141,7 +141,7 @@ class ModelUtil:
         def freeze(name, module, model_util) -> None:
             log_debug("freeze %s", name)
             module.fronzen_parameters = set()
-            parameter_dict = {}
+            parameter_dict: ModelParameter = {}
             for param_name, parameter in module.named_parameters():
                 parameter_dict[name + "." + param_name] = parameter.data
                 module.fronzen_parameters.add(param_name)
@@ -153,7 +153,7 @@ class ModelUtil:
 
     def unfreeze_modules(self, **kwargs: Any) -> bool:
         def unfreeze(name, module, model_util) -> None:
-            parameter_dict = {}
+            parameter_dict: ModelParameter = {}
             if not hasattr(module, "fronzen_parameters"):
                 log_debug("nothing to unfreeze")
                 return
