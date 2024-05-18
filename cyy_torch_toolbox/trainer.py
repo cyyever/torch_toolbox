@@ -14,7 +14,7 @@ from .metric_visualizers import BatchLossLogger
 from .ml_type import (EvaluationMode, ExecutorHookPoint, MachineLearningPhase,
                       ModelType, StopExecutingException)
 from .model import ModelEvaluator
-from .typing import TensorDict
+from .typing import ModelParameter
 
 
 class Trainer(Executor):
@@ -92,8 +92,8 @@ class Trainer(Executor):
         super().load_model(model_path)
         self.remove_optimizer()
 
-    def load_parameter_dict(self, parameter_dict: TensorDict) -> None:
-        self.model_util.load_parameter_dict(parameter_dict)
+    def load_parameters(self, parameter: ModelParameter) -> None:
+        self.model_util.load_parameters(parameter)
         self.remove_optimizer()
 
     def train(self, validate: bool = True) -> None:
