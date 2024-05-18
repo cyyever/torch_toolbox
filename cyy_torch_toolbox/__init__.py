@@ -10,6 +10,6 @@ from .model import *
 from .tensor import (cat_tensor_dict, cat_tensors_to_vector, tensor_clone,
                      tensor_to)
 from .trainer import *
-from .typing import (BlockType, IndicesType, ModelGradient,
+from .typing import (BlockType, IndicesType, ModelGradient, ModelParameter,
                      OptionalIndicesType, OptionalTensor, OptionalTensorDict,
                      SampleGradients, SampleTensors, TensorDict)

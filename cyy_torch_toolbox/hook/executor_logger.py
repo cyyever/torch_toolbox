@@ -16,7 +16,7 @@ class ExecutorLogger(Hook):
         # log_debug("loss function is %s", executor.loss_fun)
         log_info(
             "parameter number is %s",
-            sum(a.numel() for a in executor.model_util.get_parameter_seq()),
+            sum(a.numel() for a in executor.model_util.get_parameter_seq(detach=False)),
         )
         if hasattr(executor, "hyper_parameter"):
             log_info("hyper_parameter is %s", executor.hyper_parameter)
