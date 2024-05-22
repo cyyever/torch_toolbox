@@ -85,4 +85,4 @@ class Inferencer(Executor):
         self, sample_loss: dict, result, sample_indices, **kwargs
     ) -> None:
         assert not result["is_averaged_loss"]
-        sample_loss.update(zip(sample_indices, result["loss"]))
+        sample_loss.update(zip(sample_indices.tolist(), result["loss"]))
