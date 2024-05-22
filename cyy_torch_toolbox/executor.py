@@ -8,6 +8,7 @@ from typing import Any, Callable, Generator
 import torch
 import torch.cuda
 import torch.utils.data
+from torch._streambase import _EventBase, _StreamBase
 from cyy_naive_lib.log import log_debug
 
 from .data_pipeline.loader import get_dataloader
@@ -47,7 +48,7 @@ class Executor(HookCollection, abc.ABC):
         self.__dataloader_kwargs: dict = (
             copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
         )
-        self.__device_stream: None | torch.cuda.Stream = None
+        self.__device_stream: None | _StreamBase = None
         self.__save_dir: None | str = None
         self.__visualizer_prefix: str = ""
 
