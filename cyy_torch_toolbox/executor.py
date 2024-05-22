@@ -182,16 +182,17 @@ class Executor(HookCollection, abc.ABC):
 
     @property
     def loss_fun(self) -> Callable:
-        return self.__model_evaluator.loss_fun
+        return self.running_model_evaluator.loss_fun
 
     @property
     def model(self) -> torch.nn.Module:
         return self.running_model_evaluator.model
 
     def replace_model(self, fun: Callable) -> None:
-        self.__model_evaluator.set_model(fun(self.model))
+        self.running_model_evaluator.set_model(fun(self.model))
 
     def replace_model_evaluator(self, fun: Callable) -> None:
+        self.wait_stream()
         self.__model_evaluator = fun(self.model_evaluator)
 
     async def _prepare_execution(self) -> None:
@@ -280,8 +281,7 @@ class Executor(HookCollection, abc.ABC):
         torch.save(self.model.state_dict(), model_path)
 
     def offload_from_device(self) -> None:
-        self.wait_stream()
-        self.__model_evaluator.offload_from_device()
+        self.model_evaluator.offload_from_device()
         torch.cuda.empty_cache()
         for executor in self._foreach_sub_executor():
             executor.offload_from_device()
@@ -319,7 +319,7 @@ class Executor(HookCollection, abc.ABC):
     async def __async_execute_batch(
         self,
         batch_index: int,
-        batch: Any,
+        batch: dict,
         epoch: int,
         evaluation_mode: EvaluationMode,
     ) -> None:
@@ -327,7 +327,7 @@ class Executor(HookCollection, abc.ABC):
             evaluation_mode == EvaluationMode.Training
             and self.hyper_parameter.batch_size != 1
             and batch.get("batch_size", None) == 1
-            and self.__model_evaluator.model_util.have_module(
+            and self.running_model_evaluator.model_util.have_module(
                 module_type=torch.nn.BatchNorm2d
             )
         ):
@@ -356,10 +356,10 @@ class Executor(HookCollection, abc.ABC):
             )
             forward_result = self._data.pop("forward_result")
         else:
-            forward_result = self.__model_evaluator(**evaluation_kwargs)
+            forward_result = self.running_model_evaluator(**evaluation_kwargs)
 
         forward_result["normalized_batch_loss"] = (
-            self.__model_evaluator.get_normalized_batch_loss(
+            self.running_model_evaluator.get_normalized_batch_loss(
                 dataset_size=self.dataset_size, forward_result=forward_result
             )
         )
@@ -369,11 +369,11 @@ class Executor(HookCollection, abc.ABC):
             if evaluation_mode == EvaluationMode.Training:
                 optimizer = self.get_optimizer()
                 backward_loss = forward_result["loss"]
-                self.__model_evaluator.backward_and_step(
+                self.running_model_evaluator.backward_and_step(
                     loss=backward_loss, optimizer=optimizer
                 )
             else:
-                self.__model_evaluator.backward(loss=backward_loss)
+                self.running_model_evaluator.backward(loss=backward_loss)
 
             if evaluation_mode == EvaluationMode.Training:
                 lr_scheduler = self.get_lr_scheduler()
