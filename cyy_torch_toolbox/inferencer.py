@@ -57,7 +57,7 @@ class Inferencer(Executor):
             assert succ
             return self.model_util.get_gradients()
 
-    def get_sample_loss(self) -> dict:
+    def get_sample_loss(self, evaluation_mode=EvaluationMode.Test) -> dict:
         sample_loss: dict = {}
         with self.hook_config:
             hook_name = "__cyy_collect_sample_loss"
@@ -72,7 +72,7 @@ class Inferencer(Executor):
                 "need_sample_indices": True,
             }
             self.running_model_evaluator.add_evaluation_kwargs(**evaluation_kwargs)
-            succ: bool = self.inference()
+            succ: bool = self.inference(evaluation_mode=evaluation_mode)
             self.running_model_evaluator.remove_evaluation_kwargs(
                 evaluation_kwargs.keys()
             )
