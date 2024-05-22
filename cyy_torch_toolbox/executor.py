@@ -9,7 +9,6 @@ from typing import Any, Callable, Generator
 import torch
 import torch.cuda
 import torch.utils.data
-from torch._streambase import _EventBase, _StreamBase
 from cyy_naive_lib.log import log_debug
 from torch._streambase import _StreamBase
 

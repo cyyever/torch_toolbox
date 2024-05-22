@@ -64,7 +64,7 @@ class Inferencer(Executor):
             self.append_named_hook(
                 hook_point=ExecutorHookPoint.AFTER_BATCH,
                 name=hook_name,
-                fun=functools.partial(self._collect_sample_loss, sample_loss),
+                fun=functools.partial(self.__collect_sample_loss, sample_loss),
             )
             self.hook_config.disable_log()
             evaluation_kwargs = {
@@ -81,7 +81,7 @@ class Inferencer(Executor):
             assert len(sample_loss) == self.dataset_size
             return sample_loss
 
-    def _collect_sample_loss(
+    def __collect_sample_loss(
         self, sample_loss: dict, result, sample_indices, **kwargs
     ) -> None:
         assert not result["is_averaged_loss"]

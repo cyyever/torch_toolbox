@@ -47,7 +47,7 @@ def __prepare_dataloader_kwargs(
     if dc.dataset_type == DatasetType.Graph:
         # don't pass large graphs around processes
         use_process = False
-    if cache_transforms == "device":
+    if cache_transforms is not None:
         use_process = False
     if use_process:
         kwargs["prefetch_factor"] = 2
