@@ -1,15 +1,32 @@
+import asyncio
 import functools
 
 import torch
+from cyy_naive_lib.concurrency import ThreadPool
 from cyy_naive_lib.log import log_warning
 
 from .executor import Executor
 from .ml_type import EvaluationMode, ExecutorHookPoint, StopExecutingException
-from .typing import TensorDict
+from .typing import ModelGradient
 
 
 class Inferencer(Executor):
-    def inference(
+    def inference(self, evaluation_mode: EvaluationMode = EvaluationMode.Test) -> bool:
+        co = self.async_inference(evaluation_mode=evaluation_mode)
+        try:
+            return asyncio.run(co)
+        except BaseException as e:
+            if "a running event loop" not in str(e):
+                raise e
+            self.wait_stream()
+            pool = ThreadPool()
+            pool.submit(asyncio.run, co)
+            done, _ = pool.wait_results()
+            pool.shutdown()
+            assert done
+            return list(done.values())[0]
+
+    async def async_inference(
         self,
         evaluation_mode: EvaluationMode = EvaluationMode.Test,
     ) -> bool:
@@ -21,9 +38,9 @@ class Inferencer(Executor):
             self.device_stream_context,
         ):
             try:
-                self._prepare_execution()
-                self._execute_epoch(epoch=1, evaluation_mode=evaluation_mode)
-                self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
+                await self._prepare_execution()
+                await self._execute_epoch(epoch=1, evaluation_mode=evaluation_mode)
+                await self.async_exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
                 succ_flag = True
             except StopExecutingException:
                 log_warning("stop inference")
@@ -31,7 +48,7 @@ class Inferencer(Executor):
                 self.wait_stream()
             return succ_flag
 
-    def get_gradient(self) -> TensorDict:
+    def get_gradient(self) -> ModelGradient:
         with self.hook_config:
             self.hook_config.use_performance_metric = False
             self.hook_config.summarize_executor = False
@@ -39,7 +56,7 @@ class Inferencer(Executor):
                 evaluation_mode=EvaluationMode.TestWithGrad,
             )
             assert succ
-            return self.model_util.get_gradient_dict()
+            return self.model_util.get_gradients()
 
     def get_sample_loss(self) -> dict:
         sample_loss: dict = {}

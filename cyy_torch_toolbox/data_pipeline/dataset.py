@@ -1,9 +1,11 @@
-from typing import Any, Generator, Iterable
+from typing import Any, Generator
 
 import torch
 import torch.utils.data
 import torch.utils.data.datapipes
 import torch.utils.data.dataset
+
+from ..typing import OptionalIndicesType
 
 
 def get_dataset_size(dataset: Any) -> int:
@@ -59,7 +61,7 @@ def dataset_with_indices(
     return dataset
 
 
-def select_item(dataset: Any, indices: None | Iterable = None) -> Generator:
+def select_item(dataset: Any, indices: OptionalIndicesType = None) -> Generator:
     if indices is not None:
         indices = set(indices)
     match dataset:
@@ -78,7 +80,7 @@ def select_item(dataset: Any, indices: None | Iterable = None) -> Generator:
 
 
 def subset_dp(
-    dataset: torch.utils.data.Dataset, indices: None | Iterable = None
+    dataset: torch.utils.data.Dataset, indices: OptionalIndicesType = None
 ) -> torch.utils.data.MapDataPipe:
     # original_dataset = getattr(dataset, "dataset", None)
     # if has_hugging_face:

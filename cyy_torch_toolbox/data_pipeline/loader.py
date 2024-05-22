@@ -4,7 +4,7 @@ import torch
 import torch.utils.data
 from cyy_naive_lib.log import log_debug
 
-from ..data_structure.torch_process_context import TorchProcessContext
+from ..concurrency import TorchProcessContext
 from ..dataset.collection import DatasetCollection
 from ..factory import Factory
 from ..hyper_parameter import HyperParameter
