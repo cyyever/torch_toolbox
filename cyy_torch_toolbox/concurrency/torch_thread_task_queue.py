@@ -1,6 +1,6 @@
 from typing import Any
 
-from cyy_naive_lib.data_structure.thread_context import ThreadContext
+from cyy_naive_lib.concurrency import ThreadContext
 
 from .torch_task_queue import TorchTaskQueue
 

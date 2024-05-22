@@ -1,7 +1,7 @@
 from typing import Any
 
 import torch
-import torch.cuda.amp
+import torch.amp
 from cyy_naive_lib.log import log_warning
 
 from .evaluator import ModelEvaluator
@@ -9,10 +9,9 @@ from .evaluator import ModelEvaluator
 
 class AMPModelEvaluator:
     def __init__(self, evaluator: ModelEvaluator) -> None:
-        assert torch.cuda.is_available()
-        self.evaluator = evaluator
+        self.evaluator: ModelEvaluator = evaluator
         self.__amp_ctx: None | torch.autocast = None
-        self.__scaler: None | torch.cuda.amp.GradScaler = None
+        self.__scaler: None | torch.amp.grad_scaler.GradScaler = None
 
     def __getattr__(self, name):
         if name == "evaluator":
@@ -33,12 +32,8 @@ class AMPModelEvaluator:
         **backward_kwargs,
     ) -> Any:
         assert self.__amp_ctx is not None
-        if (
-            self.__scaler is None
-            and self.__amp_ctx is not None
-            and str(self.__amp_ctx.device) == "cuda"
-        ):
-            self.__scaler = torch.cuda.amp.GradScaler()
+        if self.__scaler is None and self.__amp_ctx is not None:
+            self.__scaler = torch.amp.grad_scaler.GradScaler()
         if self.__scaler is None:
             return self.evaluator.backward_and_step(
                 loss=loss, optimizer=optimizer, **backward_kwargs
@@ -61,3 +56,4 @@ class AMPModelEvaluator:
                 log_warning("found inf in AMP, scale is %s", self.__scaler._scale)
                 continue
             break
+        return None

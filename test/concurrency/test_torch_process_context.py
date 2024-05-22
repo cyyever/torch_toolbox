@@ -1,5 +1,5 @@
 import torch
-from cyy_torch_toolbox.data_structure.torch_process_context import \
+from cyy_torch_toolbox.concurrency.torch_process_context import \
     TorchProcessContext
 
 

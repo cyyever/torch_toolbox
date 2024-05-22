@@ -6,7 +6,7 @@ from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 from cyy_naive_lib.log import log_debug
 
 from ..tensor import cat_tensors_to_vector
-from ..typing import BlockType, TensorDict
+from ..typing import BlockType, ModelGradient, ModelParameter, TensorDict
 
 
 class ModelUtil:
@@ -28,46 +28,46 @@ class ModelUtil:
                 return
 
     def get_parameter_seq(self, **kwargs: Any) -> Generator:
-        return get_mapping_values_by_key_order(self.get_parameter_dict(**kwargs))
+        return get_mapping_values_by_key_order(self.get_parameters(**kwargs))
 
     def get_parameter_list(self, **kwargs: Any) -> torch.Tensor:
         return cat_tensors_to_vector(self.get_parameter_seq(**kwargs))
 
-    def load_parameter_dict(
+    def load_parameters(
         self,
-        parameter_dict: TensorDict,
+        parameters: ModelParameter,
         check_parameter: bool = False,
         keep_grad: bool = False,
     ) -> None:
-        assert parameter_dict
-        for name, parameter in parameter_dict.items():
+        assert parameters
+        for name, parameter in parameters.items():
             if check_parameter:
                 self.model.get_parameter(name)
             self.set_attr(name, parameter, as_parameter=True, keep_grad=keep_grad)
 
-    def get_buffer_dict(self) -> TensorDict:
+    def get_buffers(self) -> TensorDict:
         return dict(self.model.named_buffers())
 
-    def load_buffer_dict(self, buffer_dict: TensorDict) -> None:
-        for name, parameter in buffer_dict.items():
+    def load_buffers(self, buffers: TensorDict) -> None:
+        for name, parameter in buffers.items():
             self.set_attr(name, parameter, as_parameter=False)
 
-    def get_parameter_dict(self, detach: bool = True) -> TensorDict:
+    def get_parameters(self, detach: bool = True) -> ModelParameter:
         return {
             name: parameter.detach() if detach else parameter
             for name, parameter in self.model.named_parameters()
         }
 
-    def get_gradient_dict(self) -> TensorDict:
+    def get_gradients(self) -> ModelGradient:
         return {
             k: v.grad
-            for k, v in self.get_parameter_dict(detach=False).items()
+            for k, v in self.get_parameters(detach=False).items()
             if v.grad is not None
         }
 
-    def load_gradient_dict(self, grad_dict: TensorDict) -> None:
-        assert grad_dict
-        for name, grad in grad_dict.items():
+    def load_gradients(self, gradients: ModelGradient) -> None:
+        assert gradients
+        for name, grad in gradients.items():
             self.set_grad(name, grad)
 
     def disable_running_stats(self) -> None:
@@ -141,7 +141,7 @@ class ModelUtil:
         def freeze(name, module, model_util) -> None:
             log_debug("freeze %s", name)
             module.fronzen_parameters = set()
-            parameter_dict = {}
+            parameter_dict: ModelParameter = {}
             for param_name, parameter in module.named_parameters():
                 parameter_dict[name + "." + param_name] = parameter.data
                 module.fronzen_parameters.add(param_name)
@@ -153,7 +153,7 @@ class ModelUtil:
 
     def unfreeze_modules(self, **kwargs: Any) -> bool:
         def unfreeze(name, module, model_util) -> None:
-            parameter_dict = {}
+            parameter_dict: ModelParameter = {}
             if not hasattr(module, "fronzen_parameters"):
                 log_debug("nothing to unfreeze")
                 return

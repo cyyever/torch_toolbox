@@ -30,7 +30,7 @@ class KeepModelHook(Hook):
     def clear(self) -> None:
         self.__best_model.clear()
 
-    def _after_validation(self, executor, epoch, **kwargs) -> None:
+    def _after_validation(self, executor, epoch: int, **kwargs) -> None:
         trainer = executor
         if self.save_epoch_model:
             model_path = os.path.join(
@@ -56,7 +56,7 @@ class KeepModelHook(Hook):
                 "epoch": epoch,
                 "parameter": tensor_clone(
                     tensor_to(
-                        data=trainer.model_util.get_parameter_dict(detach=True),
+                        data=trainer.model_util.get_parameters(detach=True),
                         non_blocking=True,
                         device=get_cpu_device(),
                     ),
