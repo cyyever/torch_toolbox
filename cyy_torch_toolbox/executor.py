@@ -365,15 +365,13 @@ class Executor(HookCollection, abc.ABC):
         )
         batch |= forward_result
         if evaluation_mode != EvaluationMode.Test:
-            backward_loss: torch.Tensor = forward_result["normalized_batch_loss"]
             if evaluation_mode == EvaluationMode.Training:
                 optimizer = self.get_optimizer()
-                backward_loss = forward_result["loss"]
                 self.running_model_evaluator.backward_and_step(
-                    loss=backward_loss, optimizer=optimizer
+                    loss=forward_result["loss"], optimizer=optimizer
                 )
             else:
-                self.running_model_evaluator.backward(loss=backward_loss)
+                self.running_model_evaluator.backward(loss=forward_result["normalized_batch_loss"])
 
             if evaluation_mode == EvaluationMode.Training:
                 lr_scheduler = self.get_lr_scheduler()
