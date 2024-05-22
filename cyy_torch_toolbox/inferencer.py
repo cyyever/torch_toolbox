@@ -50,8 +50,7 @@ class Inferencer(Executor):
 
     def get_gradient(self) -> ModelGradient:
         with self.hook_config:
-            self.hook_config.use_performance_metric = False
-            self.hook_config.summarize_executor = False
+            self.hook_config.disable_log()
             succ: bool = self.inference(
                 evaluation_mode=EvaluationMode.TestWithGrad,
             )
@@ -67,8 +66,7 @@ class Inferencer(Executor):
                 name=hook_name,
                 fun=functools.partial(self._collect_sample_loss, sample_loss),
             )
-            self.hook_config.use_performance_metric = False
-            self.hook_config.summarize_executor = False
+            self.hook_config.disable_log()
             evaluation_kwargs = {
                 "reduce_loss": False,
                 "need_sample_indices": True,
