@@ -108,7 +108,7 @@ class ModelEvaluator:
 
     def backward(
         self,
-        loss,
+        loss: torch.Tensor,
         optimizer: None | torch.optim.Optimizer = None,
         **backward_kwargs,
     ) -> None:
@@ -120,7 +120,7 @@ class ModelEvaluator:
 
     def backward_and_step(
         self,
-        loss,
+        loss: torch.Tensor,
         optimizer: torch.optim.Optimizer,
         **backward_kwargs,
     ) -> None:
