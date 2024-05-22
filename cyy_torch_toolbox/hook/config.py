@@ -31,6 +31,10 @@ class HookConfig:
         self.save_performance_metric = False
         self.__old_config: Any = None
 
+    def disable_log(self) -> None:
+        self.summarize_executor = False
+        self.use_performance_metric = False
+
     def __enter__(self) -> Self:
         self.__old_config = copy.copy(self)
         return self
