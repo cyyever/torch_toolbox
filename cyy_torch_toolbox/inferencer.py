@@ -60,24 +60,26 @@ class Inferencer(Executor):
     def get_sample_loss(self, evaluation_mode=EvaluationMode.Test) -> dict:
         sample_loss: dict = {}
         with self.hook_config:
+            self.hook_config.disable_log()
             hook_name = "__cyy_collect_sample_loss"
             self.append_named_hook(
                 hook_point=ExecutorHookPoint.AFTER_BATCH,
                 name=hook_name,
                 fun=functools.partial(self.__collect_sample_loss, sample_loss),
             )
-            self.hook_config.disable_log()
             evaluation_kwargs = {
                 "reduce_loss": False,
                 "need_sample_indices": True,
             }
             self.running_model_evaluator.add_evaluation_kwargs(**evaluation_kwargs)
-            succ: bool = self.inference(evaluation_mode=evaluation_mode)
-            self.running_model_evaluator.remove_evaluation_kwargs(
-                evaluation_kwargs.keys()
-            )
-            self.remove_named_hook(name=hook_name)
-            assert succ
+            try:
+                succ: bool = self.inference(evaluation_mode=evaluation_mode)
+                assert succ
+            finally:
+                self.running_model_evaluator.remove_evaluation_kwargs(
+                    evaluation_kwargs.keys()
+                )
+                self.remove_named_hook(name=hook_name)
             assert len(sample_loss) == self.dataset_size
             return sample_loss
 
