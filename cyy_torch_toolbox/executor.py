@@ -10,7 +10,7 @@ import torch
 import torch.cuda
 import torch.utils.data
 from cyy_naive_lib.log import log_debug
-from torch._streambase import _StreamBase
+from torch import Stream
 
 from .data_pipeline.loader import get_dataloader
 from .dataset import DatasetCollection, DatasetUtil
@@ -49,7 +49,7 @@ class Executor(HookCollection, abc.ABC):
         self.__dataloader_kwargs: dict = (
             copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
         )
-        self.__device_stream: None | _StreamBase = None
+        self.__device_stream: None | Stream = None
         self.__save_dir: None | str = None
         self.__visualizer_prefix: str = ""
 
@@ -240,17 +240,18 @@ class Executor(HookCollection, abc.ABC):
                 case "cuda":
                     self.__device_stream = torch.cuda.Stream(device=self.device)
                 case "cpu":
-                    self.__device_stream.wait_stream(torch.cpu.current_stream())
+                    self.__device_stream = torch.cpu.Stream(device=self.device)
                 case "xpu":
-                    self.__device_stream = torch.xpu.Stream()
+                    self.__device_stream = torch.xpu.Stream(device=self.device)
                 case _:
                     raise RuntimeError(self.device)
+        assert self.__device_stream is not None
         match self.device.type.lower():
             case "cuda":
                 self.__device_stream.wait_stream(torch.cuda.current_stream())
                 return torch.cuda.stream(self.__device_stream)
             case "cpu":
-                self.__device_stream = torch.cpu.Stream()
+                self.__device_stream.wait_stream(torch.cpu.current_stream())
                 return torch.cpu.stream(self.__device_stream)
             case "xpu":
                 self.__device_stream.wait_stream(torch.xpu.current_stream())
@@ -371,7 +372,9 @@ class Executor(HookCollection, abc.ABC):
                     loss=forward_result["loss"], optimizer=optimizer
                 )
             else:
-                self.running_model_evaluator.backward(loss=forward_result["normalized_batch_loss"])
+                self.running_model_evaluator.backward(
+                    loss=forward_result["normalized_batch_loss"]
+                )
 
             if evaluation_mode == EvaluationMode.Training:
                 lr_scheduler = self.get_lr_scheduler()
