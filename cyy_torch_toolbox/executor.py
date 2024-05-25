@@ -5,6 +5,7 @@ import copy
 import os
 from dataclasses import dataclass, field
 from typing import Any, Callable, Generator
+from contextlib import AbstractContextManager
 
 import torch
 import torch.cuda
@@ -49,7 +50,7 @@ class Executor(HookCollection, abc.ABC):
         self.__dataloader_kwargs: dict = (
             copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
         )
-        self.__device_stream: None | Stream = None
+        self.__stream: None | Stream | torch.cpu.Stream = None
         self.__save_dir: None | str = None
         self.__visualizer_prefix: str = ""
 
@@ -68,6 +69,41 @@ class Executor(HookCollection, abc.ABC):
             self.set_device(self.__device_fun())
         assert self.__device is not None
         return self.__device
+
+    @property
+    def device_context(self) -> AbstractContextManager:
+        match self.device.type.lower():
+            case "cuda":
+                return torch.cuda.device(device=self.device)
+            case "xpu":
+                return torch.xpu.device(device=self.device)
+        return contextlib.nullcontext()
+
+    @property
+    def stream(self) -> torch.cpu.Stream | Stream:
+        if self.__stream is None:
+            match self.device.type.lower():
+                case "cuda":
+                    self.__stream = torch.cuda.Stream(device=self.device)
+                case "cpu":
+                    self.__stream = torch.cpu.Stream()
+                case "xpu":
+                    self.__stream = torch.xpu.Stream(device=self.device)
+                case _:
+                    raise RuntimeError(self.device)
+        assert self.__stream is not None
+        return self.__stream
+
+    @property
+    def stream_context(self) -> torch.cuda.StreamContext | torch.xpu.StreamContext | torch.cpu.StreamContext:
+        match self.device.type.lower():
+            case "cuda":
+                return torch.cuda.stream(self.stream)
+            case "cpu":
+                return torch.cpu.stream(self.stream)
+            case "xpu":
+                return torch.xpu.stream(self.stream)
+        raise RuntimeError(self.device)
 
     @property
     def dataloader_kwargs(self) -> dict:
@@ -211,13 +247,13 @@ class Executor(HookCollection, abc.ABC):
             self.wait_stream()
             self.__device = device
             log_debug("%s use device %s", str(self.__phase), self.__device)
-            self.__device_stream = None
+            self.__stream = None
             self.__dataloader = None
 
         for executor in self._foreach_sub_executor():
             executor.set_device(device)
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, Any]:
         # capture what is normally pickled
         state = self.__dict__.copy()
         state["_Executor__device"] = None
@@ -225,44 +261,10 @@ class Executor(HookCollection, abc.ABC):
         state["_Executor__dataloader"] = None
         return state
 
-    @property
-    def device_context(self) -> Any:
-        return (
-            contextlib.nullcontext()
-            if "cuda" not in self.device.type.lower() or not torch.cuda.is_available()
-            else torch.cuda.device(self.device)
-        )
-
-    @property
-    def device_stream_context(self) -> torch.cuda.StreamContext:
-        if self.__device_stream is None:
-            match self.device.type.lower():
-                case "cuda":
-                    self.__device_stream = torch.cuda.Stream(device=self.device)
-                case "cpu":
-                    self.__device_stream = torch.cpu.Stream(device=self.device)
-                case "xpu":
-                    self.__device_stream = torch.xpu.Stream(device=self.device)
-                case _:
-                    raise RuntimeError(self.device)
-        assert self.__device_stream is not None
-        match self.device.type.lower():
-            case "cuda":
-                self.__device_stream.wait_stream(torch.cuda.current_stream())
-                return torch.cuda.stream(self.__device_stream)
-            case "cpu":
-                self.__device_stream.wait_stream(torch.cpu.current_stream())
-                return torch.cpu.stream(self.__device_stream)
-            case "xpu":
-                self.__device_stream.wait_stream(torch.xpu.current_stream())
-                return torch.xpu.stream(self.__device_stream)
-            case _:
-                raise RuntimeError(self.device)
-
     def wait_stream(self) -> None:
-        if self.__device_stream is not None:
-            self.__device_stream.synchronize()
-            assert self.__device_stream.query()
+        if self.__stream is not None:
+            self.__stream.synchronize()
+            assert self.__stream.query()
 
     def set_dataset_collection(self, dc: DatasetCollection) -> None:
         self.wait_stream()
