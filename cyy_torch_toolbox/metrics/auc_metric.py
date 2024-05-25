@@ -8,7 +8,12 @@ from .classification_metric import ClassificationMetric
 class AUROCMetric(ClassificationMetric):
     __auroc: None | MulticlassAUROC | MultilabelAUROC = None
 
-    def _before_epoch(self, **kwargs) -> None:
+    @property
+    def auroc(self):
+        assert self.__auroc is not None
+        return self.__auroc
+
+    def _before_epoch(self, **kwargs: Any) -> None:
         self.__auroc = None
 
     def _after_batch(self, result: dict, **kwargs: Any) -> None:
@@ -26,9 +31,8 @@ class AUROCMetric(ClassificationMetric):
                     )
         targets = result["targets"]
         output = self._get_output(result).detach()
-        self.__auroc.update(output, targets.detach().long())
+        self.auroc.update(output, targets.detach().long())
 
     def _after_epoch(self, **kwargs) -> None:
         epoch = kwargs["epoch"]
-        assert self.__auroc is not None
-        self._set_epoch_metric(epoch, "AUROC", self.__auroc.compute())
+        self._set_epoch_metric(epoch, "AUROC", self.auroc.compute())
