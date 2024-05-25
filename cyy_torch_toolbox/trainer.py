@@ -102,7 +102,7 @@ class Trainer(Executor):
     async def async_train(self, validate: bool = True) -> None:
         with (
             self.device_context,
-            self.device_stream_context,
+            self.stream_context,
         ):
             try:
                 await self._prepare_execution()
