@@ -35,7 +35,7 @@ class Inferencer(Executor):
         with (
             torch.set_grad_enabled(require_grad),
             self.device_context,
-            self.device_stream_context,
+            self.stream_context,
         ):
             try:
                 await self._prepare_execution()
