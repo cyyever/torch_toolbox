@@ -22,6 +22,7 @@ class AMPModelEvaluator:
         device: torch.device = kwargs["device"]
         if self.__amp_ctx is None or device.type != self.__amp_ctx.device:
             self.__amp_ctx = torch.autocast(device_type=device.type)
+        assert self.__amp_ctx is not None
         with self.__amp_ctx:
             return self.evaluator.__call__(*args, **kwargs)
 
