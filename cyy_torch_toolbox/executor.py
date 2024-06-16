@@ -257,7 +257,7 @@ class Executor(HookCollection, abc.ABC):
         # capture what is normally pickled
         state = self.__dict__.copy()
         state["_Executor__device"] = None
-        state["_Executor__device_stream"] = None
+        state["_Executor__stream"] = None
         state["_Executor__dataloader"] = None
         return state
 
