@@ -1,4 +1,3 @@
-import asyncio
 import copy
 from typing import Any, Generator
 
@@ -97,35 +96,32 @@ class Trainer(Executor):
         self.remove_optimizer()
 
     def train(self, validate: bool = True) -> None:
-        asyncio.run(self.async_train(validate=validate))
-
-    async def async_train(self, validate: bool = True) -> None:
         with (
             self.device_context,
             self.stream_context,
         ):
             try:
-                await self._prepare_execution()
+                self._prepare_execution()
                 for epoch in range(1, self.hyper_parameter.epoch + 1):
-                    await self._execute_epoch(
+                    self._execute_epoch(
                         epoch=epoch, evaluation_mode=EvaluationMode.Training
                     )
-                    if validate and await self.__test(
+                    if validate and self.__test(
                         phase=MachineLearningPhase.Validation
                     ):
-                        await self.async_exec_hooks(
+                        self.exec_hooks(
                             ExecutorHookPoint.AFTER_VALIDATION,
                             epoch=epoch,
                         )
-                    await self.__test(phase=MachineLearningPhase.Test)
-                await self.async_exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
+                    self.__test(phase=MachineLearningPhase.Test)
+                self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
             except StopExecutingException:
                 log_warning("stop training")
-                await self.async_exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
+                self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
             finally:
                 self.wait_stream()
 
-    async def __test(self, phase: MachineLearningPhase) -> bool:
+    def __test(self, phase: MachineLearningPhase) -> bool:
         assert phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test)
         if phase not in self.__inferencers and self.dataset_collection.has_dataset(
             phase=phase
@@ -138,7 +134,7 @@ class Trainer(Executor):
             return False
         inferencer.model.load_state_dict(self.model.state_dict())
         inferencer.set_visualizer_prefix(self.visualizer_prefix)
-        await inferencer.async_inference()
+        inferencer.inference()
         return True
 
     def _foreach_sub_executor(self) -> Generator:
