@@ -1,8 +1,6 @@
-import asyncio
 import functools
 
 import torch
-from cyy_naive_lib.concurrency import ThreadPool
 from cyy_naive_lib.log import log_warning
 
 from .executor import Executor
@@ -11,22 +9,7 @@ from .typing import ModelGradient
 
 
 class Inferencer(Executor):
-    def inference(self, evaluation_mode: EvaluationMode = EvaluationMode.Test) -> bool:
-        co = self.async_inference(evaluation_mode=evaluation_mode)
-        try:
-            return asyncio.run(co)
-        except BaseException as e:
-            if "a running event loop" not in str(e):
-                raise e
-            self.wait_stream()
-            pool = ThreadPool()
-            pool.submit(asyncio.run, co)
-            done, _ = pool.wait_results()
-            pool.shutdown()
-            assert done
-            return list(done.values())[0]
-
-    async def async_inference(
+    def inference(
         self,
         evaluation_mode: EvaluationMode = EvaluationMode.Test,
     ) -> bool:
@@ -38,9 +21,9 @@ class Inferencer(Executor):
             self.stream_context,
         ):
             try:
-                await self._prepare_execution()
-                await self._execute_epoch(epoch=1, evaluation_mode=evaluation_mode)
-                await self.async_exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
+                self._prepare_execution()
+                self._execute_epoch(epoch=1, evaluation_mode=evaluation_mode)
+                self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
                 succ_flag = True
             except StopExecutingException:
                 log_warning("stop inference")
