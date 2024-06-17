@@ -70,4 +70,6 @@ class Inferencer(Executor):
         self, sample_loss: dict, result, sample_indices, **kwargs
     ) -> None:
         assert not result["is_averaged_loss"]
-        sample_loss.update(zip(sample_indices.tolist(), result["loss"]))
+        if isinstance(sample_indices, torch.Tensor):
+            sample_indices = sample_indices.tolist()
+        sample_loss.update(zip(sample_indices, result["loss"]))
