@@ -23,6 +23,8 @@ def get_device_memory_info(
             device_type = "cuda"
         elif torch.backends.mps.is_available():
             device_type = "mps"
+        elif torch.xpu.is_available():
+            device_type = "xpu"
         # elif torch.is_vulkan_available():
         #     device_type = "vulkan"
         else:
@@ -32,7 +34,7 @@ def get_device_memory_info(
             return get_cuda_memory_info(
                 device_idx=device_idx, consider_cache=consider_cache
             )
-        case "cpu" | "mps" | "vulkan":
+        case "cpu" | "mps" | "vulkan" | "xpu":
             device = torch.device(type=device_type, index=0)
             vm = psutil.virtual_memory()
             return {
