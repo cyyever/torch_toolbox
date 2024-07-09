@@ -8,7 +8,10 @@ from ..factory import Factory
 from ..ml_type import MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
-from .collection_sampler import get_dataset_collection_sampler  # noqa: F401
+from .collection_sampler import (DatasetCollectionSplit, SamplerBase,
+                                 SplitBase, get_dataset_collection_sampler,
+                                 get_dataset_collection_split,
+                                 global_sampler_factory)
 from .repository import get_dataset
 from .sampler import DatasetSampler
 from .util import DatasetUtil
@@ -148,4 +151,16 @@ class DatasetCollectionConfig:
             )
 
 
-__all__ = ["DatasetSampler", "DatasetUtil", "create_dataset_collection","get_dataset_collection_sampler"]
+__all__ = [
+    "DatasetSampler",
+    "DatasetUtil",
+    "create_dataset_collection",
+    "get_dataset_collection_sampler",
+    "ClassificationDatasetCollection",
+    "DatasetCollection",
+    "SamplerBase",
+    "SplitBase",
+    "DatasetCollectionSplit",
+    "get_dataset_collection_split",
+    "global_sampler_factory",
+]
