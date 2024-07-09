@@ -8,6 +8,9 @@ from .base import MemoryInfo
 
 if torch.cuda.is_available():
     from .cuda import get_cuda_memory_info
+else:
+    def get_cuda_memory_info(**kwargs) -> dict:
+        raise NotImplementedError()
 
 
 def get_device_memory_info(
