@@ -8,12 +8,10 @@ from ..factory import Factory
 from ..ml_type import MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
-from .collection_sampler import *  # noqa: F401
+from .collection_sampler import get_dataset_collection_sampler  # noqa: F401
 from .repository import get_dataset
 from .sampler import DatasetSampler
 from .util import DatasetUtil
-
-__all__ = ["DatasetSampler", "DatasetUtil"]
 
 global_dataset_collection_factory: Factory = Factory()
 
@@ -148,3 +146,6 @@ class DatasetCollectionConfig:
                 key=TransformType.Target,
                 phases=[MachineLearningPhase.Training],
             )
+
+
+__all__ = ["DatasetSampler", "DatasetUtil", "create_dataset_collection","get_dataset_collection_sampler"]
