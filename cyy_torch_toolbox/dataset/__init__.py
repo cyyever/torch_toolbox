@@ -10,8 +10,10 @@ from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
 from .collection_sampler import *  # noqa: F401
 from .repository import get_dataset
-from .sampler import DatasetSampler  # noqa: F401
-from .util import DatasetUtil  # noqa: F401
+from .sampler import DatasetSampler
+from .util import DatasetUtil
+
+__all__ = ["DatasetSampler", "DatasetUtil"]
 
 global_dataset_collection_factory: Factory = Factory()
 
@@ -20,7 +22,7 @@ def create_dataset_collection(
     name: str,
     dataset_kwargs: dict | None = None,
     merge_validation_to_training: bool = False,
-) -> DatasetCollection:
+) -> DatasetCollection | ClassificationDatasetCollection:
     if dataset_kwargs is None:
         dataset_kwargs = {}
     with DatasetCollection.lock:
@@ -81,7 +83,7 @@ class DatasetCollectionConfig:
 
     def create_dataset_collection(
         self, save_dir: str | None = None
-    ) -> DatasetCollection:
+    ) -> DatasetCollection | ClassificationDatasetCollection:
         assert self.dataset_name is not None
         dc = create_dataset_collection(
             name=self.dataset_name, dataset_kwargs=self.dataset_kwargs
