@@ -5,8 +5,7 @@ import sys
 import torch
 from cyy_naive_lib.log import log_debug
 
-from ..dataset.classification_collection import ClassificationDatasetCollection
-from ..dataset.collection import DatasetCollection
+from ..dataset import ClassificationDatasetCollection, DatasetCollection
 from ..factory import Factory
 from ..ml_type import DatasetType, ModelType
 from .amp import AMPModelEvaluator
