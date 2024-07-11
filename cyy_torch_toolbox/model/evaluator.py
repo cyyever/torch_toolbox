@@ -58,7 +58,7 @@ class ModelEvaluator:
     def model(self) -> torch.nn.Module:
         return self._model
 
-    @functools.cached_property
+    @property
     def model_util(self) -> ModelUtil:
         return ModelUtil(self.model)
 

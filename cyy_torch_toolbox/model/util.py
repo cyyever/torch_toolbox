@@ -12,20 +12,25 @@ from ..typing import BlockType, ModelGradient, ModelParameter, TensorDict
 class ModelUtil:
     def __init__(self, model: torch.nn.Module) -> None:
         self.__model: torch.nn.Module = model
+        self.__previous_device: None | torch.device = None
 
     @property
     def model(self) -> torch.nn.Module:
         return self.__model
 
     def to_device(self, device: torch.device, non_blocking: bool = True) -> None:
+        flag = self.__previous_device == device
         for param in self.model.parameters():
             if param.device != device:
-                self.model.to(device=device, non_blocking=non_blocking)
-                return
+                flag = False
+                break
         for buffer in self.model.buffers():
             if buffer.device != device:
-                self.model.to(device=device, non_blocking=non_blocking)
-                return
+                flag = False
+                break
+        if not flag:
+            self.model.to(device=device, non_blocking=non_blocking)
+        self.__previous_device = device
 
     def get_parameter_seq(self, **kwargs: Any) -> Generator:
         return get_mapping_values_by_key_order(self.get_parameters(**kwargs))
