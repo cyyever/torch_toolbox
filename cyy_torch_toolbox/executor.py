@@ -258,7 +258,7 @@ class Executor(HookCollection, abc.ABC):
         return state
 
     def wait_stream(self) -> None:
-        if self.__stream is not None:
+        if isinstance(self.__stream, Stream):
             self.__stream.synchronize()
             assert self.__stream.query()
 
