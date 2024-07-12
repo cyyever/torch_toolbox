@@ -1,9 +1,8 @@
-import functools
+from contextlib import nullcontext
 from typing import Any, Callable, Iterable, Type
 
 import torch
 from cyy_naive_lib.log import log_debug, log_error
-from contextlib import nullcontext
 from torch import nn
 
 from ..ml_type import EvaluationMode, ModelType
@@ -162,7 +161,9 @@ class ModelEvaluator:
             inputs = tensor_to(inputs, device=device, non_blocking=True)
             targets = tensor_to(targets, device=device, non_blocking=True)
             self.model_util.to_device(device=device)
-        with torch.no_grad() if evaluation_mode == EvaluationMode.Test else nullcontext():
+        with (
+            torch.no_grad() if evaluation_mode == EvaluationMode.Test else nullcontext()
+        ):
             return {
                 "inputs": inputs,
                 "targets": targets,
