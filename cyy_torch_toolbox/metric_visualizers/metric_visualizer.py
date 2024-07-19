@@ -14,7 +14,8 @@ class MetricVisualizer(Hook):
         self._prefix = prefix
 
     @property
-    def data_dir(self) -> None | str:
+    def data_dir(self) -> str:
+        assert self._data_dir is not None
         return self._data_dir
 
     @property

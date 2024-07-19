@@ -1,11 +1,8 @@
 import datetime
 import os
 import threading
-import warnings
 
-warnings.simplefilter("ignore", DeprecationWarning)
-
-from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard.writer import SummaryWriter
 
 # from cyy_naive_lib.algorithm.sequence_op import split_list_to_chunks
 from ..ml_type import MachineLearningPhase
@@ -15,7 +12,7 @@ from .metric_visualizer import MetricVisualizer
 class MetricTensorBoard(MetricVisualizer):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.__writer = None
+        self.__writer: None | SummaryWriter = None
 
     def close(self) -> None:
         if self.__writer is not None:
@@ -30,18 +27,19 @@ class MetricTensorBoard(MetricVisualizer):
     def writer(self) -> SummaryWriter:
         if self.__writer is None:
             self.__writer = SummaryWriter(
-                log_dir=os.path.join(self._data_dir, self.prefix)
+                log_dir=os.path.join(self.data_dir, self.prefix)
             )
         return self.__writer
 
     def _before_execute(self, executor, **kwargs) -> None:
         if self.prefix is None:
+            date = datetime.datetime.now()
             self.set_prefix(
                 "training_"
                 + str(executor.model.__class__.__name__)
                 + "_"
                 + str(threading.get_native_id())
-                + "_{date:%Y-%m-%d_%H_%M_%S}".format(date=datetime.datetime.now())
+                + f"_{date:%Y-%m-%d_%H_%M_%S}"
             )
 
     def get_tag_name(self, title: str) -> str:
