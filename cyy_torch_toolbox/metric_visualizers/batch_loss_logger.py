@@ -9,13 +9,13 @@ class BatchLossLogger(MetricVisualizer):
         self.log_times = 5
 
     def _after_batch(
-        self, executor, epoch, batch_index, batch_size, result, **kwargs
+        self, executor, epoch, batch_index, result, **kwargs
     ) -> None:
         if self.log_times == 0:
             return
         if not executor.has_hook_obj("performance_metric"):
             return
-        interval = executor._data["dataset_size"] // (self.log_times * batch_size)
+        interval: int = executor.dataset_size
         if interval != 0 and batch_index % interval != 0:
             return
         performance_metric = executor.get_hook("performance_metric")

@@ -1,8 +1,6 @@
-import asyncio
 import functools
 
 import torch
-from cyy_naive_lib.concurrency import ThreadPool
 from cyy_naive_lib.log import log_warning
 
 from .executor import Executor
@@ -11,22 +9,7 @@ from .typing import ModelGradient
 
 
 class Inferencer(Executor):
-    def inference(self, evaluation_mode: EvaluationMode = EvaluationMode.Test) -> bool:
-        co = self.async_inference(evaluation_mode=evaluation_mode)
-        try:
-            return asyncio.run(co)
-        except BaseException as e:
-            if "a running event loop" not in str(e):
-                raise e
-            self.wait_stream()
-            pool = ThreadPool()
-            pool.submit(asyncio.run, co)
-            done, _ = pool.wait_results()
-            pool.shutdown()
-            assert done
-            return list(done.values())[0]
-
-    async def async_inference(
+    def inference(
         self,
         evaluation_mode: EvaluationMode = EvaluationMode.Test,
     ) -> bool:
@@ -35,12 +18,12 @@ class Inferencer(Executor):
         with (
             torch.set_grad_enabled(require_grad),
             self.device_context,
-            self.device_stream_context,
+            self.stream_context,
         ):
             try:
-                await self._prepare_execution()
-                await self._execute_epoch(epoch=1, evaluation_mode=evaluation_mode)
-                await self.async_exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
+                self._prepare_execution()
+                self._execute_epoch(epoch=1, evaluation_mode=evaluation_mode)
+                self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
                 succ_flag = True
             except StopExecutingException:
                 log_warning("stop inference")
@@ -87,4 +70,6 @@ class Inferencer(Executor):
         self, sample_loss: dict, result, sample_indices, **kwargs
     ) -> None:
         assert not result["is_averaged_loss"]
-        sample_loss.update(zip(sample_indices.tolist(), result["loss"]))
+        if isinstance(sample_indices, torch.Tensor):
+            sample_indices = sample_indices.tolist()
+        sample_loss.update(zip(sample_indices, result["loss"]))

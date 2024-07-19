@@ -5,13 +5,14 @@ import sys
 import torch
 from cyy_naive_lib.log import log_debug
 
-from ..dataset.classification_collection import ClassificationDatasetCollection
-from ..dataset.collection import DatasetCollection
+from ..dataset import ClassificationDatasetCollection, DatasetCollection
 from ..factory import Factory
 from ..ml_type import DatasetType, ModelType
-from .amp import AMPModelEvaluator  # noqa: F401
+from .amp import AMPModelEvaluator
 from .evaluator import ModelEvaluator
-from .util import ModelUtil  # noqa: F401
+from .util import ModelUtil
+
+__all__ = ["AMPModelEvaluator", "ModelUtil"]
 
 global_model_evaluator_factory = Factory()
 

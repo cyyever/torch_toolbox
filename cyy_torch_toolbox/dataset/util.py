@@ -43,12 +43,10 @@ class DatasetUtil:
 
     def get_samples(self, indices: OptionalIndicesType = None) -> Generator:
         raw_samples = self.get_raw_samples(indices=indices)
-        if self._transforms is None:
-            return raw_samples
         for idx, sample in raw_samples:
-            sample = self._transforms.extract_data(sample)
+            if self._transforms is not None:
+                sample = self._transforms.extract_data(sample)
             yield idx, sample
-        return
 
     def get_sample(self, index: int) -> Any:
         for _, sample in self.get_samples(indices=[index]):
