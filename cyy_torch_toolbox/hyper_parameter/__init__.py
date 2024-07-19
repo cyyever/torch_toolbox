@@ -122,7 +122,7 @@ class HyperParameter:
             "lr": self.__get_learning_rate(trainer=trainer),
         }
         if "foreach" not in kwargs:
-            kwargs["foreach"] = not torch.backends.mps.is_available()
+            kwargs["foreach"] = True
         kwargs.pop("learning_rate", None)
         if "fake_weight_decay" in kwargs:
             kwargs["weight_decay"] = (

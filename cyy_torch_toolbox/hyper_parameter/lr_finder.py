@@ -50,8 +50,7 @@ class LRFinder(Hook):
             batch_loss = batch_loss + 0.98 * (self.losses[-1] - batch_loss)
         self.losses.append(batch_loss)
 
-        if batch_loss < self.best_loss:
-            self.best_loss = batch_loss
+        self.best_loss = min(batch_loss, self.best_loss)
 
         stop_training = False
         if batch_loss > 10 * self.best_loss and kwargs["epoch"] > 1 and self.stop_div:

@@ -1,4 +1,4 @@
-import functools
+from contextlib import nullcontext
 from typing import Any, Callable, Iterable, Type
 
 import torch
@@ -57,7 +57,7 @@ class ModelEvaluator:
     def model(self) -> torch.nn.Module:
         return self._model
 
-    @functools.cached_property
+    @property
     def model_util(self) -> ModelUtil:
         return ModelUtil(self.model)
 
@@ -161,19 +161,21 @@ class ModelEvaluator:
             inputs = tensor_to(inputs, device=device, non_blocking=True)
             targets = tensor_to(targets, device=device, non_blocking=True)
             self.model_util.to_device(device=device)
+        with (
+            torch.no_grad() if evaluation_mode == EvaluationMode.Test else nullcontext()
+        ):
+            return {
+                "inputs": inputs,
+                "targets": targets,
+                "raw_inputs": raw_inputs,
+            } | self._forward_model(
+                inputs=inputs,
+                targets=targets,
+                device=device,
+                **(kwargs | self.__evaluation_kwargs),
+            )
 
-        return {
-            "inputs": inputs,
-            "targets": targets,
-            "raw_inputs": raw_inputs,
-        } | self._forward_model(
-            inputs=inputs,
-            targets=targets,
-            device=device,
-            **(kwargs | self.__evaluation_kwargs),
-        )
-
-    def __get_forward_fun(self) -> Callable:
+    def _get_forward_fun(self) -> Callable:
         fun: Callable = self.model
         if "forward_fun" in self.__evaluation_kwargs:
             fun = self.__evaluation_kwargs["forward_fun"]
@@ -183,7 +185,7 @@ class ModelEvaluator:
         return fun
 
     def _forward_model(self, inputs: Any, **kwargs: Any) -> dict:
-        fun: Callable = self.__get_forward_fun()
+        fun: Callable = self._get_forward_fun()
         match inputs:
             case torch.Tensor():
                 output = fun(inputs)

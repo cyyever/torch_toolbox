@@ -1,6 +1,4 @@
-import asyncio
 import copy
-import inspect
 from typing import Any, Callable, Generator
 
 from ..ml_type import ExecutorHookPoint
@@ -81,16 +79,8 @@ class HookCollection:
                     yield fun
 
     def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
-        asyncio.run(self.async_exec_hooks(hook_point=hook_point, **kwargs))
-
-    async def async_exec_hooks(
-        self, hook_point: ExecutorHookPoint, **kwargs: Any
-    ) -> None:
         for fun in self.__iterate_hooks(hook_point=hook_point):
-            if inspect.iscoroutinefunction(fun):
-                await fun(**kwargs)
-            else:
-                fun(**kwargs)
+            fun(**kwargs)
 
     def has_hook(
         self,

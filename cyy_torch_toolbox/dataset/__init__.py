@@ -8,10 +8,13 @@ from ..factory import Factory
 from ..ml_type import MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
-from .collection_sampler import *  # noqa: F401
+from .collection_sampler import (DatasetCollectionSplit, SamplerBase,
+                                 SplitBase, get_dataset_collection_sampler,
+                                 get_dataset_collection_split,
+                                 global_sampler_factory)
 from .repository import get_dataset
-from .sampler import DatasetSampler  # noqa: F401
-from .util import DatasetUtil  # noqa: F401
+from .sampler import DatasetSampler
+from .util import DatasetUtil
 
 global_dataset_collection_factory: Factory = Factory()
 
@@ -20,7 +23,7 @@ def create_dataset_collection(
     name: str,
     dataset_kwargs: dict | None = None,
     merge_validation_to_training: bool = False,
-) -> DatasetCollection:
+) -> DatasetCollection | ClassificationDatasetCollection:
     if dataset_kwargs is None:
         dataset_kwargs = {}
     with DatasetCollection.lock:
@@ -81,7 +84,7 @@ class DatasetCollectionConfig:
 
     def create_dataset_collection(
         self, save_dir: str | None = None
-    ) -> DatasetCollection:
+    ) -> DatasetCollection | ClassificationDatasetCollection:
         assert self.dataset_name is not None
         dc = create_dataset_collection(
             name=self.dataset_name, dataset_kwargs=self.dataset_kwargs
@@ -146,3 +149,18 @@ class DatasetCollectionConfig:
                 key=TransformType.Target,
                 phases=[MachineLearningPhase.Training],
             )
+
+
+__all__ = [
+    "DatasetSampler",
+    "DatasetUtil",
+    "create_dataset_collection",
+    "get_dataset_collection_sampler",
+    "ClassificationDatasetCollection",
+    "DatasetCollection",
+    "SamplerBase",
+    "SplitBase",
+    "DatasetCollectionSplit",
+    "get_dataset_collection_split",
+    "global_sampler_factory",
+]

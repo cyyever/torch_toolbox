@@ -1,8 +1,8 @@
 import abc
-import asyncio
 import contextlib
 import copy
 import os
+from contextlib import AbstractContextManager
 from dataclasses import dataclass, field
 from typing import Any, Callable, Generator
 
@@ -49,7 +49,7 @@ class Executor(HookCollection, abc.ABC):
         self.__dataloader_kwargs: dict = (
             copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
         )
-        self.__device_stream: None | Stream = None
+        self.__stream: None | Stream | torch.cpu.Stream = None
         self.__save_dir: None | str = None
         self.__visualizer_prefix: str = ""
 
@@ -68,6 +68,43 @@ class Executor(HookCollection, abc.ABC):
             self.set_device(self.__device_fun())
         assert self.__device is not None
         return self.__device
+
+    @property
+    def device_context(self) -> AbstractContextManager:
+        match self.device.type.lower():
+            case "cuda":
+                return torch.cuda.device(device=self.device)
+            case "xpu":
+                return torch.xpu.device(device=self.device)
+        return contextlib.nullcontext()
+
+    @property
+    def stream(self) -> torch.cpu.Stream | Stream:
+        if self.__stream is None:
+            match self.device.type.lower():
+                case "cuda":
+                    self.__stream = torch.cuda.Stream(device=self.device)
+                case "cpu":
+                    self.__stream = torch.cpu.Stream()
+                case "xpu":
+                    self.__stream = torch.xpu.Stream(device=self.device)
+                case _:
+                    raise RuntimeError(self.device)
+        assert self.__stream is not None
+        return self.__stream
+
+    @property
+    def stream_context(
+        self,
+    ) -> torch.cuda.StreamContext | torch.xpu.StreamContext | torch.cpu.StreamContext:
+        match self.device.type.lower():
+            case "cuda":
+                return torch.cuda.stream(self.stream)
+            case "cpu":
+                return torch.cpu.stream(self.stream)
+            case "xpu":
+                return torch.xpu.stream(self.stream)
+        raise RuntimeError(self.device)
 
     @property
     def dataloader_kwargs(self) -> dict:
@@ -98,13 +135,8 @@ class Executor(HookCollection, abc.ABC):
         return self.__phase
 
     def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
-        asyncio.run(self.async_exec_hooks(hook_point=hook_point, **kwargs))
-
-    async def async_exec_hooks(
-        self, hook_point: ExecutorHookPoint, **kwargs: Any
-    ) -> None:
         kwargs["executor"] = self
-        await super().async_exec_hooks(hook_point=hook_point, **kwargs)
+        super().exec_hooks(hook_point=hook_point, **kwargs)
 
     def set_save_dir(self, save_dir: str) -> None:
         self.__save_dir = save_dir
@@ -195,13 +227,13 @@ class Executor(HookCollection, abc.ABC):
         self.wait_stream()
         self.__model_evaluator = fun(self.model_evaluator)
 
-    async def _prepare_execution(self) -> None:
+    def _prepare_execution(self) -> None:
         self.hook_config.set_hooks(self)
         if self.save_dir:
             self.set_save_dir(self.save_dir)
         if self.__visualizer_prefix:
             self.set_visualizer_prefix(self.__visualizer_prefix)
-        await self.async_exec_hooks(hook_point=ExecutorHookPoint.BEFORE_EXECUTE)
+        self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_EXECUTE)
 
     def set_device_fun(self, device_fun: Callable) -> None:
         self.__device_fun = device_fun
@@ -211,58 +243,24 @@ class Executor(HookCollection, abc.ABC):
             self.wait_stream()
             self.__device = device
             log_debug("%s use device %s", str(self.__phase), self.__device)
-            self.__device_stream = None
+            self.__stream = None
             self.__dataloader = None
 
         for executor in self._foreach_sub_executor():
             executor.set_device(device)
 
-    def __getstate__(self):
+    def __getstate__(self) -> dict[str, Any]:
         # capture what is normally pickled
         state = self.__dict__.copy()
         state["_Executor__device"] = None
-        state["_Executor__device_stream"] = None
+        state["_Executor__stream"] = None
         state["_Executor__dataloader"] = None
         return state
 
-    @property
-    def device_context(self) -> Any:
-        return (
-            contextlib.nullcontext()
-            if "cuda" not in self.device.type.lower() or not torch.cuda.is_available()
-            else torch.cuda.device(self.device)
-        )
-
-    @property
-    def device_stream_context(self) -> torch.cuda.StreamContext:
-        if self.__device_stream is None:
-            match self.device.type.lower():
-                case "cuda":
-                    self.__device_stream = torch.cuda.Stream(device=self.device)
-                case "cpu":
-                    self.__device_stream = torch.cpu.Stream(device=self.device)
-                case "xpu":
-                    self.__device_stream = torch.xpu.Stream(device=self.device)
-                case _:
-                    raise RuntimeError(self.device)
-        assert self.__device_stream is not None
-        match self.device.type.lower():
-            case "cuda":
-                self.__device_stream.wait_stream(torch.cuda.current_stream())
-                return torch.cuda.stream(self.__device_stream)
-            case "cpu":
-                self.__device_stream.wait_stream(torch.cpu.current_stream())
-                return torch.cpu.stream(self.__device_stream)
-            case "xpu":
-                self.__device_stream.wait_stream(torch.xpu.current_stream())
-                return torch.xpu.stream(self.__device_stream)
-            case _:
-                raise RuntimeError(self.device)
-
     def wait_stream(self) -> None:
-        if self.__device_stream is not None:
-            self.__device_stream.synchronize()
-            assert self.__device_stream.query()
+        if isinstance(self.__stream, Stream):
+            self.__stream.synchronize()
+            assert self.__stream.query()
 
     def set_dataset_collection(self, dc: DatasetCollection) -> None:
         self.wait_stream()
@@ -273,7 +271,9 @@ class Executor(HookCollection, abc.ABC):
         self.__model_evaluator = model_evaluator
 
     def load_model(self, model_path: str) -> None:
-        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+        self.model.load_state_dict(
+            torch.load(model_path, map_location=self.device, weights_only=True)
+        )
 
     def _foreach_sub_executor(self) -> Generator:
         yield from []
@@ -301,23 +301,7 @@ class Executor(HookCollection, abc.ABC):
             self._data["lr_scheduler"] = self.hyper_parameter.get_lr_scheduler(self)
         return self._data["lr_scheduler"]
 
-    def execute_batch(
-        self,
-        batch_index: int,
-        batch: Any,
-        epoch: int,
-        evaluation_mode: EvaluationMode,
-    ) -> None:
-        asyncio.run(
-            self.__async_execute_batch(
-                batch_index=batch_index,
-                batch=batch,
-                epoch=epoch,
-                evaluation_mode=evaluation_mode,
-            )
-        )
-
-    async def __async_execute_batch(
+    def __execute_batch(
         self,
         batch_index: int,
         batch: dict,
@@ -342,7 +326,7 @@ class Executor(HookCollection, abc.ABC):
             "non_blocking": True,
         }
 
-        await self.async_exec_hooks(
+        self.exec_hooks(
             hook_point=ExecutorHookPoint.BEFORE_BATCH,
             epoch=epoch,
             **batch,
@@ -351,7 +335,7 @@ class Executor(HookCollection, abc.ABC):
         evaluation_kwargs = batch
         forward_result: dict = {}
         if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
-            await self.async_exec_hooks(
+            self.exec_hooks(
                 hook_point=ExecutorHookPoint.MODEL_FORWARD,
                 evaluation_kwargs=evaluation_kwargs,
             )
@@ -382,38 +366,36 @@ class Executor(HookCollection, abc.ABC):
                     log_debug("adjust lr after batch")
                     lr_scheduler.step()
 
-        await self.async_exec_hooks(
+        self.exec_hooks(
             hook_point=ExecutorHookPoint.AFTER_BATCH,
             epoch=epoch,
             result=forward_result,
             **batch,
         )
 
-    async def _execute_epoch(
+    def _execute_epoch(
         self,
         epoch: int,
         evaluation_mode: EvaluationMode,
     ) -> None:
-        await self.async_exec_hooks(
+        self.exec_hooks(
             hook_point=ExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
         )
         self.__refresh_dataset_size()
-        await self.async_exec_hooks(
-            hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0
-        )
+        self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
         for batch_index, batch in enumerate(self.dataloader):
-            await self.async_exec_hooks(
+            self.exec_hooks(
                 hook_point=ExecutorHookPoint.AFTER_FETCH_BATCH,
                 batch_index=batch_index,
             )
-            await self.__async_execute_batch(
+            self.__execute_batch(
                 batch_index=batch_index,
                 batch=batch,
                 epoch=epoch,
                 evaluation_mode=evaluation_mode,
             )
-            await self.async_exec_hooks(
+            self.exec_hooks(
                 hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH,
                 batch_index=batch_index + 1,
             )
@@ -433,7 +415,7 @@ class Executor(HookCollection, abc.ABC):
                     case _:
                         lr_scheduler.step()
 
-        await self.async_exec_hooks(
+        self.exec_hooks(
             hook_point=ExecutorHookPoint.AFTER_EPOCH,
             epoch=epoch,
         )
