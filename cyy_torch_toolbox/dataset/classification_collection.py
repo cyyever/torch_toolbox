@@ -7,8 +7,12 @@ from .collection import DatasetCollection
 
 
 class ClassificationDatasetCollection:
-    def __init__(self, dc: DatasetCollection):
-        self.dc = dc
+    def __init__(self, dc: DatasetCollection) -> None:
+        self.__dc = dc
+
+    @property
+    def dc(self) -> DatasetCollection:
+        return self.__dc
 
     def __copy__(self) -> Self:
         return type(self)(dc=copy.copy(self.dc))
@@ -75,21 +79,3 @@ class ClassificationDatasetCollection:
             if self.dc.has_dataset(phase):
                 return self.dc.get_dataset_util(phase)
         raise RuntimeError("no dataset")
-
-    # def get_raw_data(self, phase: MachineLearningPhase, index: int) -> tuple[Any, set]:
-    #     dataset_util = self.dc.get_dataset_util(phase)
-    #     return (
-    #         dataset_util.get_sample_raw_input(index),
-    #         dataset_util.get_sample_label(index),
-    #     )
-
-    # def generate_raw_data(self, phase: MachineLearningPhase) -> Generator:
-    #     dataset_util = self.dc.get_dataset_util(phase)
-    #     return (
-    #         self.get_raw_data(phase=phase, index=i) for i in range(len(dataset_util))
-    #     )
-
-    # @classmethod
-    # def get_label(cls, label_name, label_names):
-    #     reversed_label_names = {v: k for k, v in label_names.items()}
-    #     return reversed_label_names[label_name]
