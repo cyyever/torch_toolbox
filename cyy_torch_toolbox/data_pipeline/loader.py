@@ -49,6 +49,7 @@ def __prepare_dataloader_kwargs(
         use_process = False
     if cache_transforms is not None:
         use_process = False
+    use_process = False
     if use_process:
         kwargs["prefetch_factor"] = 2
         kwargs["num_workers"] = 1
