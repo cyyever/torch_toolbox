@@ -45,13 +45,7 @@ def create_dataset_collection(
             dataset_kwargs=dataset_kwargs,
         )
         if dc.is_classification_dataset():
-
-            class ClassificationDatasetCollectionTempClass(
-                dc.__class__, ClassificationDatasetCollection
-            ):
-                pass
-
-            dc.__class__ = ClassificationDatasetCollectionTempClass
+            dc = ClassificationDatasetCollection(dc)
         if not merge_validation_to_training:
             if not dc.has_dataset(MachineLearningPhase.Validation):
                 dc.iid_split(
