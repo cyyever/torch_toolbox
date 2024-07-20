@@ -20,7 +20,7 @@ class ClassificationDatasetCollection:
     def __getattr__(self, name):
         if name == "dc":
             raise AttributeError()
-        return getattr(self.dc, name)
+        return getattr(self.__dc, name)
 
     @functools.cached_property
     def label_number(self) -> int:
