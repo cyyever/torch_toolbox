@@ -23,7 +23,7 @@ def create_dataset_collection(
     name: str,
     dataset_kwargs: dict | None = None,
     merge_validation_to_training: bool = False,
-) -> DatasetCollection | ClassificationDatasetCollection:
+) -> DatasetCollection:
     if dataset_kwargs is None:
         dataset_kwargs = {}
     with DatasetCollection.lock:
@@ -38,15 +38,20 @@ def create_dataset_collection(
         constructor = global_dataset_collection_factory.get(dataset_type)
         if constructor is None:
             constructor = DatasetCollection
-        dc: DatasetCollection | ClassificationDatasetCollection = constructor(
+        dc: DatasetCollection = constructor(
             datasets=datasets,
             dataset_type=dataset_type,
             name=name,
             dataset_kwargs=dataset_kwargs,
         )
         if dc.is_classification_dataset():
-            assert isinstance(dc, DatasetCollection)
-            dc = ClassificationDatasetCollection(dc=dc)
+
+            class ClassificationDatasetCollectionTempClass(
+                dc.__class__, ClassificationDatasetCollection
+            ):
+                pass
+
+            dc.__class__ = ClassificationDatasetCollectionTempClass
         if not merge_validation_to_training:
             if not dc.has_dataset(MachineLearningPhase.Validation):
                 dc.iid_split(
@@ -84,7 +89,7 @@ class DatasetCollectionConfig:
 
     def create_dataset_collection(
         self, save_dir: str | None = None
-    ) -> DatasetCollection | ClassificationDatasetCollection:
+    ) -> DatasetCollection:
         assert self.dataset_name is not None
         dc = create_dataset_collection(
             name=self.dataset_name, dataset_kwargs=self.dataset_kwargs
