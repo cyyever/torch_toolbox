@@ -8,20 +8,20 @@ from ..dataset.util import global_dataset_util_factor
 from ..factory import Factory
 from ..ml_type import DatasetType, MachineLearningPhase
 
-global_dataset_constructors: dict[DatasetType, Factory] = {}
+__global_dataset_constructors: dict[DatasetType, Factory] = {}
 
 
 def register_dataset_factory(dataset_type: DatasetType, factory: Factory) -> None:
-    assert dataset_type not in global_dataset_constructors
-    global_dataset_constructors[dataset_type] = factory
+    assert dataset_type not in __global_dataset_constructors
+    __global_dataset_constructors[dataset_type] = factory
 
 
 def register_dataset_constructors(
     dataset_type: DatasetType, name: str, constructor: Callable
 ) -> None:
-    if dataset_type not in global_dataset_constructors:
-        global_dataset_constructors[dataset_type] = Factory()
-    global_dataset_constructors[dataset_type].register(name, constructor)
+    if dataset_type not in __global_dataset_constructors:
+        __global_dataset_constructors[dataset_type] = Factory()
+    __global_dataset_constructors[dataset_type].register(name, constructor)
 
 
 def __prepare_dataset_kwargs(
@@ -183,13 +183,13 @@ def get_dataset(
     if real_dataset_type is not None:
         assert isinstance(real_dataset_type, DatasetType)
         log_info("use dataset type %s", real_dataset_type)
-        assert real_dataset_type in global_dataset_constructors
+        assert real_dataset_type in __global_dataset_constructors
         dataset_types = [real_dataset_type]
 
     for dataset_type in dataset_types:
-        if dataset_type not in global_dataset_constructors:
+        if dataset_type not in __global_dataset_constructors:
             continue
-        constructor = global_dataset_constructors[dataset_type].get(
+        constructor = __global_dataset_constructors[dataset_type].get(
             name, case_sensitive=True
         )
         if constructor is not None:
@@ -200,7 +200,7 @@ def get_dataset(
                 dataset_kwargs=dataset_kwargs,
                 cache_dir=cache_dir,
             )
-        similar_names += global_dataset_constructors[dataset_type].get_similar_keys(
+        similar_names += __global_dataset_constructors[dataset_type].get_similar_keys(
             name
         )
     if similar_names:
