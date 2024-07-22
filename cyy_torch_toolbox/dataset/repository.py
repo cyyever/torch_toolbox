@@ -1,7 +1,7 @@
 import copy
 from typing import Callable
 
-from cyy_naive_lib.log import log_debug, log_error
+from cyy_naive_lib.log import log_debug, log_error, log_info
 from cyy_naive_lib.reflection import get_kwarg_names
 
 from ..dataset.util import global_dataset_util_factor
@@ -179,10 +179,14 @@ def get_dataset(
 ) -> None | tuple[DatasetType, dict]:
     real_dataset_type = dataset_kwargs.get("dataset_type", None)
     similar_names = []
+    dataset_types = list(DatasetType)
+    if real_dataset_type is not None:
+        assert isinstance(real_dataset_type, DatasetType)
+        log_info("use dataset type %s", real_dataset_type)
+        assert real_dataset_type in global_dataset_constructors
+        dataset_types = [real_dataset_type]
 
-    for dataset_type in DatasetType:
-        if real_dataset_type is not None and real_dataset_type != dataset_type:
-            continue
+    for dataset_type in dataset_types:
         if dataset_type not in global_dataset_constructors:
             continue
         constructor = global_dataset_constructors[dataset_type].get(
