@@ -5,7 +5,7 @@ from cyy_naive_lib.log import log_info
 
 from ..data_pipeline.common import replace_target
 from ..factory import Factory
-from ..ml_type import MachineLearningPhase, TransformType
+from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
 from .collection_sampler import (DatasetCollectionSplit, SamplerBase,
@@ -85,6 +85,19 @@ class DatasetCollectionConfig:
         self, save_dir: str | None = None
     ) -> DatasetCollection:
         assert self.dataset_name is not None
+        if "dataset_type" in self.dataset_kwargs:
+            if isinstance(self.dataset_kwargs["dataset_type"], str):
+                real_dataset_type: DatasetType | None = None
+                for dataset_type in DatasetType:
+                    if (
+                        str(dataset_type).lower()
+                        == self.dataset_kwargs["dataset_type"].lower()
+                    ):
+                        real_dataset_type = dataset_type
+                assert real_dataset_type is not None
+                self.dataset_kwargs["dataset_type"] = real_dataset_type
+            assert isinstance(self.dataset_kwargs["dataset_type"], DatasetType)
+
         dc = create_dataset_collection(
             name=self.dataset_name, dataset_kwargs=self.dataset_kwargs
         )
