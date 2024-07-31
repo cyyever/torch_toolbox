@@ -48,6 +48,9 @@ class HookConfig:
     def set_hooks(self, executor) -> None:
         if executor.phase != MachineLearningPhase.Training:
             self.use_amp = False
+        if executor.device.type.lower() == "mps":
+            self.use_amp = False
+
         if self.use_amp:
             if not isinstance(executor.model_evaluator, AMPModelEvaluator):
                 log_info("use amp")
