@@ -1,3 +1,3 @@
 # torch_toolbox
 
-This is a pytorch library inspired by [fastai](https://github.com/fastai/fastai) for personal use and research.
+This is a PyTorch library inspired by [fastai](https://github.com/fastai/fastai) for research use.
