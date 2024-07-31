@@ -1,7 +1,7 @@
 import copy
 import os
 import threading
-from typing import Any, Callable, Generator, Iterable
+from typing import Any, Callable, Generator, Iterable, Self
 
 import torch
 import torch.utils.data
@@ -40,8 +40,8 @@ class DatasetCollection:
         )
         append_transforms_to_dc(self)
 
-    def __copy__(self):
-        new_obj = copy.deepcopy(self)
+    def __copy__(self) -> Self:
+        new_obj: Self = copy.deepcopy(self)
         # pylint: disable=protected-access, unused-private-member
         new_obj.__datasets = self.__datasets.copy()
         return new_obj
