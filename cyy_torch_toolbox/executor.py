@@ -86,6 +86,8 @@ class Executor(HookCollection, abc.ABC):
                     self.__stream = torch.cuda.Stream(device=self.device)
                 case "cpu":
                     self.__stream = torch.cpu.Stream()
+                case "mps":
+                    self.__stream = torch.cpu.Stream()
                 case "xpu":
                     self.__stream = torch.xpu.Stream(device=self.device)
                 case _:
@@ -101,6 +103,8 @@ class Executor(HookCollection, abc.ABC):
             case "cuda":
                 return torch.cuda.stream(self.stream)
             case "cpu":
+                return torch.cpu.stream(self.stream)
+            case "mps":
                 return torch.cpu.stream(self.stream)
             case "xpu":
                 return torch.xpu.stream(self.stream)
