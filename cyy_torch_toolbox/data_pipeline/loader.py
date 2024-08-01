@@ -22,23 +22,21 @@ def __prepare_dataloader_kwargs(
     cache_transforms: str | None = None,
     **kwargs,
 ) -> dict:
-    dataset = dc.get_dataset(phase=phase)
-    transforms = dc.get_transforms(phase=phase)
+    dc_util = dc.get_dataset_util(phase=phase)
     data_in_cpu: bool = True
     if dc.dataset_type == DatasetType.Graph:
         cache_transforms = None
-    transformed_dataset: dict | torch.utils.data.Dataset = dataset
+    transforms = dc_util.transforms
+    transformed_dataset: dict | torch.utils.data.Dataset | None = dc_util.dataset
     match cache_transforms:
         case "cpu":
-            transformed_dataset, transforms = transforms.cache_transforms(
-                dataset=dataset, device=torch.device("cpu")
+            transformed_dataset, transforms = dc_util.cache_transforms(
+                device=torch.device("cpu")
             )
         case "device":
             data_in_cpu = False
             assert device is not None
-            transformed_dataset, transforms = transforms.cache_transforms(
-                dataset=dataset, device=device
-            )
+            transformed_dataset, transforms = dc_util.cache_transforms(device=device)
         case None:
             pass
         case _:

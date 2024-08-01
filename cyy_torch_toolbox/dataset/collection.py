@@ -65,12 +65,14 @@ class DatasetCollection:
     def has_dataset(self, phase: MachineLearningPhase) -> bool:
         return phase in self.__datasets
 
+    def add_transforms(self, model_evaluator: Any) -> None:
+        append_transforms_to_dc(dc=self, model_evaluator=model_evaluator)
+
     def transform_dataset(
         self, phase: MachineLearningPhase, transformer: Callable
     ) -> None:
-        dataset = self.get_dataset(phase)
         dataset_util = self.get_dataset_util(phase)
-        self.__datasets[phase] = transformer(dataset, dataset_util, phase)
+        self.__datasets[phase] = transformer(dataset_util)
 
     def transform_all_datasets(self, transformer: Callable) -> None:
         for phase in self.__datasets:
@@ -79,24 +81,18 @@ class DatasetCollection:
     def set_subset(self, phase: MachineLearningPhase, indices: set) -> None:
         self.transform_dataset(
             phase=phase,
-            transformer=lambda _, dataset_util, *__: dataset_util.get_subset(indices),
+            transformer=lambda dataset_util: dataset_util.get_subset(indices),
         )
 
     def remove_dataset(self, phase: MachineLearningPhase) -> None:
         log_debug("remove dataset %s", phase)
         self.__datasets.pop(phase, None)
 
-    def get_dataset(self, phase: MachineLearningPhase) -> torch.utils.data.Dataset:
-        return self.__datasets[phase]
-
-    def get_transforms(self, phase: MachineLearningPhase) -> Transforms:
-        return self.__transforms[phase]
-
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
         return global_dataset_util_factor.get(self.dataset_type)(
-            dataset=self.get_dataset(phase),
+            dataset=self.__datasets[phase],
             transforms=self.__transforms[phase],
             name=self.name,
             cache_dir=self._get_dataset_cache_dir(),
@@ -176,9 +172,6 @@ class DatasetCollection:
         datasets = sampler.iid_split([part for (_, part) in part_list])
         for idx, (phase, _) in enumerate(part_list):
             self.__datasets[phase] = datasets[idx]
-
-    def add_transforms(self, model_evaluator: Any) -> None:
-        append_transforms_to_dc(dc=self, model_evaluator=model_evaluator)
 
     def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
         with DatasetCollection.lock:

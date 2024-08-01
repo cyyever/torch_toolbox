@@ -166,10 +166,6 @@ class Executor(HookCollection, abc.ABC):
         return self.__save_dir
 
     @property
-    def dataset(self):
-        return self.dataset_collection.get_dataset(phase=self.__phase)
-
-    @property
     def dataset_util(self) -> DatasetUtil:
         return self.dataset_collection.get_dataset_util(phase=self.__phase)
 
