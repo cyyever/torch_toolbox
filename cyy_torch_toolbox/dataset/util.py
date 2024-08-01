@@ -21,16 +21,29 @@ class DatasetUtil:
         transforms: Transforms | None = None,
         cache_dir: None | str = None,
     ) -> None:
-        self.dataset: torch.utils.data.Dataset = dataset
+        self.__dataset: torch.utils.data.Dataset = dataset
         self.__len: None | int = None
         self._name: str = name if name else ""
-        self._transforms: Transforms | None = transforms
+        self._transforms: Transforms = (
+            transforms if transforms is not None else Transforms()
+        )
         self._cache_dir = cache_dir
 
     def __len__(self) -> int:
         if self.__len is None:
             self.__len = get_dataset_size(self.dataset)
         return self.__len
+
+    @property
+    def dataset(self) -> torch.utils.data.Dataset:
+        return self.__dataset
+
+    @property
+    def transforms(self) -> Transforms:
+        return self._transforms
+
+    def cache_transforms(self, device: torch.device) -> tuple[dict, Transforms]:
+        return self._transforms.cache_transforms(dataset=self.dataset, device=device)
 
     def decompose(self) -> None | dict:
         return None
