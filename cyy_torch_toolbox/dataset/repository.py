@@ -1,7 +1,7 @@
 import copy
 import os
 import pickle
-from typing import Callable
+from typing import Any, Callable
 
 from cyy_naive_lib.log import log_debug, log_error, log_info
 from cyy_naive_lib.reflection import get_kwarg_names
@@ -12,7 +12,10 @@ from ..ml_type import DatasetType, MachineLearningPhase
 
 
 class DatasetFactory(Factory):
-    pass
+    def get(
+        self, key: Any, case_sensitive: bool = True, cache_dir: str | None = None
+    ) -> Any:
+        return super().get(key=key, case_sensitive=case_sensitive)
 
 
 __global_dataset_constructors: dict[DatasetType, DatasetFactory] = {}
@@ -207,7 +210,7 @@ def get_dataset(
         if dataset_type not in __global_dataset_constructors:
             continue
         constructor = __global_dataset_constructors[dataset_type].get(
-            name, case_sensitive=True
+            name, case_sensitive=True, cache_dir=cache_dir
         )
         if constructor is not None:
             return __create_dataset(
