@@ -95,8 +95,6 @@ def __create_dataset(
     dataset_kwargs: dict,
     cache_dir: str,
 ) -> tuple[DatasetType, dict] | None:
-    if dataset_kwargs is None:
-        dataset_kwargs = {}
     constructor_kwargs = get_kwarg_names(dataset_constructor)
     dataset_kwargs_fun = __prepare_dataset_kwargs(
         constructor_kwargs=constructor_kwargs,
@@ -110,14 +108,14 @@ def __create_dataset(
     for phase in MachineLearningPhase:
         while True:
             try:
-                processed_dataset_kwargs = dataset_kwargs_fun(
-                    phase=phase, dataset_type=dataset_type
-                )
-                if processed_dataset_kwargs is None:
-                    break
                 cache_key = (dataset_name, dataset_type, phase)
                 dataset = __dataset_cache.get(cache_key, None)
                 if dataset is None:
+                    processed_dataset_kwargs = dataset_kwargs_fun(
+                        phase=phase, dataset_type=dataset_type
+                    )
+                    if processed_dataset_kwargs is None:
+                        break
                     dataset = dataset_constructor(**processed_dataset_kwargs)
                     if dataset_type == DatasetType.Graph:
                         assert len(dataset) == 1
@@ -130,10 +128,9 @@ def __create_dataset(
                     )
                 else:
                     log_debug(
-                        "use cached dataset %s, id %s with kwargs %s",
+                        "use cached dataset %s, id %s",
                         cache_key,
                         id(dataset),
-                        processed_dataset_kwargs,
                     )
                 if phase == MachineLearningPhase.Training:
                     training_dataset = dataset
