@@ -108,11 +108,6 @@ class DatasetCollection:
             cache_dir=self._get_dataset_cache_dir(),
         )
 
-    # def get_original_dataset(
-    #     self, phase: MachineLearningPhase
-    # ) -> torch.utils.data.Dataset:
-    #     return self.get_dataset_util(phase=phase).get_original_dataset()
-
     def foreach_transform(self) -> Generator:
         yield from self.__transforms.items()
 
