@@ -56,10 +56,12 @@ class Config:
 
     def create_inferencer(
         self,
+        dc: DatasetCollection | None = None,
+        model_evaluator: ModelEvaluator | None = None,
         phase: MachineLearningPhase = MachineLearningPhase.Test,
         inherent_device: bool = True,
     ) -> Inferencer:
-        trainer = self.create_trainer()
+        trainer = self.create_trainer(dc=dc, model_evaluator=model_evaluator)
         return trainer.get_inferencer(phase=phase, inherent_device=inherent_device)
 
     def apply_global_config(self) -> None:
