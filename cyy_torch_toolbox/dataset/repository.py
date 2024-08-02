@@ -1,4 +1,6 @@
 import copy
+import os
+import pickle
 from typing import Callable
 
 from cyy_naive_lib.log import log_debug, log_error, log_info
@@ -177,6 +179,17 @@ def get_dataset(
     real_dataset_type = dataset_kwargs.get("dataset_type", None)
     similar_names = []
     dataset_types = list(DatasetType)
+    cached_dataset_type_file = os.path.join(
+        cache_dir, ".cyy_torch_toolbox_dataset_type"
+    )
+    if os.path.isfile(cached_dataset_type_file):
+        with open(cached_dataset_type_file, "rb") as f:
+            tmp = pickle.load(f)
+            if real_dataset_type is None:
+                real_dataset_type = tmp
+            else:
+                assert real_dataset_type == tmp
+
     if real_dataset_type is not None:
         assert isinstance(real_dataset_type, DatasetType)
         log_info("use dataset type %s", real_dataset_type)
