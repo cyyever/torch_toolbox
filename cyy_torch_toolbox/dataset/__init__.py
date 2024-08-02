@@ -12,7 +12,7 @@ from .collection_sampler import (DatasetCollectionSplit, SamplerBase,
                                  SplitBase, get_dataset_collection_sampler,
                                  get_dataset_collection_split,
                                  global_sampler_factory)
-from .repository import get_dataset
+from .repository import DatasetFactory, get_dataset
 from .sampler import DatasetSampler
 from .util import DatasetUtil
 
@@ -172,6 +172,7 @@ __all__ = [
     "DatasetCollection",
     "SamplerBase",
     "SplitBase",
+    "DatasetFactory",
     "DatasetCollectionSplit",
     "get_dataset_collection_split",
     "global_sampler_factory",
