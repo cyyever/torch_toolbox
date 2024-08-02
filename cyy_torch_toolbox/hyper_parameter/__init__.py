@@ -124,7 +124,7 @@ class HyperParameter:
         if "foreach" not in kwargs:
             kwargs["foreach"] = True
         kwargs.pop("learning_rate", None)
-        if "fake_weight_decay" in kwargs:
+        if "fake_weight_decay" in kwargs and "weight_decay" not in kwargs:
             kwargs["weight_decay"] = (
                 kwargs.pop("fake_weight_decay") / trainer.dataset_size
             )
@@ -189,15 +189,22 @@ def get_recommended_hyper_parameter(
 @dataclass(kw_only=True)
 class HyperParameterConfig(HyperParameter):
     weight_decay: None | float = 1.0
+    real_weight_decay: None | float = None
     fake_weight_decay: None | float = 1.0
 
     def create_hyper_parameter(self) -> HyperParameter:
         hyper_parameter = copy.copy(self)
-        if self.fake_weight_decay is not None:
-            hyper_parameter.optimizer_kwargs["fake_weight_decay"] = (
-                self.fake_weight_decay
-            )
-        if self.weight_decay is not None:
-            hyper_parameter.optimizer_kwargs["fake_weight_decay"] = self.weight_decay
+        if self.real_weight_decay is not None:
+            hyper_parameter.optimizer_kwargs["weight_decay"] = self.real_weight_decay
+            hyper_parameter.optimizer_kwargs.pop("fake_weight_decay", None)
+        else:
+            if self.fake_weight_decay is not None:
+                hyper_parameter.optimizer_kwargs["fake_weight_decay"] = (
+                    self.fake_weight_decay
+                )
+            if self.weight_decay is not None:
+                hyper_parameter.optimizer_kwargs["fake_weight_decay"] = (
+                    self.weight_decay
+                )
         return hyper_parameter
         # get_recommended_hyper_parameter(dataset_name, model_name)
