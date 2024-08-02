@@ -88,6 +88,16 @@ class DatasetCollection:
         log_debug("remove dataset %s", phase)
         self.__datasets.pop(phase, None)
 
+    def get_any_dataset_util(self) -> DatasetUtil:
+        for phase in (
+            MachineLearningPhase.Training,
+            MachineLearningPhase.Validation,
+            MachineLearningPhase.Test,
+        ):
+            if self.has_dataset(phase):
+                return self.get_dataset_util(phase)
+        raise RuntimeError("no dataset")
+
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
@@ -98,10 +108,10 @@ class DatasetCollection:
             cache_dir=self._get_dataset_cache_dir(),
         )
 
-    def get_original_dataset(
-        self, phase: MachineLearningPhase
-    ) -> torch.utils.data.Dataset:
-        return self.get_dataset_util(phase=phase).get_original_dataset()
+    # def get_original_dataset(
+    #     self, phase: MachineLearningPhase
+    # ) -> torch.utils.data.Dataset:
+    #     return self.get_dataset_util(phase=phase).get_original_dataset()
 
     def foreach_transform(self) -> Generator:
         yield from self.__transforms.items()

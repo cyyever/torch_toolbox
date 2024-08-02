@@ -45,7 +45,7 @@ class ClassificationDatasetCollection:
         def computation_fun() -> bool:
             if self.name.lower() == "imagenet":
                 return False
-            for _, labels in self.__get_first_dataset_util().get_batch_labels():
+            for _, labels in self.get_any_dataset_util().get_batch_labels():
                 if len(labels) > 1:
                     return True
             return False
@@ -65,13 +65,3 @@ class ClassificationDatasetCollection:
             return label_names
 
         return self.get_cached_data("label_names.pk", computation_fun)
-
-    def __get_first_dataset_util(self):
-        for phase in (
-            MachineLearningPhase.Training,
-            MachineLearningPhase.Validation,
-            MachineLearningPhase.Test,
-        ):
-            if self.has_dataset(phase):
-                return self.get_dataset_util(phase)
-        raise RuntimeError("no dataset")
