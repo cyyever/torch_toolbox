@@ -10,10 +10,17 @@ from ..dataset.util import global_dataset_util_factor
 from ..factory import Factory
 from ..ml_type import DatasetType, MachineLearningPhase
 
-__global_dataset_constructors: dict[DatasetType, Factory] = {}
+
+class DatasetFactory(Factory):
+    pass
 
 
-def register_dataset_factory(dataset_type: DatasetType, factory: Factory) -> None:
+__global_dataset_constructors: dict[DatasetType, DatasetFactory] = {}
+
+
+def register_dataset_factory(
+    dataset_type: DatasetType, factory: DatasetFactory
+) -> None:
     assert dataset_type not in __global_dataset_constructors
     __global_dataset_constructors[dataset_type] = factory
 
@@ -22,7 +29,7 @@ def register_dataset_constructors(
     dataset_type: DatasetType, name: str, constructor: Callable
 ) -> None:
     if dataset_type not in __global_dataset_constructors:
-        __global_dataset_constructors[dataset_type] = Factory()
+        __global_dataset_constructors[dataset_type] = DatasetFactory()
     __global_dataset_constructors[dataset_type].register(name, constructor)
 
 
