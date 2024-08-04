@@ -283,7 +283,9 @@ class Executor(HookCollection, abc.ABC):
 
     def offload_from_device(self) -> None:
         self.model_evaluator.offload_from_device()
-        torch.cuda.empty_cache()
+        match self.device.type.lower():
+            case "cuda":
+                torch.cuda.empty_cache()
         for executor in self._foreach_sub_executor():
             executor.offload_from_device()
 
