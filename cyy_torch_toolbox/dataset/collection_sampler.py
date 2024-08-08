@@ -104,7 +104,7 @@ class IIDSplitWithFlip(IIDSplit):
         self,
         dataset_collection: DatasetCollection,
         part_number: int,
-        flip_percent: float | list[dict[Any, float]],
+        flip_percent: float | list[dict[Any, float]] | dict[int, dict[Any, float]],
     ) -> None:
         super().__init__(dataset_collection=dataset_collection, part_number=part_number)
         assert isinstance(dataset_collection, ClassificationDatasetCollection)
@@ -150,7 +150,6 @@ class IIDSplitWithFlip(IIDSplit):
             for new_idx, idx in enumerate(sorted(index_list)):
                 if idx in self._flipped_indices:
                     new_flipped_dict[new_idx] = self._flipped_indices[idx]
-            assert new_flipped_dict
             dc.append_transform(
                 transform=functools.partial(self.__transform_target, new_flipped_dict),
                 key=TransformType.Target,
