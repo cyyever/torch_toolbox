@@ -108,29 +108,18 @@ class IIDSplitWithFlip(IIDSplit):
     ) -> None:
         super().__init__(dataset_collection=dataset_collection, part_number=part_number)
         assert isinstance(dataset_collection, ClassificationDatasetCollection)
+        self.__flip_percent = flip_percent
         self._flipped_indices: dict = {}
-        for phase, part_indices in self._dataset_indices.items():
-            if phase != MachineLearningPhase.Training:
-                continue
-            if isinstance(flip_percent, (dict, list)):
-                assert len(flip_percent) == part_number
-                for part_index, indices in part_indices.items():
-                    self._samplers[phase].checked_indices = indices
-                    self._flipped_indices |= self._samplers[
-                        phase
-                    ].randomize_label_by_class(
-                        percent=flip_percent[part_index],
-                        all_labels=dataset_collection.get_labels(),
-                    )
-            else:
-                assert isinstance(flip_percent, float)
-                for indices in part_indices.values():
-                    self._flipped_indices |= self._samplers[phase].randomize_label(
-                        indices=indices,
-                        percent=flip_percent,
-                        all_labels=dataset_collection.get_labels(),
-                    )
         assert self._flipped_indices
+
+    def get_flip_percent(self, part_index: int) -> float | dict:
+        if isinstance(self.__flip_percent, (dict, list)):
+            assert len(self.__flip_percent) == len(
+                self._dataset_indices[MachineLearningPhase.Training]
+            )
+            return self.__flip_percent[part_index]
+        assert isinstance(self.__flip_percent, float)
+        return self.__flip_percent
 
     @classmethod
     def __transform_target(cls, flipped_indices, target, index):
@@ -143,15 +132,27 @@ class IIDSplitWithFlip(IIDSplit):
         for phase in MachineLearningPhase:
             if phase != MachineLearningPhase.Training:
                 continue
-            indices = self._dataset_indices[phase][part_id]
+            sampler = DatasetSampler(dc.get_dataset_util(phase))
+            flip_percent = self.get_flip_percent(part_index=part_id)
+            indices = list(self._dataset_indices[phase][part_id])
             assert indices
-            index_list = sorted(indices)
-            new_flipped_dict = {}
-            for new_idx, idx in enumerate(sorted(index_list)):
-                if idx in self._flipped_indices:
-                    new_flipped_dict[new_idx] = self._flipped_indices[idx]
+            flipped_indices = {}
+            assert isinstance(dc, ClassificationDatasetCollection)
+            if isinstance(flip_percent, dict):
+                flipped_indices = sampler.randomize_label_by_class(
+                    percent=flip_percent,
+                    all_labels=dc.get_labels(),
+                )
+            else:
+                assert isinstance(flip_percent, float)
+                flipped_indices = sampler.randomize_label(
+                    indices=indices,
+                    percent=flip_percent,
+                    all_labels=dc.get_labels(),
+                )
+
             dc.append_transform(
-                transform=functools.partial(self.__transform_target, new_flipped_dict),
+                transform=functools.partial(self.__transform_target, flipped_indices),
                 key=TransformType.Target,
                 phases=[phase],
             )
