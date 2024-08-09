@@ -124,7 +124,7 @@ class IIDSplitWithFlip(IIDSplit):
     @classmethod
     def __transform_target(cls, flipped_indices, target, index):
         if index in flipped_indices:
-            return DatasetUtil.replace_target(target, {target: flipped_indices[index]})
+            return DatasetUtil.replace_target(target, flipped_indices[index])
         return target
 
     def sample(self, part_id: int) -> DatasetCollection:
@@ -136,20 +136,10 @@ class IIDSplitWithFlip(IIDSplit):
             flip_percent = self.get_flip_percent(part_index=part_id)
             indices = list(self._dataset_indices[phase][part_id])
             assert indices
-            flipped_indices = {}
             assert isinstance(dc, ClassificationDatasetCollection)
-            if isinstance(flip_percent, dict):
-                flipped_indices = sampler.randomize_label_by_class(
-                    percent=flip_percent,
-                    all_labels=dc.get_labels(),
-                )
-            else:
-                assert isinstance(flip_percent, float)
-                flipped_indices = sampler.randomize_label(
-                    indices=indices,
-                    percent=flip_percent,
-                    all_labels=dc.get_labels(),
-                )
+            flipped_indices = sampler.randomize_label_by_class(
+                percent=flip_percent,
+            )
 
             dc.append_transform(
                 transform=functools.partial(self.__transform_target, flipped_indices),
