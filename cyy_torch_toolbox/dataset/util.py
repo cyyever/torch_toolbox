@@ -1,4 +1,3 @@
-import copy
 import functools
 from collections.abc import Iterable
 from typing import Any, Generator, Type
@@ -94,13 +93,16 @@ class DatasetUtil:
                 assert len(new_target) == 1
                 new_target = list(new_target)[0]
                 assert type(old_target) is type(new_target)
+                assert old_target != new_target
                 return new_target
             case torch.Tensor():
                 if old_target.numel() == 1:
                     assert len(new_target) == 1
                     old_shape = old_target.shape
+                    old_target_value = old_target.item()
                     new_target_value = list(new_target)[0]
                     new_target_tensor = old_target.clone().reshape(-1)
+                    assert old_target_value != new_target_value
                     new_target_tensor[0] = new_target_value
                     return new_target_tensor.reshape(old_shape)
                 raise NotImplementedError(f"Unsupported target {old_target}")
