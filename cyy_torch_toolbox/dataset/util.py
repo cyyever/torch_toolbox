@@ -88,46 +88,34 @@ class DatasetUtil:
         raise RuntimeError("can't extract labels from target: " + str(target))
 
     @classmethod
-    def replace_target(cls, old_target: Any, new_target: dict) -> Any:
+    def replace_target(cls, old_target: Any, new_target: set[Any]) -> Any:
         match old_target:
             case int() | str():
-                old_target_value = list(cls.__decode_target(old_target))[0]
-                new_target_value = new_target.get(old_target_value, None)
-                if new_target_value is None:
-                    return old_target
-                assert len(new_target_value) == 1
-                return type(old_target)(list(new_target_value)[0])
+                assert len(new_target) == 1
+                new_target = list(new_target)[0]
+                assert type(old_target) is type(new_target)
+                return new_target
             case torch.Tensor():
-                old_target_value = cls.__decode_target(old_target)
                 if old_target.numel() == 1:
-                    old_target_value = list(old_target_value)[0]
-                    if old_target_value not in new_target:
-                        return old_target
-                    new_target_tensor = old_target.clone()
-                    new_target_tensor = new_target[old_target_value]
-                    return new_target_tensor
-                # one hot vector
-                if (0 <= old_target <= 1).all().item():
-                    old_target_value = {
-                        new_target.get(old_t, old_t) for old_t in old_target_value
-                    }
-                    return torch.nn.functional.one_hot(
-                        torch.tensor(list(old_target_value)),
-                        num_classes=old_target.shape[-1],
-                    )
+                    assert len(new_target) == 1
+                    old_shape = old_target.shape
+                    new_target_value = list(new_target)[0]
+                    new_target_tensor = old_target.clone().reshape(-1)
+                    new_target_tensor[0] = new_target_value
+                    return new_target_tensor.reshape(old_shape)
                 raise NotImplementedError(f"Unsupported target {old_target}")
-            case dict():
-                if "labels" in old_target:
-                    new_target_dict = copy.deepcopy(old_target)
-                    new_target_dict["labels"] = cls.replace_target(
-                        new_target_dict["labels"], new_target
-                    )
-                    return new_target_dict
-            case list() | tuple():
-                old_target_value = cls.__decode_target(old_target)
-                return type(old_target)(
-                    new_target.get(old_t, old_t) for old_t in old_target_value
-                )
+            # case dict():
+            #     if "labels" in old_target:
+            #         new_target_dict = copy.deepcopy(old_target)
+            #         new_target_dict["labels"] = cls.replace_target(
+            #             old_target["labels"], new_target
+            #         )
+            #         return new_target_dict
+            # case list() | tuple():
+            #     old_target_value = cls.__decode_target(old_target)
+            #     return type(old_target)(
+            #         new_target.get(old_t, old_t) for old_t in old_target_value
+            #     )
 
         raise RuntimeError(f"can't convert labels {new_target} for target {old_target}")
 

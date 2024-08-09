@@ -120,7 +120,7 @@ class DatasetSampler:
     ) -> list[list]:
         collected_indices = set()
 
-        def __collect(label: Any, indices: set):
+        def __collect(label: Any, indices: set) -> set:
             collected_indices.update(indices)
             return indices
 
