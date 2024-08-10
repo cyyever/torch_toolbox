@@ -168,6 +168,8 @@ class HookCollection:
             if not self.has_hook_obj(hook_name):
                 assert hook is not None
                 self.append_hook(hook, hook_name=hook_name)
+            else:
+                self.enable_hook(hook_name=hook_name)
         else:
             self.disable_hook(hook_name=hook_name)
 
