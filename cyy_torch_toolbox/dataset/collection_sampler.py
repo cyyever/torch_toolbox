@@ -114,6 +114,9 @@ class IIDSplitWithFlip(IIDSplit):
             assert len(self.__flip_percent) == len(
                 self._dataset_indices[MachineLearningPhase.Training]
             )
+            assert len(self.__flip_percent) == len(
+                self._dataset_indices[MachineLearningPhase.Validation]
+            )
             return self.__flip_percent[part_index]
         assert isinstance(self.__flip_percent, float)
         return self.__flip_percent
@@ -127,7 +130,7 @@ class IIDSplitWithFlip(IIDSplit):
     def sample(self, part_id: int) -> DatasetCollection:
         dc = super().sample(part_id=part_id)
         for phase in MachineLearningPhase:
-            if phase != MachineLearningPhase.Training:
+            if phase == MachineLearningPhase.Test:
                 continue
             sampler = DatasetSampler(dc.get_dataset_util(phase))
             flip_percent = self.get_flip_percent(part_index=part_id)
