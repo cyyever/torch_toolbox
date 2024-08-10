@@ -46,8 +46,11 @@ class ModelUtil:
     ) -> None:
         assert parameters
         for name, parameter in parameters.items():
-            if check_parameter:
-                self.model.get_parameter(name)
+            old_parameter: torch.Tensor | None = None
+            if check_parameter or parameter.dtype == torch.float64:
+                old_parameter = self.model.get_parameter(name)
+            if old_parameter is not None:
+                parameter = parameter.to(dtype=old_parameter.dtype)
             self.set_attr(name, parameter, as_parameter=True, keep_grad=keep_grad)
 
     def get_buffers(self) -> TensorDict:
