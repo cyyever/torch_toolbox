@@ -1,6 +1,20 @@
 from enum import StrEnum, auto
+from typing import Iterable, TypeAlias
+
+import torch
 
 from .config import ConfigBase
+
+OptionalTensor: TypeAlias = torch.Tensor | None
+TensorDict: TypeAlias = dict[str, torch.Tensor]
+OptionalTensorDict: TypeAlias = TensorDict | None
+BlockType: TypeAlias = list[tuple[str, torch.nn.Module]]
+IndicesType: TypeAlias = Iterable[int]
+OptionalIndicesType: TypeAlias = IndicesType | None
+ModelGradient: TypeAlias = TensorDict
+SampleTensors: TypeAlias = dict[int, torch.Tensor]
+SampleGradients: TypeAlias = dict[int, ModelGradient]
+ModelParameter: TypeAlias = TensorDict
 
 
 class MachineLearningPhase(StrEnum):
@@ -73,4 +87,14 @@ __all__ = [
     "StopExecutingException",
     "IterationUnit",
     "ConfigBase",
+    "BlockType",
+    "IndicesType",
+    "ModelGradient",
+    "ModelParameter",
+    "OptionalIndicesType",
+    "OptionalTensor",
+    "OptionalTensorDict",
+    "SampleGradients",
+    "SampleTensors",
+    "TensorDict",
 ]
