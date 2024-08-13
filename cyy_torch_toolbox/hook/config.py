@@ -1,5 +1,4 @@
-import copy
-from typing import Any, Self
+from dataclasses import dataclass
 
 import torch
 import torch.cuda
@@ -10,7 +9,7 @@ from ..metric_visualizers.performance_metric_logger import \
 from ..metric_visualizers.performance_metric_recorder import \
     PerformanceMetricRecorder
 from ..metrics.performance_metric import PerformanceMetric
-from ..ml_type import MachineLearningPhase
+from ..ml_type import ConfigBase, MachineLearningPhase
 from ..model import AMPModelEvaluator
 from .cudnn import CUDNNHook
 from .debugger import Debugger
@@ -18,32 +17,21 @@ from .executor_logger import ExecutorLogger
 from .profiler import Profiler
 
 
-class HookConfig:
-    def __init__(self) -> None:
-        self.summarize_executor = True
-        self.debug = False
-        self.profile = False
-        self.use_amp = False
-        self.benchmark_cudnn: bool = True
-        self.use_performance_metric: bool = True
-        self.use_slow_performance_metrics: bool = False
-        self.log_performance_metric: bool = True
-        self.save_performance_metric = False
-        self.__old_config: Any = None
+@dataclass(kw_only=True)
+class HookConfig(ConfigBase):
+    summarize_executor = True
+    debug = False
+    profile = False
+    use_amp = False
+    benchmark_cudnn: bool = True
+    use_performance_metric: bool = True
+    use_slow_performance_metrics: bool = False
+    log_performance_metric: bool = True
+    save_performance_metric = False
 
     def disable_log(self) -> None:
         self.summarize_executor = False
         self.use_performance_metric = False
-
-    def __enter__(self) -> Self:
-        self.__old_config = copy.copy(self)
-        return self
-
-    def __exit__(self, *args, **kwargs) -> None:
-        for name in dir(self):
-            if not name.startswith("_"):
-                setattr(self, name, getattr(self.__old_config, name))
-        self.__old_config = None
 
     def set_hooks(self, executor) -> None:
         if executor.phase != MachineLearningPhase.Training:
