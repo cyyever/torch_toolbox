@@ -10,16 +10,17 @@ from omegaconf import OmegaConf
 from .dataset import DatasetCollection, DatasetCollectionConfig
 from .hyper_parameter import HyperParameterConfig
 from .inferencer import Inferencer
-from .ml_type import MachineLearningPhase
+from .ml_type import ConfigBase, MachineLearningPhase
 from .model import ModelConfig, ModelEvaluator
 from .reproducible_env import ReproducibleEnvConfig
 from .trainer import Trainer, TrainerConfig
 
 
-class Config:
+class Config(ConfigBase):
     def __init__(self, dataset_name: str = "", model_name: str = "") -> None:
+        super().__init__()
         self.save_dir: str = ""
-        self.log_level: Any = None
+        self.log_level: Any | None = None
         self.reproducible_env_config = ReproducibleEnvConfig()
         self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
         self.model_config = ModelConfig(model_name=model_name)

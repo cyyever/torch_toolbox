@@ -19,15 +19,15 @@ from .profiler import Profiler
 
 @dataclass(kw_only=True)
 class HookConfig(ConfigBase):
-    summarize_executor = True
-    debug = False
-    profile = False
-    use_amp = False
+    summarize_executor: bool = True
+    debug: bool = False
+    profile: bool = False
+    use_amp: bool = False
     benchmark_cudnn: bool = True
     use_performance_metric: bool = True
     use_slow_performance_metrics: bool = False
     log_performance_metric: bool = True
-    save_performance_metric = False
+    save_performance_metric: bool = False
 
     def disable_log(self) -> None:
         self.summarize_executor = False

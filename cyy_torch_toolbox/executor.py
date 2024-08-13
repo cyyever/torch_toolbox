@@ -20,7 +20,8 @@ from .hook.config import HookConfig
 from .hyper_parameter import HyperParameter, lr_scheduler_step_after_batch
 from .metric_visualizers import MetricVisualizer
 from .metrics import PerformanceMetric
-from .ml_type import EvaluationMode, ExecutorHookPoint, MachineLearningPhase
+from .ml_type import (ConfigBase, EvaluationMode, ExecutorHookPoint,
+                      MachineLearningPhase)
 from .model import ModelEvaluator, ModelUtil
 
 
@@ -424,9 +425,9 @@ class Executor(HookCollection, abc.ABC):
 
 
 @dataclass(kw_only=True)
-class ExecutorConfig:
-    hook_config: HookConfig = HookConfig()
-    dataloader_kwargs: dict = field(default_factory=lambda: {})
+class ExecutorConfig(ConfigBase):
+    hook_config: HookConfig = field(default_factory=HookConfig)
+    dataloader_kwargs: dict = field(default_factory=dict)
     cache_transforms: None | str = None
 
     def create_executor(
@@ -434,7 +435,7 @@ class ExecutorConfig:
         cls: Callable,
         dataset_collection: DatasetCollection,
         model_evaluator: ModelEvaluator,
-        hyper_parameter: HyperParameter,
+        **kwargs,
     ) -> Any:
         dataset_collection.add_transforms(
             model_evaluator=model_evaluator,
@@ -444,11 +445,10 @@ class ExecutorConfig:
             and "cache_transforms" not in self.dataloader_kwargs
         ):
             self.dataloader_kwargs["cache_transforms"] = self.cache_transforms
-        executor = cls(
-            model_evaluator=model_evaluator,
-            dataset_collection=dataset_collection,
-            hyper_parameter=hyper_parameter,
+        return cls(
             hook_config=self.hook_config,
             dataloader_kwargs=self.dataloader_kwargs,
+            dataset_collection=dataset_collection,
+            model_evaluator=model_evaluator,
+            **kwargs,
         )
-        return executor
