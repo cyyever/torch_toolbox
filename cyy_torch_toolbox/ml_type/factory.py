@@ -16,18 +16,18 @@ class Factory:
 
     def get(self, key: Any, case_sensitive: bool = True) -> Any:
         if not case_sensitive:
-            key = self.__lower_key(key)
+            key = self._lower_key(key)
         return self.data.get(key, None)
 
     def get_similar_keys(self, key: str) -> list[str]:
         return get_close_matches(key, self.data.keys())
 
     @classmethod
-    def __lower_key(cls, key: Any) -> Any:
+    def _lower_key(cls, key: Any) -> Any:
         match key:
             case str():
                 return key.lower()
             case tuple():
-                return tuple(map(cls.__lower_key, key))
+                return tuple(map(cls._lower_key, key))
             case _:
                 raise NotImplementedError()
