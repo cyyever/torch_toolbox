@@ -8,7 +8,7 @@ import torch
 from cyy_naive_lib.algorithm.mapping_op import (
     get_mapping_items_by_key_order, get_mapping_values_by_key_order)
 
-from .typing import TensorDict
+from .ml_type import TensorDict
 
 
 def cat_tensors_to_vector(tensors: Iterable) -> torch.Tensor:

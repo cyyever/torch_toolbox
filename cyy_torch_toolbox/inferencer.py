@@ -4,8 +4,8 @@ import torch
 from cyy_naive_lib.log import log_warning
 
 from .executor import Executor
-from .ml_type import EvaluationMode, ExecutorHookPoint, StopExecutingException
-from .typing import ModelGradient
+from .ml_type import (EvaluationMode, ExecutorHookPoint, ModelGradient,
+                      StopExecutingException)
 
 
 class Inferencer(Executor):

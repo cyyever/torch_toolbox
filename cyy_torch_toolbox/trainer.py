@@ -11,9 +11,8 @@ from .hyper_parameter import HyperParameter
 from .inferencer import Inferencer
 from .metric_visualizers import BatchLossLogger
 from .ml_type import (EvaluationMode, ExecutorHookPoint, MachineLearningPhase,
-                      ModelType, StopExecutingException)
+                      ModelParameter, ModelType, StopExecutingException)
 from .model import ModelEvaluator
-from .typing import ModelParameter
 
 
 class Trainer(Executor):
@@ -106,9 +105,7 @@ class Trainer(Executor):
                     self._execute_epoch(
                         epoch=epoch, evaluation_mode=EvaluationMode.Training
                     )
-                    if validate and self.__test(
-                        phase=MachineLearningPhase.Validation
-                    ):
+                    if validate and self.__test(phase=MachineLearningPhase.Validation):
                         self.exec_hooks(
                             ExecutorHookPoint.AFTER_VALIDATION,
                             epoch=epoch,
