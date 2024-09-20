@@ -4,8 +4,7 @@ import os
 from cyy_naive_lib.log import log_info
 
 from ..data_pipeline.common import replace_target
-from ..factory import Factory
-from ..ml_type import DatasetType, MachineLearningPhase, TransformType
+from ..ml_type import DatasetType, Factory, MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
 from .collection_sampler import (DatasetCollectionSplit, SamplerBase,
