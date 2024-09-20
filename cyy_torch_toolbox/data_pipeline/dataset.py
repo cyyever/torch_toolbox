@@ -5,7 +5,7 @@ import torch.utils.data
 import torch.utils.data.datapipes
 import torch.utils.data.dataset
 
-from ..typing import OptionalIndicesType
+from ..ml_type import OptionalIndicesType
 
 
 def get_dataset_size(dataset: Any) -> int:

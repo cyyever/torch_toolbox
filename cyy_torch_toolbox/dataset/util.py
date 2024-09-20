@@ -6,10 +6,9 @@ import torch
 import torch.nn.functional
 import torch.utils.data
 
-from ..data_pipeline.dataset import get_dataset_size, select_item, subset_dp
-from ..data_pipeline.transform import Transforms
-from ..factory import Factory
-from ..typing import IndicesType, OptionalIndicesType
+from ..data_pipeline import (Transforms, get_dataset_size, select_item,
+                             subset_dp)
+from ..ml_type import Factory, IndicesType, OptionalIndicesType
 
 
 class DatasetUtil:

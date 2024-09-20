@@ -2,8 +2,7 @@ import copy
 import functools
 from typing import Any
 
-from ..factory import Factory
-from ..ml_type import MachineLearningPhase, TransformType
+from ..ml_type import Factory, MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
 from .sampler import DatasetSampler

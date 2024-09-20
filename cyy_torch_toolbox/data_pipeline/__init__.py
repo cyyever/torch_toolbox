@@ -1,6 +1,6 @@
-from ..factory import Factory
-from .transform import *
+from ..ml_type import Factory
 from .dataset import *
+from .transform import *
 
 global_data_transform_factory = Factory()
 

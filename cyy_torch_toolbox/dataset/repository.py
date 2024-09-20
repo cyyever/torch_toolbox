@@ -7,8 +7,7 @@ from cyy_naive_lib.log import log_debug, log_error, log_info
 from cyy_naive_lib.reflection import get_kwarg_names
 
 from ..dataset.util import global_dataset_util_factor
-from ..factory import Factory
-from ..ml_type import DatasetType, MachineLearningPhase
+from ..ml_type import DatasetType, Factory, MachineLearningPhase
 
 
 class DatasetFactory(Factory):

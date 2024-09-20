@@ -4,6 +4,7 @@ from typing import Iterable, TypeAlias
 import torch
 
 from .config import ConfigBase
+from .factory import Factory
 
 OptionalTensor: TypeAlias = torch.Tensor | None
 TensorDict: TypeAlias = dict[str, torch.Tensor]
@@ -92,6 +93,7 @@ __all__ = [
     "ModelGradient",
     "ModelParameter",
     "OptionalIndicesType",
+    "Factory",
     "OptionalTensor",
     "OptionalTensorDict",
     "SampleGradients",
