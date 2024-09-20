@@ -1,6 +1,7 @@
 import copy
 import os
 import sys
+from typing import Callable
 
 import torch
 from cyy_naive_lib.log import log_debug
@@ -61,9 +62,9 @@ def get_model(
     name: str, dataset_collection: DatasetCollection, model_kwargs: dict
 ) -> dict:
     model_kwargs = copy.copy(model_kwargs)
-    model_constructor = global_model_factory[dataset_collection.dataset_type].get(
-        name.lower()
-    )
+    model_constructor: Callable | None = global_model_factory[
+        dataset_collection.dataset_type
+    ].get(name.lower())
     if model_constructor is None:
         raise NotImplementedError(f"unsupported model {name}")
 
