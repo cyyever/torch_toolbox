@@ -85,9 +85,7 @@ class Executor(HookCollection, abc.ABC):
             match self.device.type.lower():
                 case "cuda":
                     self.__stream = torch.cuda.Stream(device=self.device)
-                case "cpu":
-                    self.__stream = torch.cpu.Stream()
-                case "mps":
+                case "cpu" | "mps":
                     self.__stream = torch.cpu.Stream()
                 case "xpu":
                     self.__stream = torch.xpu.Stream(device=self.device)
@@ -99,7 +97,7 @@ class Executor(HookCollection, abc.ABC):
     @property
     def stream_context(
         self,
-    ) -> torch.cuda.StreamContext | torch.xpu.StreamContext | torch.cpu.StreamContext:
+    ) -> AbstractContextManager:
         match self.device.type.lower():
             case "cuda":
                 return torch.cuda.stream(self.stream)
@@ -259,9 +257,10 @@ class Executor(HookCollection, abc.ABC):
         return state
 
     def wait_stream(self) -> None:
-        if isinstance(self.__stream, Stream):
+        if hasattr(self.__stream, "synchronize"):
             self.__stream.synchronize()
-            assert self.__stream.query()
+            if hasattr(self.__stream, "query"):
+                assert self.__stream.query()
 
     def set_dataset_collection(self, dc: DatasetCollection) -> None:
         self.wait_stream()
