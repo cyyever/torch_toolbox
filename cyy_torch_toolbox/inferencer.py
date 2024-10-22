@@ -4,8 +4,12 @@ import torch
 from cyy_naive_lib.log import log_warning
 
 from .executor import Executor
-from .ml_type import (EvaluationMode, ExecutorHookPoint, ModelGradient,
-                      StopExecutingException)
+from .ml_type import (
+    EvaluationMode,
+    ExecutorHookPoint,
+    ModelGradient,
+    StopExecutingException,
+)
 
 
 class Inferencer(Executor):
@@ -72,4 +76,4 @@ class Inferencer(Executor):
         assert not result["is_averaged_loss"]
         if isinstance(sample_indices, torch.Tensor):
             sample_indices = sample_indices.tolist()
-        sample_loss.update(zip(sample_indices, result["loss"]))
+        sample_loss.update(zip(sample_indices, result["loss"], strict=False))

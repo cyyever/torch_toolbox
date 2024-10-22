@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from enum import StrEnum, auto
-from typing import Iterable, TypeAlias
+from typing import TypeAlias
 
 import torch
 

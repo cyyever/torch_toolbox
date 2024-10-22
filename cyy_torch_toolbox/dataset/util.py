@@ -1,13 +1,12 @@
 import functools
-from collections.abc import Iterable
-from typing import Any, Generator, Type
+from collections.abc import Generator, Iterable
+from typing import Any
 
 import torch
 import torch.nn.functional
 import torch.utils.data
 
-from ..data_pipeline import (Transforms, get_dataset_size, select_item,
-                             subset_dp)
+from ..data_pipeline import Transforms, get_dataset_size, select_item, subset_dp
 from ..ml_type import Factory, IndicesType, OptionalIndicesType
 
 
@@ -65,7 +64,7 @@ class DatasetUtil:
         return None
 
     @classmethod
-    def __decode_target(cls: Type, target: Any) -> set:
+    def __decode_target(cls, target: Any) -> set:
         match target:
             case int() | str():
                 return {target}

@@ -4,10 +4,8 @@ import torch
 import torch.cuda
 from cyy_naive_lib.log import log_info
 
-from ..metric_visualizers.performance_metric_logger import \
-    PerformanceMetricLogger
-from ..metric_visualizers.performance_metric_recorder import \
-    PerformanceMetricRecorder
+from ..metric_visualizers.performance_metric_logger import PerformanceMetricLogger
+from ..metric_visualizers.performance_metric_recorder import PerformanceMetricRecorder
 from ..metrics.performance_metric import PerformanceMetric
 from ..ml_type import ConfigBase, MachineLearningPhase
 from ..model import AMPModelEvaluator

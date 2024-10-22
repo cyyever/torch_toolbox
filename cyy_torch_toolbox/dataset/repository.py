@@ -1,7 +1,8 @@
 import copy
 import os
 import pickle
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from cyy_naive_lib.log import log_debug, log_error, log_info
 from cyy_naive_lib.reflection import get_kwarg_names
@@ -120,7 +121,7 @@ def __create_dataset(
         while True:
             try:
                 cache_key = (dataset_name, dataset_type, phase)
-                dataset = __dataset_cache.get(cache_key, None)
+                dataset = __dataset_cache.get(cache_key)
                 if dataset is None:
                     processed_dataset_kwargs = dataset_kwargs_fun(
                         phase=phase, dataset_type=dataset_type
@@ -185,7 +186,7 @@ def __create_dataset(
 def get_dataset(
     name: str, dataset_kwargs: dict, cache_dir: str
 ) -> None | tuple[DatasetType, dict]:
-    real_dataset_type = dataset_kwargs.get("dataset_type", None)
+    real_dataset_type = dataset_kwargs.get("dataset_type")
     similar_names = []
     dataset_types = list(DatasetType)
     cached_dataset_type_file = os.path.join(

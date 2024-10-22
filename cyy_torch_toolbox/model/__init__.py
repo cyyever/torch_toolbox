@@ -1,7 +1,7 @@
 import copy
 import os
 import sys
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 from cyy_naive_lib.log import log_debug

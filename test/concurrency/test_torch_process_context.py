@@ -1,6 +1,5 @@
 import torch
-from cyy_torch_toolbox.concurrency.torch_process_context import \
-    TorchProcessContext
+from cyy_torch_toolbox.concurrency.torch_process_context import TorchProcessContext
 
 
 def test_pipe():

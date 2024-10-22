@@ -1,4 +1,5 @@
-from typing import Any, Generator
+from collections.abc import Generator
+from typing import Any
 
 import torch
 import torch.utils.data
@@ -57,7 +58,7 @@ def dataset_with_indices(
                 KeyPipe(dataset), __add_index_to_map_item
             )
     assert not hasattr(dataset, "original_dataset")
-    setattr(dataset, "original_dataset", old_dataset)
+    dataset.original_dataset = old_dataset
     return dataset
 
 

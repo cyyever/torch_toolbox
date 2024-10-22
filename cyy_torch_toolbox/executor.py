@@ -2,9 +2,10 @@ import abc
 import contextlib
 import copy
 import os
+from collections.abc import Callable, Generator
 from contextlib import AbstractContextManager
 from dataclasses import dataclass, field
-from typing import Any, Callable, Generator
+from typing import Any
 
 import torch
 import torch.cuda
@@ -20,8 +21,7 @@ from .hook.config import HookConfig
 from .hyper_parameter import HyperParameter, lr_scheduler_step_after_batch
 from .metric_visualizers import MetricVisualizer
 from .metrics import PerformanceMetric
-from .ml_type import (ConfigBase, EvaluationMode, ExecutorHookPoint,
-                      MachineLearningPhase)
+from .ml_type import ConfigBase, EvaluationMode, ExecutorHookPoint, MachineLearningPhase
 from .model import ModelEvaluator, ModelUtil
 
 
@@ -313,7 +313,7 @@ class Executor(HookCollection, abc.ABC):
         if (
             evaluation_mode == EvaluationMode.Training
             and self.hyper_parameter.batch_size != 1
-            and batch.get("batch_size", None) == 1
+            and batch.get("batch_size") == 1
             and self.running_model_evaluator.model_util.have_module(
                 module_type=torch.nn.BatchNorm2d
             )

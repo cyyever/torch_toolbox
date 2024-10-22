@@ -1,6 +1,6 @@
 import copy
-from collections.abc import Iterable
-from typing import Any, Callable, Self
+from collections.abc import Callable, Iterable
+from typing import Any, Self
 
 import torch
 import torch.utils.data

@@ -16,7 +16,7 @@ class AccuracyMetric(Metric):
     @torch.no_grad()
     def _after_batch(self, result: dict, **kwargs: Any) -> None:
         output = result["model_output"]
-        logits = result.get("logits", None)
+        logits = result.get("logits")
         targets = result["targets"]
         if logits is not None:
             output = logits

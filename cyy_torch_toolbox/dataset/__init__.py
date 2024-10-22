@@ -7,10 +7,14 @@ from ..data_pipeline.common import replace_target
 from ..ml_type import DatasetType, Factory, MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
-from .collection_sampler import (DatasetCollectionSplit, SamplerBase,
-                                 SplitBase, get_dataset_collection_sampler,
-                                 get_dataset_collection_split,
-                                 global_sampler_factory)
+from .collection_sampler import (
+    DatasetCollectionSplit,
+    SamplerBase,
+    SplitBase,
+    get_dataset_collection_sampler,
+    get_dataset_collection_split,
+    global_sampler_factory,
+)
 from .repository import DatasetFactory, get_dataset
 from .sampler import DatasetSampler
 from .util import DatasetUtil
@@ -113,7 +117,7 @@ class DatasetCollectionConfig:
             assert save_dir is not None
             with open(
                 os.path.join(save_dir, "training_dataset_indices.json"),
-                mode="wt",
+                mode="w",
                 encoding="utf-8",
             ) as f:
                 json.dump(subset_indices, f)
@@ -124,7 +128,7 @@ class DatasetCollectionConfig:
                 "use training_dataset_indices_path %s",
                 self.training_dataset_indices_path,
             )
-            with open(self.training_dataset_indices_path, "r", encoding="utf-8") as f:
+            with open(self.training_dataset_indices_path, encoding="utf-8") as f:
                 subset_indices = json.load(f)
         if subset_indices is not None:
             dc.set_subset(phase=MachineLearningPhase.Training, indices=subset_indices)
@@ -140,7 +144,7 @@ class DatasetCollectionConfig:
                     save_dir,
                     "training_dataset_label_map.json",
                 ),
-                mode="wt",
+                mode="w",
                 encoding="utf-8",
             ) as f:
                 json.dump(label_map, f)
@@ -151,7 +155,7 @@ class DatasetCollectionConfig:
                 "use training_dataset_label_map_path %s",
                 self.training_dataset_label_map_path,
             )
-            with open(self.training_dataset_label_map_path, "r", encoding="utf-8") as f:
+            with open(self.training_dataset_label_map_path, encoding="utf-8") as f:
                 self.training_dataset_label_map = json.load(f)
 
         if self.training_dataset_label_map is not None:

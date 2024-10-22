@@ -20,7 +20,7 @@ class PerformanceMetricRecorder(MetricVisualizer):
         os.makedirs(os.path.dirname(json_filename), exist_ok=True)
         json_record = {}
         if os.path.isfile(json_filename):
-            with open(json_filename, "rt", encoding="utf8") as f:
+            with open(json_filename, encoding="utf8") as f:
                 json_record = json.load(f)
         epoch_metrics = executor.performance_metric.get_epoch_metrics(epoch)
         if not epoch_metrics and executor.phase != MachineLearningPhase.Training:
@@ -35,5 +35,5 @@ class PerformanceMetricRecorder(MetricVisualizer):
             if isinstance(value, torch.Tensor):
                 value = value.item()
             json_record[k][epoch] = value
-        with open(json_filename, "wt", encoding="utf8") as f:
+        with open(json_filename, "w", encoding="utf8") as f:
             json.dump(json_record, f)
