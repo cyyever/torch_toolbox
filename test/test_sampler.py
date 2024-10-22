@@ -1,5 +1,4 @@
-from cyy_torch_toolbox import (create_dataset_collection,
-                               get_dataset_collection_sampler)
+from cyy_torch_toolbox import create_dataset_collection, get_dataset_collection_sampler
 
 try:
     import cyy_torch_vision  # noqa: F401

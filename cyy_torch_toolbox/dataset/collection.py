@@ -1,7 +1,8 @@
 import copy
 import os
 import threading
-from typing import Any, Callable, Generator, Iterable, Self
+from collections.abc import Callable, Generator, Iterable
+from typing import Any, Self
 
 import torch
 import torch.utils.data
@@ -10,8 +11,7 @@ from cyy_naive_lib.log import log_debug, log_warning
 from cyy_naive_lib.storage import get_cached_data
 from cyy_naive_lib.system_info import OSType, get_operating_system_type
 
-from ..data_pipeline import (Transforms, append_transforms_to_dc,
-                             dataset_with_indices)
+from ..data_pipeline import Transforms, append_transforms_to_dc, dataset_with_indices
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 from .sampler import DatasetSampler
 from .util import DatasetUtil, global_dataset_util_factor

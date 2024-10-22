@@ -1,12 +1,14 @@
 import dataclasses
 import functools
 import pickle
-from collections.abc import Iterable
-from typing import Any, Callable
+from collections.abc import Callable, Iterable
+from typing import Any
 
 import torch
 from cyy_naive_lib.algorithm.mapping_op import (
-    get_mapping_items_by_key_order, get_mapping_values_by_key_order)
+    get_mapping_items_by_key_order,
+    get_mapping_values_by_key_order,
+)
 
 from .ml_type import TensorDict
 

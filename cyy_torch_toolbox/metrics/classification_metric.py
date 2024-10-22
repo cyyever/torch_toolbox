@@ -11,7 +11,7 @@ class ClassificationMetric(Metric):
             self.disable()
 
     def _get_output(self, result: dict) -> torch.Tensor:
-        output = result.get("logits", None)
+        output = result.get("logits")
         if output is None:
             output = result["original_output"]
         assert isinstance(output, torch.Tensor)

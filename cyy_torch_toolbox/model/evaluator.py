@@ -1,5 +1,6 @@
+from collections.abc import Callable, Iterable
 from contextlib import nullcontext
-from typing import Any, Callable, Iterable, Type
+from typing import Any
 
 import torch
 from cyy_naive_lib.log import log_debug, log_error
@@ -242,7 +243,7 @@ class ModelEvaluator:
         last_module = self.model_util.get_last_underlying_module()
 
         log_debug("last module is %s", last_module.__class__)
-        loss_fun_type: None | Type = None
+        loss_fun_type: None | type = None
         match last_module:
             case nn.LogSoftmax():
                 log_debug("choose loss function NLLLoss")

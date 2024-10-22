@@ -1,7 +1,8 @@
 import copy
 import functools
 import random
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from cyy_naive_lib.log import log_warning
 

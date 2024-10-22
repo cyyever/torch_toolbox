@@ -1,4 +1,5 @@
-from typing import Any, Callable, Generator, Iterable, Type
+from collections.abc import Callable, Generator, Iterable
+from typing import Any
 
 import torch
 import torch.nn
@@ -127,7 +128,7 @@ class ModelUtil:
 
     def filter_modules(
         self,
-        module_type: Type | None = None,
+        module_type: type | None = None,
         module_names: Iterable[str] | None = None,
     ) -> Generator:
         if module_names is not None:
@@ -178,7 +179,7 @@ class ModelUtil:
 
         return self.change_modules(f=unfreeze, **kwargs)
 
-    def have_module(self, module_type: Type) -> bool:
+    def have_module(self, module_type: type) -> bool:
         for _ in self.filter_modules(module_type=module_type):
             return True
         return False
