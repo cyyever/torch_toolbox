@@ -11,7 +11,6 @@ import torch
 import torch.cuda
 import torch.utils.data
 from cyy_naive_lib.log import log_debug
-from torch import Stream
 
 from .data_pipeline.loader import get_dataloader
 from .dataset import DatasetCollection, DatasetUtil
@@ -50,7 +49,7 @@ class Executor(HookCollection, abc.ABC):
         self.__dataloader_kwargs: dict = (
             copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
         )
-        self.__stream: None | Stream | torch.cpu.Stream = None
+        self.__stream: None | torch.cuda.Stream | torch.cpu.Stream = None
         self.__save_dir: None | str = None
         self.__visualizer_prefix: str = ""
 
@@ -75,20 +74,16 @@ class Executor(HookCollection, abc.ABC):
         match self.device.type.lower():
             case "cuda":
                 return torch.cuda.device(device=self.device)
-            case "xpu":
-                return torch.xpu.device(device=self.device)
         return contextlib.nullcontext()
 
     @property
-    def stream(self) -> torch.cpu.Stream | Stream:
+    def stream(self) -> torch.cpu.Stream | torch.cuda.Stream:
         if self.__stream is None:
             match self.device.type.lower():
                 case "cuda":
                     self.__stream = torch.cuda.Stream(device=self.device)
                 case "cpu" | "mps":
                     self.__stream = torch.cpu.Stream()
-                case "xpu":
-                    self.__stream = torch.xpu.Stream(device=self.device)
                 case _:
                     raise RuntimeError(self.device)
         assert self.__stream is not None
@@ -101,12 +96,8 @@ class Executor(HookCollection, abc.ABC):
         match self.device.type.lower():
             case "cuda":
                 return torch.cuda.stream(self.stream)
-            case "cpu":
+            case "cpu" | "mps":
                 return torch.cpu.stream(self.stream)
-            case "mps":
-                return torch.cpu.stream(self.stream)
-            case "xpu":
-                return torch.xpu.stream(self.stream)
         raise RuntimeError(self.device)
 
     @property
@@ -257,8 +248,9 @@ class Executor(HookCollection, abc.ABC):
         return state
 
     def wait_stream(self) -> None:
-        if hasattr(self.__stream, "synchronize"):
-            self.__stream.synchronize()
+        if self.__stream is not None:
+            if hasattr(self.__stream, "synchronize"):
+                self.__stream.synchronize()
             if hasattr(self.__stream, "query"):
                 assert self.__stream.query()
 
@@ -345,10 +337,10 @@ class Executor(HookCollection, abc.ABC):
         else:
             forward_result = self.running_model_evaluator(**evaluation_kwargs)
 
-        forward_result["normalized_batch_loss"] = (
-            self.running_model_evaluator.get_normalized_batch_loss(
-                dataset_size=self.dataset_size, forward_result=forward_result
-            )
+        forward_result[
+            "normalized_batch_loss"
+        ] = self.running_model_evaluator.get_normalized_batch_loss(
+            dataset_size=self.dataset_size, forward_result=forward_result
         )
         batch |= forward_result
         if evaluation_mode != EvaluationMode.Test:
