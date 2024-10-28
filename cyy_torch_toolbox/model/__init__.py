@@ -48,7 +48,7 @@ def create_model(constructor, **kwargs):
         except TypeError as e:
             retry = False
             for k in copy.copy(kwargs):
-                if k in str(e):
+                if f"got an unexpected keyword argument '{k}'" in str(e):
                     log_debug("%s so remove %s", e, k)
                     kwargs.pop(k, None)
                     retry = True
