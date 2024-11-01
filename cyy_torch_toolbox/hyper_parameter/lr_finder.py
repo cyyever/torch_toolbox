@@ -60,8 +60,8 @@ class LRFinder(Hook):
             stop_training = True
 
         if stop_training:
-            self.learning_rates = self.learning_rates[self.total_batch_num // 10:]
-            self.losses = self.losses[self.total_batch_num // 10:]
+            self.learning_rates = self.learning_rates[self.total_batch_num // 10 :]
+            self.losses = self.losses[self.total_batch_num // 10 :]
             self.suggested_learning_rate = (
                 self.learning_rates[torch.tensor(self.losses).argmin()] / 10.0
             )

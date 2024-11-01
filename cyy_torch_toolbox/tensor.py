@@ -26,7 +26,7 @@ def decompose_like_tensor_dict(tensor_dict: dict, tensor: torch.Tensor) -> dict:
     bias = 0
     for key, component in get_mapping_items_by_key_order(tensor_dict):
         param_element_num = torch.prod(component.shape).item()
-        result[key] = tensor[bias: bias + param_element_num].view(*component.shape)
+        result[key] = tensor[bias : bias + param_element_num].view(*component.shape)
         bias += param_element_num
     assert bias == tensor.shape[0]
     return result
@@ -37,7 +37,7 @@ def decompose_tensor_to_list(shapes: list, tensor: torch.Tensor) -> list:
     bias = 0
     for shape in shapes:
         param_element_num = torch.prod(torch.tensor(shape, dtype=torch.long)).item()
-        result.append(tensor[bias: bias + param_element_num].view(*shape))
+        result.append(tensor[bias : bias + param_element_num].view(*shape))
         bias += param_element_num
     assert bias == tensor.shape[0]
     return result
@@ -97,7 +97,7 @@ def tensor_to(
 ) -> Any:
     def fun(data, check_slowdown, **kwargs):
         if check_slowdown:
-            device = kwargs.get("device", None)
+            device = kwargs.get("device")
             non_blocking = kwargs.get("non_blocking", True)
             if (
                 str(data.device) == "cpu"
@@ -167,7 +167,7 @@ def disassemble_tensor(
             return data[0]
         shape, offset = data
         tensor = concatenated_tensor[
-            offset: offset + torch.prod(torch.tensor(shape, dtype=torch.long)).item()
+            offset : offset + torch.prod(torch.tensor(shape, dtype=torch.long)).item()
         ].view(*shape)
         if clone:
             tensor = tensor.clone()

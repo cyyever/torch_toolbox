@@ -83,12 +83,6 @@ def select_item(dataset: Any, indices: OptionalIndicesType = None) -> Generator:
 def subset_dp(
     dataset: torch.utils.data.Dataset, indices: OptionalIndicesType = None
 ) -> torch.utils.data.MapDataPipe:
-    # original_dataset = getattr(dataset, "dataset", None)
-    # if has_hugging_face:
-    #     match original_dataset:
-    #         case hugging_face_datasets.arrow_dataset.Dataset():
-    #             pass
-
     return torch.utils.data.datapipes.map.SequenceWrapper(
         list(dict(select_item(dataset, indices)).values()), deepcopy=False
     )
