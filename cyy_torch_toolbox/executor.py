@@ -337,10 +337,10 @@ class Executor(HookCollection, abc.ABC):
         else:
             forward_result = self.running_model_evaluator(**evaluation_kwargs)
 
-        forward_result[
-            "normalized_batch_loss"
-        ] = self.running_model_evaluator.get_normalized_batch_loss(
-            dataset_size=self.dataset_size, forward_result=forward_result
+        forward_result["normalized_batch_loss"] = (
+            self.running_model_evaluator.get_normalized_batch_loss(
+                dataset_size=self.dataset_size, forward_result=forward_result
+            )
         )
         batch |= forward_result
         if evaluation_mode != EvaluationMode.Test:

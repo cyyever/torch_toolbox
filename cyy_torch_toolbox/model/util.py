@@ -268,7 +268,7 @@ class ModelUtil:
             if end_index is not None:
                 block_modules = modules[: end_index + 1]
                 blocks.append(block_modules)
-                modules = modules[end_index + 1:]
+                modules = modules[end_index + 1 :]
                 modules = [
                     p
                     for p in modules
