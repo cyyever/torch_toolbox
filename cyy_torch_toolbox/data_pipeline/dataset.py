@@ -42,8 +42,8 @@ def __add_index_to_map_item(item) -> dict:
 
 
 def dataset_with_indices(
-    dataset: torch.utils.data.Dataset,
-) -> torch.utils.data.Dataset:
+    dataset: torch.utils.data.Dataset | list,
+) -> torch.utils.data.Dataset | list:
     old_dataset = dataset
     match dataset:
         case list():
