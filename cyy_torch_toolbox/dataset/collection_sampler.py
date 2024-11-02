@@ -109,7 +109,7 @@ class IIDSplitWithFlip(IIDSplit):
         self.__flip_percent = flip_percent
 
     def get_flip_percent(self, part_index: int) -> float | dict:
-        if isinstance(self.__flip_percent, (dict, list)):
+        if isinstance(self.__flip_percent, dict | list):
             assert len(self.__flip_percent) == len(
                 self._dataset_indices[MachineLearningPhase.Training]
             )

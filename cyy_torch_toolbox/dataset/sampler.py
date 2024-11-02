@@ -167,10 +167,7 @@ class DatasetSampler:
             if not indices:
                 return indices
 
-            if isinstance(percent, dict):
-                new_percent = percent[label]
-            else:
-                new_percent = percent
+            new_percent = percent[label] if isinstance(percent, dict) else percent
             assert isinstance(new_percent, float | int)
 
             randomized_label_map |= self.randomize_label(
