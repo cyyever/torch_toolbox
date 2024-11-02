@@ -17,19 +17,19 @@ from .profiler import Profiler
 
 @dataclass(kw_only=True)
 class HookConfig(ConfigBase):
-    summarize_executor: bool = True
     debug: bool = False
     profile: bool = False
     use_amp: bool = False
     benchmark_cudnn: bool = True
     use_performance_metric: bool = True
     use_slow_performance_metrics: bool = False
-    log_performance_metric: bool = True
     save_performance_metric: bool = False
+    log_performance_metric: bool = True
+    summarize_executor: bool = True
 
     def disable_log(self) -> None:
-        self.summarize_executor = False
         self.log_performance_metric = False
+        self.summarize_executor = False
 
     def set_hooks(self, executor) -> None:
         if executor.phase != MachineLearningPhase.Training:
