@@ -41,7 +41,7 @@ class HookConfig(ConfigBase):
                 executor.replace_model_evaluator(AMPModelEvaluator)
         else:
             if isinstance(executor.model_evaluator, AMPModelEvaluator):
-                if executor.phase != MachineLearningPhase.Training:
+                if executor.phase == MachineLearningPhase.Training:
                     log_info("disable amp")
                 executor.replace_model_evaluator(
                     lambda amp_evaluator: amp_evaluator.evaluator
