@@ -174,12 +174,6 @@ class HookCollection:
         else:
             self.disable_hook(hook_name=hook_name)
 
-    def switch_hook(self, hook_name: str, enabled: bool) -> None:
-        if enabled:
-            self.enable_hook(hook_name=hook_name)
-        else:
-            self.disable_hook(hook_name=hook_name)
-
     def enable_hook(self, hook_name: str) -> None:
         hook = self.get_hook(hook_name)
         hook.enable()
