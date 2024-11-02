@@ -29,7 +29,7 @@ class HookConfig(ConfigBase):
 
     def disable_log(self) -> None:
         self.summarize_executor = False
-        self.use_performance_metric = False
+        self.log_performance_metric = False
 
     def set_hooks(self, executor) -> None:
         if executor.phase != MachineLearningPhase.Training:

@@ -401,6 +401,7 @@ class Executor(HookCollection, abc.ABC):
                         training_loss = self.performance_metric.get_loss(
                             epoch, to_item=False
                         )
+                        assert training_loss is not None
                         log_debug(
                             "call ReduceLROnPlateau for training loss %s",
                             training_loss,

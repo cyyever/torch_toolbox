@@ -45,7 +45,7 @@ class LRFinder(Hook):
             group["lr"] = learning_rate
 
     def _after_batch(self, **kwargs):
-        batch_loss = kwargs["result"]["loss"]
+        batch_loss = kwargs["result"]["loss"].clone()
         if self.losses:
             batch_loss = batch_loss + 0.98 * (self.losses[-1] - batch_loss)
         self.losses.append(batch_loss)
@@ -60,8 +60,8 @@ class LRFinder(Hook):
             stop_training = True
 
         if stop_training:
-            self.learning_rates = self.learning_rates[self.total_batch_num // 10 :]
-            self.losses = self.losses[self.total_batch_num // 10 :]
+            self.learning_rates = self.learning_rates[self.total_batch_num // 10:]
+            self.losses = self.losses[self.total_batch_num // 10:]
             self.suggested_learning_rate = (
                 self.learning_rates[torch.tensor(self.losses).argmin()] / 10.0
             )

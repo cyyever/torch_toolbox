@@ -13,15 +13,17 @@ from .lr_finder import LRFinder
 
 def _determine_learning_rate(task: Any, **kwargs: Any) -> float:
     tmp_trainer = task
-    tmp_trainer.disable_stripable_hooks()
-    tmp_trainer.hook_config.use_amp = False
-    lr_finder = LRFinder()
-    log_warning("register lr_finder %s", id(tmp_trainer))
-    tmp_trainer.prepend_hook(lr_finder)
-    tmp_trainer.train()
-    log_warning("suggested_learning_rate is %s", lr_finder.suggested_learning_rate)
-    assert lr_finder.suggested_learning_rate is not None
-    return lr_finder.suggested_learning_rate
+    with tmp_trainer.hook_config:
+        tmp_trainer.hook_config.use_amp = False
+        tmp_trainer.hook_config.disable_log()
+        tmp_trainer.disable_stripable_hooks()
+        lr_finder = LRFinder()
+        log_warning("register lr_finder %s", id(tmp_trainer))
+        tmp_trainer.prepend_hook(lr_finder)
+        tmp_trainer.train()
+        log_warning("suggested_learning_rate is %s", lr_finder.suggested_learning_rate)
+        assert lr_finder.suggested_learning_rate is not None
+        return lr_finder.suggested_learning_rate
 
 
 def lr_scheduler_step_after_batch(
