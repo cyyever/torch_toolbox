@@ -32,10 +32,7 @@ class MetaSGD(MetaOptimizer):
                         buf = buf.mul(momentum).add(d_p, alpha=1 - dampening)
                     else:
                         buf = d_p
-                    if nesterov:
-                        d_p = d_p.add(buf, alpha=momentum)
-                    else:
-                        d_p = buf
+                    d_p = d_p.add(buf, alpha=momentum) if nesterov else buf
                 new_params.append(param.add(d_p, alpha=-lr))
             results.append(new_params)
         return results
