@@ -1,22 +1,21 @@
 from collections.abc import Iterable
 from enum import StrEnum, auto
-from typing import TypeAlias
 
 import torch
 
 from .config import ConfigBase
 from .factory import Factory
 
-OptionalTensor: TypeAlias = torch.Tensor | None
-TensorDict: TypeAlias = dict[str, torch.Tensor]
-OptionalTensorDict: TypeAlias = TensorDict | None
-BlockType: TypeAlias = list[tuple[str, torch.nn.Module]]
-IndicesType: TypeAlias = Iterable[int]
-OptionalIndicesType: TypeAlias = IndicesType | None
-ModelGradient: TypeAlias = TensorDict
-SampleTensors: TypeAlias = dict[int, torch.Tensor]
-SampleGradients: TypeAlias = dict[int, ModelGradient]
-ModelParameter: TypeAlias = TensorDict
+type OptionalTensor = torch.Tensor | None
+type TensorDict = dict[str, torch.Tensor]
+type OptionalTensorDict = TensorDict | None
+type BlockType = list[tuple[str, torch.nn.Module]]
+type IndicesType = Iterable[int]
+type OptionalIndicesType = IndicesType | None
+type ModelGradient = TensorDict
+type SampleTensors = dict[int, torch.Tensor]
+type SampleGradients = dict[int, ModelGradient]
+type ModelParameter = TensorDict
 
 
 class MachineLearningPhase(StrEnum):
