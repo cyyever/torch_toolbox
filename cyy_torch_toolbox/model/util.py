@@ -211,7 +211,13 @@ class ModelUtil:
                     for name, module in self.get_modules()
                     if not isinstance(
                         module,
-                        torch.quantization.QuantStub | torch.quantization.DeQuantStub | torch.quantization.QuantWrapper | torch.quantization.FakeQuantize | torch.quantization.MovingAverageMinMaxObserver | torch.quantization.MovingAveragePerChannelMinMaxObserver | torch.nn.modules.dropout.Dropout,
+                        torch.quantization.QuantStub
+                        | torch.quantization.DeQuantStub
+                        | torch.quantization.QuantWrapper
+                        | torch.quantization.FakeQuantize
+                        | torch.quantization.MovingAverageMinMaxObserver
+                        | torch.quantization.MovingAveragePerChannelMinMaxObserver
+                        | torch.nn.modules.dropout.Dropout,
                     )
                 ]
             )
