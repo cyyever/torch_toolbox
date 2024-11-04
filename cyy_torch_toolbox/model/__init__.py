@@ -39,7 +39,7 @@ def get_model_evaluator(
 global_model_factory: dict[DatasetType, Factory] = {}
 
 
-def create_model(constructor, **kwargs):
+def create_model(constructor, **kwargs) -> Callable:
     while True:
         try:
             res = constructor(**kwargs)
@@ -63,7 +63,7 @@ def get_model(
     model_kwargs = copy.copy(model_kwargs)
     model_constructor: Callable | None = global_model_factory[
         dataset_collection.dataset_type
-    ].get(name.lower())
+    ].get(name)
     if model_constructor is None:
         raise NotImplementedError(f"unsupported model {name}")
 
