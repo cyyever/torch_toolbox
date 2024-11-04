@@ -8,6 +8,12 @@ class Factory:
 
     def register(self, key, value) -> None:
         match value:
+            case list():
+                if key not in self.data:
+                    self.data[key] = value
+                else:
+                    assert isinstance(self.data[key], list)
+                    self.data[key] += value
             case dict():
                 assert isinstance(self.data[key], dict)
                 self.data[key].update(value)
