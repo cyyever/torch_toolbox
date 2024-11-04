@@ -22,18 +22,23 @@ def get_model_evaluator(
     dataset_collection: DatasetCollection | None = None,
     **model_kwargs,
 ) -> ModelEvaluator:
-    model_evaluator_fun = ModelEvaluator
+    model_evaluator_funs: type | list[type] = ModelEvaluator
     if dataset_collection is not None:
-        model_evaluator_fun = global_model_evaluator_factory.get(
+        model_evaluator_funs = global_model_evaluator_factory.get(
             dataset_collection.dataset_type
         )
-    model_evaluator = model_evaluator_fun(
-        model=model,
-        loss_fun=model_kwargs.pop("loss_fun_name", None),
-        dataset_collection=dataset_collection,
-        **model_kwargs,
-    )
-    return model_evaluator
+    if not isinstance(model_evaluator_funs, list):
+        model_evaluator_funs = [model_evaluator_funs]
+    for model_evaluator_fun in model_evaluator_funs:
+        model_evaluator = model_evaluator_fun(
+            model=model,
+            loss_fun=model_kwargs.pop("loss_fun_name", None),
+            dataset_collection=dataset_collection,
+            **model_kwargs,
+        )
+        if model_evaluator is not None:
+            return model_evaluator
+    raise RuntimeError(f"No model evaluator for {model.name}")
 
 
 global_model_factory: dict[DatasetType, Factory] = {}
