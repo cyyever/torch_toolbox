@@ -66,13 +66,18 @@ def get_model(
     name: str, dataset_collection: DatasetCollection, model_kwargs: dict
 ) -> dict:
     model_kwargs = copy.copy(model_kwargs)
-    model_constructor: Callable | None = global_model_factory[
-        dataset_collection.dataset_type
-    ].get(name)
+    factories = global_model_factory.get(dataset_collection.dataset_type, [])
+    model_constructor: Callable | None = None
+
+    for factory in factories:
+        model_constructor = factory.get(name)
+        if model_constructor is not None:
+            break
     if model_constructor is None:
-        model_constructor = global_model_factory[dataset_collection.dataset_type].get(
-            name.lower()
-        )
+        for factory in factories:
+            model_constructor = factory.get(name.lower())
+            if model_constructor is not None:
+                break
     if model_constructor is None:
         raise NotImplementedError(f"unsupported model {name}")
 
