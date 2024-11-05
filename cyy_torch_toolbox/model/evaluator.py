@@ -224,7 +224,6 @@ class ModelEvaluator:
                     targets = targets.view(-1)
                     res["targets"] = targets
             case nn.BCEWithLogitsLoss():
-                convert_kwargs.pop("dtype")
                 targets = targets.view(-1)
                 output = output.view(-1)
         targets = targets.to(**convert_kwargs, non_blocking=True)
