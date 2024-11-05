@@ -55,7 +55,10 @@ class Trainer(Executor):
         else:
             model_evaluator = copy.copy(self.model_evaluator)
         inferencer: Inferencer | None = None
-        if model_evaluator.model_type == ModelType.Classification:
+        if model_evaluator.model_type in (
+            ModelType.Classification,
+            ModelType.SequenceClassification,
+        ):
             inferencer = ClassificationInferencer(
                 model_evaluator,
                 self.dataset_collection,
