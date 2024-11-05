@@ -70,6 +70,10 @@ def get_model(
         dataset_collection.dataset_type
     ].get(name)
     if model_constructor is None:
+        model_constructor = global_model_factory[dataset_collection.dataset_type].get(
+            name.lower()
+        )
+    if model_constructor is None:
         raise NotImplementedError(f"unsupported model {name}")
 
     model_type = ModelType.Classification
