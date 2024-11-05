@@ -41,7 +41,7 @@ def get_model_evaluator(
     raise RuntimeError(f"No model evaluator for {model.name}")
 
 
-global_model_factory: dict[DatasetType, Factory] = {}
+global_model_factory: dict[DatasetType, list[Factory]] = {}
 
 
 def create_model(constructor, **kwargs) -> Callable:
