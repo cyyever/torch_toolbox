@@ -48,6 +48,7 @@ class Inferencer(Executor):
         sample_loss: dict = {}
         with self.hook_config:
             self.hook_config.disable_log()
+            self.hook_config.use_performance_metric = False
             hook_name = "__cyy_collect_sample_loss"
             self.append_named_hook(
                 hook_point=ExecutorHookPoint.AFTER_BATCH,
