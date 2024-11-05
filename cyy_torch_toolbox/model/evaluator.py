@@ -210,6 +210,8 @@ class ModelEvaluator:
         res = {
             "original_output": original_output,
         }
+        if targets is None:
+            return res
         convert_kwargs = {"device": output.device}
         assert isinstance(output, torch.Tensor)
         loss_fun = self.loss_fun
@@ -223,6 +225,8 @@ class ModelEvaluator:
                 if len(targets.shape) == 2 and targets.shape[-1] == 1:
                     targets = targets.view(-1)
                     res["targets"] = targets
+                if len(targets.shape) <= 1:
+                    convert_kwargs.pop("dtype")
             case nn.BCEWithLogitsLoss():
                 targets = targets.view(-1)
                 output = output.view(-1)
