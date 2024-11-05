@@ -210,8 +210,8 @@ class ModelEvaluator:
         res = {
             "original_output": original_output,
         }
-        if targets is None:
-            return res
+        # if targets is None:
+        #     return res
         convert_kwargs = {"device": output.device}
         assert isinstance(output, torch.Tensor)
         loss_fun = self.loss_fun
