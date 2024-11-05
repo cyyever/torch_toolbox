@@ -33,6 +33,8 @@ class EvaluationMode(StrEnum):
 class ModelType(StrEnum):
     Classification = auto()
     Detection = auto()
+    SequenceClassification = auto()
+    TokenClassification = auto()
     TextGeneration = auto()
 
 
