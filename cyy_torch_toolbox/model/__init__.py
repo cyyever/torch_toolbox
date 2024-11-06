@@ -67,7 +67,7 @@ def get_model(
 ) -> dict:
     model_kwargs = copy.copy(model_kwargs)
     factories = global_model_factory.get(dataset_collection.dataset_type, [])
-    model_constructor: Callable | None = None
+    model_constructor: Callable | None | dict = None
 
     for factory in factories:
         model_constructor = factory.get(name)
@@ -81,9 +81,15 @@ def get_model(
     if model_constructor is None:
         raise NotImplementedError(f"unsupported model {name}")
 
-    model_type = ModelType.Classification
-    if "rcnn" in name.lower():
-        model_type = ModelType.Detection
+    model_type: ModelType | None = None
+    if isinstance(model_constructor, dict):
+        model_type = model_constructor.get("model_type", model_type)
+        model_constructor = model_constructor["constructor"]
+    if model_type is None:
+        if "rcnn" in name.lower():
+            model_type = ModelType.Detection
+        else:
+            model_type = ModelType.Classification
     if model_type in (ModelType.Classification, ModelType.Detection):
         assert isinstance(dataset_collection, ClassificationDatasetCollection)
         if "num_classes" not in model_kwargs:
@@ -91,11 +97,12 @@ def get_model(
             log_debug("detect %s classes", model_kwargs["num_classes"])
         else:
             assert model_kwargs["num_classes"] == dataset_collection.label_number  # E:
-    if model_type == ModelType.Detection:
-        model_kwargs["num_classes"] += 1
-    model_kwargs["num_labels"] = model_kwargs["num_classes"]
+        if model_type == ModelType.Detection:
+            model_kwargs["num_classes"] += 1
+        model_kwargs["num_labels"] = model_kwargs["num_classes"]
     model_kwargs["dataset_collection"] = dataset_collection
-
+    assert not isinstance(model_constructor, dict)
+    assert model_constructor is not None
     res = model_constructor(**model_kwargs)
     repo = res.get("repo", None)
     if repo is not None:
