@@ -65,7 +65,8 @@ def replace_target(label_map: dict) -> Callable:
 
 
 def backup_target(data: dict) -> dict:
-    data["original_target"] = data["target"]
+    if "target" in data:
+        data["original_target"] = data["target"]
     return data
 
 
