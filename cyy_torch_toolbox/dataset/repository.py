@@ -1,6 +1,4 @@
 import copy
-import os
-import pickle
 from collections.abc import Callable
 from typing import Any
 
@@ -208,7 +206,7 @@ def get_dataset(
         dataset_types = [real_dataset_type]
 
     for dataset_type in dataset_types:
-        dataset_type=DatasetType(dataset_type)
+        dataset_type = DatasetType(dataset_type)
         if dataset_type not in __global_dataset_constructors:
             continue
         constructor: None | Callable = None
