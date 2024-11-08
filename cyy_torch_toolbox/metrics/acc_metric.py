@@ -15,11 +15,10 @@ class AccuracyMetric(Metric):
 
     @torch.no_grad()
     def _after_batch(self, result: dict, **kwargs: Any) -> None:
-        output = result["model_output"]
-        logits = result.get("logits")
         targets = result["targets"]
-        if logits is not None:
-            output = logits
+        output = result.get("model_output")
+        if output is None:
+            output = result.get("logits")
         correct_count: int | torch.Tensor = 0
         if output.shape == targets.shape:
             if len(targets.shape) == 2:
