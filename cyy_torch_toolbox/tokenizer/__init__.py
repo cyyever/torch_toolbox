@@ -2,6 +2,9 @@ from collections.abc import Mapping
 from typing import Any
 
 import torch
+from cyy_naive_lib.log import get_logger
+
+from ..executor import Executor
 
 type TokenIDType = int | tuple[int] | list[int] | torch.Tensor
 type TokenIDsType = torch.Tensor
@@ -36,3 +39,37 @@ class Tokenizer:
 
     def strip_special_tokens(self, token_ids: TokenIDsType) -> TokenIDsType:
         raise NotImplementedError()
+
+
+def convert_phrase_to_transformed_result(
+    executor: Executor,
+    phrase: str,
+) -> TokenIDsType:
+    dc = executor.dataset_collection.get_dataset_util(phase=executor.phase)
+    return dc.transforms.transform_input(
+        dc.transforms.transform_text(phrase), apply_random=False
+    )
+
+
+def convert_phrase_to_token_ids(
+    executor: Executor,
+    phrase: str,
+    strip_special_token: bool = True,
+) -> TokenIDsType:
+    tokenizer = executor.model_evaluator.tokenizer
+    assert isinstance(tokenizer, Tokenizer)
+    transformed_token_results = convert_phrase_to_transformed_result(
+        executor=executor, phrase=phrase
+    )
+    token_ids = tokenizer.get_token_ids_from_transformed_result(
+        transformed_token_results
+    )
+    if strip_special_token:
+        token_ids = tokenizer.strip_special_tokens(token_ids)
+        decoded_phrase = tokenizer.get_phrase(token_ids)
+        if decoded_phrase.replace(" ", "") != phrase.replace(" ", ""):
+            get_logger().error("failed to recover phrase")
+            get_logger().error("phrase is: %s", phrase)
+            get_logger().error("decoded phrase is: %s", decoded_phrase)
+            raise RuntimeError("failed to recover phrase")
+    return token_ids
