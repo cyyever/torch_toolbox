@@ -94,13 +94,12 @@ class Transforms:
             other_info.append(data)
         batch_size = len(inputs)
         inputs = self.transform_inputs(inputs)
-        if targets:
-            targets = self.transform_targets(targets)
         res = {
             "batch_size": batch_size,
             "inputs": inputs,
         }
         if targets:
+            targets = self.transform_targets(targets)
             res["targets"] = targets
         if other_info:
             tmp: dict = default_collate(other_info)

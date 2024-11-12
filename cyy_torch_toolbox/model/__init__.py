@@ -93,13 +93,16 @@ def get_model(
     if model_type in (ModelType.Classification, ModelType.Detection):
         assert isinstance(dataset_collection, ClassificationDatasetCollection)
         if "num_classes" not in model_kwargs:
-            model_kwargs["num_classes"] = dataset_collection.label_number  # E:
+            model_kwargs["num_classes"] = dataset_collection.label_number
             log_debug("detect %s classes", model_kwargs["num_classes"])
         else:
             assert model_kwargs["num_classes"] == dataset_collection.label_number  # E:
         if model_type == ModelType.Detection:
             model_kwargs["num_classes"] += 1
         model_kwargs["num_labels"] = model_kwargs["num_classes"]
+    if model_type in (ModelType.TokenClassification,):
+        assert isinstance(dataset_collection, ClassificationDatasetCollection)
+        model_kwargs["num_labels"] = dataset_collection.label_number
     model_kwargs["dataset_collection"] = dataset_collection
     assert not isinstance(model_constructor, dict)
     assert model_constructor is not None
