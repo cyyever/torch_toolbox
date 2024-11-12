@@ -41,8 +41,12 @@ class DatasetUtil:
         if self.__label_number is not None:
             return self.__label_number
         self.__label_number = 0
-        for _, targets in self.get_batch_labels():
-            self.__label_number += len(targets)
+        for _, target in self.__get_batch_labels_impl():
+            match target:
+                case torch.Tensor():
+                    self.__label_number += target.view(-1).shape[0]
+                case [int(), *_]:
+                    self.__label_number += len(target)
         return self.__label_number
 
     @property
@@ -139,21 +143,27 @@ class DatasetUtil:
             )
         return sample_input
 
-    def get_batch_labels(
+    def __get_batch_labels_impl(
         self, indices: OptionalIndicesType = None
-    ) -> Generator[tuple[int, set], None, None]:
+    ) -> Generator[tuple[int, Any], None, None]:
         for idx, sample in self.get_samples(indices):
             if "target" in sample:
                 target = sample["target"]
             else:
                 if "input" in sample:
-                    sample=sample["input"]
+                    sample = sample["input"]
                 if "ner_tags" in sample:
                     target = sample["ner_tags"]
                 else:
                     raise NotImplementedError(sample.keys())
             if self._transforms is not None:
                 target = self._transforms.transform_target(target)
+            yield idx, target
+
+    def get_batch_labels(
+        self, indices: OptionalIndicesType = None
+    ) -> Generator[tuple[int, set], None, None]:
+        for idx, target in self.__get_batch_labels_impl(indices):
             yield idx, DatasetUtil.__decode_target(target)
 
     def get_sample_label(self, index: int) -> set:
