@@ -133,7 +133,12 @@ class DatasetUtil:
         self, indices: OptionalIndicesType = None
     ) -> Generator[tuple[int, set], None, None]:
         for idx, sample in self.get_samples(indices):
-            target = sample["target"]
+            if "target" in sample:
+                target = sample["target"]
+            elif "ner_tags" in sample:
+                target = sample["ner_tags"]
+            else:
+                raise NotImplementedError()
             if self._transforms is not None:
                 target = self._transforms.transform_target(target)
             yield idx, DatasetUtil.__decode_target(target)
