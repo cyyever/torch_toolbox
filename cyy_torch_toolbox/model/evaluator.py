@@ -9,6 +9,7 @@ from torch import nn
 from ..ml_type import EvaluationMode, ModelType
 from ..tensor import tensor_to
 from .util import ModelUtil
+from ..dataset import DatasetUtil
 
 # from cyy_torch_toolbox.model_transform.checkpointed_model import \
 #     get_checkpointed_model
@@ -135,7 +136,9 @@ class ModelEvaluator:
             case _:
                 return self.model
 
-    def get_normalized_batch_loss(self, dataset_size: int, forward_result: dict) -> Any:
+    def get_normalized_batch_loss(
+        self, dataset_size: int, dataset_util: DatasetUtil, forward_result: dict
+    ) -> Any:
         if forward_result["is_averaged_loss"]:
             assert dataset_size > 0
             return (

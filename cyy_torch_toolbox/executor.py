@@ -339,7 +339,9 @@ class Executor(HookCollection, abc.ABC):
 
         forward_result["normalized_batch_loss"] = (
             self.running_model_evaluator.get_normalized_batch_loss(
-                dataset_size=self.dataset_size, forward_result=forward_result
+                dataset_size=self.dataset_size,
+                dataset_util=self.dataset_util,
+                forward_result=forward_result,
             )
         )
         batch |= forward_result
