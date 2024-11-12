@@ -161,12 +161,7 @@ class Executor(HookCollection, abc.ABC):
 
     @property
     def dataset_size(self) -> int:
-        if "dataset_size" not in self._data:
-            self.__refresh_dataset_size()
-        return self._data["dataset_size"]
-
-    def __refresh_dataset_size(self) -> None:
-        self._data["dataset_size"] = len(self.dataset_util)
+        return len(self.dataset_util)
 
     def remove_dataloader_kwargs(self, key: str) -> None:
         self.__dataloader_kwargs.pop(key, None)
@@ -339,7 +334,6 @@ class Executor(HookCollection, abc.ABC):
 
         forward_result["normalized_batch_loss"] = (
             self.running_model_evaluator.get_normalized_batch_loss(
-                dataset_size=self.dataset_size,
                 dataset_util=self.dataset_util,
                 forward_result=forward_result,
             )
@@ -378,7 +372,6 @@ class Executor(HookCollection, abc.ABC):
             hook_point=ExecutorHookPoint.BEFORE_EPOCH,
             epoch=epoch,
         )
-        self.__refresh_dataset_size()
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_FETCH_BATCH, batch_index=0)
         for batch_index, batch in enumerate(self.dataloader):
             self.exec_hooks(
