@@ -145,10 +145,13 @@ class DatasetUtil:
         for idx, sample in self.get_samples(indices):
             if "target" in sample:
                 target = sample["target"]
-            elif "ner_tags" in sample:
-                target = sample["ner_tags"]
             else:
-                raise NotImplementedError()
+                if "input" in sample:
+                    sample=sample["input"]
+                if "ner_tags" in sample:
+                    target = sample["ner_tags"]
+                else:
+                    raise NotImplementedError(sample.keys())
             if self._transforms is not None:
                 target = self._transforms.transform_target(target)
             yield idx, DatasetUtil.__decode_target(target)
