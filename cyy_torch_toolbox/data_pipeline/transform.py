@@ -85,20 +85,23 @@ class Transforms:
             data = copy.copy(self.extract_data(data))
             sample_input = self.transform_input(data.pop("input"))
             inputs.append(sample_input)
-            targets.append(
-                self.transform_target(
-                    target=data.pop("target"), index=data.get("index", None)
+            if "target" in data:
+                targets.append(
+                    self.transform_target(
+                        target=data.pop("target"), index=data.get("index", None)
+                    )
                 )
-            )
             other_info.append(data)
         batch_size = len(inputs)
         inputs = self.transform_inputs(inputs)
-        targets = self.transform_targets(targets)
+        if targets:
+            targets = self.transform_targets(targets)
         res = {
             "batch_size": batch_size,
             "inputs": inputs,
-            "targets": targets,
         }
+        if targets:
+            res["targets"] = targets
         if other_info:
             tmp: dict = default_collate(other_info)
             assert isinstance(tmp, dict)
