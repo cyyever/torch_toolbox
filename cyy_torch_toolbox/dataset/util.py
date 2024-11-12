@@ -20,6 +20,7 @@ class DatasetUtil:
     ) -> None:
         self.__dataset: torch.utils.data.Dataset = dataset
         self.__len: None | int = None
+        self.__label_number: None | int = None
         self._name: str = name if name else ""
         self._transforms: Transforms = (
             transforms if transforms is not None else Transforms()
@@ -34,6 +35,15 @@ class DatasetUtil:
     @property
     def dataset(self) -> torch.utils.data.Dataset:
         return self.__dataset
+
+    @property
+    def label_number(self) -> int:
+        if self.__label_number is not None:
+            return self.__label_number
+        self.__label_number = 0
+        for _, targets in self.get_batch_labels():
+            self.__label_number += len(targets)
+        return self.__label_number
 
     @property
     def transforms(self) -> Transforms:

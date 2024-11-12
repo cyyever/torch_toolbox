@@ -6,10 +6,10 @@ import torch
 from cyy_naive_lib.log import log_debug, log_error
 from torch import nn
 
+from ..dataset import DatasetUtil
 from ..ml_type import EvaluationMode, ModelType
 from ..tensor import tensor_to
 from .util import ModelUtil
-from ..dataset import DatasetUtil
 
 # from cyy_torch_toolbox.model_transform.checkpointed_model import \
 #     get_checkpointed_model
@@ -137,14 +137,14 @@ class ModelEvaluator:
                 return self.model
 
     def get_normalized_batch_loss(
-        self, dataset_size: int, dataset_util: DatasetUtil, forward_result: dict
+        self, dataset_util: DatasetUtil, forward_result: dict
     ) -> Any:
         if forward_result["is_averaged_loss"]:
-            assert dataset_size > 0
+            label_number = dataset_util.label_number
             return (
                 forward_result["loss"]
                 * forward_result["loss_batch_size"]
-                / dataset_size
+                / label_number
             )
         return None
 
