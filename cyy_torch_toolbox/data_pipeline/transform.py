@@ -78,7 +78,7 @@ class Transforms:
         return targets
 
     def collate_batch(self, batch: Iterable) -> dict:
-        inputs: list | dict = []
+        inputs: list = []
         targets = []
         other_info: list = []
         for data in batch:
@@ -93,16 +93,16 @@ class Transforms:
                 )
             other_info.append(data)
         batch_size = len(inputs)
-        inputs = self.transform_inputs(inputs)
+        transformed_inputs = self.transform_inputs(inputs)
         res = {
             "batch_size": batch_size,
-            "inputs": inputs,
+            "inputs": transformed_inputs,
         }
         if targets:
             targets = self.transform_targets(targets)
             res["targets"] = targets
-        elif isinstance(inputs, dict) and "labels" in inputs:
-            targets = inputs.pop("labels")
+        elif "labels" in transformed_inputs:
+            targets = transformed_inputs.pop("labels")
             res["targets"] = targets
         if other_info:
             tmp: dict = default_collate(other_info)
