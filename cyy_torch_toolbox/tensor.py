@@ -1,6 +1,6 @@
 import dataclasses
 import functools
-import pickle
+import dill
 from collections.abc import Callable, Iterable
 from typing import Any
 
@@ -43,8 +43,8 @@ def decompose_tensor_to_list(shapes: list, tensor: torch.Tensor) -> list:
     return result
 
 
-def get_tensor_serialization_size(data):
-    return len(pickle.dumps(data))
+def get_tensor_serialization_size(data) -> int:
+    return len(dill.dumps(data))
 
 
 class __RecursiveCheckPoint:
