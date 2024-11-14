@@ -25,7 +25,10 @@ class PerformanceMetric(Metric):
     ) -> None:
         super().__init__(**kwargs)
         self.loss_metric = LossMetric()
-        if executor.running_model_evaluator.model_type == ModelType.Classification:
+        if executor.running_model_evaluator.model_type in (
+            ModelType.Classification,
+            ModelType.TokenClassification,
+        ):
             self.accuracy_metric = AccuracyMetric()
             if extra_metrics:
                 self.f1_metric = F1Metric()
