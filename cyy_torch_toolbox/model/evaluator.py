@@ -140,11 +140,15 @@ class ModelEvaluator:
         self, dataset_util: DatasetUtil, forward_result: dict
     ) -> Any:
         if forward_result["is_averaged_loss"]:
-            label_number = dataset_util.label_number
+            sample_number = 0
+            if self.model_type == ModelType.TokenClassification:
+                sample_number = dataset_util.label_number
+            else:
+                sample_number = len(dataset_util)
             return (
                 forward_result["loss"]
                 * forward_result["loss_batch_size"]
-                / label_number
+                / sample_number
             )
         return None
 
