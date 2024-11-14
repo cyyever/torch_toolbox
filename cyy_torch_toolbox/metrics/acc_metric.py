@@ -1,4 +1,5 @@
 from typing import Any
+from ..ml_type import ModelType
 
 import torch
 
@@ -20,6 +21,11 @@ class AccuracyMetric(Metric):
         if output is None:
             output = result.get("logits")
         correct_count: int | torch.Tensor = 0
+        executor = kwargs["executor"]
+        if executor.running_model_evaluator.model_type == ModelType.TokenClassification:
+            output = output.view(-1, output.shape[-1])
+            targets = targets.view(-1)
+
         if output.shape == targets.shape:
             if len(targets.shape) == 2:
                 for idx, maxidx in enumerate(torch.argmax(output, dim=1)):
