@@ -1,5 +1,6 @@
 torch>=2.5
 hydra-core
+torchmetrics
 omegaconf
 torchmetrics
 pynvml
