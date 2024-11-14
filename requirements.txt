@@ -5,4 +5,4 @@ omegaconf
 torchmetrics
 pynvml
 dill
-cyy_naive_lib@git+ssh://git@github.com/cyyever/naive_python_lib.git@main
+cyy_naive_lib@git+https://git@github.com/cyyever/naive_python_lib.git@main
