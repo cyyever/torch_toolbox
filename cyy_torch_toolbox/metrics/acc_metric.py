@@ -23,30 +23,34 @@ class AccuracyMetric(Metric):
         correct_count: int | torch.Tensor = 0
         executor = kwargs["executor"]
         if executor.running_model_evaluator.model_type == ModelType.TokenClassification:
-            output = output.view(-1, output.shape[-1])
-            targets = targets.view(-1)
-
-        if output.shape == targets.shape:
-            if len(targets.shape) == 2:
-                for idx, maxidx in enumerate(torch.argmax(output, dim=1)):
-                    if targets[idx][maxidx] == 1:
-                        correct_count += 1
-            elif len(targets.shape) <= 1:
-                correct_count = (
-                    torch.eq(torch.round(output.sigmoid()), targets).view(-1).sum()
-                )
-            else:
-                raise NotImplementedError()
+            max_output = torch.argmax(output, dim=2)
+            mask=(targets!=-100)
+            correct_count=torch.eq(max_output[mask],targets[mask]).view(-1).sum()
+            self.__dataset_size += mask.count_nonzero()
         else:
-            assert len(output.shape) == 2
-            correct_count = (
-                torch.eq(torch.max(output, dim=1)[1], targets.view(-1)).view(-1).sum()
-            )
+            if output.shape == targets.shape:
+                if len(targets.shape) == 2:
+                    for idx, maxidx in enumerate(torch.argmax(output, dim=1)):
+                        if targets[idx][maxidx] == 1:
+                            correct_count += 1
+                elif len(targets.shape) <= 1:
+                    correct_count = (
+                        torch.eq(torch.round(output.sigmoid()), targets).view(-1).sum()
+                    )
+                else:
+                    raise NotImplementedError()
+            else:
+                assert len(output.shape) == 2
+                correct_count = (
+                    torch.eq(torch.max(output, dim=1)[1], targets.view(-1))
+                    .view(-1)
+                    .sum()
+                )
+            self.__dataset_size += targets.shape[0]
         if self.__correct_count is None:
             self.__correct_count = correct_count
         else:
             self.__correct_count += correct_count
-        self.__dataset_size += targets.shape[0]
 
     def _after_epoch(self, **kwargs) -> None:
         epoch = kwargs["epoch"]
