@@ -1,8 +1,8 @@
 from typing import Any
-from ..ml_type import ModelType
 
 import torch
 
+from ..ml_type import ModelType
 from .metric import Metric
 
 
@@ -20,12 +20,14 @@ class AccuracyMetric(Metric):
         output = result.get("model_output")
         if output is None:
             output = result.get("logits")
+        assert isinstance(output, torch.Tensor)
+        assert isinstance(targets, torch.Tensor)
         correct_count: int | torch.Tensor = 0
         executor = kwargs["executor"]
         if executor.running_model_evaluator.model_type == ModelType.TokenClassification:
             max_output = torch.argmax(output, dim=2)
-            mask=(targets!=-100)
-            correct_count=torch.eq(max_output[mask],targets[mask]).view(-1).sum()
+            mask = (targets != -100)
+            correct_count = torch.eq(max_output[mask], targets[mask]).view(-1).sum()
             self.__dataset_size += mask.count_nonzero()
         else:
             if output.shape == targets.shape:

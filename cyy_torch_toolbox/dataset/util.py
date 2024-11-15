@@ -44,9 +44,9 @@ class DatasetUtil:
         for _, target in self.__get_batch_labels_impl():
             match target:
                 case torch.Tensor():
-                    self.__label_number += target.view(-1).shape[0]
+                    self.__label_number += int((target != -100).count_nonzero().item())
                 case [int(), *_]:
-                    self.__label_number += len(target)
+                    self.__label_number += len([a for a in target if a != -100])
         return self.__label_number
 
     @property
