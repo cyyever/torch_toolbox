@@ -30,13 +30,14 @@ class PerformanceMetric(Metric):
             ModelType.Classification,
             ModelType.TokenClassification,
         ):
-            if (
-                executor.running_model_evaluator.model_type
-                == ModelType.TokenClassification
-            ):
-                self.accuracy_metric = NewAccuracyMetric()
-            else:
-                self.accuracy_metric = AccuracyMetric()
+            self.accuracy_metric = NewAccuracyMetric()
+            # if (
+            #     executor.running_model_evaluator.model_type
+            #     == ModelType.TokenClassification
+            # ):
+            #     self.accuracy_metric = NewAccuracyMetric()
+            # else:
+            #     self.accuracy_metric = AccuracyMetric()
             if extra_metrics:
                 self.f1_metric = F1Metric()
                 self.auc_metric = AUROCMetric()

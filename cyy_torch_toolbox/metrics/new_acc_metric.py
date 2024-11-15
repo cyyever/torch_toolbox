@@ -1,7 +1,7 @@
 from typing import Any
 
 import torch
-from torchmetrics.classification import Accuracy
+from torchmetrics.classification import Accuracy, BinaryAccuracy
 
 from .metric import Metric
 
@@ -14,8 +14,8 @@ class NewAccuracyMetric(Metric):
 
     @torch.no_grad()
     def _after_batch(self, result: dict, **kwargs: Any) -> None:
+        executor = kwargs["executor"]
         if self.__acc is None:
-            executor = kwargs["executor"]
             with executor.device:
                 if executor.dataset_collection.label_number <= 2:
                     self.__acc = Accuracy(task="binary")
@@ -32,9 +32,12 @@ class NewAccuracyMetric(Metric):
         assert isinstance(output, torch.Tensor)
         assert isinstance(targets, torch.Tensor)
         mask = targets != -100
+        new_output = output[mask]
 
         assert self.__acc is not None
-        self.__acc.update(output[mask], targets[mask].detach())
+        if executor.dataset_collection.label_number <= 2 and new_output.shape[-1]==2:
+            new_output=torch.argmax(new_output, dim=-1)
+        self.__acc.update(new_output, targets[mask].detach())
 
     def _after_epoch(self, **kwargs) -> None:
         epoch = kwargs["epoch"]
