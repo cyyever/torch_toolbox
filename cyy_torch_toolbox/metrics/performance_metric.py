@@ -12,6 +12,7 @@ from .grad_metric import GradMetric
 from .learning_rate_metric import LearningRateMetric
 from .loss_metric import LossMetric
 from .metric import Metric
+from .new_acc_metric import NewAccuracyMetric
 
 
 class PerformanceMetric(Metric):
@@ -29,7 +30,13 @@ class PerformanceMetric(Metric):
             ModelType.Classification,
             ModelType.TokenClassification,
         ):
-            self.accuracy_metric = AccuracyMetric()
+            if (
+                executor.running_model_evaluator.model_type
+                == ModelType.TokenClassification
+            ):
+                self.accuracy_metric = NewAccuracyMetric()
+            else:
+                self.accuracy_metric = AccuracyMetric()
             if extra_metrics:
                 self.f1_metric = F1Metric()
                 self.auc_metric = AUROCMetric()
