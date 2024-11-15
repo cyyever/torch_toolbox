@@ -33,6 +33,7 @@ class ClassificationMetric(Metric):
         assert isinstance(targets, torch.Tensor)
         mask = targets != -100
         new_output = output[mask]
+        targets = targets[mask]
 
         with executor.device:
             if (
@@ -40,4 +41,4 @@ class ClassificationMetric(Metric):
                 and new_output.shape[-1] == 2
             ):
                 new_output = torch.argmax(new_output, dim=-1)
-        return new_output, targets[mask]
+        return new_output, targets
