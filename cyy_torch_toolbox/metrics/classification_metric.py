@@ -36,7 +36,10 @@ class ClassificationMetric(Metric):
 
     @torch.no_grad()
     def _get_task(self, executor) -> Literal["binary", "multiclass", "multilabel"]:
-        if executor.dataset_collection.is_mutilabel():
+        if (
+            executor.running_model_evaluator.model_type != ModelType.TokenClassification
+            and executor.dataset_collection.is_mutilabel()
+        ):
             return "multilabel"
         if executor.dataset_collection.label_number <= 2:
             return "binary"
