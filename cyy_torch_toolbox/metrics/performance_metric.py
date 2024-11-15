@@ -4,7 +4,6 @@ from typing import Any
 import torch
 
 from ..ml_type import ModelType
-from .acc_metric import AccuracyMetric
 from .auc_metric import AUROCMetric
 from .dataloader_profiler import DataloaderProfiler
 from .f1_metric import F1Metric
@@ -31,13 +30,6 @@ class PerformanceMetric(Metric):
             ModelType.TokenClassification,
         ):
             self.accuracy_metric = NewAccuracyMetric()
-            # if (
-            #     executor.running_model_evaluator.model_type
-            #     == ModelType.TokenClassification
-            # ):
-            #     self.accuracy_metric = NewAccuracyMetric()
-            # else:
-            #     self.accuracy_metric = AccuracyMetric()
             if extra_metrics:
                 self.f1_metric = F1Metric()
                 self.auc_metric = AUROCMetric()
