@@ -1,13 +1,14 @@
 from typing import Any
 
 import torch
+import torchmetrics.metric
 from torchmetrics.classification import Accuracy
 
-from .metric import Metric
+from .classification_metric import ClassificationMetric
 
 
-class NewAccuracyMetric(Metric):
-    __acc: None | Accuracy = None
+class NewAccuracyMetric(ClassificationMetric):
+    __acc: None | torchmetrics.metric.Metric = None
 
     def _before_execute(self, **kwargs: Any) -> None:
         self.__acc = None
@@ -24,20 +25,9 @@ class NewAccuracyMetric(Metric):
                         task="multiclass",
                         num_classes=executor.dataset_collection.label_number,
                     )
-
-        targets = result["targets"]
-        output = result.get("model_output")
-        if output is None:
-            output = result.get("logits")
-        assert isinstance(output, torch.Tensor)
-        assert isinstance(targets, torch.Tensor)
-        mask = targets != -100
-        new_output = output[mask]
-
         assert self.__acc is not None
-        if executor.dataset_collection.label_number <= 2 and new_output.shape[-1]==2:
-            new_output=torch.argmax(new_output, dim=-1)
-        self.__acc.update(new_output, targets[mask].detach())
+        output, targets = self._get_new_output(executor, result)
+        self.__acc.update(output, targets)
 
     def _after_epoch(self, **kwargs) -> None:
         epoch = kwargs["epoch"]

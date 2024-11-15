@@ -20,3 +20,24 @@ class ClassificationMetric(Metric):
         if len(output.shape) == 2 and output.shape[1] == 1:
             output = torch.stack((1 - output, output), dim=2).squeeze()
         return output
+
+    @torch.no_grad()
+    def _get_new_output(
+        self, executor, result: dict
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        targets = result["targets"]
+        output = result.get("logits")
+        if output is None:
+            output = result.get("original_output")
+        assert isinstance(output, torch.Tensor)
+        assert isinstance(targets, torch.Tensor)
+        mask = targets != -100
+        new_output = output[mask]
+
+        with executor.device:
+            if (
+                executor.dataset_collection.label_number <= 2
+                and new_output.shape[-1] == 2
+            ):
+                new_output = torch.argmax(new_output, dim=-1)
+        return new_output, targets[mask]
