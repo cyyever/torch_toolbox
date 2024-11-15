@@ -1,7 +1,7 @@
 from typing import Any
 
 import torch
-from torchmetrics.classification import Accuracy, BinaryAccuracy
+from torchmetrics.classification import Accuracy
 
 from .metric import Metric
 
