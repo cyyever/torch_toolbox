@@ -1,3 +1,5 @@
+from typing import Literal
+
 import torch
 
 from ..ml_type import ModelType
@@ -20,6 +22,14 @@ class ClassificationMetric(Metric):
         if len(output.shape) == 2 and output.shape[1] == 1:
             output = torch.stack((1 - output, output), dim=2).squeeze()
         return output
+
+    @torch.no_grad()
+    def _get_task(self, executor) -> Literal["binary", "multiclass", "multilabel"]:
+        if executor.dataset_collection.is_mutilabel():
+            return "multilabel"
+        if executor.dataset_collection.label_number <= 2:
+            return "binary"
+        return "multiclass"
 
     @torch.no_grad()
     def _get_new_output(
