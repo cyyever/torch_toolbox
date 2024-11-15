@@ -1,9 +1,9 @@
 import dataclasses
 import functools
-import dill
 from collections.abc import Callable, Iterable
 from typing import Any
 
+import dill
 import torch
 from cyy_naive_lib.algorithm.mapping_op import (
     get_mapping_items_by_key_order,
