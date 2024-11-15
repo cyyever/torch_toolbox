@@ -22,7 +22,7 @@ class ClassificationDatasetCollection:
     def label_number(self) -> int:
         return len(self.get_labels())
 
-    def get_labels(self, use_cache: bool = True) -> set:
+    def get_labels(self, use_cache: bool = False) -> set:
         def computation_fun() -> set:
             if self.name.lower() == "imagenet":
                 return set(range(1000))

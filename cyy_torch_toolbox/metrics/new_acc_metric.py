@@ -18,7 +18,12 @@ class NewAccuracyMetric(ClassificationMetric):
         executor = kwargs["executor"]
         if self.__acc is None:
             with executor.device:
-                if executor.dataset_collection.label_number <= 2:
+                if executor.dataset_collection.is_mutilabel():
+                    self.__acc = Accuracy(
+                        task="multilabel",
+                        num_labels=executor.dataset_collection.label_number,
+                    )
+                elif executor.dataset_collection.label_number <= 2:
                     self.__acc = Accuracy(task="binary")
                 else:
                     self.__acc = Accuracy(
