@@ -1,16 +1,27 @@
-from typing import Literal
+from typing import Any, Literal
 
 import torch
+import torchmetrics.metric
 
 from ..ml_type import ModelType
 from .metric import Metric
 
 
 class ClassificationMetric(Metric):
+    _metric: None | torchmetrics.metric.Metric = None
+
+    @property
+    def metric(self) -> torchmetrics.metric.Metric:
+        assert self._metric is not None
+        return self._metric
+
     def _before_execution(self, **kwargs) -> None:
         executor = kwargs["executor"]
         if executor.running_model_evaluator.model_type != ModelType.Classification:
             self.disable()
+
+    def _before_epoch(self, **kwargs: Any) -> None:
+        self._metric = None
 
     def _get_output(self, result: dict) -> torch.Tensor:
         output = result.get("logits")

@@ -20,7 +20,7 @@ class DatasetUtil:
     ) -> None:
         self.__dataset: torch.utils.data.Dataset = dataset
         self.__len: None | int = None
-        self.__label_number: None | int = None
+        self.__sample_number: None | int = None
         self._name: str = name if name else ""
         self._transforms: Transforms = (
             transforms if transforms is not None else Transforms()
@@ -38,16 +38,20 @@ class DatasetUtil:
 
     @property
     def label_number(self) -> int:
-        if self.__label_number is not None:
-            return self.__label_number
-        self.__label_number = 0
+        return len(self.get_labels())
+
+    @property
+    def sample_number(self) -> int:
+        if self.__sample_number is not None:
+            return self.__sample_number
+        self.__sample_number = 0
         for _, target in self.__get_batch_labels_impl():
             match target:
                 case torch.Tensor():
-                    self.__label_number += int((target != -100).count_nonzero().item())
+                    self.__sample_number += int((target != -100).count_nonzero().item())
                 case [int(), *_]:
-                    self.__label_number += len([a for a in target if a != -100])
-        return self.__label_number
+                    self.__sample_number += len([a for a in target if a != -100])
+        return self.__sample_number
 
     @property
     def transforms(self) -> Transforms:
@@ -164,10 +168,15 @@ class DatasetUtil:
         self, indices: OptionalIndicesType = None
     ) -> Generator[tuple[int, set], None, None]:
         for idx, target in self.__get_batch_labels_impl(indices):
-            yield idx, DatasetUtil.__decode_target(target)
+            labels = DatasetUtil.__decode_target(target)
+            if -100 in labels:
+                labels.remove(-100)
+            yield idx, labels
 
     def get_sample_label(self, index: int) -> set:
-        return list(self.get_batch_labels(indices=[index]))[0][1]
+        for _, labels in self.get_batch_labels(indices=[index]):
+            return labels
+        raise RuntimeError()
 
     def get_labels(self) -> set:
         return set().union(*tuple(set(labels) for _, labels in self.get_batch_labels()))
