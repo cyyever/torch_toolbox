@@ -51,6 +51,7 @@ class DatasetUtil:
                     self.__sample_number += int((target != -100).count_nonzero().item())
                 case [int(), *_]:
                     self.__sample_number += len([a for a in target if a != -100])
+        assert self.__sample_number != 0
         return self.__sample_number
 
     @property
