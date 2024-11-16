@@ -12,10 +12,7 @@ class NewAccuracyMetric(ClassificationMetric):
         executor = kwargs["executor"]
         if self._metric is None:
             with executor.device:
-                self._metric = Accuracy(
-                    task=self._get_task(executor),
-                    num_classes=executor.dataset_collection.label_number,
-                )
+                self._metric = Accuracy(**self._get_metric_kwargs(executor))
         output, targets = self._get_new_output(executor, result)
         self.metric.update(output, targets)
 

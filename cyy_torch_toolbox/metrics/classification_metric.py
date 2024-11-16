@@ -66,3 +66,12 @@ class ClassificationMetric(Metric):
             ):
                 new_output = torch.argmax(new_output, dim=-1)
         return new_output, targets
+
+    def _get_metric_kwargs(self, executor) -> dict:
+        task = self._get_task(executor)
+        kwargs = {"task": task}
+        if task == "multilabel":
+            kwargs["num_labels"] = executor.dataset_collection.label_number
+        else:
+            kwargs["num_classes"] = executor.dataset_collection.label_number
+        return kwargs
