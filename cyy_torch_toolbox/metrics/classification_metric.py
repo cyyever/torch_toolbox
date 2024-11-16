@@ -54,21 +54,18 @@ class ClassificationMetric(Metric):
         if output is None:
             output = result.get("original_output")
         assert isinstance(output, torch.Tensor)
+        if len(output.shape) == 2 and output.shape[-1] == 1:
+            output = output.view(-1)
         assert isinstance(targets, torch.Tensor)
         if -100 in targets:
             mask = targets != -100
-            new_output = output[mask]
+            output = output[mask]
             targets = targets[mask]
-        else:
-            new_output = output
 
         with executor.device:
-            if (
-                executor.dataset_collection.label_number <= 2
-                and new_output.shape[-1] == 2
-            ):
-                new_output = torch.argmax(new_output, dim=-1)
-        return new_output, targets
+            if executor.dataset_collection.label_number <= 2 and output.shape[-1] == 2:
+                output = torch.argmax(output, dim=-1)
+        return output, targets
 
     def _get_metric_kwargs(self, executor) -> dict:
         task = self._get_task(executor)
