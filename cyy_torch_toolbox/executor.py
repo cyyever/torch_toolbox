@@ -1,6 +1,7 @@
 import abc
 import contextlib
 import copy
+import functools
 import os
 from collections.abc import Callable, Generator
 from contextlib import AbstractContextManager
@@ -155,7 +156,7 @@ class Executor(HookCollection, abc.ABC):
     def save_dir(self) -> None | str:
         return self.__save_dir
 
-    @property
+    @functools.cached_property
     def dataset_util(self) -> DatasetUtil:
         return self.dataset_collection.get_dataset_util(phase=self.__phase)
 
