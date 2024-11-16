@@ -226,11 +226,10 @@ class ModelEvaluator:
 
         if targets.dtype is torch.long or targets.dtype is torch.int:
             convert_kwargs["dtype"] = torch.float
+        if len(output.shape) == 2 and output.shape[-1] == 1:
+            output = output.view(-1)
         match loss_fun:
             case nn.CrossEntropyLoss():
-                # if len(targets.shape) == 2 and targets.shape[-1] == 1:
-                #     targets = targets.view(-1)
-                #     res["targets"] = targets
                 if len(targets.shape) <= 1:
                     convert_kwargs.pop("dtype")
             # case nn.BCEWithLogitsLoss():
