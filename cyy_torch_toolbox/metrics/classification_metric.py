@@ -55,9 +55,12 @@ class ClassificationMetric(Metric):
             output = result.get("original_output")
         assert isinstance(output, torch.Tensor)
         assert isinstance(targets, torch.Tensor)
-        mask = targets != -100
-        new_output = output[mask]
-        targets = targets[mask]
+        if -100 in targets:
+            mask = targets != -100
+            new_output = output[mask]
+            targets = targets[mask]
+        else:
+            new_output = output
 
         with executor.device:
             if (
