@@ -217,6 +217,7 @@ class ModelEvaluator:
         res = {
             "original_output": original_output,
         }
+
         convert_kwargs = {"device": output.device}
         assert isinstance(output, torch.Tensor)
         loss_fun = self.loss_fun
@@ -227,9 +228,9 @@ class ModelEvaluator:
             convert_kwargs["dtype"] = torch.float
         match loss_fun:
             case nn.CrossEntropyLoss():
-                if len(targets.shape) == 2 and targets.shape[-1] == 1:
-                    targets = targets.view(-1)
-                    res["targets"] = targets
+                # if len(targets.shape) == 2 and targets.shape[-1] == 1:
+                #     targets = targets.view(-1)
+                #     res["targets"] = targets
                 if len(targets.shape) <= 1:
                     convert_kwargs.pop("dtype")
             case nn.BCEWithLogitsLoss():
