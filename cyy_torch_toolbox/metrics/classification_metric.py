@@ -50,6 +50,9 @@ class ClassificationMetric(Metric):
         self, executor, result: dict
     ) -> tuple[torch.Tensor, torch.Tensor]:
         targets = result["targets"]
+        if targets.dtype is torch.float:
+            targets = targets.to(dtype=torch.long)
+
         output = result.get("logits")
         if output is None:
             output = result.get("original_output")
