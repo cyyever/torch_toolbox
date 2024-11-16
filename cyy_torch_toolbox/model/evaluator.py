@@ -224,15 +224,14 @@ class ModelEvaluator:
         if not reduce_loss:
             loss_fun = type(loss_fun)(reduction="none")
 
-        if targets.dtype is torch.long or targets.dtype is torch.int:
-            convert_kwargs["dtype"] = torch.float
         if len(output.shape) == 2 and output.shape[-1] == 1:
             output = output.view(-1)
         match loss_fun:
-            case nn.CrossEntropyLoss():
-                if len(targets.shape) <= 1:
-                    convert_kwargs.pop("dtype")
-            # case nn.BCEWithLogitsLoss():
+            # case nn.CrossEntropyLoss():
+            #     convert_kwargs.pop("dtype")
+            case nn.BCEWithLogitsLoss():
+                if targets.dtype is torch.long or targets.dtype is torch.int:
+                    convert_kwargs["dtype"] = torch.float
             #     targets = targets.view(-1)
             #     output = output.view(-1)
         targets = targets.to(**convert_kwargs, non_blocking=True)
