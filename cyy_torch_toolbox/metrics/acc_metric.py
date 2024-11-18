@@ -26,7 +26,7 @@ class AccuracyMetric(Metric):
         executor = kwargs["executor"]
         if executor.running_model_evaluator.model_type == ModelType.TokenClassification:
             max_output = torch.argmax(output, dim=2)
-            mask = (targets != -100)
+            mask = targets != -100
             correct_count = torch.eq(max_output[mask], targets[mask]).view(-1).sum()
             self.__dataset_size += mask.count_nonzero()
         else:
