@@ -7,7 +7,7 @@ class LossMetric(Metric):
 
     def _after_batch(self, epoch, executor, result, **kwargs) -> None:
         self.__batch_losses.append(
-            (result["loss"].detatch().clone(), result["loss_batch_size"])
+            (result["loss"].detach().clone(), result["loss_batch_size"])
         )
 
     def _after_epoch(self, epoch: int, **kwargs) -> None:
