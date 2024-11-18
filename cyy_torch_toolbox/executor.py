@@ -331,12 +331,6 @@ class Executor(HookCollection, abc.ABC):
         else:
             forward_result = self.running_model_evaluator(**evaluation_kwargs)
 
-        forward_result["normalized_batch_loss"] = (
-            self.running_model_evaluator.get_normalized_batch_loss(
-                dataset_util=self.dataset_util,
-                forward_result=forward_result,
-            )
-        )
         batch |= forward_result
         if evaluation_mode != EvaluationMode.Test:
             if evaluation_mode == EvaluationMode.Training:
@@ -345,9 +339,13 @@ class Executor(HookCollection, abc.ABC):
                     loss=forward_result["loss"], optimizer=optimizer
                 )
             else:
-                self.running_model_evaluator.backward(
-                    loss=forward_result["normalized_batch_loss"]
+                normalized_batch_loss = (
+                    self.running_model_evaluator.get_normalized_batch_loss(
+                        dataset_util=self.dataset_util,
+                        forward_result=forward_result,
+                    )
                 )
+                self.running_model_evaluator.backward(loss=normalized_batch_loss)
 
             if evaluation_mode == EvaluationMode.Training:
                 lr_scheduler = self.get_lr_scheduler()
