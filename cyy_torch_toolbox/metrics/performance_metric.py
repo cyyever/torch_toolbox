@@ -46,6 +46,7 @@ class PerformanceMetric(Metric):
         self.__last_epoch = epoch
 
     def get_loss(self, epoch: int, to_item: bool = True) -> float | torch.Tensor:
+        self.loss_metric._after_epoch(epoch=epoch)
         return self.get_epoch_metric(epoch=epoch, name="loss", to_item=to_item)
 
     def get_last_loss(self) -> float | torch.Tensor:
