@@ -141,12 +141,14 @@ class Trainer(Executor):
                     inferencer = self.get_cached_inferencer(
                         MachineLearningPhase.Validation
                     )
-                    if inferencer is None:
-                        inferencer = self
-                    loss = inferencer.performance_metric.get_loss(epoch, to_item=False)
+                    loss =None
+                    if inferencer is not None:
+                        loss = inferencer.performance_metric.get_loss(1, to_item=False)
+                    else:
+                        loss = self.performance_metric.get_loss(epoch, to_item=False)
                     assert loss is not None
                     log_debug(
-                        "call ReduceLROnPlateau for validation loss %s",
+                        "call ReduceLROnPlateau for loss %s",
                         loss,
                     )
                     lr_scheduler.step(loss)
