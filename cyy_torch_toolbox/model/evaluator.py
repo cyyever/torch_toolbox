@@ -105,7 +105,7 @@ class ModelEvaluator:
             return self.model.get_input_feature(inputs)
         return None
 
-    def split_batch_input(self, inputs: Any, batch_size: int) -> dict:
+    def split_batch_input(self, inputs: Any, *args: Any, **kwargs: Any) -> dict:
         return {"inputs": inputs, "batch_dim": 0}
 
     def backward(
