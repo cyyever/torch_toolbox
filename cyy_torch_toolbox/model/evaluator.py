@@ -240,7 +240,7 @@ class ModelEvaluator:
             "loss": loss,
             "model_output": output,
             "is_averaged_loss": self.__is_averaged_loss(loss_fun),
-            "loss_batch_size": (targets.view(-1) != -100).count_nonzero(),
+            "loss_batch_size": (targets.view(-1) != -100).sum(),
         }
         return res
 

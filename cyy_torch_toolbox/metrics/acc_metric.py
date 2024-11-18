@@ -28,7 +28,7 @@ class AccuracyMetric(Metric):
             max_output = torch.argmax(output, dim=2)
             mask = targets != -100
             correct_count = torch.eq(max_output[mask], targets[mask]).view(-1).sum()
-            self.__dataset_size += mask.count_nonzero()
+            self.__dataset_size += mask.sum()
         else:
             if output.shape == targets.shape:
                 if len(targets.shape) == 2:
