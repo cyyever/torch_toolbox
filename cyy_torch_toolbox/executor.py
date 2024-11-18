@@ -50,7 +50,7 @@ class Executor(HookCollection, abc.ABC):
         self.__dataloader_kwargs: dict = (
             copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
         )
-        self.__stream: None | torch.cuda.Stream | torch.cpu.Stream = None
+        self.__stream: None | torch.cpu.Stream | torch.Stream = None
         self.__save_dir: None | str = None
         self.__visualizer_prefix: str = ""
 
@@ -78,7 +78,7 @@ class Executor(HookCollection, abc.ABC):
         return contextlib.nullcontext()
 
     @property
-    def stream(self) -> torch.cpu.Stream | torch.cuda.Stream:
+    def stream(self) -> torch.cpu.Stream | torch.Stream:
         if self.__stream is None:
             match self.device.type.lower():
                 case "cuda":
@@ -94,11 +94,14 @@ class Executor(HookCollection, abc.ABC):
     def stream_context(
         self,
     ) -> AbstractContextManager:
+        s = self.stream
         match self.device.type.lower():
             case "cuda":
-                return torch.cuda.stream(self.stream)
+                assert isinstance(s, torch.cuda.Stream)
+                return torch.cuda.stream(s)
             case "cpu" | "mps":
-                return torch.cpu.stream(self.stream)
+                assert isinstance(s, torch.cpu.Stream)
+                return torch.cpu.stream(s)
         raise RuntimeError(self.device)
 
     @property
