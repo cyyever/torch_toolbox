@@ -13,6 +13,8 @@ class LossMetric(Metric):
         )
 
     def _after_epoch(self, epoch: int, **kwargs) -> None:
+        if not self.__batch_losses:
+            return
         total_size = sum(item[1] for item in self.__batch_losses)
         total_loss = sum((item[1] * item[0]).item() for item in self.__batch_losses)
         self.__batch_losses = []
