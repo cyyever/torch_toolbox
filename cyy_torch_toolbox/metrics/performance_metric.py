@@ -1,4 +1,3 @@
-import time
 from typing import Any
 
 import torch
@@ -12,6 +11,9 @@ from .learning_rate_metric import LearningRateMetric
 from .loss_metric import LossMetric
 from .metric import Metric
 from .new_acc_metric import NewAccuracyMetric
+from .time_metric import TimeMetric
+
+# from .perplexity_metric import PerplexityMetric
 
 
 class PerformanceMetric(Metric):
@@ -25,6 +27,8 @@ class PerformanceMetric(Metric):
     ) -> None:
         super().__init__(**kwargs)
         self.loss_metric = LossMetric()
+        # if executor.dataset_collection.dataset_type == DatasetType.Text:
+        #     self.perplexity_metric = PerplexityMetric()
         if executor.running_model_evaluator.model_type in (
             ModelType.Classification,
             ModelType.TokenClassification,
@@ -33,7 +37,7 @@ class PerformanceMetric(Metric):
             if extra_metrics:
                 self.f1_metric = F1Metric()
                 self.auc_metric = AUROCMetric()
-        self.__epoch_time_point: float = time.time()
+        self.time_metric = TimeMetric()
         self.__last_epoch: None | int = None
         if use_grad_norm:
             self.grad_metric = GradMetric()
@@ -42,12 +46,8 @@ class PerformanceMetric(Metric):
         if hasattr(executor, "train"):
             self.lr_metric = LearningRateMetric()
 
-    def _before_epoch(self, **kwargs: Any) -> None:
-        self.__epoch_time_point = time.time()
-
     def _after_epoch(self, epoch: int, **kwargs: Any) -> None:
         self.__last_epoch = epoch
-        self._set_epoch_metric(epoch, "duration", time.time() - self.__epoch_time_point)
 
     def get_loss(self, epoch: int, to_item: bool = True) -> float | torch.Tensor:
         return self.get_epoch_metric(epoch=epoch, name="loss", to_item=to_item)
