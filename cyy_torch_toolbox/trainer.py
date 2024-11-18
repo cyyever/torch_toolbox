@@ -3,7 +3,7 @@ from collections.abc import Generator
 from typing import Any
 
 import torch
-from cyy_naive_lib.log import log_warning
+from cyy_naive_lib.log import log_debug, log_warning
 
 from .classification_inferencer import ClassificationInferencer
 from .dataset import DatasetCollection
@@ -127,6 +127,29 @@ class Trainer(Executor):
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
             finally:
                 self.wait_stream()
+
+    def _execute_epoch(
+        self,
+        epoch: int,
+        evaluation_mode: EvaluationMode,
+    ) -> None:
+        super()._execute_epoch(epoch=epoch, evaluation_mode=evaluation_mode)
+        if evaluation_mode == EvaluationMode.Training:
+            lr_scheduler = self.get_lr_scheduler()
+            match lr_scheduler:
+                case torch.optim.lr_scheduler.ReduceLROnPlateau():
+                    inferencer = self.get_cached_inferencer(
+                        MachineLearningPhase.Validation
+                    )
+                    if inferencer is None:
+                        inferencer = self
+                    loss = inferencer.performance_metric.get_loss(epoch, to_item=False)
+                    assert loss is not None
+                    log_debug(
+                        "call ReduceLROnPlateau for validation loss %s",
+                        loss,
+                    )
+                    lr_scheduler.step(loss)
 
     def __test(self, phase: MachineLearningPhase) -> bool:
         assert phase in (MachineLearningPhase.Validation, MachineLearningPhase.Test)
