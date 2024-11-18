@@ -13,8 +13,6 @@ from .metric import Metric
 from .new_acc_metric import NewAccuracyMetric
 from .time_metric import TimeMetric
 
-# from .perplexity_metric import PerplexityMetric
-
 
 class PerformanceMetric(Metric):
     def __init__(
@@ -27,8 +25,6 @@ class PerformanceMetric(Metric):
     ) -> None:
         super().__init__(**kwargs)
         self.loss_metric = LossMetric()
-        # if executor.dataset_collection.dataset_type == DatasetType.Text:
-        #     self.perplexity_metric = PerplexityMetric()
         if executor.running_model_evaluator.model_type in (
             ModelType.Classification,
             ModelType.TokenClassification,

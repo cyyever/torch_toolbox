@@ -390,20 +390,10 @@ class Executor(HookCollection, abc.ABC):
             )
         if evaluation_mode == EvaluationMode.Training:
             lr_scheduler = self.get_lr_scheduler()
-            if not lr_scheduler_step_after_batch(lr_scheduler):
-                match lr_scheduler:
-                    case torch.optim.lr_scheduler.ReduceLROnPlateau():
-                        training_loss = self.performance_metric.get_loss(
-                            epoch, to_item=False
-                        )
-                        assert training_loss is not None
-                        log_debug(
-                            "call ReduceLROnPlateau for training loss %s",
-                            training_loss,
-                        )
-                        lr_scheduler.step(training_loss)
-                    case _:
-                        lr_scheduler.step()
+            if not lr_scheduler_step_after_batch(lr_scheduler) and not isinstance(
+                lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau
+            ):
+                lr_scheduler.step()
 
         self.exec_hooks(
             hook_point=ExecutorHookPoint.AFTER_EPOCH,
