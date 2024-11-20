@@ -35,6 +35,7 @@ class ModelType(StrEnum):
     Detection = auto()
     Seq2SeqLM = auto()
     TokenClassification = auto()
+    CausalLM = auto()
     TextGeneration = auto()
 
 
