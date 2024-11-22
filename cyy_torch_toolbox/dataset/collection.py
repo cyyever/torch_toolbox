@@ -20,14 +20,16 @@ from .util import DatasetUtil, global_dataset_util_factor
 class DatasetCollection:
     def __init__(
         self,
-        datasets: dict[MachineLearningPhase, torch.utils.data.Dataset],
+        datasets: dict[MachineLearningPhase, torch.utils.data.Dataset | list],
         dataset_type: DatasetType | None = None,
         name: str | None = None,
         dataset_kwargs: dict | None = None,
         add_index: bool = True,
     ) -> None:
         self.__name: str = "" if name is None else name
-        self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset] = datasets
+        self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset | list] = (
+            datasets
+        )
         if add_index:
             for k, v in self.__datasets.items():
                 self.__datasets[k] = dataset_with_indices(v)
@@ -125,7 +127,7 @@ class DatasetCollection:
     @classmethod
     def get_dataset_root_dir(cls) -> str:
         with cls.lock:
-            return os.getenv("pytorch_dataset_root_dir", cls._dataset_root_dir)
+            return os.getenv("PYTORCH_DATASET_ROOT_DIR", cls._dataset_root_dir)
 
     @classmethod
     def set_dataset_root_dir(cls, root_dir: str) -> None:
