@@ -2,7 +2,7 @@ from collections.abc import Mapping
 from typing import Any
 
 import torch
-from cyy_naive_lib.log import get_logger
+from cyy_naive_lib.log import log_error
 
 from ..executor import Executor
 
@@ -56,7 +56,8 @@ def convert_phrase_to_token_ids(
     phrase: str,
     strip_special_token: bool = True,
 ) -> TokenIDsType:
-    tokenizer = executor.model_evaluator.tokenizer
+    assert hasattr(executor.model_evaluator, "tokenizer")
+    tokenizer: Tokenizer = executor.model_evaluator.tokenizer
     assert isinstance(tokenizer, Tokenizer)
     transformed_token_results = convert_phrase_to_transformed_result(
         executor=executor, phrase=phrase
@@ -68,8 +69,8 @@ def convert_phrase_to_token_ids(
         token_ids = tokenizer.strip_special_tokens(token_ids)
         decoded_phrase = tokenizer.get_phrase(token_ids)
         if decoded_phrase.replace(" ", "") != phrase.replace(" ", ""):
-            get_logger().error("failed to recover phrase")
-            get_logger().error("phrase is: %s", phrase)
-            get_logger().error("decoded phrase is: %s", decoded_phrase)
+            log_error("failed to recover phrase")
+            log_error("phrase is: %s", phrase)
+            log_error("decoded phrase is: %s", decoded_phrase)
             raise RuntimeError("failed to recover phrase")
     return token_ids
