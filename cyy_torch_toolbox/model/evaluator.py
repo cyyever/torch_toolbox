@@ -11,10 +11,6 @@ from ..ml_type import EvaluationMode, ModelType
 from ..tensor import tensor_to
 from .util import ModelUtil
 
-# from cyy_torch_toolbox.model_transform.checkpointed_model import \
-#     get_checkpointed_model
-# from torch.nn.parallel import DistributedDataParallel as DDP
-
 
 class ModelEvaluator:
     """
@@ -31,8 +27,8 @@ class ModelEvaluator:
         **kwargs,
     ) -> None:
         self._model: torch.nn.Module = model
-        self.__name = model_name
         self.__loss_fun: Callable | None = None
+        self.__loss_fun_type: type | None = None
         if loss_fun is not None:
             self.set_loss_fun(loss_fun)
         self.__model_type: ModelType = (
@@ -50,10 +46,6 @@ class ModelEvaluator:
             case _:
                 raise NotImplementedError(frozen_modules)
         self.__evaluation_kwargs: dict = {}
-
-    @property
-    def model_name(self) -> str | None:
-        return self.__name
 
     @property
     def model(self) -> torch.nn.Module:
@@ -89,23 +81,27 @@ class ModelEvaluator:
     def set_loss_fun(self, loss_fun: Callable | str) -> None:
         match loss_fun:
             case "CrossEntropyLoss":
-                self.__loss_fun = nn.CrossEntropyLoss()
+                self.__loss_fun_type = nn.CrossEntropyLoss
+                self.__loss_fun = self.__loss_fun_type()
             case "NLLLoss":
-                self.__loss_fun = nn.NLLLoss()
+                self.__loss_fun_type = nn.NLLLoss
+                self.__loss_fun = self.__loss_fun_type()
             case str():
                 raise RuntimeError(f"unknown loss function {loss_fun}")
             case _:
                 self.__loss_fun = loss_fun
+                self.__loss_fun_type = type(loss_fun)
 
     def offload_from_device(self) -> None:
         self.model_util.to_device(device=torch.device("cpu"))
 
     def get_input_feature(self, inputs: Any) -> Any:
-        if hasattr(self.model, "get_input_feature"):
-            return self.model.get_input_feature(inputs)
+        fun = getattr(self.model, "get_input_feature", None)
+        if fun is not None:
+            return fun(inputs)
         return None
 
-    def split_batch_input(self, inputs: Any, *args: Any, **kwargs: Any) -> dict:
+    def split_batch_input(self, inputs: Any, **kwargs: Any) -> dict:
         return {"inputs": inputs, "batch_dim": 0}
 
     def backward(
@@ -222,7 +218,8 @@ class ModelEvaluator:
         assert isinstance(output, torch.Tensor)
         loss_fun = self.loss_fun
         if not reduce_loss:
-            loss_fun = type(loss_fun)(reduction="none")
+            assert self.__loss_fun_type is not None
+            loss_fun = self.__loss_fun_type(reduction="none")
 
         if len(output.shape) == 2 and output.shape[-1] == 1:
             output = output.view(-1)
@@ -289,44 +286,3 @@ class ModelEvaluator:
                     self.model_util.change_modules(
                         f=lambda _, module, __: module.train(), module_type=nn.RNNBase
                     )
-
-
-# class CheckPointedModelWithLoss:
-#     def __init__(self, model_evaluator:ModelEvaluator):
-#         self.__model_evaluator = model_evaluator.replace_model(
-#             get_checkpointed_model(model_evaluator.model)
-#         )
-
-#     def __getattr__(self, attr):
-#         return getattr(self.__model_evaluator, attr)
-
-#     def __call__(self, **kwargs) -> dict:
-#         phase = kwargs["phase"]
-#         if phase == MachineLearningPhase.Training:
-#             inputs = kwargs.get("inputs", None)
-#             if inputs is not None:
-#                 inputs.requires_grad_()
-#         return self.__model_evaluator.__call__(**kwargs)
-
-
-# class ParallelModelWithLoss(ModelEvaluator):
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         assert torch.cuda.is_available()
-#         if not torch.distributed.is_initialized():
-#             torch.distributed.init_process_group(
-#                 backend="nccl",
-#                 init_method="tcp://127.0.0.1:23456",
-#                 rank=0,
-#                 world_size=len(get_devices()),
-#             )
-#         self._original_model = self._model
-#         self._model = DDP(self._original_model)
-
-#     @classmethod
-#     def create(cls, model_evaluator:ModelEvaluator):
-#         return cls(
-#             model=model_evaluator.model,
-#             loss_fun=model_evaluator.loss_fun,
-#             model_type=model_evaluator.model_type,
-#         )
