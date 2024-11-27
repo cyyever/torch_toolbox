@@ -23,10 +23,11 @@ def get_model_evaluator(
     **model_kwargs,
 ) -> ModelEvaluator:
     model_evaluator_funs: type | list[type] = ModelEvaluator
-    if dataset_collection is not None:
-        model_evaluator_funs = global_model_evaluator_factory.get(
-            dataset_collection.dataset_type
-        )
+    dataset_type: DatasetType | None = model_kwargs.get("dataset_type")
+    if dataset_type is None and dataset_collection is not None:
+        dataset_type = dataset_collection.dataset_type
+    if dataset_type is not None:
+        model_evaluator_funs = global_model_evaluator_factory.get(dataset_type)
     if not isinstance(model_evaluator_funs, list):
         model_evaluator_funs = [model_evaluator_funs]
     for model_evaluator_fun in model_evaluator_funs:
