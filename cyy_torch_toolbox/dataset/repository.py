@@ -106,9 +106,8 @@ def __create_dataset(
     dataset_kwargs: dict,
     cache_dir: str,
 ) -> tuple[DatasetType, dict] | None:
-    constructor_kwargs = get_kwarg_names(dataset_constructor)
     dataset_kwargs_fun = __prepare_dataset_kwargs(
-        constructor_kwargs=constructor_kwargs,
+        constructor_kwargs=get_kwarg_names(dataset_constructor),
         dataset_kwargs=dataset_kwargs,
         cache_dir=cache_dir,
     )
@@ -188,16 +187,6 @@ def get_dataset(
     real_dataset_type = dataset_kwargs.get("dataset_type")
     similar_names = []
     dataset_types = list(DatasetType)
-    # cached_dataset_type_file = os.path.join(
-    #     cache_dir, ".cyy_torch_toolbox_dataset_type"
-    # )
-    # if os.path.isfile(cached_dataset_type_file):
-    #     with open(cached_dataset_type_file, "rb") as f:
-    #         tmp = pickle.load(f)
-    #         if real_dataset_type is None:
-    #             real_dataset_type = tmp
-    #         else:
-    #             assert real_dataset_type == tmp
 
     if real_dataset_type is not None:
         assert isinstance(real_dataset_type, DatasetType)
