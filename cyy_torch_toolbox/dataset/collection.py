@@ -125,7 +125,7 @@ class DatasetCollection:
     lock = threading.RLock()
 
     @classmethod
-    def get_dataset_root_dir(cls) -> str:
+    def __get_dataset_root_dir(cls) -> str:
         with cls.lock:
             return os.getenv("PYTORCH_DATASET_ROOT_DIR", cls._dataset_root_dir)
 
@@ -136,7 +136,7 @@ class DatasetCollection:
 
     @classmethod
     def get_dataset_dir(cls, name: str) -> str:
-        dataset_dir = os.path.join(cls.get_dataset_root_dir(), name)
+        dataset_dir = os.path.join(cls.__get_dataset_root_dir(), name)
         if not os.path.isdir(dataset_dir):
             os.makedirs(dataset_dir, exist_ok=True)
         if get_operating_system_type() != OSType.Windows and not is_ssd(dataset_dir):
