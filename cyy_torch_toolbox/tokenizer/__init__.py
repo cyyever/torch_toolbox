@@ -17,7 +17,7 @@ class Tokenizer:
     def get_mask_token(self) -> str:
         raise NotImplementedError()
 
-    def tokenize(self, phrase: str) -> list[str]:
+    def tokenize(self, phrase: str) -> list[str] | Any:
         raise NotImplementedError()
 
     def get_token_id(self, token: str) -> TokenIDType:
@@ -56,8 +56,7 @@ def convert_phrase_to_token_ids(
     phrase: str,
     strip_special_token: bool = True,
 ) -> TokenIDsType:
-    assert hasattr(executor.model_evaluator, "tokenizer")
-    tokenizer: Tokenizer = executor.model_evaluator.tokenizer
+    tokenizer = getattr(executor.model_evaluator, "tokenizer", None)
     assert isinstance(tokenizer, Tokenizer)
     transformed_token_results = convert_phrase_to_transformed_result(
         executor=executor, phrase=phrase
