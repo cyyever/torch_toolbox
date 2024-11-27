@@ -20,7 +20,6 @@ class ModelEvaluator:
     def __init__(
         self,
         model: torch.nn.Module,
-        model_name: str | None = None,
         model_type: None | ModelType = None,
         loss_fun: str | Callable | None = None,
         frozen_modules: dict | None = None,
