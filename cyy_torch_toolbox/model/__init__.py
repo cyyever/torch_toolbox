@@ -63,10 +63,15 @@ def create_model(constructor, **kwargs) -> Callable:
 
 
 def get_model(
-    name: str, dataset_collection: DatasetCollection, model_kwargs: dict
+    name: str, model_kwargs: dict, dataset_collection: DatasetCollection | None = None
 ) -> dict:
     model_kwargs = copy.copy(model_kwargs)
-    factories = global_model_factory.get(dataset_collection.dataset_type, [])
+    factories = []
+    if dataset_collection is not None:
+        factories = global_model_factory.get(dataset_collection.dataset_type, [])
+    else:
+        for v in global_model_factory.values():
+            factories += v
     model_constructor: Callable | None | dict = None
 
     for factory in factories:
@@ -103,7 +108,8 @@ def get_model(
     if model_type in (ModelType.TokenClassification,):
         assert isinstance(dataset_collection, ClassificationDatasetCollection)
         model_kwargs["num_labels"] = dataset_collection.label_number
-    model_kwargs["dataset_collection"] = dataset_collection
+    if dataset_collection is not None:
+        model_kwargs["dataset_collection"] = dataset_collection
     assert not isinstance(model_constructor, dict)
     assert model_constructor is not None
     res = model_constructor(**model_kwargs)
