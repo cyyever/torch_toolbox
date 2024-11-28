@@ -19,7 +19,7 @@ class DatasetFactory(Factory):
 __global_dataset_constructors: dict[DatasetType, list[DatasetFactory]] = {}
 
 
-def __get_dataset_types(dataset_type: DatasetType | None = None):
+def __get_dataset_types(dataset_type: DatasetType | None = None) -> list[DatasetType]:
     dataset_types = []
     if dataset_type is not None:
         dataset_types.append(dataset_type)
