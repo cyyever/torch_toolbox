@@ -103,7 +103,10 @@ class DatasetCollection:
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
-        return global_dataset_util_factor.get(self.dataset_type)(
+        factor = global_dataset_util_factor.get(self.dataset_type)
+        if factor is None:
+            factor = DatasetUtil
+        return factor(
             dataset=self.__datasets[phase],
             transforms=self.__transforms[phase],
             name=self.name,
