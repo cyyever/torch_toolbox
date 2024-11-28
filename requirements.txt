@@ -1,4 +1,4 @@
-torch>=2.5
+torch
 hydra-core
 torchmetrics
 omegaconf
