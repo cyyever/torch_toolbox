@@ -49,6 +49,8 @@ def create_dataset_collection(
         )
         if dc.is_classification_dataset():
             dc = ClassificationDatasetCollection(dc)
+        else:
+            return dc
         if not merge_validation_to_training:
             if not dc.has_dataset(MachineLearningPhase.Validation):
                 dc.iid_split(
