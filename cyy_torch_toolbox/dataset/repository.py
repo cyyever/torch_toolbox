@@ -62,13 +62,7 @@ def __prepare_dataset_kwargs(
                     "train_split", "train"
                 )
             elif phase == MachineLearningPhase.Validation:
-                if "val_split" in new_dataset_kwargs:
-                    new_dataset_kwargs["split"] = new_dataset_kwargs["val_split"]
-                else:
-                    if dataset_type == DatasetType.Text:
-                        new_dataset_kwargs["split"] = "valid"
-                    else:
-                        new_dataset_kwargs["split"] = "val"
+                new_dataset_kwargs["split"] = new_dataset_kwargs.get("val_split", "val")
             else:
                 new_dataset_kwargs["split"] = new_dataset_kwargs.get(
                     "test_split", "test"
