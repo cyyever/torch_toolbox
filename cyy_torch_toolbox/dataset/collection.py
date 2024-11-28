@@ -153,20 +153,15 @@ class DatasetCollection:
         return cache_dir
 
     def is_classification_dataset(self) -> bool:
+        if self.dataset_type == DatasetType.Text:
+            try:
+                if not self.get_dataset_util(
+                    phase=MachineLearningPhase.Training
+                ).get_batch_labels(indices=[0])[1]:
+                    return False
+            except BaseException:
+                return False
         return True
-        # if self.dataset_type == DatasetType.Graph:
-        #     return True
-        # labels = list(
-        #     self.get_dataset_util(phase=MachineLearningPhase.Training).get_batch_labels(
-        #         indices=[0]
-        #     )
-        # )[1]
-        # if len(labels) != 1:
-        #     return False
-        # match next(iter(labels)):
-        #     case int():
-        #         return True
-        # return False
 
     def iid_split(
         self,
