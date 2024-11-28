@@ -60,7 +60,7 @@ class ClassificationMetric(Metric):
         if len(output.shape) == 2 and output.shape[-1] == 1:
             output = output.view(-1)
         assert isinstance(targets, torch.Tensor)
-        if -100 in targets:
+        if len(targets.shape) <= 1:
             mask = targets != -100
             output = output[mask]
             targets = targets[mask]
