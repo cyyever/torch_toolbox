@@ -141,7 +141,7 @@ class Trainer(Executor):
                     inferencer = self.get_cached_inferencer(
                         MachineLearningPhase.Validation
                     )
-                    loss =None
+                    loss = None
                     if inferencer is not None:
                         loss = inferencer.performance_metric.get_loss(1, to_item=False)
                     else:
