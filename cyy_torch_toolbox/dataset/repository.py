@@ -19,20 +19,31 @@ class DatasetFactory(Factory):
 __global_dataset_constructors: dict[DatasetType, list[DatasetFactory]] = {}
 
 
+def __get_dataset_types(dataset_type: DatasetType | None = None):
+    dataset_types = []
+    if dataset_type is not None:
+        dataset_types.append(dataset_type)
+    else:
+        dataset_types = list(DatasetType)
+    return dataset_types
+
+
 def register_dataset_factory(
-    dataset_type: DatasetType, factory: DatasetFactory
+    factory: DatasetFactory, dataset_type: DatasetType | None = None
 ) -> None:
-    if dataset_type not in __global_dataset_constructors:
-        __global_dataset_constructors[dataset_type] = []
-    __global_dataset_constructors[dataset_type].append(factory)
+    for t in __get_dataset_types(dataset_type):
+        if t not in __global_dataset_constructors:
+            __global_dataset_constructors[t] = []
+        __global_dataset_constructors[t].append(factory)
 
 
 def register_dataset_constructors(
-    dataset_type: DatasetType, name: str, constructor: Callable
+    name: str, constructor: Callable, dataset_type: DatasetType | None = None
 ) -> None:
-    if dataset_type not in __global_dataset_constructors:
-        register_dataset_factory(dataset_type, DatasetFactory())
-    __global_dataset_constructors[dataset_type][-1].register(name, constructor)
+    for t in __get_dataset_types(dataset_type):
+        if t not in __global_dataset_constructors:
+            register_dataset_factory(factory=DatasetFactory(), dataset_type=t)
+        __global_dataset_constructors[t][-1].register(name, constructor)
 
 
 def __prepare_dataset_kwargs(
@@ -186,7 +197,7 @@ def get_dataset(
         assert isinstance(real_dataset_type, DatasetType)
         log_info("use dataset type %s", real_dataset_type)
         assert real_dataset_type in __global_dataset_constructors
-        dataset_types = [real_dataset_type]
+    dataset_types = __get_dataset_types(real_dataset_type)
 
     for dataset_type in dataset_types:
         dataset_type = DatasetType(dataset_type)
