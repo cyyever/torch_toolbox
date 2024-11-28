@@ -90,7 +90,7 @@ def __prepare_dataset_kwargs(
                 return None
         discarded_dataset_kwargs = set()
         for k in new_dataset_kwargs:
-            if k not in constructor_kwargs:
+            if k not in constructor_kwargs and "files" not in k:
                 discarded_dataset_kwargs.add(k)
         if discarded_dataset_kwargs:
             log_debug("discarded_dataset_kwargs %s", discarded_dataset_kwargs)
