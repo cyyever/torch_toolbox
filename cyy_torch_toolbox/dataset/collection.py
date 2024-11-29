@@ -155,10 +155,11 @@ class DatasetCollection:
     def is_classification_dataset(self) -> bool:
         if self.dataset_type == DatasetType.Text:
             try:
-                if not self.get_dataset_util(
+                for _, labels in self.get_dataset_util(
                     phase=MachineLearningPhase.Training
-                ).get_batch_labels(indices=[0])[1]:
-                    return False
+                ).get_batch_labels(indices=[0]):
+                    if not labels:
+                        return False
             except BaseException:
                 return False
         return True
