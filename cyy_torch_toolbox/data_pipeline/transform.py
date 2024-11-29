@@ -83,19 +83,19 @@ class Transforms:
         other_info: list = []
         for data in batch:
             data = copy.copy(self.extract_data(data))
-            if "input" in data:
-                sample_input = self.transform_input(data.pop("input"))
-            else:
-                data = self.transform_input(data)
-                sample_input = data
-            inputs.append(sample_input)
             if "target" in data:
                 targets.append(
                     self.transform_target(
                         target=data.pop("target"), index=data.get("index", None)
                     )
                 )
-            other_info.append(data)
+            if "input" in data:
+                sample_input = self.transform_input(data.pop("input"))
+                other_info.append(data)
+            else:
+                data = self.transform_input(data)
+                sample_input = data
+            inputs.append(sample_input)
         batch_size = len(inputs)
         transformed_inputs = self.transform_inputs(inputs)
         res = {
