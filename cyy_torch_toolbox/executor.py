@@ -271,6 +271,7 @@ class Executor(HookCollection, abc.ABC):
         torch.save(self.model.state_dict(), model_path)
 
     def offload_from_device(self) -> None:
+        self.wait_stream()
         self.model_evaluator.offload_from_device()
         match self.device.type.lower():
             case "cuda":
