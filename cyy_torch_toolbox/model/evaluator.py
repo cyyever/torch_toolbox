@@ -61,7 +61,9 @@ class ModelEvaluator:
     @property
     def loss_fun(self) -> Callable:
         if self.__loss_fun is None:
-            self.__loss_fun = self._choose_loss_function()
+            if self.__loss_fun_type is None:
+                self.__loss_fun_type = self._choose_loss_function_type()
+            self.__loss_fun = self.__loss_fun_type()
         return self.__loss_fun
 
     def set_model(self, model) -> None:
@@ -240,7 +242,7 @@ class ModelEvaluator:
         }
         return res
 
-    def _choose_loss_function(self) -> Callable:
+    def _choose_loss_function_type(self) -> type:
         last_module = self.model_util.get_last_underlying_module()
 
         log_debug("last module is %s", last_module.__class__)
@@ -259,7 +261,7 @@ class ModelEvaluator:
         if loss_fun_type is None:
             log_error("can't choose a loss function, model is %s", self._model)
             raise NotImplementedError(type(last_module))
-        return loss_fun_type()
+        return loss_fun_type
 
     @classmethod
     def __is_averaged_loss(cls, loss_fun) -> bool:
