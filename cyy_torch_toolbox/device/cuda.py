@@ -25,10 +25,12 @@ def get_cuda_memory_info(
         info = pynvml.nvmlDeviceGetMemoryInfo(handle)
         if consider_cache:
             cache_size = torch.cuda.memory_reserved(device=d_idx)
-            # pylint: disable=no-member
-            info.used -= cache_size
-            # pylint: disable=no-member
-            info.free += cache_size
+            # PyTorch bug
+            if cache_size <= info.used:
+                # pylint: disable=no-member
+                info.used -= cache_size
+                # pylint: disable=no-member
+                info.free += cache_size
         result[torch.device(f"cuda:{d_idx}")] = MemoryInfo(
             # pylint: disable=no-member
             used=info.used,
