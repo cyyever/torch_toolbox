@@ -63,7 +63,10 @@ class ModelEvaluator:
         if self.__loss_fun is None:
             if self.__loss_fun_type is None:
                 self.__loss_fun_type = self._choose_loss_function_type()
-            self.__loss_fun = self.__loss_fun_type()
+            if self.__loss_fun_type is not None:
+                self.__loss_fun = self.__loss_fun_type()
+            else:
+                self.__loss_fun = self._choose_loss_function()
         return self.__loss_fun
 
     def set_model(self, model) -> None:
@@ -225,13 +228,9 @@ class ModelEvaluator:
         if len(output.shape) == 2 and output.shape[-1] == 1:
             output = output.view(-1)
         match loss_fun:
-            # case nn.CrossEntropyLoss():
-            #     convert_kwargs.pop("dtype")
             case nn.BCEWithLogitsLoss():
                 if targets.dtype is torch.long or targets.dtype is torch.int:
                     convert_kwargs["dtype"] = torch.float
-            #     targets = targets.view(-1)
-            #     output = output.view(-1)
         targets = targets.to(**convert_kwargs, non_blocking=True)
         loss = loss_fun(output, targets)
         res |= {
@@ -241,6 +240,9 @@ class ModelEvaluator:
             "loss_batch_size": (targets.view(-1) != -100).sum(),
         }
         return res
+
+    def _choose_loss_function(self) -> Any:
+        raise NotImplementedError()
 
     def _choose_loss_function_type(self) -> type:
         last_module = self.model_util.get_last_underlying_module()
