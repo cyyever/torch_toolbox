@@ -10,7 +10,7 @@ class CUDAMemoryProfiler(Hook):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.__hooks: list = []
-        self.__used_memory: list = []
+        self.__used_memory: list[tuple[str, float]] = []
 
     def _before_execute(self, **kwargs) -> None:
         self.__hooks = []
@@ -49,8 +49,6 @@ class CUDAMemoryProfiler(Hook):
         else:
             log_info(
                 "%.1f MB CUDA memory is used for module %s",
-                self.__used_memory[module_name],
-                module_name,
                 self.__used_memory[-1][1] - self.__used_memory[-2][1],
                 self.__used_memory[-1][0],
             )
