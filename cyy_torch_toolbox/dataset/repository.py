@@ -5,7 +5,7 @@ from typing import Any
 from cyy_naive_lib.log import log_debug, log_error, log_info
 from cyy_naive_lib.reflection import get_kwarg_names
 
-from ..dataset.util import global_dataset_util_factor
+from ..dataset.util import DatasetUtil, global_dataset_util_factor
 from ..ml_type import DatasetType, Factory, MachineLearningPhase
 
 
@@ -172,7 +172,7 @@ def __create_dataset(
         test_dataset = None
 
     if validation_dataset is None and test_dataset is None:
-        datasets: dict = global_dataset_util_factor.get(dataset_type)(
+        datasets: dict = global_dataset_util_factor.get(dataset_type, DatasetUtil)(
             training_dataset
         ).decompose()
         if datasets is not None:
