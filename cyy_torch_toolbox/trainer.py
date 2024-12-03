@@ -54,23 +54,14 @@ class Trainer(Executor):
             model_evaluator: ModelEvaluator = copy.deepcopy(self.model_evaluator)
         else:
             model_evaluator = copy.copy(self.model_evaluator)
-        inferencer: Inferencer | None = None
-        if model_evaluator.model_type in (
-            ModelType.Classification,
-            ModelType.TokenClassification,
-        ):
-            inferencer = ClassificationInferencer(
-                model_evaluator,
-                self.dataset_collection,
-                phase=phase,
-                hyper_parameter=self.hyper_parameter,
-                hook_config=self.hook_config,
-                dataloader_kwargs=self.dataloader_kwargs,
-            )
-        if inferencer is None:
-            raise RuntimeError(
-                "Unsupported model type:" + str(model_evaluator.model_type)
-            )
+        inferencer = Inferencer(
+            model_evaluator,
+            self.dataset_collection,
+            phase=phase,
+            hyper_parameter=self.hyper_parameter,
+            hook_config=self.hook_config,
+            dataloader_kwargs=self.dataloader_kwargs,
+        )
         if inherent_device:
             inferencer.set_device(self.device)
         if self.save_dir is not None:
