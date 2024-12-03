@@ -20,10 +20,10 @@ class Factory:
             case _:
                 self.data[key] = value
 
-    def get(self, key: Any, case_sensitive: bool = True) -> Any:
+    def get(self, key: Any, case_sensitive: bool = True, default: Any = None) -> Any:
         if not case_sensitive:
             key = self._lower_key(key)
-        return self.data.get(key, None)
+        return self.data.get(key, default)
 
     def get_similar_keys(self, key: str) -> list[str]:
         return get_close_matches(key, self.data.keys())
