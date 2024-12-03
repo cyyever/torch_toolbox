@@ -172,9 +172,9 @@ def __create_dataset(
         test_dataset = None
 
     if validation_dataset is None and test_dataset is None:
-        datasets: dict = global_dataset_util_factor.get(dataset_type, DatasetUtil)(
-            training_dataset
-        ).decompose()
+        datasets: dict = global_dataset_util_factor.get(
+            dataset_type, default=DatasetUtil
+        )(training_dataset).decompose()
         if datasets is not None:
             return dataset_type, datasets
     datasets = {MachineLearningPhase.Training: training_dataset}
