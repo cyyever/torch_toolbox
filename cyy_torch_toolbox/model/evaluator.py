@@ -241,10 +241,10 @@ class ModelEvaluator:
         }
         return res
 
-    def _choose_loss_function(self) -> Any:
+    def _choose_loss_function(self) -> Callable:
         raise NotImplementedError()
 
-    def _choose_loss_function_type(self) -> type:
+    def _choose_loss_function_type(self) -> type | None:
         last_module = self.model_util.get_last_underlying_module()
 
         log_debug("last module is %s", last_module.__class__)
