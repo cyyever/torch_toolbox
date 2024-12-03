@@ -25,6 +25,8 @@ class CUDAMemoryProfiler(Hook):
                 continue
             if not any(True for _ in module.parameters()):
                 continue
+            cur_used_memory = torch.cuda.memory_allocated()
+            self.__used_memory.append(("", float(cur_used_memory) / 1024 / 1024))
             self.__hooks.append(
                 module.register_forward_hook(
                     functools.partial(
@@ -40,16 +42,9 @@ class CUDAMemoryProfiler(Hook):
     ) -> None:
         cur_used_memory = torch.cuda.memory_allocated()
         self.__used_memory.append((module_name, float(cur_used_memory) / 1024 / 1024))
-        if len(self.__used_memory) == 1:
-            log_info(
-                "%.1f MB CUDA memory is used for first module %s",
-                self.__used_memory[0][1],
-                self.__used_memory[0][0],
-            )
-        else:
-            log_info(
-                "%.1f MB CUDA memory is used for module %s",
-                self.__used_memory[-1][1] - self.__used_memory[-2][1],
-                self.__used_memory[-1][0],
-            )
+        log_info(
+            "%.1f MB CUDA memory is used for module %s",
+            self.__used_memory[-1][1] - self.__used_memory[-2][1],
+            self.__used_memory[-1][0],
+        )
         self.__hooks[hook_idx].remove()
