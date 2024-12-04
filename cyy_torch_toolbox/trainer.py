@@ -16,7 +16,6 @@ from .ml_type import (
     ExecutorHookPoint,
     MachineLearningPhase,
     ModelParameter,
-    ModelType,
     StopExecutingException,
 )
 from .model import ModelEvaluator
