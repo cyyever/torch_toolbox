@@ -277,10 +277,10 @@ class ModelEvaluator:
     def __repr__(self) -> str:
         return f"model: {self._model.__class__.__name__}, loss_fun: {self.loss_fun}"
 
-    def load_training_model(self, train_model: torch.nn.Module) -> None:
-        if self.model is train_model:
+    def load_model(self, model: torch.nn.Module) -> None:
+        if self.model is model:
             return
-        self.model.load_state_dict(train_model.state_dict())
+        self.model.load_state_dict(model.state_dict())
 
     def __set_model_mode(self, evaluation_mode: EvaluationMode) -> None:
         match evaluation_mode:
