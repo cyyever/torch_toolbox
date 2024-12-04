@@ -277,7 +277,7 @@ class ModelEvaluator:
     def __repr__(self) -> str:
         return f"model: {self._model.__class__.__name__}, loss_fun: {self.loss_fun}"
 
-    def load_model(self, model: torch.nn.Module) -> None:
+    def load_model_for_inference(self, model: torch.nn.Module) -> None:
         if self.model is model:
             return
         self.model.load_state_dict(model.state_dict())
