@@ -67,6 +67,7 @@ class ModelEvaluator:
                 self.__loss_fun = self.__loss_fun_type()
             else:
                 self.__loss_fun = self._choose_loss_function()
+        assert self.__loss_fun is not None
         return self.__loss_fun
 
     def set_model(self, model) -> None:
