@@ -153,7 +153,7 @@ class Trainer(Executor):
         inferencer: None | Inferencer = self.__inferencers.get(phase, None)
         if inferencer is None:
             return False
-        inferencer.model.load_state_dict(self.model.state_dict())
+        inferencer.model_evaluator.load_training_model(self.model)
         inferencer.set_visualizer_prefix(self.visualizer_prefix)
         inferencer.inference()
         return True
