@@ -5,7 +5,6 @@ from typing import Any
 import torch
 from cyy_naive_lib.log import log_debug, log_warning
 
-from .classification_inferencer import ClassificationInferencer
 from .dataset import DatasetCollection
 from .executor import Executor, ExecutorConfig
 from .hyper_parameter import HyperParameter
