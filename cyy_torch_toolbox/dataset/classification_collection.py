@@ -2,22 +2,13 @@ import copy
 import functools
 from typing import Self
 
+from cyy_naive_lib.decorator import Decorator
+
 from ..ml_type import MachineLearningPhase
 from .collection import DatasetCollection
 
 
-class ClassificationDatasetCollection:
-    def __init__(self, dc: DatasetCollection) -> None:
-        self.__dc = dc
-
-    def __copy__(self) -> Self:
-        return type(self)(dc=copy.copy(self.__dc))
-
-    def __getattr__(self, name):
-        if "dc" in name:
-            raise AttributeError()
-        return getattr(self.__dc, name)
-
+class ClassificationDatasetCollection(Decorator):
     @functools.cached_property
     def label_number(self) -> int:
         return len(self.get_labels())
