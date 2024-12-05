@@ -12,6 +12,10 @@ def str_concat(prefix: str, example: str) -> str:
 class TextDatasetCollection(Decorator):
     __prompt: str | None = None
 
+    @property
+    def prompt(self) -> str | None:
+        return self.__prompt
+
     def set_prompt(self, prompt: str) -> None:
         assert self.__prompt is None
         self.__prompt = prompt
