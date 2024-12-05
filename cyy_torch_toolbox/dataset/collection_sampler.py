@@ -24,6 +24,7 @@ class Base:
         self._samplers = {
             phase: DatasetSampler(dataset_collection.get_dataset_util(phase))
             for phase in MachineLearningPhase
+            if dataset_collection.has_dataset(phase)
         }
 
     def __getstate__(self) -> dict:
