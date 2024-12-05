@@ -8,7 +8,13 @@ from .hyper_parameter import *
 from .inferencer import *
 from .ml_type import *
 from .model import *
-from .tensor import cat_tensor_dict, cat_tensors_to_vector, tensor_clone, tensor_to
+from .tensor import (
+    cat_tensor_dict,
+    cat_tensors_to_vector,
+    recursive_tensor_op,
+    tensor_clone,
+    tensor_to,
+)
 from .tokenizer import *
 from .trainer import *
 
