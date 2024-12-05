@@ -6,7 +6,6 @@ from cyy_naive_lib.log import log_info
 from ..data_pipeline.common import replace_target
 from ..ml_type import DatasetType, Factory, MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
-from .text_collection import TextDatasetCollection
 from .collection import DatasetCollection
 from .collection_sampler import (
     DatasetCollectionSplit,
@@ -19,6 +18,7 @@ from .collection_sampler import (
 )
 from .repository import DatasetFactory, get_dataset
 from .sampler import DatasetSampler
+from .text_collection import TextDatasetCollection
 from .util import DatasetUtil
 
 global_dataset_collection_factory: Factory = Factory()
@@ -178,6 +178,7 @@ __all__ = [
     "create_dataset_collection",
     "get_dataset_collection_sampler",
     "ClassificationDatasetCollection",
+    "TextDatasetCollection",
     "DatasetCollection",
     "SamplerBase",
     "SplitBase",
