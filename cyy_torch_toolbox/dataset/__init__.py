@@ -9,6 +9,7 @@ from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
 from .collection_sampler import (
     DatasetCollectionSplit,
+    RandomSplit,
     SamplerBase,
     SplitBase,
     get_dataset_collection_sampler,
@@ -177,6 +178,7 @@ __all__ = [
     "DatasetCollection",
     "SamplerBase",
     "SplitBase",
+    "RandomSplit",
     "DatasetFactory",
     "DatasetCollectionSplit",
     "get_dataset_collection_split",
