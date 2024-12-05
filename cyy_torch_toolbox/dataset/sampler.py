@@ -115,18 +115,19 @@ class DatasetSampler:
         )
 
     def random_split_indices(
-        self,
-        parts: list[float],
-        labels: list | None = None,
+        self, parts: list[float], labels: list | None = None, by_label: bool = True
     ) -> list[list]:
-        collected_indices = set()
+        if by_label:
+            collected_indices = set()
 
-        def __collect(label: Any, indices: set) -> set:
-            collected_indices.update(indices)
-            return indices
+            def __collect(label: Any, indices: set) -> set:
+                collected_indices.update(indices)
+                return indices
 
-        self.__check_sample_by_label(callback=__collect, labels=labels)
-        return self.__split_index_list(parts, list(collected_indices), is_iid=False)
+            self.__check_sample_by_label(callback=__collect, labels=labels)
+            return self.__split_index_list(parts, list(collected_indices), is_iid=False)
+        index_list = list(set(range(len(self.__dataset_util))) - self._excluded_indices)
+        return self.__split_index_list(parts, index_list, is_iid=False)
 
     def iid_split(self, parts: list[float], labels: list | None = None) -> list:
         return self.get_subsets(self.iid_split_indices(parts, labels=labels))

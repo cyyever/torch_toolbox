@@ -166,13 +166,27 @@ class IIDSplitWithSample(IIDSplit):
                 )[0]
 
 
+class RandomSplitByLabel(SplitBase):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        parts: list[float] = [1] * self._part_number
+        for phase in MachineLearningPhase:
+            self._dataset_indices[phase] = dict(
+                enumerate(
+                    self._samplers[phase].random_split_indices(parts, by_label=True)
+                )
+            )
+
+
 class RandomSplit(SplitBase):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         parts: list[float] = [1] * self._part_number
         for phase in MachineLearningPhase:
             self._dataset_indices[phase] = dict(
-                enumerate(self._samplers[phase].random_split_indices(parts))
+                enumerate(
+                    self._samplers[phase].random_split_indices(parts, by_label=False)
+                )
             )
 
 
