@@ -167,7 +167,7 @@ def __create_dataset(
     if training_dataset is None:
         return None
 
-    if validation_dataset is None:
+    if validation_dataset is None and not dataset_kwargs.get("no_validation", False):
         validation_dataset = test_dataset
         test_dataset = None
 
