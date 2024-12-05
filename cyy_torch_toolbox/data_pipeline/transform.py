@@ -29,11 +29,19 @@ class Transforms:
             self.__transforms[key] = []
         self.__transforms[key].append(transform)
 
+    def set_and_check(self, key: TransformType, transform: Callable) -> None:
+        assert key not in self.__transforms
+        self.append(key=key, transform=transform)
+
     def get(self, key: TransformType) -> list:
         return self.__transforms.get(key, [])
 
     def get_input_transforms_in_order(self, include_random: bool = True) -> list:
-        res = self.get(TransformType.InputText) + self.get(TransformType.Input)
+        res = (
+            self.get(TransformType.InputText)
+            + self.get(TransformType.InputTextLast)
+            + self.get(TransformType.Input)
+        )
         if include_random:
             res += self.get(TransformType.RandomInput)
         return res
@@ -42,7 +50,9 @@ class Transforms:
         return self.get(TransformType.Target)
 
     def transform_text(self, text):
-        for f in self.get(TransformType.InputText):
+        for f in self.get(TransformType.InputText) + self.get(
+            TransformType.InputTextLast
+        ):
             text = f(text)
         return text
 
@@ -139,6 +149,7 @@ class Transforms:
             key=TransformType.ExtractData, transform=default_data_extraction
         )
         new_transforms.clear(TransformType.InputText)
+        new_transforms.clear(TransformType.InputTextLast)
         new_transforms.clear(TransformType.Input)
         new_transforms.clear(TransformType.Target)
         return transformed_dataset, new_transforms
@@ -148,6 +159,7 @@ class Transforms:
         for k in (
             TransformType.ExtractData,
             TransformType.InputText,
+            TransformType.InputTextLast,
             TransformType.Input,
             TransformType.RandomInput,
             TransformType.InputBatch,
