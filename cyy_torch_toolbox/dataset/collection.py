@@ -124,6 +124,14 @@ class DatasetCollection:
                 continue
             self.__transforms[phase].append(key, transform)
 
+    def set_transform(
+        self, transform: Callable, key: TransformType, phases: None | Iterable = None
+    ) -> None:
+        for phase in MachineLearningPhase:
+            if phases is not None and phase not in phases:
+                continue
+            self.__transforms[phase].set_one(key, transform)
+
     _dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
     lock = threading.RLock()
 
