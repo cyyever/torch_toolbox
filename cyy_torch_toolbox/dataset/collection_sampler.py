@@ -182,11 +182,9 @@ class RandomSplit(SplitBase):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         parts: list[float] = [1] * self._part_number
-        for phase in MachineLearningPhase:
+        for phase, sample in self._samplers.items():
             self._dataset_indices[phase] = dict(
-                enumerate(
-                    self._samplers[phase].random_split_indices(parts, by_label=False)
-                )
+                enumerate(sample.random_split_indices(parts, by_label=False))
             )
 
 
