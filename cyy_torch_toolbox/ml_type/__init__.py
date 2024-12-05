@@ -51,6 +51,7 @@ class DatasetType(StrEnum):
 class TransformType(StrEnum):
     ExtractData = auto()
     InputText = auto()
+    InputTextLast = auto()
     Input = auto()
     RandomInput = auto()
     InputBatch = auto()
