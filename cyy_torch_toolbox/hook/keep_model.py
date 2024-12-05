@@ -3,7 +3,7 @@ import os
 from cyy_naive_lib.storage import DataStorage
 
 from ..ml_type import MachineLearningPhase
-from ..tensor import tensor_clone, tensor_to
+from ..tensor import tensor_to
 from . import Hook
 
 
