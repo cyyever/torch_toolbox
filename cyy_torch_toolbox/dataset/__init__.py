@@ -6,6 +6,7 @@ from cyy_naive_lib.log import log_info
 from ..data_pipeline.common import replace_target
 from ..ml_type import DatasetType, Factory, MachineLearningPhase, TransformType
 from .classification_collection import ClassificationDatasetCollection
+from .text_collection import TextDatasetCollection
 from .collection import DatasetCollection
 from .collection_sampler import (
     DatasetCollectionSplit,
@@ -48,6 +49,8 @@ def create_dataset_collection(
             name=name,
             dataset_kwargs=dataset_kwargs,
         )
+        if dc.dataset_type == DatasetType.Text:
+            dc = TextDatasetCollection(dc)
         if dc.is_classification_dataset():
             dc = ClassificationDatasetCollection(dc)
         else:
