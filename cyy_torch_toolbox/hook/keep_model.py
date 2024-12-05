@@ -2,7 +2,6 @@ import os
 
 from cyy_naive_lib.storage import DataStorage
 
-from ..device import get_cpu_device
 from ..ml_type import MachineLearningPhase
 from ..tensor import tensor_clone, tensor_to
 from . import Hook
@@ -54,12 +53,10 @@ class KeepModelHook(Hook):
         self.__best_model.set_data(
             {
                 "epoch": epoch,
-                "parameter": tensor_clone(
-                    tensor_to(
-                        data=trainer.model_util.get_parameters(detach=True),
-                        non_blocking=True,
-                        device=get_cpu_device(),
-                    ),
+                "parameter": tensor_to(
+                    data=trainer.model_util.get_parameters(detach=True),
+                    non_blocking=True,
+                    device="cpu",
                 ),
                 "performance_metric": {
                     MachineLearningPhase.Training: trainer.performance_metric.get_epoch_metrics(
