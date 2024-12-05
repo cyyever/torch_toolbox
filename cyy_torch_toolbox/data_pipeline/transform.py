@@ -29,7 +29,7 @@ class Transforms:
             self.__transforms[key] = []
         self.__transforms[key].append(transform)
 
-    def set_and_check(self, key: TransformType, transform: Callable) -> None:
+    def set_one(self, key: TransformType, transform: Callable) -> None:
         assert key not in self.__transforms
         self.append(key=key, transform=transform)
 
