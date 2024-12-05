@@ -64,6 +64,8 @@ class SplitBase(Base):
     def sample(self, part_id: int) -> DatasetCollection:
         dc = copy.copy(self._dc)
         for phase in MachineLearningPhase:
+            if not dc.has_dataset(phase):
+                continue
             indices = self._dataset_indices[phase][part_id]
             assert indices
             dc.set_subset(phase=phase, indices=indices)
