@@ -179,10 +179,16 @@ class Transform:
     fun: Callable
     name: str = ""
     cacheable: bool = False
+    element_name: str | None = None
 
     def __str__(self) -> str:
         fun_name = self.name if self.name else str(self.fun)
         return f"name:{fun_name} cacheable:{self.cacheable}"
+
+    def __call__(self, data: Any) -> Any:
+        if self.element_name is not None:
+            data[self.element_name] = self.fun(data[self.element_name])
+        return self.fun(data)
 
 
 class DataPipeline:
@@ -212,15 +218,15 @@ class DataPipeline:
         for idx, t in enumerate(self.__transforms):
             if not t.cacheable:
                 return data, type(self)(transforms=self.__transforms[idx:])
-            data = t.fun(data)
+            data = t(data)
         return data, type(self)()
 
     def apply(self, data: Any, idx: int, step: int | None = None) -> dict[str, Any]:
         cacheable: bool = True
-        for f in self.__slice(idx, step):
-            if not f.cacheable:
+        for t in self.__slice(idx, step):
+            if not t.cacheable:
                 cacheable = False
-            data = f.fun(data)
+            data = t(data)
         return {"result": data, "cacheable": cacheable}
 
     def __str__(self) -> str:
