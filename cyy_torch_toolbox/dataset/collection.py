@@ -175,9 +175,9 @@ class DatasetCollection:
         for idx, (phase, _) in enumerate(part_list):
             self.__datasets[phase] = datasets[idx]
             if phase not in self.__transforms:
-                self.__transforms[phase] = copy.copy(self.__transforms[from_phase])
+                self.__transforms[phase] = copy.deepcopy(self.__transforms[from_phase])
             if phase not in self.__pipeline:
-                self.__pipeline[phase] = copy.copy(self.__pipeline[from_phase])
+                self.__pipeline[phase] = copy.deepcopy(self.__pipeline[from_phase])
 
     def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
         assert self.name is not None
