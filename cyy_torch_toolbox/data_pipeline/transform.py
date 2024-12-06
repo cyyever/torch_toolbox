@@ -189,11 +189,12 @@ class DataPipeline:
         self.__transforms: list[Transform] = []
         if transforms:
             self.__transforms += transforms
-        self.append(
-            transform=Transform(
-                fun=default_data_extraction, name="data_extraction", cacheable=True
+        else:
+            self.append(
+                transform=Transform(
+                    fun=default_data_extraction, name="data_extraction", cacheable=True
+                )
             )
-        )
 
     def __len__(self) -> int:
         return len(self.__transforms)
