@@ -6,8 +6,15 @@ import torch
 import torch.nn.functional
 import torch.utils.data
 
-from ..data_pipeline import Transforms, get_dataset_size, select_item, subset_dp
+from ..data_pipeline import (
+    DataPipeline,
+    Transforms,
+    get_dataset_size,
+    select_item,
+    subset_dp,
+)
 from ..ml_type import Factory, IndicesType, OptionalIndicesType
+from ..tensor import tensor_to
 
 
 class DatasetUtil:
@@ -16,6 +23,7 @@ class DatasetUtil:
         dataset: torch.utils.data.Dataset,
         name: None | str = None,
         transforms: Transforms | None = None,
+        pipeline: DataPipeline | None = None,
         cache_dir: None | str = None,
     ) -> None:
         self.__dataset: torch.utils.data.Dataset = dataset
@@ -24,6 +32,9 @@ class DatasetUtil:
         self._name: str = name if name else ""
         self._transforms: Transforms = (
             transforms if transforms is not None else Transforms()
+        )
+        self._pipeline: DataPipeline = (
+            pipeline if pipeline is not None else DataPipeline()
         )
         self._cache_dir = cache_dir
 
@@ -60,6 +71,11 @@ class DatasetUtil:
 
     def cache_transforms(self, device: torch.device) -> tuple[dict, Transforms]:
         return self._transforms.cache_transforms(dataset=self.dataset, device=device)
+
+    def cache_pipeline(self, device: torch.device) -> tuple[Any, DataPipeline]:
+        data, remaining_pipeline = self._pipeline.cache(data=self.dataset)
+        data = tensor_to(data, device=device)
+        return data, remaining_pipeline
 
     def decompose(self) -> None | dict:
         return None

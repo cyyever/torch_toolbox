@@ -1,6 +1,6 @@
 import copy
-from dataclasses import dataclass, field
 from collections.abc import Callable, Iterable
+from dataclasses import dataclass
 from typing import Any, Self
 
 import torch
@@ -184,9 +184,11 @@ class Transform:
         return f"name:{self.name} cacheable:{self.cacheable}"
 
 
-class NewTransforms:
-    def __init__(self) -> None:
+class DataPipeline:
+    def __init__(self, transforms: list[Transform] | None = None) -> None:
         self.__transforms: list[Transform] = []
+        if transforms:
+            self.__transforms += transforms
         self.append(
             transform=Transform(
                 fun=default_data_extraction, name="data_extraction", cacheable=True
@@ -196,9 +198,6 @@ class NewTransforms:
     def __len__(self) -> int:
         return len(self.__transforms)
 
-    # def pop_front(self) -> Transform:
-    #     return self.__transforms.pop(0)
-
     def append(self, transform: Transform) -> None:
         self.__transforms.append(transform)
 
@@ -206,6 +205,13 @@ class NewTransforms:
         if step is not None:
             return self.__transforms[idx : idx + step]
         return self.__transforms[idx:]
+
+    def cache(self, data: Any) -> tuple[Any, Self]:
+        for idx, t in enumerate(self.__transforms):
+            if not t.cacheable:
+                return data, type(self)(transforms=self.__transforms[idx:])
+            data = t.fun(data)
+        return data, type(self)()
 
     def apply(self, data: Any, idx: int, step: int | None = None) -> dict[str, Any]:
         cacheable: bool = True
