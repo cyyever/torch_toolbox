@@ -11,7 +11,13 @@ from cyy_naive_lib.log import log_debug, log_warning
 from cyy_naive_lib.storage import get_cached_data
 from cyy_naive_lib.system_info import OSType, get_operating_system_type
 
-from ..data_pipeline import Transforms, append_transforms_to_dc, dataset_with_indices
+from ..data_pipeline import (
+    DataPipeline,
+    Transform,
+    Transforms,
+    append_transforms_to_dc,
+    dataset_with_indices,
+)
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 from .sampler import DatasetSampler
 from .util import DatasetUtil, global_dataset_util_factor
@@ -35,8 +41,10 @@ class DatasetCollection:
                 self.__datasets[k] = dataset_with_indices(v)
         self.__dataset_type: DatasetType | None = dataset_type
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
+        self.__pipeline: dict[MachineLearningPhase, DataPipeline] = {}
         for phase in MachineLearningPhase:
             self.__transforms[phase] = Transforms()
+            self.__pipeline[phase] = DataPipeline()
         self.__dataset_kwargs: dict = (
             copy.deepcopy(dataset_kwargs) if dataset_kwargs else {}
         )
@@ -113,8 +121,19 @@ class DatasetCollection:
             cache_dir=self._get_dataset_cache_dir(),
         )
 
+    def foreach_pipeline(self) -> Generator:
+        yield from self.__pipeline.items()
+
     def foreach_transform(self) -> Generator:
         yield from self.__transforms.items()
+
+    def append_named_transform(
+        self, transform: Transform, phases: None | Iterable = None
+    ) -> None:
+        for phase in MachineLearningPhase:
+            if phases is not None and phase not in phases:
+                continue
+            self.__transforms[phase].append(transform)
 
     def append_transform(
         self, transform: Callable, key: TransformType, phases: None | Iterable = None
