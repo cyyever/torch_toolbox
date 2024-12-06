@@ -1,4 +1,5 @@
 import copy
+from dataclasses import dataclass, field
 from collections.abc import Callable, Iterable
 from typing import Any, Self
 
@@ -171,3 +172,48 @@ class Transforms:
                 for t in transforms:
                     desc.append(str(t))
         return "\n".join(desc)
+
+
+@dataclass(kw_only=True)
+class Transform:
+    fun: Callable
+    name: str = ""
+    cacheable: bool = False
+
+    def __str__(self) -> str:
+        return f"name:{self.name} cacheable:{self.cacheable}"
+
+
+class NewTransforms:
+    def __init__(self) -> None:
+        self.__transforms: list[Transform] = []
+        self.append(
+            transform=Transform(
+                fun=default_data_extraction, name="data_extraction", cacheable=True
+            )
+        )
+
+    def __len__(self) -> int:
+        return len(self.__transforms)
+
+    # def pop_front(self) -> Transform:
+    #     return self.__transforms.pop(0)
+
+    def append(self, transform: Transform) -> None:
+        self.__transforms.append(transform)
+
+    def __slice(self, idx: int, step: int | None = None) -> list[Transform]:
+        if step is not None:
+            return self.__transforms[idx : idx + step]
+        return self.__transforms[idx:]
+
+    def apply(self, data: Any, idx: int, step: int | None = None) -> dict[str, Any]:
+        cacheable: bool = True
+        for f in self.__slice(idx, step):
+            if not f.cacheable:
+                cacheable = False
+            data = f.fun(data)
+        return {"result": data, "cacheable": cacheable}
+
+    def __str__(self) -> str:
+        return "\n".join(str(f) for f in self.__transforms)
