@@ -31,6 +31,7 @@ class DatasetCollection:
         add_index: bool = True,
     ) -> None:
         self.__name: str = "" if name is None else name
+        assert datasets
         self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset | list] = (
             datasets
         )
@@ -43,6 +44,7 @@ class DatasetCollection:
         for phase in self.__datasets:
             self.__transforms[phase] = Transforms()
             self.__pipeline[phase] = DataPipeline()
+        assert self.__transforms
         self.__dataset_kwargs: dict = (
             copy.deepcopy(dataset_kwargs) if dataset_kwargs else {}
         )
@@ -115,6 +117,7 @@ class DatasetCollection:
         return factor(
             dataset=self.__datasets[phase],
             transforms=self.__transforms[phase],
+            pipeline=self.__pipeline[phase],
             name=self.name,
         )
 
@@ -132,7 +135,7 @@ class DatasetCollection:
     def append_transform(
         self, transform: Callable, key: TransformType, phases: None | Iterable = None
     ) -> None:
-        for phase in MachineLearningPhase:
+        for phase in self.__transforms:
             if phases is not None and phase not in phases:
                 continue
             self.__transforms[phase].append(key, transform)
@@ -140,7 +143,7 @@ class DatasetCollection:
     def set_transform(
         self, transform: Callable, key: TransformType, phases: None | Iterable = None
     ) -> None:
-        for phase in MachineLearningPhase:
+        for phase in self.__transforms:
             if phases is not None and phase not in phases:
                 continue
             self.__transforms[phase].set_one(key, transform)
@@ -171,6 +174,10 @@ class DatasetCollection:
         datasets = sampler.iid_split([part for (_, part) in part_list])
         for idx, (phase, _) in enumerate(part_list):
             self.__datasets[phase] = datasets[idx]
+            if phase not in self.__transforms:
+                self.__transforms[phase] = copy.copy(self.__transforms[from_phase])
+            if phase not in self.__pipeline:
+                self.__pipeline[phase] = copy.copy(self.__pipeline[from_phase])
 
     def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
         assert self.name is not None

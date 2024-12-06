@@ -20,6 +20,7 @@ from .repository import DatasetFactory, get_dataset
 from .sampler import DatasetSampler
 from .text_collection import TextDatasetCollection
 from .util import DatasetUtil
+from .cache import DatasetCache
 
 global_dataset_collection_factory: Factory = Factory()
 
@@ -31,11 +32,11 @@ def create_dataset_collection(
 ) -> DatasetCollection:
     if dataset_kwargs is None:
         dataset_kwargs = {}
-    with DatasetCollection.lock:
+    with DatasetCache.lock:
         res = get_dataset(
             name=name,
             dataset_kwargs=dataset_kwargs,
-            cache_dir=DatasetCollection.get_dataset_dir(name),
+            cache_dir=DatasetCache().get_dataset_dir(name),
         )
         if res is None:
             raise NotImplementedError(name)
