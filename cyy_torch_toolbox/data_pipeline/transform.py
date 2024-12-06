@@ -180,6 +180,7 @@ class Transform:
     name: str = ""
     cacheable: bool = False
     component: str | None = None
+    for_batch: bool = False
 
     def __str__(self) -> str:
         fun_name = self.name if self.name else str(self.fun)
@@ -195,7 +196,7 @@ class Transform:
 class DataPipeline:
     def __init__(self, transforms: list[Transform] | None = None) -> None:
         self.__transforms: list[Transform] = []
-        if transforms:
+        if transforms is not None:
             self.__transforms = transforms
         else:
             self.append(
@@ -210,31 +211,42 @@ class DataPipeline:
     def append(self, transform: Transform) -> None:
         self.__transforms.append(transform)
 
-    def __slice(self, idx: int, step: int | None = None) -> list[Transform]:
-        if step is not None:
-            return self.__transforms[idx : idx + step]
-        return self.__transforms[idx:]
+    def is_valid(self) -> bool:
+        has_for_batch = False
+        for t in self.__transforms:
+            if has_for_batch and not t.for_batch:
+                return False
+            if t.for_batch:
+                has_for_batch = True
+        return True
 
     def cache(self, data: Any) -> tuple[Any, Self]:
+        return self.__apply_until(data, lambda t: t.cacheable and not t.for_batch)
+
+    def __apply_until(
+        self, data: Any, cond: Callable | None = None
+    ) -> tuple[Any, Self]:
+        assert self.is_valid()
         for idx, t in enumerate(self.__transforms):
-            if not t.cacheable:
+            if cond is not None and not cond(t):
                 return data, type(self)(transforms=self.__transforms[idx:])
             data = t(data)
-        return data, type(self)()
+        return data, type(self)(transforms=[])
 
-    def apply(self, data: Any, idx: int = 0, step: int | None = None) -> dict[str, Any]:
-        cacheable: bool = True
-        for t in self.__slice(idx, step):
-            if not t.cacheable:
-                cacheable = False
-            data = t(data)
-        return {"result": data, "cacheable": cacheable}
+    def apply(self, data: Any) -> tuple[Any, Self]:
+        return self.__apply_until(data, lambda t: not t.for_batch)
+
+    def apply_batch(self, data: Any) -> Any:
+        assert self.__transforms[0].for_batch
+        return self.__apply_until(data)
 
     def collate_batch(self, batch: Iterable) -> dict:
         batch_size = 0
         result = []
+        batch_transforms: None | Self = None
         for data in batch:
-            result.append(self.apply(data=data)["result"])
+            data, batch_transforms = self.apply(data)
+            result.append(data)
             batch_size += 1
         result = default_collate(result)
         assert isinstance(result, dict)
@@ -245,7 +257,10 @@ class DataPipeline:
             result["inputs"] = result.pop("input")
         if "target" in result:
             result["targets"] = result.pop("target")
-        return result
+        if batch_transforms is None or len(batch_transforms) == 0:
+            return result
+        print(batch_transforms)
+        return batch_transforms.apply_batch(result)
 
     def __str__(self) -> str:
         return "\n".join(str(f) for f in self.__transforms)
