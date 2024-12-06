@@ -69,6 +69,10 @@ class DatasetUtil:
     def transforms(self) -> Transforms:
         return self._transforms
 
+    @property
+    def pipeline(self) -> DataPipeline:
+        return self._pipeline
+
     def cache_transforms(self, device: torch.device) -> tuple[dict, Transforms]:
         return self._transforms.cache_transforms(dataset=self.dataset, device=device)
 

@@ -179,15 +179,16 @@ class Transform:
     fun: Callable
     name: str = ""
     cacheable: bool = False
-    element_name: str | None = None
+    component: str | None = None
 
     def __str__(self) -> str:
         fun_name = self.name if self.name else str(self.fun)
         return f"name:{fun_name} cacheable:{self.cacheable}"
 
     def __call__(self, data: Any) -> Any:
-        if self.element_name is not None:
-            data[self.element_name] = self.fun(data[self.element_name])
+        if self.component is not None:
+            data[self.component] = self.fun(data[self.component])
+            return data
         return self.fun(data)
 
 
@@ -195,7 +196,7 @@ class DataPipeline:
     def __init__(self, transforms: list[Transform] | None = None) -> None:
         self.__transforms: list[Transform] = []
         if transforms:
-            self.__transforms += transforms
+            self.__transforms = transforms
         else:
             self.append(
                 transform=Transform(
@@ -221,13 +222,30 @@ class DataPipeline:
             data = t(data)
         return data, type(self)()
 
-    def apply(self, data: Any, idx: int, step: int | None = None) -> dict[str, Any]:
+    def apply(self, data: Any, idx: int = 0, step: int | None = None) -> dict[str, Any]:
         cacheable: bool = True
         for t in self.__slice(idx, step):
             if not t.cacheable:
                 cacheable = False
             data = t(data)
         return {"result": data, "cacheable": cacheable}
+
+    def collate_batch(self, batch: Iterable) -> dict:
+        batch_size = 0
+        result = []
+        for data in batch:
+            result.append(self.apply(data=data)["result"])
+            batch_size += 1
+        result = default_collate(result)
+        assert isinstance(result, dict)
+        result["batch_size"] = batch_size
+        if "index" in result:
+            result["sample_indices"] = result.pop("index")
+        if "input" in result:
+            result["inputs"] = result.pop("input")
+        if "target" in result:
+            result["targets"] = result.pop("target")
+        return result
 
     def __str__(self) -> str:
         return "\n".join(str(f) for f in self.__transforms)

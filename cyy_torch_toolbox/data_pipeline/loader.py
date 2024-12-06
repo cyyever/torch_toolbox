@@ -25,17 +25,17 @@ def __prepare_dataloader_kwargs(
     data_in_cpu: bool = True
     if dc.dataset_type == DatasetType.Graph:
         cache_transforms = None
-    transforms = dc_util.transforms
+    pipeline = dc_util.pipeline
     transformed_dataset: dict | torch.utils.data.Dataset | None = dc_util.dataset
     match cache_transforms:
         case "cpu":
-            transformed_dataset, transforms = dc_util.cache_transforms(
+            transformed_dataset, pipeline = dc_util.cache_pipeline(
                 device=torch.device("cpu")
             )
         case "device":
             data_in_cpu = False
             assert device is not None
-            transformed_dataset, transforms = dc_util.cache_transforms(device=device)
+            transformed_dataset, pipeline = dc_util.cache_pipeline(device=device)
         case None:
             pass
         case _:
@@ -61,8 +61,9 @@ def __prepare_dataloader_kwargs(
     kwargs["batch_size"] = hyper_parameter.batch_size
     kwargs["shuffle"] = phase == MachineLearningPhase.Training
     kwargs["pin_memory"] = False
-    kwargs["collate_fn"] = transforms.collate_batch
+    kwargs["collate_fn"] = pipeline.collate_batch
     kwargs["dataset"] = transformed_dataset
+    print("use pipeline",pipeline)
     return kwargs
 
 
