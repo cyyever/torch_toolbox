@@ -181,7 +181,8 @@ class Transform:
     cacheable: bool = False
 
     def __str__(self) -> str:
-        return f"name:{self.name} cacheable:{self.cacheable}"
+        fun_name = self.name if self.name else str(self.fun)
+        return f"name:{fun_name} cacheable:{self.cacheable}"
 
 
 class DataPipeline:
