@@ -40,6 +40,9 @@ class Tokenizer:
     def strip_special_tokens(self, token_ids: TokenIDsType) -> TokenIDsType:
         raise NotImplementedError()
 
+    def split_batch_input(self, inputs: Any, batch_size: int) -> dict:
+        raise NotImplementedError()
+
 
 def convert_phrase_to_transformed_result(
     executor: Executor,
