@@ -31,7 +31,8 @@ class DatasetCache:
 
     @classmethod
     def get_dataset_cache_dir(cls, name: str) -> str:
-        cache_dir = os.path.join(cls.get_dataset_dir(name), ".cache")
-        if not os.path.isdir(cache_dir):
-            os.makedirs(cache_dir, exist_ok=True)
-        return cache_dir
+        with cls.lock:
+            cache_dir = os.path.join(cls.get_dataset_dir(name), ".cache")
+            if not os.path.isdir(cache_dir):
+                os.makedirs(cache_dir, exist_ok=True)
+            return cache_dir

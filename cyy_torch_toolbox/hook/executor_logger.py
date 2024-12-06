@@ -20,7 +20,11 @@ class ExecutorLogger(Hook):
         )
         log_info(
             "trainable parameter number is %s",
-            sum(a.numel() for a in executor.model_util.get_parameter_seq(detach=False) if a.requires_grad),
+            sum(
+                a.numel()
+                for a in executor.model_util.get_parameter_seq(detach=False)
+                if a.requires_grad
+            ),
         )
         if hasattr(executor, "hyper_parameter"):
             log_info("hyper_parameter is %s", executor.hyper_parameter)

@@ -1,15 +1,12 @@
 import copy
 import os
-import threading
 from collections.abc import Callable, Generator, Iterable
 from typing import Any, Self
 
 import torch
 import torch.utils.data
-from cyy_naive_lib.fs.ssd import is_ssd
-from cyy_naive_lib.log import log_debug, log_warning
+from cyy_naive_lib.log import log_debug
 from cyy_naive_lib.storage import get_cached_data
-from cyy_naive_lib.system_info import OSType, get_operating_system_type
 
 from ..data_pipeline import (
     DataPipeline,
@@ -18,6 +15,7 @@ from ..data_pipeline import (
     append_transforms_to_dc,
     dataset_with_indices,
 )
+from .cache import DatasetCache
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
 from .sampler import DatasetSampler
 from .util import DatasetUtil, global_dataset_util_factor
@@ -42,7 +40,7 @@ class DatasetCollection:
         self.__dataset_type: DatasetType | None = dataset_type
         self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         self.__pipeline: dict[MachineLearningPhase, DataPipeline] = {}
-        for phase in MachineLearningPhase:
+        for phase in self.__datasets:
             self.__transforms[phase] = Transforms()
             self.__pipeline[phase] = DataPipeline()
         self.__dataset_kwargs: dict = (
@@ -118,11 +116,7 @@ class DatasetCollection:
             dataset=self.__datasets[phase],
             transforms=self.__transforms[phase],
             name=self.name,
-            cache_dir=self._get_dataset_cache_dir(),
         )
-
-    def foreach_pipeline(self) -> Generator:
-        yield from self.__pipeline.items()
 
     def foreach_transform(self) -> Generator:
         yield from self.__transforms.items()
@@ -130,10 +124,10 @@ class DatasetCollection:
     def append_named_transform(
         self, transform: Transform, phases: None | Iterable = None
     ) -> None:
-        for phase in MachineLearningPhase:
+        for phase, pipeline in self.__pipeline.items():
             if phases is not None and phase not in phases:
                 continue
-            self.__transforms[phase].append(transform)
+            pipeline.append(transform)
 
     def append_transform(
         self, transform: Callable, key: TransformType, phases: None | Iterable = None
@@ -150,34 +144,6 @@ class DatasetCollection:
             if phases is not None and phase not in phases:
                 continue
             self.__transforms[phase].set_one(key, transform)
-
-    _dataset_root_dir: str = os.path.join(os.path.expanduser("~"), "pytorch_dataset")
-    lock = threading.RLock()
-
-    @classmethod
-    def __get_dataset_root_dir(cls) -> str:
-        with cls.lock:
-            return os.getenv("PYTORCH_DATASET_ROOT_DIR", cls._dataset_root_dir)
-
-    @classmethod
-    def set_dataset_root_dir(cls, root_dir: str) -> None:
-        with cls.lock:
-            cls._dataset_root_dir = root_dir
-
-    @classmethod
-    def get_dataset_dir(cls, name: str) -> str:
-        dataset_dir = os.path.join(cls.__get_dataset_root_dir(), name)
-        if not os.path.isdir(dataset_dir):
-            os.makedirs(dataset_dir, exist_ok=True)
-        if get_operating_system_type() != OSType.Windows and not is_ssd(dataset_dir):
-            log_warning("dataset %s is not on a SSD disk: %s", name, dataset_dir)
-        return dataset_dir
-
-    def _get_dataset_cache_dir(self) -> str:
-        cache_dir = os.path.join(self.get_dataset_dir(self.name), ".cache")
-        if not os.path.isdir(cache_dir):
-            os.makedirs(cache_dir, exist_ok=True)
-        return cache_dir
 
     def is_classification_dataset(self) -> bool:
         if self.dataset_type == DatasetType.Text:
@@ -207,7 +173,6 @@ class DatasetCollection:
             self.__datasets[phase] = datasets[idx]
 
     def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
-        with DatasetCollection.lock:
-            assert self.name is not None
-            cache_dir = self._get_dataset_cache_dir()
-            return get_cached_data(os.path.join(cache_dir, file), computation_fun)
+        assert self.name is not None
+        cache_dir = DatasetCache().get_dataset_cache_dir(self.name)
+        return get_cached_data(os.path.join(cache_dir, file), computation_fun)
