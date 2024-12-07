@@ -1,6 +1,4 @@
-from collections.abc import Generator
-from collections.abc import Iterable
-
+from collections.abc import Generator, Iterable
 from typing import Any
 
 import torch

@@ -415,7 +415,7 @@ class ExecutorConfig(ConfigBase):
         model_evaluator: ModelEvaluator,
         **kwargs,
     ) -> Any:
-        dataset_collection.add_transforms(
+        dataset_collection.add_data_pipeline(
             model_evaluator=model_evaluator,
         )
         if (

@@ -44,16 +44,6 @@ class Tokenizer:
         raise NotImplementedError()
 
 
-def convert_phrase_to_transformed_result(
-    executor: Executor,
-    phrase: str,
-) -> TokenIDsType:
-    dc = executor.dataset_collection.get_dataset_util(phase=executor.phase)
-    return dc.transforms.transform_input(
-        dc.transforms.transform_text(phrase), apply_random=False
-    )
-
-
 def convert_phrase_to_token_ids(
     executor: Executor,
     phrase: str,
