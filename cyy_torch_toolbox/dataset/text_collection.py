@@ -30,12 +30,11 @@ class TextDatasetCollection(Decorator):
             self.__text_pipeline = DataPipeline()
         self.__text_pipeline.append(transform)
 
-    def get_text_pipeline(self) -> DataPipeline:
+    def get_text_pipeline(self) -> DataPipeline | None:
         if self.prompt is not None:
             self.append_text_transform(
                 Transform(fun=functools.partial(str_concat, self.prompt))
             )
-        assert self.__text_pipeline is not None
         return self.__text_pipeline
 
     def add_data_pipeline(self, model_evaluator) -> None:
