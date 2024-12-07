@@ -415,9 +415,6 @@ class ExecutorConfig(ConfigBase):
         model_evaluator: ModelEvaluator,
         **kwargs,
     ) -> Any:
-        dataset_collection.add_data_pipeline(
-            model_evaluator=model_evaluator,
-        )
         if (
             self.cache_transforms is not None
             and "cache_transforms" not in self.dataloader_kwargs
