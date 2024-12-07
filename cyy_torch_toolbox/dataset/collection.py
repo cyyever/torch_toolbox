@@ -45,6 +45,7 @@ class DatasetCollection:
         self.__dataset_kwargs: dict = (
             copy.deepcopy(dataset_kwargs) if dataset_kwargs else {}
         )
+        self.has_enhanced_data_pipeline: bool = False
 
     def __copy__(self) -> Self:
         new_obj: Self = copy.deepcopy(self)
@@ -76,7 +77,9 @@ class DatasetCollection:
         return phase in self.__datasets
 
     def add_data_pipeline(self, model_evaluator: Any) -> None:
-        append_transforms_to_dc(dc=self, model_evaluator=model_evaluator)
+        if not self.has_enhanced_data_pipeline:
+            append_transforms_to_dc(dc=self, model_evaluator=model_evaluator)
+            self.has_enhanced_data_pipeline = True
 
     def transform_dataset(
         self, phase: MachineLearningPhase, transformer: Callable
