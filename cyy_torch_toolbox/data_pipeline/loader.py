@@ -2,7 +2,7 @@ import os
 
 import torch
 import torch.utils.data
-from cyy_naive_lib.log import log_debug, log_error
+from cyy_naive_lib.log import log_debug
 
 from ..concurrency import TorchProcessContext
 from ..dataset.collection import DatasetCollection
@@ -28,7 +28,7 @@ def __prepare_dataloader_kwargs(
     pipeline = dc_util.pipeline
     transformed_dataset: torch.utils.data.Dataset | None = dc_util.dataset
     if phase == MachineLearningPhase.Training:
-        log_error("use pipeline:\n %s", pipeline)
+        log_debug("use pipeline:\n %s", pipeline)
     match cache_transforms:
         case "cpu":
             transformed_dataset, pipeline = dc_util.cache_pipeline(
