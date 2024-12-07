@@ -77,7 +77,7 @@ class DatasetUtil:
         return self._transforms.cache_transforms(dataset=self.dataset, device=device)
 
     def cache_pipeline(self, device: torch.device) -> tuple[Any, DataPipeline]:
-        data, remaining_pipeline = self._pipeline.cache(data=self.dataset)
+        data, remaining_pipeline = self._pipeline.cache_dataset(dataset=self.dataset)
         data = tensor_to(data, device=device)
         return data, remaining_pipeline
 
