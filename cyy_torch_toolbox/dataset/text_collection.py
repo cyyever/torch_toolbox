@@ -2,13 +2,10 @@ import functools
 
 from cyy_naive_lib.decorator import Decorator
 
-from ..data_pipeline import Transform
-
 from ..data_pipeline import (
     DataPipeline,
     Transform,
     append_transforms_to_dc,
-    dataset_with_indices,
 )
 
 
@@ -36,9 +33,10 @@ class TextDatasetCollection(Decorator):
     def get_text_pipeline(self) -> DataPipeline:
         if self.prompt is not None:
             self.append_text_transform(
-                Transform(
-                    fun=functools.partial(str_concat, self.prompt)
-                )
+                Transform(fun=functools.partial(str_concat, self.prompt))
             )
         assert self.__text_pipeline is not None
         return self.__text_pipeline
+
+    def add_data_pipeline(self, model_evaluator) -> None:
+        append_transforms_to_dc(dc=self, model_evaluator=model_evaluator)
