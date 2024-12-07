@@ -65,7 +65,6 @@ def __prepare_dataloader_kwargs(
     kwargs["pin_memory"] = False
     kwargs["collate_fn"] = pipeline.collate_batch
     kwargs["dataset"] = transformed_dataset
-    print("use pipeline", pipeline)
     return kwargs
 
 

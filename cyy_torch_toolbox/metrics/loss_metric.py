@@ -1,3 +1,5 @@
+import torch
+
 from .metric import Metric
 
 
@@ -7,10 +9,11 @@ class LossMetric(Metric):
     def _before_epoch(self, **kwargs) -> None:
         self.__batch_losses = []
 
-    def _after_batch(self, epoch, executor, result, **kwargs) -> None:
-        self.__batch_losses.append(
-            (result["loss"].detach().clone(), result["loss_batch_size"])
-        )
+    def _after_batch(self, result, **kwargs) -> None:
+        loss_batch_size = result["loss_batch_size"]
+        if isinstance(loss_batch_size, torch.Tensor):
+            loss_batch_size = loss_batch_size.item()
+        self.__batch_losses.append((result["loss"].detach().clone(), loss_batch_size))
 
     def _after_epoch(self, epoch: int, **kwargs) -> None:
         if not self.__batch_losses:
