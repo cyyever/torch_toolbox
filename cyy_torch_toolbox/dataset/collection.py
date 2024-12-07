@@ -11,11 +11,10 @@ from cyy_naive_lib.storage import get_cached_data
 from ..data_pipeline import (
     DataPipeline,
     Transform,
-    Transforms,
     append_transforms_to_dc,
     dataset_with_indices,
 )
-from ..ml_type import DatasetType, MachineLearningPhase, TransformType
+from ..ml_type import DatasetType, MachineLearningPhase
 from .cache import DatasetCache
 from .sampler import DatasetSampler
 from .util import DatasetUtil, global_dataset_util_factor
@@ -39,12 +38,10 @@ class DatasetCollection:
             for k, v in self.__datasets.items():
                 self.__datasets[k] = dataset_with_indices(v)
         self.__dataset_type: DatasetType | None = dataset_type
-        self.__transforms: dict[MachineLearningPhase, Transforms] = {}
         self.__pipeline: dict[MachineLearningPhase, DataPipeline] = {}
         for phase in self.__datasets:
-            self.__transforms[phase] = Transforms()
             self.__pipeline[phase] = DataPipeline()
-        assert self.__transforms
+        assert self.__pipeline
         self.__dataset_kwargs: dict = (
             copy.deepcopy(dataset_kwargs) if dataset_kwargs else {}
         )
@@ -78,7 +75,7 @@ class DatasetCollection:
     def has_dataset(self, phase: MachineLearningPhase) -> bool:
         return phase in self.__datasets
 
-    def add_transforms(self, model_evaluator: Any) -> None:
+    def add_data_pipeline(self, model_evaluator: Any) -> None:
         append_transforms_to_dc(dc=self, model_evaluator=model_evaluator)
 
     def transform_dataset(
@@ -119,13 +116,9 @@ class DatasetCollection:
         )
         return factor(
             dataset=self.__datasets[phase],
-            transforms=self.__transforms[phase],
             pipeline=self.__pipeline[phase],
             name=self.name,
         )
-
-    def foreach_transform(self) -> Generator:
-        yield from self.__transforms.items()
 
     def append_named_transform(
         self, transform: Transform, phases: None | Iterable = None
@@ -134,22 +127,6 @@ class DatasetCollection:
             if phases is not None and phase not in phases:
                 continue
             pipeline.append(transform)
-
-    def append_transform(
-        self, transform: Callable, key: TransformType, phases: None | Iterable = None
-    ) -> None:
-        for phase in self.__transforms:
-            if phases is not None and phase not in phases:
-                continue
-            self.__transforms[phase].append(key, transform)
-
-    def set_transform(
-        self, transform: Callable, key: TransformType, phases: None | Iterable = None
-    ) -> None:
-        for phase in self.__transforms:
-            if phases is not None and phase not in phases:
-                continue
-            self.__transforms[phase].set_one(key, transform)
 
     def is_classification_dataset(self) -> bool:
         if self.dataset_type == DatasetType.Text:
@@ -177,8 +154,6 @@ class DatasetCollection:
         datasets = sampler.iid_split([part for (_, part) in part_list])
         for idx, (phase, _) in enumerate(part_list):
             self.__datasets[phase] = datasets[idx]
-            if phase not in self.__transforms:
-                self.__transforms[phase] = copy.deepcopy(self.__transforms[from_phase])
             if phase not in self.__pipeline:
                 self.__pipeline[phase] = copy.deepcopy(self.__pipeline[from_phase])
 
