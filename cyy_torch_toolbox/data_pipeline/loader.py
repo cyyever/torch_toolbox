@@ -74,6 +74,7 @@ def get_dataloader(
     model_evaluator: ModelEvaluator,
     **kwargs,
 ) -> torch.utils.data.DataLoader:
+    dc.add_data_pipeline(model_evaluator=model_evaluator)
     dataloader_kwargs = __prepare_dataloader_kwargs(
         dc=dc,
         phase=phase,
