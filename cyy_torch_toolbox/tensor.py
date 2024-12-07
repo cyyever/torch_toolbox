@@ -53,6 +53,8 @@ class __RecursiveCheckPoint:
 
 
 def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
+    if "numpy" in str(type(data)):
+        return data
     match data:
         case __RecursiveCheckPoint():
             if kwargs.pop("__check_recursive_point", False):
