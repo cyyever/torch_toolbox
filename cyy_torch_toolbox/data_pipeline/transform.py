@@ -41,6 +41,10 @@ class DataPipeline:
                 )
             )
 
+    @property
+    def transforms(self) -> list[Transform]:
+        return self.__transforms
+
     def __len__(self) -> int:
         return len(self.__transforms)
 
