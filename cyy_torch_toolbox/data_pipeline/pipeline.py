@@ -1,12 +1,11 @@
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass
 from typing import Any, Self
 
 import torch
 import torch.utils.data
 from torch.utils.data import default_collate
 
-from .common import default_data_extraction
+from .common import DataExtraction
 from .dataset import select_item
 from .transform import Transform
 
@@ -17,11 +16,7 @@ class DataPipeline:
         if transforms is not None:
             self.__transforms = transforms
         else:
-            self.append(
-                transform=Transform(
-                    fun=default_data_extraction, name="data_extraction", cacheable=True
-                )
-            )
+            self.append(DataExtraction())
 
     @property
     def transforms(self) -> list[Transform]:

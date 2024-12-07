@@ -24,3 +24,7 @@ class Transform:
 
 class DatasetTransform(Transform):
     pass
+
+
+class BatchTransform(Transform):
+    pass
