@@ -27,7 +27,6 @@ class TextDatasetCollection(Decorator):
     def set_prompt(self, prompt: str) -> None:
         assert self.__prompt is None
         self.__prompt = prompt
-        self.append_named_transform()
 
     def append_text_transform(self, transform: Transform) -> None:
         if self.__text_pipeline is None:
@@ -38,7 +37,7 @@ class TextDatasetCollection(Decorator):
         if self.prompt is not None:
             self.append_text_transform(
                 Transform(
-                    fun=functools.partial(str_concat, self.prompt),
+                    fun=functools.partial(str_concat, self.prompt)
                 )
             )
         assert self.__text_pipeline is not None
