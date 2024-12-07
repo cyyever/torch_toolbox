@@ -237,6 +237,8 @@ class DataPipeline:
         return self.__apply_until(data, lambda t: not t.for_batch)
 
     def apply_batch(self, data: Any) -> Any:
+        if not self.__transforms:
+            return data
         assert self.__transforms[0].for_batch
         return self.__apply_until(data)
 
