@@ -102,16 +102,24 @@ class DataPipeline:
 
     def collate_batch(self, batch: Iterable) -> dict:
         batch_size = 0
-        result: dict | None = None
+        result: dict | None | list = None
         batch_transforms: None | Self = None
         for data in batch:
             data, batch_transforms = self.apply(data)
-            if result is None:
-                result = {}
-            for k, v in data.items():
-                if k not in result:
-                    result[k] = []
-                result[k].append(v)
+            match data:
+                case dict():
+                    if result is None:
+                        result = {}
+                    assert isinstance(result, dict)
+                    for k, v in data.items():
+                        if k not in result:
+                            result[k] = []
+                        result[k].append(v)
+                case list():
+                    if result is None:
+                        result = []
+                    assert isinstance(result, list)
+                    result.append(data)
             batch_size += 1
         assert batch_transforms is not None
         result = batch_transforms.apply_batch(result)
