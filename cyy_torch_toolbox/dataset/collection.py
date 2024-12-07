@@ -68,6 +68,10 @@ class DatasetCollection:
         assert self.__dataset_type is not None
         return self.__dataset_type
 
+    def clear_pipelines(self) -> None:
+        for p in self.__pipeline.values():
+            p.clear()
+
     def foreach_dataset(self) -> Generator:
         yield from self.__datasets.values()
 
