@@ -11,7 +11,7 @@ def default_data_extraction(data: Any) -> Any:
     match data:
         case {"data": data, "index": index}:
             pass
-        case [index, data]:
+        case [int(index), data]:
             pass
         case {"index": index, **data}:
             pass
