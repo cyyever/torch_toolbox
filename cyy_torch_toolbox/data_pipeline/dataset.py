@@ -7,6 +7,7 @@ import torch.utils.data.datapipes
 import torch.utils.data.dataset
 
 from ..ml_type import OptionalIndicesType
+from .transform import DatasetTransform
 
 
 def get_dataset_size(dataset: Any) -> int:
@@ -21,40 +22,6 @@ def get_dataset_size(dataset: Any) -> int:
         case torch.utils.data.IterableDataset():
             return sum(1 for _ in dataset)
     raise NotImplementedError(dataset)
-
-
-class KeyPipe(torch.utils.data.MapDataPipe):
-    def __init__(self, dp: Any) -> None:
-        super().__init__()
-        self.__dp = dp
-
-    def __getitem__(self, index) -> tuple:
-        item = self.__dp[index]
-        return (index, item)
-
-    def __len__(self) -> int:
-        return len(self.__dp)
-
-
-def __add_index_to_map_item(item) -> dict:
-    key, value = item[0], item[1]
-    return {"index": key, "data": value}
-
-
-def dataset_with_indices(
-    dataset: torch.utils.data.Dataset | list,
-) -> torch.utils.data.Dataset | list:
-    old_dataset = dataset
-    if isinstance(dataset, Iterable):
-        dataset = torch.utils.data.datapipes.iter.IterableWrapper(dataset)
-        dataset.original_dataset = old_dataset
-        return dataset
-    dataset = torch.utils.data.datapipes.map.Mapper(
-        KeyPipe(dataset), __add_index_to_map_item
-    )
-    assert not hasattr(dataset, "original_dataset")
-    dataset.original_dataset = old_dataset
-    return dataset
 
 
 def select_item(dataset: Any, indices: OptionalIndicesType = None) -> Generator:
@@ -81,3 +48,35 @@ def subset_dp(
     return torch.utils.data.datapipes.map.SequenceWrapper(
         list(dict(select_item(dataset, indices)).values()), deepcopy=False
     )
+
+
+class KeyPipe(torch.utils.data.MapDataPipe):
+    def __init__(self, dp: Any) -> None:
+        super().__init__()
+        self.__dp = dp
+
+    def __getitem__(self, index) -> tuple:
+        item = self.__dp[index]
+        return (index, item)
+
+    def __len__(self) -> int:
+        return len(self.__dp)
+
+
+class DatasetWithIndex(DatasetTransform):
+    def __init__(self) -> None:
+        super().__init__(fun=DatasetWithIndex.apply, name="add index to dataset")
+
+    @classmethod
+    def apply(cls, data: Any) -> Any:
+        dataset = data
+        if isinstance(dataset, Iterable):
+            return dataset
+        return torch.utils.data.datapipes.map.Mapper(
+            KeyPipe(dataset), DatasetWithIndex._add_index_to_map_item
+        )
+
+    @classmethod
+    def _add_index_to_map_item(cls, item) -> dict:
+        key, value = item[0], item[1]
+        return {"index": key, "data": value}

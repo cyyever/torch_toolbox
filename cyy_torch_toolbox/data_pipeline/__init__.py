@@ -3,6 +3,7 @@ from typing import Any
 from ..ml_type import Factory
 from .dataset import *
 from .transform import *
+from .pipeline import *
 
 global_data_transform_factory = Factory()
 

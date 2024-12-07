@@ -12,7 +12,7 @@ from ..data_pipeline import (
     DataPipeline,
     Transform,
     append_transforms_to_dc,
-    dataset_with_indices,
+    DatasetWithIndex,
 )
 from ..ml_type import DatasetType, MachineLearningPhase
 from .cache import DatasetCache
@@ -31,12 +31,12 @@ class DatasetCollection:
     ) -> None:
         self.__name: str = "" if name is None else name
         assert datasets
+        if add_index:
+            for k, v in datasets.items():
+                datasets[k] = DatasetWithIndex()(v)
         self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset | list] = (
             datasets
         )
-        if add_index:
-            for k, v in self.__datasets.items():
-                self.__datasets[k] = dataset_with_indices(v)
         self.__dataset_type: DatasetType | None = dataset_type
         self.__pipeline: dict[MachineLearningPhase, DataPipeline] = {}
         for phase in self.__datasets:
@@ -122,6 +122,14 @@ class DatasetCollection:
             pipeline=self.__pipeline[phase],
             name=self.name,
         )
+
+    def prepend_named_transform(
+        self, transform: Transform, phases: None | Iterable = None
+    ) -> None:
+        for phase, pipeline in self.__pipeline.items():
+            if phases is not None and phase not in phases:
+                continue
+            pipeline.prepend(transform)
 
     def append_named_transform(
         self, transform: Transform, phases: None | Iterable = None
