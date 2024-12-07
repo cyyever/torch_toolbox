@@ -8,7 +8,6 @@ import torch.utils.data
 
 from ..data_pipeline import (
     DataPipeline,
-    Transforms,
     get_dataset_size,
     select_item,
     subset_dp,
@@ -22,7 +21,6 @@ class DatasetUtil:
         self,
         dataset: torch.utils.data.Dataset,
         name: None | str = None,
-        transforms: Transforms | None = None,
         pipeline: DataPipeline | None = None,
         cache_dir: None | str = None,
     ) -> None:
@@ -30,9 +28,6 @@ class DatasetUtil:
         self.__len: None | int = None
         self.__sample_number: None | int = None
         self._name: str = name if name else ""
-        self._transforms: Transforms = (
-            transforms if transforms is not None else Transforms()
-        )
         self._pipeline: DataPipeline = (
             pipeline if pipeline is not None else DataPipeline()
         )
@@ -66,15 +61,8 @@ class DatasetUtil:
         return self.__sample_number
 
     @property
-    def transforms(self) -> Transforms:
-        return self._transforms
-
-    @property
     def pipeline(self) -> DataPipeline:
         return self._pipeline
-
-    def cache_transforms(self, device: torch.device) -> tuple[dict, Transforms]:
-        return self._transforms.cache_transforms(dataset=self.dataset, device=device)
 
     def cache_pipeline(self, device: torch.device) -> tuple[Any, DataPipeline]:
         data, remaining_pipeline = self._pipeline.cache_dataset(dataset=self.dataset)
@@ -93,8 +81,8 @@ class DatasetUtil:
     def get_samples(self, indices: OptionalIndicesType = None) -> Generator:
         raw_samples = self.get_raw_samples(indices=indices)
         for idx, sample in raw_samples:
-            if self._transforms is not None:
-                sample = self._transforms.extract_data(sample)
+            if self._pipeline is not None:
+                sample = self._pipeline.apply_first(sample)
             yield idx, sample
 
     def get_sample(self, index: int) -> Any:
@@ -158,20 +146,15 @@ class DatasetUtil:
 
         raise RuntimeError(f"can't convert labels {new_target} for target {old_target}")
 
-    def _get_sample_input(self, index: int, apply_transform: bool = True) -> Any:
+    def _get_sample_input(self, index: int) -> Any:
         sample = self.get_sample(index)
-        sample_input = sample["input"]
-        if apply_transform:
-            assert self._transforms is not None
-            sample_input = self._transforms.transform_input(
-                sample_input, apply_random=False
-            )
-        return sample_input
+        return sample["input"]
 
     def __get_batch_labels_impl(
         self, indices: OptionalIndicesType = None
     ) -> Generator[tuple[int, Any], None, None]:
         for idx, sample in self.get_samples(indices):
+            target: Any | None = None
             if "target" in sample:
                 target = sample["target"]
             else:
@@ -181,8 +164,7 @@ class DatasetUtil:
                     target = sample["ner_tags"]
                 else:
                     raise NotImplementedError(sample.keys())
-            if self._transforms is not None:
-                target = self._transforms.transform_target(target)
+            assert target is not None
             yield idx, target
 
     def get_batch_labels(
