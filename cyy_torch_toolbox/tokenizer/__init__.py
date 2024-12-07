@@ -61,9 +61,7 @@ def convert_phrase_to_token_ids(
 ) -> TokenIDsType:
     tokenizer = getattr(executor.model_evaluator, "tokenizer", None)
     assert isinstance(tokenizer, Tokenizer)
-    transformed_token_results = convert_phrase_to_transformed_result(
-        executor=executor, phrase=phrase
-    )
+    transformed_token_results = tokenizer(phrase)
     token_ids = tokenizer.get_token_ids_from_transformed_result(
         transformed_token_results
     )
