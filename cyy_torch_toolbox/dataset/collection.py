@@ -15,8 +15,8 @@ from ..data_pipeline import (
     append_transforms_to_dc,
     dataset_with_indices,
 )
-from .cache import DatasetCache
 from ..ml_type import DatasetType, MachineLearningPhase, TransformType
+from .cache import DatasetCache
 from .sampler import DatasetSampler
 from .util import DatasetUtil, global_dataset_util_factor
 
@@ -48,7 +48,6 @@ class DatasetCollection:
         self.__dataset_kwargs: dict = (
             copy.deepcopy(dataset_kwargs) if dataset_kwargs else {}
         )
-        append_transforms_to_dc(self)
 
     def __copy__(self) -> Self:
         new_obj: Self = copy.deepcopy(self)
