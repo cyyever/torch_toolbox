@@ -2,7 +2,7 @@ import os
 
 import torch
 import torch.utils.data
-from cyy_naive_lib.log import log_debug
+from cyy_naive_lib.log import log_debug, log_error
 
 from ..concurrency import TorchProcessContext
 from ..dataset.collection import DatasetCollection
@@ -27,6 +27,7 @@ def __prepare_dataloader_kwargs(
         cache_transforms = None
     pipeline = dc_util.pipeline
     transformed_dataset: dict | torch.utils.data.Dataset | None = dc_util.dataset
+    log_error("pipeline %s", pipeline)
     match cache_transforms:
         case "cpu":
             transformed_dataset, pipeline = dc_util.cache_pipeline(
