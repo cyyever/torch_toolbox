@@ -72,6 +72,10 @@ class DataPipeline:
             data = t(data)
         return data, type(self)(transforms=[])
 
+    def apply_first(self, data: Any) -> Any:
+        assert self.__transforms
+        return self.__transforms[0](data)
+
     def apply(self, data: Any) -> tuple[Any, Self]:
         return self.__apply_until(data, lambda t: not t.for_batch)
 
@@ -109,7 +113,7 @@ class DataPipeline:
         result = batch_transforms.apply_batch(result)
         assert result is not None
         for k, v in result.items():
-            if isinstance(v,list):
+            if isinstance(v, list):
                 result[k] = default_collate(v)
 
         assert isinstance(result, dict)
