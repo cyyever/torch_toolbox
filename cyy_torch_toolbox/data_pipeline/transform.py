@@ -93,7 +93,7 @@ class DataPipeline:
         for _, item in select_item(dataset):
             item, remaining_pipeline = self.apply(item)
             transformed_dataset.append(item)
-        assert transformed_dataset is not None
+        assert remaining_pipeline is not None
         return transformed_dataset, remaining_pipeline
 
     def collate_batch(self, batch: Iterable) -> dict:
