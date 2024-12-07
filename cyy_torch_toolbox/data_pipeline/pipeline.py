@@ -7,7 +7,7 @@ from torch.utils.data import default_collate
 
 from .common import DataExtraction
 from .dataset import select_item
-from .transform import Transform
+from .transform import Transform, BatchTransform
 
 
 class DataPipeline:
@@ -37,14 +37,20 @@ class DataPipeline:
     def is_valid(self) -> bool:
         has_for_batch = False
         for t in self.__transforms:
-            if has_for_batch and not t.for_batch:
+            if has_for_batch and (
+                not t.for_batch and not isinstance(t, BatchTransform)
+            ):
                 return False
-            if t.for_batch:
+            if t.for_batch or isinstance(t, BatchTransform):
                 has_for_batch = True
         return True
 
     def cache(self, data: Any) -> tuple[Any, Self]:
-        return self.__apply_until(data, lambda t: t.cacheable and not t.for_batch)
+        return self.__apply_until(
+            data,
+            lambda t: t.cacheable
+            and not (t.for_batch or isinstance(t, BatchTransform)),
+        )
 
     def __apply_until(
         self, data: Any, cond: Callable | None = None
@@ -61,12 +67,16 @@ class DataPipeline:
         return self.__transforms[0](data)
 
     def apply(self, data: Any) -> tuple[Any, Self]:
-        return self.__apply_until(data, lambda t: not t.for_batch)
+        return self.__apply_until(
+            data, lambda t: not t.for_batch and not isinstance(t, BatchTransform)
+        )
 
     def apply_batch(self, data: Any) -> Any:
         if not self.__transforms:
             return data
-        assert self.__transforms[0].for_batch
+        assert self.__transforms[0].for_batch or isinstance(
+            self.__transforms[0], BatchTransform
+        )
         res, remaining_pipeline = self.__apply_until(data)
         assert len(remaining_pipeline) == 0
         return res
