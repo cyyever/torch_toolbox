@@ -5,7 +5,7 @@ from typing import Any
 from cyy_naive_lib.log import log_info
 
 
-def default_data_extraction(data: Any) -> dict:
+def default_data_extraction(data: Any) -> Any:
     index: None | int = None
     match data:
         case {"data": data, "index": index}:
@@ -21,8 +21,7 @@ def default_data_extraction(data: Any) -> dict:
             data = {"target": label, "input": text}
         case {"label": label, **other_data}:
             data = {"target": label, "input": other_data}
-    assert isinstance(data, dict)
-    if index is not None:
+    if index is not None and isinstance(data, dict):
         data["index"] = index
     return data
 
