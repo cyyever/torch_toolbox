@@ -240,7 +240,9 @@ class DataPipeline:
         if not self.__transforms:
             return data
         assert self.__transforms[0].for_batch
-        return self.__apply_until(data)
+        res, remaining_pipeline = self.__apply_until(data)
+        assert len(remaining_pipeline) == 0
+        return res
 
     def cache_dataset(self, dataset: torch.utils.data.Dataset) -> tuple[list, Self]:
         transformed_dataset: list = []
@@ -253,15 +255,24 @@ class DataPipeline:
 
     def collate_batch(self, batch: Iterable) -> dict:
         batch_size = 0
-        result = []
+        result: dict | None = None
         batch_transforms: None | Self = None
         for data in batch:
             data, batch_transforms = self.apply(data)
-            result.append(data)
+            if result is None:
+                result = {}
+            for k, v in data.items():
+                if k not in result:
+                    result[k] = []
+                result[k].append(v)
             batch_size += 1
         assert batch_transforms is not None
         result = batch_transforms.apply_batch(result)
-        result = default_collate(result)
+        assert result is not None
+        for k, v in result.items():
+            if not isinstance(v, torch.Tensor):
+                result[k] = default_collate(v)
+
         assert isinstance(result, dict)
         result["batch_size"] = batch_size
         if "index" in result:
