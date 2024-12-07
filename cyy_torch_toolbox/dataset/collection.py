@@ -10,9 +10,9 @@ from cyy_naive_lib.storage import get_cached_data
 
 from ..data_pipeline import (
     DataPipeline,
+    DatasetWithIndex,
     Transform,
     append_transforms_to_dc,
-    DatasetWithIndex,
 )
 from ..ml_type import DatasetType, MachineLearningPhase
 from .cache import DatasetCache

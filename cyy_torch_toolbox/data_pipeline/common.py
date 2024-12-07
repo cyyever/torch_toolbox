@@ -3,6 +3,7 @@ from collections.abc import Callable
 from typing import Any
 
 from cyy_naive_lib.log import log_info
+from .transform import Transform
 
 
 def default_data_extraction(data: Any) -> Any:
@@ -24,6 +25,15 @@ def default_data_extraction(data: Any) -> Any:
     if index is not None and isinstance(data, dict):
         data["index"] = index
     return data
+
+
+class DataExtraction(Transform):
+    def __init__(self) -> None:
+        super().__init__(fun=DataExtraction.apply, name="extract data")
+
+    @classmethod
+    def apply(cls, data: Any) -> Any:
+        return default_data_extraction(data)
 
 
 def __get_int_target(
