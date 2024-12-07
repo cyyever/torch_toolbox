@@ -208,6 +208,9 @@ class DataPipeline:
     def __len__(self) -> int:
         return len(self.__transforms)
 
+    def clear(self) -> None:
+        self.__transforms = []
+
     def append(self, transform: Transform) -> None:
         self.__transforms.append(transform)
 
