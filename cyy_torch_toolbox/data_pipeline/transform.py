@@ -240,6 +240,17 @@ class DataPipeline:
         assert self.__transforms[0].for_batch
         return self.__apply_until(data)
 
+    def cache_dataset(
+        self, dataset: torch.utils.data.Dataset, device: torch.device | None
+    ) -> tuple[list, Self]:
+        log_debug("cache dataset to device: %s", device)
+        transformed_dataset: list = []
+        remaining_pipeline: None | Self = None
+        for _, item in select_item(dataset):
+            item, remaining_pipeline = self.apply(item)
+            transformed_dataset.append(item)
+        return transformed_dataset, remaining_pipeline
+
     def collate_batch(self, batch: Iterable) -> dict:
         batch_size = 0
         result = []
