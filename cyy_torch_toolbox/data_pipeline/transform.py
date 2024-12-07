@@ -257,6 +257,8 @@ class DataPipeline:
             data, batch_transforms = self.apply(data)
             result.append(data)
             batch_size += 1
+        assert batch_transforms is not None
+        result = batch_transforms.apply_batch(result)
         result = default_collate(result)
         assert isinstance(result, dict)
         result["batch_size"] = batch_size
@@ -266,10 +268,7 @@ class DataPipeline:
             result["inputs"] = result.pop("input")
         if "target" in result:
             result["targets"] = result.pop("target")
-        if batch_transforms is None or len(batch_transforms) == 0:
-            return result
-        print(batch_transforms)
-        return batch_transforms.apply_batch(result)
+        return result
 
     def __str__(self) -> str:
         return "\n".join(str(f) for f in self.__transforms)
