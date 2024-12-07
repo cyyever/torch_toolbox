@@ -26,8 +26,9 @@ def __prepare_dataloader_kwargs(
     if dc.dataset_type == DatasetType.Graph:
         cache_transforms = None
     pipeline = dc_util.pipeline
-    transformed_dataset: dict | torch.utils.data.Dataset | None = dc_util.dataset
-    log_error("pipeline %s", pipeline)
+    transformed_dataset: torch.utils.data.Dataset | None = dc_util.dataset
+    if phase == MachineLearningPhase.Training:
+        log_error("use pipeline:\n %s", pipeline)
     match cache_transforms:
         case "cpu":
             transformed_dataset, pipeline = dc_util.cache_pipeline(

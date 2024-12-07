@@ -1,4 +1,6 @@
 from collections.abc import Generator
+from collections.abc import Iterable
+
 from typing import Any
 
 import torch
@@ -45,18 +47,13 @@ def dataset_with_indices(
     dataset: torch.utils.data.Dataset | list,
 ) -> torch.utils.data.Dataset | list:
     old_dataset = dataset
-    match dataset:
-        case list():
-            return dataset
-        case torch.utils.data.IterableDataset():
-            dataset = torch.utils.data.datapipes.iter.IterableWrapper(dataset)
-    match dataset:
-        case torch.utils.data.IterDataPipe():
-            dataset = dataset.enumerate()
-        case _:
-            dataset = torch.utils.data.datapipes.map.Mapper(
-                KeyPipe(dataset), __add_index_to_map_item
-            )
+    if isinstance(dataset, Iterable):
+        dataset = torch.utils.data.datapipes.iter.IterableWrapper(dataset)
+        dataset.original_dataset = old_dataset
+        return dataset
+    dataset = torch.utils.data.datapipes.map.Mapper(
+        KeyPipe(dataset), __add_index_to_map_item
+    )
     assert not hasattr(dataset, "original_dataset")
     dataset.original_dataset = old_dataset
     return dataset
