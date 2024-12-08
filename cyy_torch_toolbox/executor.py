@@ -34,15 +34,14 @@ class Executor(HookCollection, abc.ABC):
         model_config: ModelConfig | None = None,
         hook_config: HookConfig | None = None,
         dataloader_kwargs: dict | None = None,
+        auto_create_model: bool = True,
     ) -> None:
         super().__init__()
         self._data: dict = {}
         self.__dataset_collection: DatasetCollection = dataset_collection
-        self.__model_evaluator: ModelEvaluator | None = (
-            model_config.get_model(dataset_collection)
-            if model_config is not None
-            else None
-        )
+        self.__model_config = model_config
+        self.__auto_create_model = auto_create_model
+        self.__model_evaluator: ModelEvaluator | None = None
         self.__phase: MachineLearningPhase = phase
         self.__hyper_parameters: dict = {phase: copy.deepcopy(hyper_parameter)}
         if not hook_config:
@@ -194,6 +193,8 @@ class Executor(HookCollection, abc.ABC):
 
     @property
     def running_model_evaluator(self) -> ModelEvaluator:
+        if self.__model_evaluator is None and self.__auto_create_model:
+            self.recover_model()
         assert self.__model_evaluator is not None
         return self.__model_evaluator
 
@@ -209,6 +210,16 @@ class Executor(HookCollection, abc.ABC):
     @property
     def model(self) -> torch.nn.Module:
         return self.running_model_evaluator.model
+
+    def remove_model(self) -> None:
+        self.__model_evaluator = None
+
+    def recover_model(self) -> None:
+        if self.__model_evaluator is None:
+            assert self.__model_config is not None
+            self.__model_evaluator = self.__model_config.get_model(
+                dc=self.dataset_collection
+            )
 
     def replace_model(self, fun: Callable) -> None:
         self.running_model_evaluator.set_model(fun(self.model))
@@ -273,7 +284,8 @@ class Executor(HookCollection, abc.ABC):
 
     def offload_from_device(self) -> None:
         self.wait_stream()
-        self.model_evaluator.offload_from_device()
+        if self.__model_evaluator:
+            self.model_evaluator.offload_from_device()
         match self.device.type.lower():
             case "cuda":
                 torch.cuda.empty_cache()
