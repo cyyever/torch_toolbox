@@ -17,7 +17,7 @@ from .ml_type import (
     ModelParameter,
     StopExecutingException,
 )
-from .model import ModelEvaluator
+from .model import ModelConfig, ModelEvaluator
 
 
 class Trainer(Executor):
@@ -53,13 +53,13 @@ class Trainer(Executor):
         else:
             model_evaluator = copy.copy(self.model_evaluator)
         inferencer = Inferencer(
-            model_evaluator,
-            self.dataset_collection,
+            dataset_collection=self.dataset_collection,
             phase=phase,
             hyper_parameter=self.hyper_parameter,
             hook_config=self.hook_config,
             dataloader_kwargs=self.dataloader_kwargs,
         )
+        inferencer.set_model_evaluator(model_evaluator=model_evaluator)
         if inherent_device:
             inferencer.set_device(self.device)
         if self.save_dir is not None:
@@ -166,12 +166,12 @@ class TrainerConfig(ExecutorConfig):
     def create_trainer(
         self,
         dataset_collection: DatasetCollection,
-        model_evaluator: ModelEvaluator,
+        model_config: ModelConfig,
         hyper_parameter: HyperParameter,
     ) -> Trainer:
         return self.create_executor(
             cls=Trainer,
             dataset_collection=dataset_collection,
-            model_evaluator=model_evaluator,
+            model_config=model_config,
             hyper_parameter=hyper_parameter,
         )

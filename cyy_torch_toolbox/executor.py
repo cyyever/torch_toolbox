@@ -22,23 +22,27 @@ from .hyper_parameter import HyperParameter, lr_scheduler_step_after_batch
 from .metric_visualizers import MetricVisualizer
 from .metrics import PerformanceMetric
 from .ml_type import ConfigBase, EvaluationMode, ExecutorHookPoint, MachineLearningPhase
-from .model import ModelEvaluator, ModelUtil
+from .model import ModelConfig, ModelEvaluator, ModelUtil
 
 
 class Executor(HookCollection, abc.ABC):
     def __init__(
         self,
-        model_evaluator: ModelEvaluator,
         dataset_collection: DatasetCollection,
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
+        model_config: ModelConfig | None = None,
         hook_config: HookConfig | None = None,
         dataloader_kwargs: dict | None = None,
     ) -> None:
         super().__init__()
         self._data: dict = {}
-        self.__model_evaluator: ModelEvaluator = model_evaluator
         self.__dataset_collection: DatasetCollection = dataset_collection
+        self.__model_evaluator: ModelEvaluator | None = (
+            model_config.get_model(dataset_collection)
+            if model_config is not None
+            else None
+        )
         self.__phase: MachineLearningPhase = phase
         self.__hyper_parameters: dict = {phase: copy.deepcopy(hyper_parameter)}
         if not hook_config:
@@ -190,20 +194,17 @@ class Executor(HookCollection, abc.ABC):
 
     @property
     def running_model_evaluator(self) -> ModelEvaluator:
+        assert self.__model_evaluator is not None
         return self.__model_evaluator
 
     @property
     def model_evaluator(self) -> ModelEvaluator:
         self.wait_stream()
-        return self.__model_evaluator
+        return self.running_model_evaluator
 
     @property
     def model_util(self) -> ModelUtil:
         return self.running_model_evaluator.model_util
-
-    @property
-    def loss_fun(self) -> Callable:
-        return self.running_model_evaluator.loss_fun
 
     @property
     def model(self) -> torch.nn.Module:
@@ -412,7 +413,6 @@ class ExecutorConfig(ConfigBase):
         self,
         cls: Callable,
         dataset_collection: DatasetCollection,
-        model_evaluator: ModelEvaluator,
         **kwargs,
     ) -> Any:
         if (
@@ -424,6 +424,5 @@ class ExecutorConfig(ConfigBase):
             hook_config=self.hook_config,
             dataloader_kwargs=self.dataloader_kwargs,
             dataset_collection=dataset_collection,
-            model_evaluator=model_evaluator,
             **kwargs,
         )
