@@ -214,9 +214,8 @@ class ModelEvaluator:
         reduce_loss: bool = True,
         **kwargs: Any,
     ) -> dict:
-        original_output = output
         res = {
-            "original_output": original_output,
+            "original_output": output,
         }
 
         convert_kwargs = {"device": output.device}
