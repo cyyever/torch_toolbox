@@ -37,19 +37,16 @@ class DataPipeline:
     def is_valid(self) -> bool:
         has_for_batch = False
         for t in self.__transforms:
-            if has_for_batch and (
-                not t.for_batch and not isinstance(t, BatchTransform)
-            ):
+            if has_for_batch and not isinstance(t, BatchTransform):
                 return False
-            if t.for_batch or isinstance(t, BatchTransform):
+            if isinstance(t, BatchTransform):
                 has_for_batch = True
         return True
 
     def cache(self, data: Any) -> tuple[Any, Self]:
         return self.__apply_until(
             data,
-            lambda t: t.cacheable
-            and not (t.for_batch or isinstance(t, BatchTransform)),
+            lambda t: t.cacheable and not isinstance(t, BatchTransform),
         )
 
     def __apply_until(
@@ -67,16 +64,12 @@ class DataPipeline:
         return self.__transforms[0](data)
 
     def apply(self, data: Any) -> tuple[Any, Self]:
-        return self.__apply_until(
-            data, lambda t: not t.for_batch and not isinstance(t, BatchTransform)
-        )
+        return self.__apply_until(data, lambda t: not isinstance(t, BatchTransform))
 
     def apply_batch(self, data: Any) -> Any:
         if not self.__transforms:
             return data
-        assert self.__transforms[0].for_batch or isinstance(
-            self.__transforms[0], BatchTransform
-        )
+        assert isinstance(self.__transforms[0], BatchTransform)
         res, remaining_pipeline = self.__apply_until(data)
         assert len(remaining_pipeline) == 0
         return res
@@ -114,9 +107,10 @@ class DataPipeline:
         assert batch_transforms is not None
         result = batch_transforms.apply_batch(result)
         assert result is not None
-        for k, v in result.items():
-            if isinstance(v, list):
-                result[k] = default_collate(v)
+        if isinstance(result, dict):
+            for k, v in result.items():
+                if isinstance(v, list):
+                    result[k] = default_collate(v)
 
         assert isinstance(result, dict)
         result["batch_size"] = batch_size
