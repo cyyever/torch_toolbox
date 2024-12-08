@@ -70,8 +70,8 @@ class DatasetWithIndex(DatasetTransform):
     @classmethod
     def apply(cls, data: Any) -> Any:
         dataset = data
-        if isinstance(dataset, Iterable):
-            return dataset
+        # if isinstance(dataset, Iterable):
+        #     return dataset
         return torch.utils.data.datapipes.map.Mapper(
             KeyPipe(dataset), DatasetWithIndex._add_index_to_map_item
         )
