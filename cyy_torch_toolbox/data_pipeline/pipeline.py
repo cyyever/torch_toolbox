@@ -98,21 +98,23 @@ class DataPipeline:
                         if k not in result:
                             result[k] = []
                         result[k].append(v)
-                case list():
+                case _:
                     if result is None:
                         result = []
                     assert isinstance(result, list)
                     result.append(data)
             batch_size += 1
+        assert result is not None
         assert batch_transforms is not None
+        if isinstance(result, list):
+            result = {"input": result}
         result = batch_transforms.apply_batch(result)
         assert result is not None
-        if isinstance(result, dict):
-            for k, v in result.items():
-                if isinstance(v, list):
-                    result[k] = default_collate(v)
-
         assert isinstance(result, dict)
+        for k, v in result.items():
+            if isinstance(v, list):
+                result[k] = default_collate(v)
+
         result["batch_size"] = batch_size
         if "index" in result:
             result["sample_indices"] = result.pop("index")
