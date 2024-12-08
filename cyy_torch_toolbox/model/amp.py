@@ -2,21 +2,17 @@ from typing import Any
 
 import torch
 import torch.amp
+from cyy_naive_lib.decorator import Decorator
 from cyy_naive_lib.log import log_warning
 
 from .evaluator import ModelEvaluator
 
 
-class AMPModelEvaluator:
+class AMPModelEvaluator(Decorator):
     def __init__(self, evaluator: ModelEvaluator) -> None:
-        self.evaluator: ModelEvaluator = evaluator
+        super().__init__(evaluator)
         self.__amp_ctx: None | torch.autocast = None
         self.__scaler: None | torch.GradScaler = None
-
-    def __getattr__(self, name):
-        if name == "evaluator":
-            raise AttributeError()
-        return getattr(self.evaluator, name)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         device: torch.device = kwargs["device"]
@@ -24,7 +20,7 @@ class AMPModelEvaluator:
             self.__amp_ctx = torch.autocast(device_type=device.type)
         assert self.__amp_ctx is not None
         with self.__amp_ctx:
-            return self.evaluator.__call__(*args, **kwargs)
+            return self._object.__call__(*args, **kwargs)
 
     def backward_and_step(
         self,
@@ -36,12 +32,12 @@ class AMPModelEvaluator:
         if self.__scaler is None and self.__amp_ctx is not None:
             self.__scaler = torch.GradScaler(device=self.__amp_ctx.device)
         if self.__scaler is None:
-            return self.evaluator.backward_and_step(
+            return self._object.backward_and_step(
                 loss=loss, optimizer=optimizer, **backward_kwargs
             )
         while True:
             optimizer.zero_grad(set_to_none=True)
-            self.evaluator.backward(
+            self._object.backward(
                 loss=self.__scaler.scale(loss), retain_graph=True, **backward_kwargs
             )
             self.__scaler.step(optimizer)
