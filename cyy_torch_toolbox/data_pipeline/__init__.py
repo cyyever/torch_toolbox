@@ -1,9 +1,9 @@
 from typing import Any
 
 from ..ml_type import Factory
-from .dataset import get_dataset_size, select_item, subset_dp, DatasetWithIndex
+from .dataset import DatasetWithIndex, get_dataset_size, select_item, subset_dp
 from .pipeline import DataPipeline
-from .transform import Transform, BatchTransform, DatasetTransform
+from .transform import BatchTransform, DatasetTransform, Transform
 
 global_data_transform_factory = Factory()
 

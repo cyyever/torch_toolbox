@@ -7,13 +7,14 @@ from ..data_pipeline import (
     Transform,
     append_transforms_to_dc,
 )
+from .collection import DatasetCollection
 
 
 def str_concat(prefix: str, example: str) -> str:
     return prefix + example
 
 
-class TextDatasetCollection(Decorator):
+class TextDatasetCollection(DatasetCollection):
     __prompt: str | None = None
     __text_pipeline: DataPipeline | None = None
 
@@ -36,6 +37,3 @@ class TextDatasetCollection(Decorator):
                 Transform(fun=functools.partial(str_concat, self.prompt))
             )
         return self.__text_pipeline
-
-    def add_data_pipeline(self, model_evaluator) -> None:
-        append_transforms_to_dc(dc=self, model_evaluator=model_evaluator)
