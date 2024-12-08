@@ -78,6 +78,11 @@ class Trainer(Executor):
             )
         return self._data["optimizer"]
 
+    def remove_model(self) -> None:
+        self.__inferencers.clear()
+        self.remove_optimizer()
+        super().remove_model()
+
     def remove_optimizer(self) -> None:
         self._data.pop("optimizer", None)
         self.remove_lr_scheduler()
