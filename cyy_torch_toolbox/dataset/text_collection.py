@@ -1,11 +1,8 @@
 import functools
 
-from cyy_naive_lib.decorator import Decorator
-
 from ..data_pipeline import (
     DataPipeline,
     Transform,
-    append_transforms_to_dc,
 )
 from .collection import DatasetCollection
 
