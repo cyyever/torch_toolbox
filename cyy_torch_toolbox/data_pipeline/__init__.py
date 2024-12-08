@@ -25,6 +25,7 @@ __all__ = [
     "Factory",
     "get_dataset_size",
     "select_item",
+    "global_data_transform_factory",
     "subset_dp",
     "DatasetWithIndex",
 ]
