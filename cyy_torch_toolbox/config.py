@@ -40,7 +40,6 @@ class Config(ConfigBase):
     def create_trainer(
         self,
         dc: DatasetCollection | None = None,
-        model_evaluator: ModelEvaluator | None = None,
     ) -> Trainer:
         if dc is None:
             dc = self.create_dataset_collection()
@@ -50,19 +49,16 @@ class Config(ConfigBase):
             model_config=self.model_config,
             hyper_parameter=hyper_parameter,
         )
-        if model_evaluator is not None:
-            trainer.set_model_evaluator(model_evaluator)
         trainer.set_save_dir(self.get_save_dir())
         return trainer
 
     def create_inferencer(
         self,
         dc: DatasetCollection | None = None,
-        model_evaluator: ModelEvaluator | None = None,
         phase: MachineLearningPhase = MachineLearningPhase.Test,
         inherent_device: bool = True,
     ) -> Inferencer:
-        trainer = self.create_trainer(dc=dc, model_evaluator=model_evaluator)
+        trainer = self.create_trainer(dc=dc)
         return trainer.get_inferencer(phase=phase, inherent_device=inherent_device)
 
     def apply_global_config(self) -> None:
