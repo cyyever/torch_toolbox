@@ -7,7 +7,7 @@ from torch.utils.data import default_collate
 
 from .common import DataExtraction
 from .dataset import select_item
-from .transform import Transform, BatchTransform
+from .transform import BatchTransform, Transform
 
 
 class DataPipeline:

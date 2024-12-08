@@ -44,14 +44,14 @@ def create_dataset_collection(
         constructor = global_dataset_collection_factory.get(dataset_type)
         if constructor is None:
             constructor = DatasetCollection
+            if dataset_type == DatasetType.Text:
+                constructor = TextDatasetCollection
         dc: DatasetCollection = constructor(
             datasets=datasets,
             dataset_type=dataset_type,
             name=name,
             dataset_kwargs=dataset_kwargs,
         )
-        if dc.dataset_type == DatasetType.Text:
-            dc = TextDatasetCollection(dc)
         if dc.is_classification_dataset():
             dc = ClassificationDatasetCollection(dc)
         else:
