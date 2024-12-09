@@ -44,7 +44,7 @@ class HookConfig(ConfigBase):
                 if executor.phase == MachineLearningPhase.Training:
                     log_info("disable amp")
                 executor.replace_model_evaluator(
-                    lambda amp_evaluator: amp_evaluator.evaluator
+                    lambda amp_evaluator: amp_evaluator.get_underlying_object()
                 )
 
         executor.append_or_disable_hook("debugger", self.debug, Debugger())
