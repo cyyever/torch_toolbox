@@ -14,6 +14,10 @@ class AMPModelEvaluator(Decorator):
         self.__amp_ctx: None | torch.autocast = None
         self.__scaler: None | torch.GradScaler = None
 
+    @property
+    def evaluator(self) -> ModelEvaluator:
+        return self._decorator_object
+
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         device: torch.device = kwargs["device"]
         if self.__amp_ctx is None or device.type != self.__amp_ctx.device:
