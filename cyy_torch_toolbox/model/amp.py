@@ -24,7 +24,7 @@ class AMPModelEvaluator(Decorator):
             self.__amp_ctx = torch.autocast(device_type=device.type)
         assert self.__amp_ctx is not None
         with self.__amp_ctx:
-            return self._object.__call__(*args, **kwargs)
+            return self.evaluator.__call__(*args, **kwargs)
 
     def backward_and_step(
         self,
@@ -36,12 +36,12 @@ class AMPModelEvaluator(Decorator):
         if self.__scaler is None and self.__amp_ctx is not None:
             self.__scaler = torch.GradScaler(device=self.__amp_ctx.device)
         if self.__scaler is None:
-            return self._object.backward_and_step(
+            return self.evaluator.backward_and_step(
                 loss=loss, optimizer=optimizer, **backward_kwargs
             )
         while True:
             optimizer.zero_grad(set_to_none=True)
-            self._object.backward(
+            self.evaluator.backward(
                 loss=self.__scaler.scale(loss), retain_graph=True, **backward_kwargs
             )
             self.__scaler.step(optimizer)
