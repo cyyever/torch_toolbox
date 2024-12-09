@@ -32,8 +32,8 @@ class TorchTaskQueue(TaskQueue):
         assert worker_num is not None
         super().__init__(worker_num=worker_num, **kwargs)
 
-    def _get_task_kwargs(self, worker_id: int) -> dict:
-        kwargs = super()._get_task_kwargs(worker_id) | {
+    def _get_task_kwargs(self, worker_id: int, in_thread: bool) -> dict:
+        kwargs = super()._get_task_kwargs(worker_id, in_thread=in_thread) | {
             "device": self._devices[worker_id % len(self._devices)]
         }
         if self._batch_process and torch.cuda.is_available():
