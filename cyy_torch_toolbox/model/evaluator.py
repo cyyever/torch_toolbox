@@ -181,6 +181,7 @@ class ModelEvaluator:
                 inputs=inputs,
                 targets=targets,
                 device=device,
+                evaluation_mode=evaluation_mode,
                 **(kwargs | self.__evaluation_kwargs),
             )
 
