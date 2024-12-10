@@ -63,6 +63,7 @@ def __prepare_dataloader_kwargs(
     kwargs["collate_fn"] = pipeline.collate_batch
     kwargs["dataset"] = transformed_dataset
     kwargs["generator"] = torch.Generator(device=data_device)
+    kwargs["data_device"] = data_device
     return kwargs
 
 
@@ -85,4 +86,5 @@ def get_dataloader(
         return constructor(
             dc=dc, model_evaluator=model_evaluator, phase=phase, **dataloader_kwargs
         )
+    dataloader_kwargs.pop("data_device")
     return torch.utils.data.DataLoader(**dataloader_kwargs)
