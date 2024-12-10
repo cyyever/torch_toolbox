@@ -20,9 +20,9 @@ class Inferencer(Executor):
         succ_flag: bool = False
         require_grad: bool = EvaluationMode != EvaluationMode.Test
         with (
-            torch.set_grad_enabled(require_grad),
             self.device_context,
             self.stream_context,
+            torch.enable_grad() if require_grad else torch.inference_mode(),
         ):
             try:
                 self._prepare_execution()
