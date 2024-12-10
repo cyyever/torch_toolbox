@@ -45,6 +45,7 @@ class ModelEvaluator:
             case _:
                 raise NotImplementedError(frozen_modules)
         self.__evaluation_kwargs: dict = {}
+        self.record_batch_size: bool = True
 
     @property
     def model(self) -> torch.nn.Module:
@@ -238,8 +239,9 @@ class ModelEvaluator:
             "loss": loss,
             "model_output": output,
             "is_averaged_loss": self.__is_averaged_loss(loss_fun),
-            "loss_batch_size": (targets.view(-1) != -100).sum(),
         }
+        if self.record_batch_size:
+            res |= {"loss_batch_size": (targets.view(-1) != -100).sum()}
         return res
 
     def _choose_loss_function(self) -> Callable:
