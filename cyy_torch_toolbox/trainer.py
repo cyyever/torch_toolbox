@@ -6,6 +6,7 @@ import torch
 from cyy_naive_lib.log import log_debug, log_warning
 
 from .dataset import DatasetCollection
+from .device import SyncedStreamContext
 from .executor import Executor, ExecutorConfig
 from .hyper_parameter import HyperParameter
 from .inferencer import Inferencer
@@ -100,6 +101,7 @@ class Trainer(Executor):
 
     def train(self, validate: bool = True) -> None:
         with (
+            SyncedStreamContext(self.stream),
             self.device_context,
             self.stream_context,
         ):
@@ -119,8 +121,6 @@ class Trainer(Executor):
             except StopExecutingException:
                 log_warning("stop training")
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
-            finally:
-                self.wait_stream()
 
     def _execute_epoch(
         self,
