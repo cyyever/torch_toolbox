@@ -6,7 +6,6 @@ import torch
 from cyy_naive_lib.log import log_debug, log_warning
 
 from .dataset import DatasetCollection
-from .device import SyncedStreamContext
 from .executor import Executor, ExecutorConfig
 from .hyper_parameter import HyperParameter
 from .inferencer import Inferencer
@@ -100,11 +99,7 @@ class Trainer(Executor):
         self.remove_optimizer()
 
     def train(self, validate: bool = True) -> None:
-        with (
-            SyncedStreamContext(self.stream),
-            self.device_context,
-            self.stream_context,
-        ):
+        with self.complete_stream_context:
             try:
                 self._prepare_execution()
                 for epoch in range(1, self.hyper_parameter.epoch + 1):

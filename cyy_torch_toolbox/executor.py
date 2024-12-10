@@ -4,7 +4,7 @@ import copy
 import functools
 import os
 from collections.abc import Callable, Generator
-from contextlib import AbstractContextManager
+from contextlib import AbstractContextManager, ExitStack
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -13,6 +13,7 @@ import torch.cuda
 import torch.utils.data
 from cyy_naive_lib.log import log_debug
 
+from .device import SyncedStreamContext
 from .data_pipeline.loader import get_dataloader
 from .dataset import DatasetCollection, DatasetUtil
 from .device import get_device
@@ -106,6 +107,14 @@ class Executor(HookCollection, abc.ABC):
                 assert isinstance(s, torch.cpu.Stream)
                 return torch.cpu.stream(s)
         raise RuntimeError(self.device)
+
+    @property
+    def complete_stream_context(self) -> AbstractContextManager:
+        stack = contextlib.ExitStack()
+        stack.enter_context(SyncedStreamContext(self.stream))
+        stack.enter_context(self.stream_context)
+        stack.enter_context(self.device_context)
+        return stack
 
     @property
     def dataloader_kwargs(self) -> dict:
