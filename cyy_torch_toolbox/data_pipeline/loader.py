@@ -22,22 +22,19 @@ def __prepare_dataloader_kwargs(
     **kwargs,
 ) -> dict:
     dc_util = dc.get_dataset_util(phase=phase)
-    data_in_cpu: bool = True
     if dc.dataset_type == DatasetType.Graph:
         cache_transforms = None
     pipeline = dc_util.pipeline
     transformed_dataset: torch.utils.data.Dataset | None = dc_util.dataset
     if phase == MachineLearningPhase.Training:
         log_debug("use pipeline:\n %s", pipeline)
+    data_device = device
     match cache_transforms:
         case "cpu":
-            transformed_dataset, pipeline = dc_util.cache_pipeline(
-                device=torch.device("cpu")
-            )
+            data_device = torch.device("cpu")
+            transformed_dataset, pipeline = dc_util.cache_pipeline(device=data_device)
         case "device":
-            data_in_cpu = False
-            assert device is not None
-            transformed_dataset, pipeline = dc_util.cache_pipeline(device=device)
+            transformed_dataset, pipeline = dc_util.cache_pipeline(device=data_device)
         case None:
             pass
         case _:
@@ -52,7 +49,7 @@ def __prepare_dataloader_kwargs(
     if use_process:
         kwargs["prefetch_factor"] = 2
         kwargs["num_workers"] = 1
-        if not data_in_cpu:
+        if data_device.type.lower() != "cpu":
             kwargs["multiprocessing_context"] = TorchProcessContext().get_ctx()
         kwargs["persistent_workers"] = True
     else:
@@ -65,7 +62,7 @@ def __prepare_dataloader_kwargs(
     kwargs["pin_memory"] = False
     kwargs["collate_fn"] = pipeline.collate_batch
     kwargs["dataset"] = transformed_dataset
-    kwargs["generator"] = torch.Generator(device=device)
+    kwargs["generator"] = torch.Generator(device=data_device)
     return kwargs
 
 
