@@ -55,6 +55,7 @@ class Executor(HookCollection, abc.ABC):
         self.__stream: None | torch.cpu.Stream | torch.Stream = None
         self.__save_dir: None | str = None
         self.__visualizer_prefix: str = ""
+        self.set_default_device: bool = False
 
     @property
     def dataset_collection(self) -> DatasetCollection:
@@ -104,7 +105,8 @@ class Executor(HookCollection, abc.ABC):
         stack = ExitStack()
         stack.enter_context(SyncedStreamContext(self.stream))
         stack.enter_context(self.stream_context)
-        stack.enter_context(DefaultDeviceContext(self.device))
+        if self.set_default_device:
+            stack.enter_context(DefaultDeviceContext(self.device))
         return stack
 
     @property
