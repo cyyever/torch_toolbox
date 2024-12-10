@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Self
 
 import psutil
 import torch
@@ -91,3 +91,21 @@ def get_devices(max_needed_bytes: None | int = None) -> list[torch.device]:
 
 def get_device(**kwargs: Any) -> torch.device:
     return get_devices(**kwargs)[0]
+
+
+class SyncedStreamContext:
+    def __init__(self, stream: torch.cpu.Stream | torch.Stream) -> None:
+        self.__stream = stream
+
+    def __enter__(self) -> Self:
+        if isinstance(self.__stream, torch.Stream):
+            device = self.__stream.device
+            if "cuda" in device.type.lower():
+                self.__stream.wait_stream(torch.cuda.default_stream(device))
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        if hasattr(self.__stream, "synchronize"):
+            self.__stream.synchronize()
+        if hasattr(self.__stream, "query"):
+            assert self.__stream.query()
