@@ -20,8 +20,7 @@ class Inferencer(Executor):
         succ_flag: bool = False
         require_grad: bool = EvaluationMode != EvaluationMode.Test
         with (
-            self.device_context,
-            self.stream_context,
+            self.complete_stream_context,
             torch.enable_grad() if require_grad else torch.inference_mode(),
         ):
             try:
@@ -31,8 +30,6 @@ class Inferencer(Executor):
                 succ_flag = True
             except StopExecutingException:
                 log_warning("stop inference")
-            finally:
-                self.wait_stream()
             return succ_flag
 
     def get_gradient(self) -> ModelGradient:
