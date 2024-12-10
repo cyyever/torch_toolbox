@@ -1,4 +1,5 @@
-from typing import Any
+import contextlib
+from typing import Any, Self
 
 import torch
 import torch.amp
@@ -8,11 +9,29 @@ from cyy_naive_lib.log import log_warning
 from .evaluator import ModelEvaluator
 
 
+class TF32Context:
+    def __init__(self) -> None:
+        self.__old_cudnn_allow_tf32 = False
+        self.__old_cuda_allow_tf32 = False
+
+    def __enter__(self) -> Self:
+        self.__old_cudnn_allow_tf32 = torch.backends.cudnn.allow_tf32
+        self.__old_cuda_allow_tf32 = torch.backends.cuda.matmul.allow_tf32
+        torch.backends.cudnn.allow_tf32 = True
+        torch.backends.cuda.matmul.allow_tf32 = True
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        torch.backends.cudnn.allow_tf32 = self.__old_cudnn_allow_tf32
+        torch.backends.cuda.matmul.allow_tf32 = self.__old_cuda_allow_tf32
+
+
 class AMPModelEvaluator(Decorator):
     def __init__(self, evaluator: ModelEvaluator) -> None:
         super().__init__(evaluator)
         self.__amp_ctx: None | torch.autocast = None
         self.__scaler: None | torch.GradScaler = None
+        self.use_tf32: bool = True
 
     @property
     def evaluator(self) -> ModelEvaluator:
@@ -22,8 +41,12 @@ class AMPModelEvaluator(Decorator):
         device: torch.device = kwargs["device"]
         if self.__amp_ctx is None or device.type != self.__amp_ctx.device:
             self.__amp_ctx = torch.autocast(device_type=device.type)
-        assert self.__amp_ctx is not None
-        with self.__amp_ctx:
+        with (
+            TF32Context()
+            if self.use_tf32 and "cuda" in device.type.lower()
+            else contextlib.nullcontext(),
+            self.__amp_ctx,
+        ):
             return self.evaluator.__call__(*args, **kwargs)
 
     def backward_and_step(
@@ -53,4 +76,3 @@ class AMPModelEvaluator(Decorator):
                 log_warning("found inf in AMP, scale is %s", self.__scaler._scale)
                 continue
             break
-        return None
