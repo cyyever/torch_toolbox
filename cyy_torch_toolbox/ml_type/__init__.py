@@ -28,6 +28,7 @@ class EvaluationMode(StrEnum):
     Training = auto()
     Test = auto()
     TestWithGrad = auto()
+    SampleInference = auto()
 
 
 class ModelType(StrEnum):
