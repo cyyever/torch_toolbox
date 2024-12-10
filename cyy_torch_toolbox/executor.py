@@ -1,5 +1,4 @@
 import abc
-import contextlib
 import copy
 import functools
 import os
@@ -13,10 +12,9 @@ import torch.cuda
 import torch.utils.data
 from cyy_naive_lib.log import log_debug
 
-from .device import SyncedStreamContext
 from .data_pipeline.loader import get_dataloader
 from .dataset import DatasetCollection, DatasetUtil
-from .device import get_device
+from .device import DefaultDeviceContext, SyncedStreamContext, get_device
 from .hook import HookCollection
 from .hook.config import HookConfig
 from .hyper_parameter import HyperParameter, lr_scheduler_step_after_batch
@@ -75,13 +73,6 @@ class Executor(HookCollection, abc.ABC):
         return self.__device
 
     @property
-    def device_context(self) -> AbstractContextManager:
-        match self.device.type.lower():
-            case "cuda":
-                return torch.cuda.device(device=self.device)
-        return contextlib.nullcontext()
-
-    @property
     def stream(self) -> torch.cpu.Stream | torch.Stream:
         if self.__stream is None:
             match self.device.type.lower():
@@ -110,10 +101,10 @@ class Executor(HookCollection, abc.ABC):
 
     @property
     def complete_stream_context(self) -> AbstractContextManager:
-        stack = contextlib.ExitStack()
+        stack = ExitStack()
         stack.enter_context(SyncedStreamContext(self.stream))
         stack.enter_context(self.stream_context)
-        stack.enter_context(self.device_context)
+        stack.enter_context(DefaultDeviceContext(self.device))
         return stack
 
     @property
@@ -269,10 +260,8 @@ class Executor(HookCollection, abc.ABC):
 
     def wait_stream(self) -> None:
         if self.__stream is not None:
-            if hasattr(self.__stream, "synchronize"):
-                self.__stream.synchronize()
-            if hasattr(self.__stream, "query"):
-                assert self.__stream.query()
+            with SyncedStreamContext(self.__stream):
+                pass
 
     def set_dataset_collection(self, dc: DatasetCollection) -> None:
         self.wait_stream()

@@ -109,3 +109,17 @@ class SyncedStreamContext:
             self.__stream.synchronize()
         if hasattr(self.__stream, "query"):
             assert self.__stream.query()
+
+
+class DefaultDeviceContext:
+    def __init__(self, device: torch.device) -> None:
+        self.__device = device
+        self.__previous_device: torch.device | None = None
+
+    def __enter__(self) -> Self:
+        self.__previous_device = torch.get_default_device()
+        torch.set_default_device(self.__device)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        torch.set_default_device(self.__previous_device)
