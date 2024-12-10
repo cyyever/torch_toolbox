@@ -72,12 +72,14 @@ def get_dataloader(
     dc: DatasetCollection,
     phase: MachineLearningPhase,
     model_evaluator: ModelEvaluator,
+    device: torch.device,
     **kwargs,
 ) -> torch.utils.data.DataLoader:
     dc.add_data_pipeline(model_evaluator=model_evaluator)
     dataloader_kwargs = __prepare_dataloader_kwargs(
         dc=dc,
         phase=phase,
+        device=device,
         **kwargs,
     )
     constructor = global_dataloader_factory.get(dc.dataset_type)
@@ -85,4 +87,6 @@ def get_dataloader(
         return constructor(
             dc=dc, model_evaluator=model_evaluator, phase=phase, **dataloader_kwargs
         )
-    return torch.utils.data.DataLoader(**dataloader_kwargs)
+    return torch.utils.data.DataLoader(
+        **dataloader_kwargs, generator=torch.Generator(device=device)
+    )
