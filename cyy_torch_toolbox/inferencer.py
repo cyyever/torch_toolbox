@@ -18,7 +18,10 @@ class Inferencer(Executor):
         evaluation_mode: EvaluationMode = EvaluationMode.Test,
     ) -> bool:
         succ_flag: bool = False
-        require_grad: bool = EvaluationMode != EvaluationMode.Test
+        require_grad: bool = EvaluationMode not in (
+            EvaluationMode.Test,
+            EvaluationMode.SampleInference,
+        )
         with (
             self.complete_stream_context,
             torch.enable_grad() if require_grad else torch.inference_mode(),
@@ -41,7 +44,7 @@ class Inferencer(Executor):
             assert succ
             return self.model_util.get_gradients()
 
-    def get_sample_loss(self, evaluation_mode=EvaluationMode.Test) -> dict:
+    def get_sample_loss(self, evaluation_mode=EvaluationMode.SampleInference) -> dict:
         sample_loss: dict = {}
         with self.hook_config:
             self.hook_config.disable_log()
