@@ -349,7 +349,7 @@ class Executor(HookCollection, abc.ABC):
             forward_result = self.running_model_evaluator(**evaluation_kwargs)
 
         batch |= forward_result
-        if evaluation_mode != EvaluationMode.Test:
+        if evaluation_mode in (EvaluationMode.Training, EvaluationMode.TestWithGrad):
             if evaluation_mode == EvaluationMode.Training:
                 optimizer = self.get_optimizer()
                 self.running_model_evaluator.backward_and_step(
