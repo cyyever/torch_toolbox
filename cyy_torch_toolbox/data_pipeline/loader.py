@@ -85,5 +85,4 @@ def get_dataloader(
         return constructor(
             dc=dc, model_evaluator=model_evaluator, phase=phase, **dataloader_kwargs
         )
-    dataloader_kwargs.pop("data_device")
     return torch.utils.data.DataLoader(**dataloader_kwargs)
