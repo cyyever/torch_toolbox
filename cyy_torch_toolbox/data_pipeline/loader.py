@@ -62,8 +62,7 @@ def __prepare_dataloader_kwargs(
     kwargs["pin_memory"] = False
     kwargs["collate_fn"] = pipeline.collate_batch
     kwargs["dataset"] = transformed_dataset
-    kwargs["generator"] = torch.Generator(device=data_device)
-    kwargs["data_device"] = data_device
+    kwargs["generator"] = torch.Generator(device="cpu")
     return kwargs
 
 
