@@ -273,9 +273,6 @@ class Executor(HookCollection, abc.ABC):
         self.wait_stream()
         self.__model_evaluator = model_evaluator
 
-    def load_model(self, model_path: str) -> None:
-        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
-
     def _foreach_sub_executor(self) -> Generator:
         yield from []
 
