@@ -17,7 +17,7 @@ class GradMetric(Metric):
         self._set_epoch_metric(
             epoch,
             "grad_norm",
-            torch.norm(
+            torch.linalg.norm(
                 parameter_list - self.__prev_parameter_list.to(executor.device)
             ).item(),
         )
