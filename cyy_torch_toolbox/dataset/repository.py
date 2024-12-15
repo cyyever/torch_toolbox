@@ -11,9 +11,13 @@ from ..ml_type import DatasetType, Factory, MachineLearningPhase
 
 class DatasetFactory(Factory):
     def get(
-        self, key: Any, case_sensitive: bool = True, cache_dir: str | None = None
+        self,
+        key: Any,
+        case_sensitive: bool = True,
+        cache_dir: str | None = None,
+        default: Any = None,
     ) -> Any:
-        return super().get(key=key, case_sensitive=case_sensitive)
+        return super().get(key=key, case_sensitive=case_sensitive, default=default)
 
 
 __global_dataset_constructors: dict[DatasetType, list[DatasetFactory]] = {}

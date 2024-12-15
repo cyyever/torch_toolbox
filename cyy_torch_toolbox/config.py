@@ -11,7 +11,7 @@ from .dataset import DatasetCollection, DatasetCollectionConfig
 from .hyper_parameter import HyperParameterConfig
 from .inferencer import Inferencer
 from .ml_type import ConfigBase, MachineLearningPhase
-from .model import ModelConfig, ModelEvaluator
+from .model import ModelConfig
 from .reproducible_env import ReproducibleEnvConfig
 from .trainer import Trainer, TrainerConfig
 

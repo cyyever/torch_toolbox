@@ -90,10 +90,6 @@ class Trainer(Executor):
     def remove_lr_scheduler(self) -> None:
         self._data.pop("lr_scheduler", None)
 
-    def load_model(self, model_path: str) -> None:
-        super().load_model(model_path)
-        self.remove_optimizer()
-
     def load_parameters(self, parameter: ModelParameter) -> None:
         self.model_util.load_parameters(parameter)
         self.remove_optimizer()

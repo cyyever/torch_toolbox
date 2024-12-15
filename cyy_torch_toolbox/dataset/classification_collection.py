@@ -1,11 +1,8 @@
-import copy
 import functools
-from typing import Self
 
 from cyy_naive_lib.decorator import Decorator
 
 from ..ml_type import MachineLearningPhase
-from .collection import DatasetCollection
 
 
 class ClassificationDatasetCollection(Decorator):
