@@ -14,8 +14,8 @@ class ProbabilityMetric(Metric):
         epoch_prob = self.get_prob(epoch)
         if epoch_prob is None:
             epoch_prob = {}
-        for i, sample_index in enumerate(sample_indices):
-            sample_index: int = sample_index.item()
+        for i, sample_index_tensor in enumerate(sample_indices):
+            sample_index: int = int(sample_index_tensor.item())
             probs: None | torch.Tensor = None
             if isinstance(last_layer, torch.nn.LogSoftmax):
                 probs = torch.exp(output[i])

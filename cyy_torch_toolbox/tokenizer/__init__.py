@@ -14,6 +14,9 @@ class Tokenizer:
     def get_vocab(self) -> Mapping[str, int]:
         raise NotImplementedError()
 
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        raise NotImplementedError()
+
     def get_mask_token(self) -> str:
         raise NotImplementedError()
 
