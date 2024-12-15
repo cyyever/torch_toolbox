@@ -1,5 +1,4 @@
 from collections.abc import Callable, Iterable
-from contextlib import nullcontext
 from typing import Any
 
 import torch
@@ -170,20 +169,17 @@ class ModelEvaluator:
             inputs = tensor_to(inputs, device=device, non_blocking=True)
             targets = tensor_to(targets, device=device, non_blocking=True)
             self.model_util.to_device(device=device)
-        with (
-            torch.no_grad() if evaluation_mode == EvaluationMode.Test else nullcontext()
-        ):
-            return {
-                "inputs": inputs,
-                "targets": targets,
-                "raw_inputs": raw_inputs,
-            } | self._forward_model(
-                inputs=inputs,
-                targets=targets,
-                device=device,
-                evaluation_mode=evaluation_mode,
-                **(kwargs | self.__evaluation_kwargs),
-            )
+        return {
+            "inputs": inputs,
+            "targets": targets,
+            "raw_inputs": raw_inputs,
+        } | self._forward_model(
+            inputs=inputs,
+            targets=targets,
+            device=device,
+            evaluation_mode=evaluation_mode,
+            **(kwargs | self.__evaluation_kwargs),
+        )
 
     def _get_forward_fun(self) -> Callable:
         fun: Callable = self.model

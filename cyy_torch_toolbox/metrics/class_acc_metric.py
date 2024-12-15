@@ -8,15 +8,16 @@ class ClassAccuracyMetric(Metric):
         super().__init__()
         self.__classification_count_per_label: dict = {}
         self.__classification_correct_count_per_label: dict = {}
-        self.__labels = None
+        self.__labels: None | set = None
 
     def get_class_accuracy(self, epoch):
         return self.get_epoch_metric(epoch, "class_accuracy")
 
     def _before_epoch(self, **kwargs) -> None:
-        if not self.__labels:
+        if self.__labels is None:
             executor = kwargs["executor"]
             self.__labels = executor.dataset_collection.get_labels()
+        assert self.__labels is not None
         for label in self.__labels:
             self.__classification_correct_count_per_label[label] = 0
             self.__classification_count_per_label[label] = 0
