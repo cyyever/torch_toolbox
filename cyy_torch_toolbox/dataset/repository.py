@@ -195,7 +195,6 @@ def get_dataset(
 ) -> None | tuple[DatasetType, dict]:
     real_dataset_type = dataset_kwargs.get("dataset_type")
     similar_names = []
-    dataset_types = list(DatasetType)
 
     if real_dataset_type is not None:
         assert isinstance(real_dataset_type, DatasetType)
