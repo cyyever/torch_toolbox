@@ -174,7 +174,7 @@ def dot_product(a: TensorDict | torch.Tensor, b: TensorDict | torch.Tensor) -> f
     match b:
         case dict():
             assert isinstance(a, dict)
-            product = 0
+            product: float = 0
             for k, v in b.items():
                 if v.device == a[k].device:
                     product += v.view(-1).dot(a[k].view(-1)).item()
