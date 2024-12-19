@@ -23,21 +23,10 @@ def cat_tensor_dict(tensor_dict: dict) -> torch.Tensor:
 
 def decompose_like_tensor_dict(tensor_dict: dict, tensor: torch.Tensor) -> dict:
     result = {}
-    bias = 0
+    bias: int = 0
     for key, component in get_mapping_items_by_key_order(tensor_dict):
-        param_element_num = torch.prod(component.shape).item()
+        param_element_num = int(torch.prod(component.shape).item())
         result[key] = tensor[bias : bias + param_element_num].view(*component.shape)
-        bias += param_element_num
-    assert bias == tensor.shape[0]
-    return result
-
-
-def decompose_tensor_to_list(shapes: list, tensor: torch.Tensor) -> list:
-    result = []
-    bias = 0
-    for shape in shapes:
-        param_element_num = torch.prod(torch.tensor(shape, dtype=torch.long)).item()
-        result.append(tensor[bias : bias + param_element_num].view(*shape))
         bias += param_element_num
     assert bias == tensor.shape[0]
     return result
