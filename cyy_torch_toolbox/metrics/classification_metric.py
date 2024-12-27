@@ -23,17 +23,6 @@ class ClassificationMetric(Metric):
     def _before_epoch(self, **kwargs: Any) -> None:
         self._metric = None
 
-    def _get_output(self, result: dict) -> torch.Tensor:
-        output = result.get("logits")
-        if output is None:
-            output = result["original_output"]
-        assert isinstance(output, torch.Tensor)
-        output = output.detach()
-        output = torch.where(torch.any(output < 0), output.sigmoid(), output)
-        if len(output.shape) == 2 and output.shape[1] == 1:
-            output = torch.stack((1 - output, output), dim=2).squeeze()
-        return output
-
     @torch.no_grad()
     def _get_task(self, executor) -> Literal["binary", "multiclass", "multilabel"]:
         if (
@@ -46,9 +35,7 @@ class ClassificationMetric(Metric):
         return "multiclass"
 
     @torch.no_grad()
-    def _get_new_output(
-        self, executor, result: dict
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    def _get_output(self, executor, result: dict) -> tuple[torch.Tensor, torch.Tensor]:
         targets = result["targets"]
         if targets.dtype is torch.float:
             targets = targets.to(dtype=torch.long)

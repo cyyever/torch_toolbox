@@ -11,7 +11,7 @@ class AUROCMetric(ClassificationMetric):
         if self._metric is None:
             with executor.device:
                 self._metric = AUROC(**self._get_metric_kwargs(executor))
-        output, targets = self._get_new_output(executor, result)
+        output, targets = self._get_output(executor, result)
         self.metric.update(output, targets)
         # .detach().long())
 

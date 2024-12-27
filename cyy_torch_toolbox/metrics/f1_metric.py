@@ -12,7 +12,7 @@ class F1Metric(ClassificationMetric):
             assert executor.dataset_collection.label_number > 0
             with executor.device:
                 self._metric = F1Score(**self._get_metric_kwargs(executor))
-        output, targets = self._get_new_output(executor, result)
+        output, targets = self._get_output(executor, result)
         self.metric.update(output, targets.detach())
 
     def _after_epoch(self, **kwargs) -> None:

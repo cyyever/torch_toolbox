@@ -10,7 +10,7 @@ class PerplexityMetric(ClassificationMetric):
         executor = kwargs["executor"]
         if self._metric is None:
             self._metric = Perplexity()
-        output, targets = self._get_new_output(executor, result)
+        output, targets = self._get_output(executor, result)
         self.metric.update(output, targets.detach())
 
     def _after_epoch(self, **kwargs) -> None:
