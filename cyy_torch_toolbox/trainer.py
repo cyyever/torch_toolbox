@@ -46,6 +46,7 @@ class Trainer(Executor):
         self,
         phase: MachineLearningPhase,
         deepcopy_model: bool = False,
+        copy_dataset: bool = False,
         inherent_device: bool = True,
     ) -> Inferencer:
         if deepcopy_model:
@@ -53,7 +54,7 @@ class Trainer(Executor):
         else:
             model_evaluator = copy.copy(self.model_evaluator)
         inferencer = Inferencer(
-            dataset_collection=self.dataset_collection,
+            dataset_collection=self.dataset_collection if not copy_dataset else copy.copy(self.dataset_collection),
             phase=phase,
             hyper_parameter=self.hyper_parameter,
             hook_config=self.hook_config,
