@@ -52,4 +52,4 @@ class ClassificationDatasetCollection(Decorator):
                 raise NotImplementedError(f"failed to get label names for {self.name}")
             return label_names
 
-        return self.get_cached_data("label_names.pk", computation_fun)
+        return computation_fun()
