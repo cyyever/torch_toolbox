@@ -163,8 +163,8 @@ class DatasetCollection:
 
         sampler = DatasetSampler(dataset_util=self.get_dataset_util(phase=from_phase))
         datasets = sampler.iid_split([part for (_, part) in part_list])
-        for idx, (phase, _) in enumerate(part_list):
-            self.__datasets[phase] = datasets[idx]
+        for (phase, _), dataset in zip(part_list, datasets, strict=False):
+            self.__datasets[phase] = dataset
             if phase not in self.__pipeline:
                 self.__pipeline[phase] = copy.deepcopy(self.__pipeline[from_phase])
 
