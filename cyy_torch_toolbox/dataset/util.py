@@ -152,7 +152,7 @@ class DatasetUtil:
 
     def __get_batch_labels_impl(
         self, indices: OptionalIndicesType = None
-    ) -> Generator[tuple[int, Any], None, None]:
+    ) -> Generator[tuple[int, Any]]:
         for idx, sample in self.get_samples(indices):
             target: Any | None = None
             if "target" in sample:
@@ -169,7 +169,7 @@ class DatasetUtil:
 
     def get_batch_labels(
         self, indices: OptionalIndicesType = None
-    ) -> Generator[tuple[int, set], None, None]:
+    ) -> Generator[tuple[int, set]]:
         for idx, target in self.__get_batch_labels_impl(indices):
             labels = DatasetUtil.__decode_target(target)
             if -100 in labels:
@@ -189,12 +189,9 @@ class DatasetUtil:
 
     def get_label_names(self) -> dict:
         original_dataset = self.get_original_dataset()
-        if (
-            hasattr(original_dataset, "classes")
-            and original_dataset.classes
-            and isinstance(original_dataset.classes[0], str)
-        ):
-            return dict(enumerate(original_dataset.classes))
+        classes = getattr(original_dataset, "classes", None)
+        if classes and isinstance(classes[0], str):
+            return dict(enumerate(classes))
 
         def get_label_name(container: set, idx_and_labels: tuple[int, set]) -> set:
             container.update(idx_and_labels[1])
