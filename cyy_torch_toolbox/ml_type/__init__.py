@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 from enum import StrEnum, auto
+from typing import Any
 
 import torch
 
@@ -16,6 +17,8 @@ type ModelGradient = TensorDict
 type SampleTensors = dict[int, torch.Tensor]
 type SampleGradients = dict[int, ModelGradient]
 type ModelParameter = TensorDict
+type LabelType = Any
+type TargetType = Any
 
 
 class MachineLearningPhase(StrEnum):

@@ -1,8 +1,9 @@
 import copy
 import functools
-from typing import Any
+import json
+import os
 
-from ..ml_type import Factory, MachineLearningPhase, TransformType
+from ..ml_type import Factory, MachineLearningPhase, TargetType, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
 from .sampler import DatasetSampler
@@ -50,6 +51,10 @@ class SamplerBase(Base):
             dc.set_subset(phase=phase, indices=indices)
         return dc
 
+    def save(self, save_dir: str) -> None:
+        with open(os.path.join(save_dir, "sampler.json"), "w", encoding="utf8") as f:
+            json.dump(self._dataset_indices, f)
+
 
 class SplitBase(Base):
     def __init__(
@@ -61,12 +66,12 @@ class SplitBase(Base):
         self._part_number = part_number
         self._dataset_indices: dict[MachineLearningPhase, dict] = {}
 
-    def sample(self, part_id: int) -> DatasetCollection:
+    def sample(self, part_index: int) -> DatasetCollection:
         dc = copy.copy(self._dc)
         for phase in MachineLearningPhase:
             if not dc.has_dataset(phase):
                 continue
-            indices = self._dataset_indices[phase][part_id]
+            indices = self._dataset_indices[phase][part_index]
             assert indices
             dc.set_subset(phase=phase, indices=indices)
         return dc
@@ -76,7 +81,7 @@ class DatasetCollectionSplit(SplitBase):
     def __init__(
         self,
         dataset_collection: DatasetCollection,
-        part_proportions: list[dict[Any, float]],
+        part_proportions: list[dict[TargetType, float]],
     ) -> None:
         super().__init__(
             dataset_collection=dataset_collection, part_number=len(part_proportions)
@@ -106,7 +111,9 @@ class IIDSplitWithFlip(IIDSplit):
         self,
         dataset_collection: DatasetCollection,
         part_number: int,
-        flip_percent: float | list[dict[Any, float]] | dict[int, dict[Any, float]],
+        flip_percent: float
+        | list[dict[TargetType, float]]
+        | dict[int, dict[TargetType, float]],
     ) -> None:
         super().__init__(dataset_collection=dataset_collection, part_number=part_number)
         self.__flip_percent = flip_percent
@@ -124,19 +131,21 @@ class IIDSplitWithFlip(IIDSplit):
         return self.__flip_percent
 
     @classmethod
-    def __transform_target(cls, flipped_indices: dict, target: Any, index: int) -> Any:
+    def __transform_target(
+        cls, flipped_indices: dict[int, TargetType], target: TargetType, index: int
+    ) -> TargetType:
         if index in flipped_indices:
             return DatasetUtil.replace_target(target, flipped_indices[index])
         return target
 
-    def sample(self, part_id: int) -> DatasetCollection:
-        dc = super().sample(part_id=part_id)
+    def sample(self, part_index: int) -> DatasetCollection:
+        dc = super().sample(part_index=part_index)
         for phase in MachineLearningPhase:
             if phase == MachineLearningPhase.Test:
                 continue
             sampler = DatasetSampler(dc.get_dataset_util(phase))
-            flip_percent = self.get_flip_percent(part_index=part_id)
-            indices = list(self._dataset_indices[phase][part_id])
+            flip_percent = self.get_flip_percent(part_index=part_index)
+            indices = list(self._dataset_indices[phase][part_index])
             assert indices
             assert isinstance(dc, ClassificationDatasetCollection)
             flipped_indices = sampler.randomize_label_by_class(
@@ -156,7 +165,7 @@ class IIDSplitWithSample(IIDSplit):
         self,
         dataset_collection: ClassificationDatasetCollection,
         part_number: int,
-        sample_probs: list[dict[Any, float]],
+        sample_probs: list[dict[TargetType, float]],
     ) -> None:
         assert len(sample_probs) == part_number
         super().__init__(dataset_collection=dataset_collection, part_number=part_number)
@@ -194,7 +203,7 @@ class ProbabilitySampler(SamplerBase):
     def __init__(
         self,
         dataset_collection: DatasetCollection,
-        sample_prob: dict[Any, float],
+        sample_prob: dict[TargetType, float],
     ) -> None:
         super().__init__(dataset_collection=dataset_collection)
         for phase in MachineLearningPhase:
