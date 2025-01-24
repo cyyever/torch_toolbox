@@ -15,9 +15,17 @@ classifiers = [
   "Programming Language :: Python"
 ]
 
-dynamic = ["dependencies"]
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
+dependencies = [
+"torch",
+"hydra-core",
+"omegaconf",
+"torchmetrics",
+"pynvml",
+"dill",
+"cyy_naive_lib@git+https://github.com/cyyever/naive_python_lib.git@main",
+]
+
+
 
 
 [project.urls]

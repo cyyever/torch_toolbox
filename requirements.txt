@@ -1,8 +1,0 @@
-torch
-hydra-core
-torchmetrics
-omegaconf
-torchmetrics
-pynvml
-dill
-cyy_naive_lib@git+https://github.com/cyyever/naive_python_lib.git@main
