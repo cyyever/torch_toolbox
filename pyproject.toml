@@ -20,20 +20,13 @@ dependencies = [
   "hydra-core",
   "omegaconf",
   "torchmetrics",
-  "pynvml",
+  "nvidia-ml-py",
   "dill",
   "cyy_naive_lib@git+https://github.com/cyyever/naive_python_lib.git@main",
 ]
 
 [project.urls]
 Repository = "https://github.com/cyyever/torch_toolbox"
-
-[tool.pyright]
-include = ["cyy_torch_toolbox"]
-defineConstant = { DEBUG = true }
-
-reportMissingImports = true
-reportMissingTypeStubs = false
 
 [tool.ruff]
 target-version = "py312"
