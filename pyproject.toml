@@ -16,17 +16,14 @@ classifiers = [
 ]
 
 dependencies = [
-"torch",
-"hydra-core",
-"omegaconf",
-"torchmetrics",
-"pynvml",
-"dill",
-"cyy_naive_lib@git+https://github.com/cyyever/naive_python_lib.git@main",
+  "torch; platform_system != 'Windows'",
+  "hydra-core",
+  "omegaconf",
+  "torchmetrics",
+  "pynvml",
+  "dill",
+  "cyy_naive_lib@git+https://github.com/cyyever/naive_python_lib.git@main",
 ]
-
-
-
 
 [project.urls]
 Repository = "https://github.com/cyyever/torch_toolbox"
