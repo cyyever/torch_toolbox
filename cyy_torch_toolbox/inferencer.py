@@ -1,4 +1,6 @@
 import functools
+from collections.abc import Iterable
+from typing import Any
 
 import torch
 from cyy_naive_lib.log import log_warning
@@ -44,8 +46,10 @@ class Inferencer(Executor):
             assert succ
             return self.model_util.get_gradients()
 
-    def get_sample_loss(self, evaluation_mode=EvaluationMode.SampleInference) -> dict:
-        sample_loss: dict = {}
+    def get_sample_loss(
+        self, evaluation_mode=EvaluationMode.SampleInference
+    ) -> dict[int, Any]:
+        sample_loss: dict[int, Any] = {}
         with self.hook_config:
             self.hook_config.disable_log()
             self.hook_config.use_performance_metric = False
@@ -72,7 +76,11 @@ class Inferencer(Executor):
             return sample_loss
 
     def __collect_sample_loss(
-        self, sample_loss: dict, result, sample_indices, **kwargs
+        self,
+        sample_loss: dict[int, Any],
+        result: dict,
+        sample_indices: Iterable[int],
+        **kwargs: Any,
     ) -> None:
         assert not result["is_averaged_loss"]
         if isinstance(sample_indices, torch.Tensor):
