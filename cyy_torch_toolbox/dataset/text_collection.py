@@ -7,8 +7,11 @@ from ..data_pipeline import (
 from .collection import DatasetCollection
 
 
-def str_concat(prefix: str, example: str) -> str:
-    return prefix + example
+def str_concat(prefix: str, example: str | dict) -> str | dict:
+    if isinstance(example, str):
+        return prefix + example
+    example["input"] = prefix + example["input"]
+    return example
 
 
 class TextDatasetCollection(DatasetCollection):
