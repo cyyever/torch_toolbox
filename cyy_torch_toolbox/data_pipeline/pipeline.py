@@ -113,7 +113,11 @@ class DataPipeline:
         assert isinstance(result, dict)
         for k, v in result.items():
             if isinstance(v, list):
-                result[k] = default_collate(v)
+                try:
+                    collated_value = default_collate(v)
+                    result[k] = collated_value
+                except BaseException:
+                    pass
 
         result["batch_size"] = batch_size
         if "index" in result:
