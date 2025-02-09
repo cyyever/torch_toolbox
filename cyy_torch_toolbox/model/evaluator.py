@@ -86,15 +86,16 @@ class ModelEvaluator:
         match loss_fun:
             case "CrossEntropyLoss":
                 self.__loss_fun_type = nn.CrossEntropyLoss
-                self.__loss_fun = self.__loss_fun_type()
             case "NLLLoss":
                 self.__loss_fun_type = nn.NLLLoss
-                self.__loss_fun = self.__loss_fun_type()
             case str():
                 raise RuntimeError(f"unknown loss function {loss_fun}")
             case _:
                 self.__loss_fun = loss_fun
                 self.__loss_fun_type = type(loss_fun)
+                return
+        assert self.__loss_fun_type is not None
+        self.__loss_fun = self.__loss_fun_type()
 
     def offload_from_device(self) -> None:
         self.model_util.to_device(device=torch.device("cpu"))
