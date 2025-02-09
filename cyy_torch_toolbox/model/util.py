@@ -21,14 +21,16 @@ class ModelUtil:
 
     def to_device(self, device: torch.device, non_blocking: bool = True) -> None:
         flag = self.__previous_device == device
-        for param in self.model.parameters():
-            if param.device != device:
-                flag = False
-                break
-        for buffer in self.model.buffers():
-            if buffer.device != device:
-                flag = False
-                break
+        if flag:
+            for param in self.model.parameters():
+                if param.device != device:
+                    flag = False
+                    break
+        if flag:
+            for buffer in self.model.buffers():
+                if buffer.device != device:
+                    flag = False
+                    break
         if not flag:
             self.model.to(device=device, non_blocking=non_blocking)
         self.__previous_device = device
