@@ -30,7 +30,7 @@ def default_data_extraction(data: Any) -> Any:
 
 class DataExtraction(Transform):
     def __init__(self) -> None:
-        super().__init__(fun=DataExtraction.apply, name="extract data")
+        super().__init__(fun=DataExtraction.apply, name="extract data", cacheable=True)
 
     @classmethod
     def apply(cls, data: Any) -> Any:
