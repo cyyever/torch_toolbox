@@ -93,6 +93,14 @@ def get_device(**kwargs: Any) -> torch.device:
     return get_devices(**kwargs)[0]
 
 
+def set_device(device: torch.device) -> None:
+    match device.type.lower():
+        case "cuda":
+            torch.cuda.set_device(device)
+        case "xpu":
+            torch.xpu.set_device(device)
+
+
 class SyncedStreamContext:
     def __init__(self, stream: torch.cpu.Stream | torch.Stream) -> None:
         self.__stream = stream
