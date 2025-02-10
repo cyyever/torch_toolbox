@@ -291,9 +291,13 @@ class ModelEvaluator:
                 check_modules.remove(module)
                 modules.add(module)
                 for k in dir(module):
+                    if "k".startswith("_"):
+                        continue
+                    if "loss" in k:
+                        continue
                     v = getattr(module, k)
                     if isinstance(v, torch.nn.Module) and v not in modules:
-                        print("add sub-module ", k)
+                        # print("add sub-module ", k)
                         check_modules.add(v)
                         modules.add(v)
             setattr(self._model, "__cyy_check_modules", modules)
