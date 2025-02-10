@@ -55,6 +55,14 @@ def get_cpu_device() -> torch.device:
     return torch.device("cpu")
 
 
+def set_device(device: torch.device) -> None:
+    match device.type.lower():
+        case "cuda":
+            torch.cuda.set_device(device)
+        case "xpu":
+            torch.xpu.set_device(device)
+
+
 class DeviceGreedyAllocator:
     @classmethod
     def get_devices(cls, max_needed_bytes: int | None = None) -> list[torch.device]:
