@@ -281,15 +281,33 @@ class ModelEvaluator:
         self.model.load_state_dict(model.state_dict())
 
     def __set_model_mode(self, evaluation_mode: EvaluationMode) -> None:
-        match evaluation_mode:
-            case EvaluationMode.Training:
-                if not self._model.training:
-                    self._model.train()
-                    return
-            case EvaluationMode.Test | EvaluationMode.TestWithGrad:
-                if self._model.training:
-                    self._model.eval()
-                if evaluation_mode == EvaluationMode.TestWithGrad:
-                    self.model_util.change_modules(
-                        f=lambda _, module, __: module.train(), module_type=nn.RNNBase
-                    )
+        modules: set[torch.nn.Module] = set()
+        if hasattr(self._model, "__cyy_check_modules"):
+            modules = getattr(self._model, "__cyy_check_modules")
+        else:
+            check_modules: set[torch.nn.Module] = {self._model}
+            while check_modules:
+                module = next(iter(check_modules))
+                check_modules.remove(module)
+                modules.add(module)
+                for k in dir(module):
+                    v = getattr(module, k)
+                    if isinstance(v, torch.nn.Module) and v not in modules:
+                        print("add sub-module ", k)
+                        check_modules.add(v)
+                        modules.add(v)
+            setattr(self._model, "__cyy_check_modules", modules)
+
+        for module in modules:
+            match evaluation_mode:
+                case EvaluationMode.Training:
+                    if not module.training:
+                        module.train()
+                case EvaluationMode.Test | EvaluationMode.TestWithGrad:
+                    if module.training:
+                        module.eval()
+                        if evaluation_mode == EvaluationMode.TestWithGrad:
+                            ModelUtil(module).change_modules(
+                                f=lambda _, sub_module, __: sub_module.train(),
+                                module_type=nn.RNNBase,
+                            )
