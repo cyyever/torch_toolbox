@@ -19,11 +19,15 @@ class LossMetric(Metric):
         if not self.__batch_losses:
             return
         total_size = sum(
-            (item[1] for item in self.__batch_losses[1:]), start=self.__batch_losses[0][1]
+            (item[1] for item in self.__batch_losses[1:]),
+            start=self.__batch_losses[0][1],
         )
         if isinstance(total_size, torch.Tensor):
             total_size = total_size.item()
 
-        total_loss = sum((item[1] * item[0]).item() for item in self.__batch_losses)
+        total_loss = sum(
+            (item[1] * item[0] for item in self.__batch_losses[1:]),
+            start=self.__batch_losses[0][1] * self.__batch_losses[0][0],
+        )
         self.__batch_losses = []
-        self._set_epoch_metric(epoch, "loss", float(total_loss) / float(total_size))
+        self._set_epoch_metric(epoch, "loss", total_loss / total_size)
