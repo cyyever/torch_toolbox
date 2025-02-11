@@ -22,9 +22,6 @@ class LossMetric(Metric):
             (item[1] for item in self.__batch_losses[1:]),
             start=self.__batch_losses[0][1],
         )
-        if isinstance(total_size, torch.Tensor):
-            total_size = total_size.item()
-
         total_loss = sum(
             (item[1] * item[0] for item in self.__batch_losses[1:]),
             start=self.__batch_losses[0][1] * self.__batch_losses[0][0],
