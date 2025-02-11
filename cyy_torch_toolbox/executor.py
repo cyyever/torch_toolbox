@@ -285,9 +285,7 @@ class Executor(HookCollection, abc.ABC):
             self.model_evaluator.offload_from_device()
         for executor in self._foreach_sub_executor():
             executor.offload_from_device()
-        match self.device.type.lower():
-            case "cuda":
-                torch.cuda.empty_cache()
+        torch.cuda.empty_cache()
 
     def has_optimizer(self) -> bool:
         return "optimizer" in self._data
