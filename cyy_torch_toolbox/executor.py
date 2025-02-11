@@ -1,6 +1,7 @@
 import abc
 import copy
 import functools
+import gc
 import os
 from collections.abc import Callable, Generator
 from contextlib import AbstractContextManager, ExitStack
@@ -285,6 +286,7 @@ class Executor(HookCollection, abc.ABC):
             self.model_evaluator.offload_from_device()
         for executor in self._foreach_sub_executor():
             executor.offload_from_device()
+        gc.collect()
         torch.cuda.empty_cache()
 
     def has_optimizer(self) -> bool:
