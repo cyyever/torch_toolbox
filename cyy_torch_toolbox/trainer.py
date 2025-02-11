@@ -54,7 +54,9 @@ class Trainer(Executor):
         else:
             model_evaluator = copy.copy(self.model_evaluator)
         inferencer = Inferencer(
-            dataset_collection=self.dataset_collection if not copy_dataset else copy.copy(self.dataset_collection),
+            dataset_collection=self.dataset_collection
+            if not copy_dataset
+            else copy.copy(self.dataset_collection),
             phase=phase,
             hyper_parameter=self.hyper_parameter,
             hook_config=self.hook_config,
@@ -79,9 +81,10 @@ class Trainer(Executor):
             )
         return self._data["optimizer"]
 
-    def remove_model(self) -> None:
+    def remove_model(self, remove_optimizer: bool = True) -> None:
         self.__inferencers.clear()
-        self.remove_optimizer()
+        if remove_optimizer:
+            self.remove_optimizer()
         super().remove_model()
 
     def remove_optimizer(self) -> None:
