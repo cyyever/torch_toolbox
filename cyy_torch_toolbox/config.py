@@ -110,6 +110,21 @@ class Config(ConfigBase):
             )
         return self.save_dir
 
+    def fix_paths(self, project_path: str) -> None:
+        for k, v in self.dc_config.dataset_kwargs.items():
+            if not k.endswith("files"):
+                continue
+            files = v
+            if isinstance(v, str):
+                files = [v]
+            new_files = []
+            for file in files:
+                if not file.startswith("/"):
+                    file = str(os.path.join(project_path, file))
+                    assert os.path.isfile(file)
+                new_files.append(file)
+            self.dc_config.dataset_kwargs[k] = new_files
+
 
 def load_config_from_hydra(
     config_path: str | None = None, other_config_files: list[str] | None = None
