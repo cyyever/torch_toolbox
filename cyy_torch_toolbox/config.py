@@ -4,6 +4,7 @@ import os
 import uuid
 from typing import Any
 
+import hydra
 from cyy_naive_lib.log import log_debug, log_error, set_level
 from omegaconf import OmegaConf
 
@@ -69,7 +70,7 @@ class Config(ConfigBase):
     @classmethod
     def __load_config(cls, obj: Any, conf: Any, check_config: bool = True) -> dict:
         if not isinstance(conf, dict):
-            conf_container: dict = OmegaConf.to_container(conf)
+            conf_container: Any = OmegaConf.to_container(conf)
         else:
             conf_container = conf
         for attr in copy.copy(conf_container):
@@ -108,3 +109,24 @@ class Config(ConfigBase):
                 str(uuid.uuid4()),
             )
         return self.save_dir
+
+
+def load_config_from_hydra(config_path: str, *other_config_files: str) -> Any:
+    conf_obj: Any = None
+
+    @hydra.main(config_path=config_path, version_base=None)
+    def load_config_hydra(conf) -> None:
+        nonlocal conf_obj
+
+        conf_obj = conf
+        while "dataset_name" not in conf_obj and len(conf_obj) == 1:
+            conf_obj = next(iter(conf_obj.values()))
+
+    load_config_hydra()
+
+    other_confs = [OmegaConf.load(file) for file in other_config_files]
+    other_confs.append(conf_obj)
+    result_conf = other_confs[0]
+    for o in other_confs[1:]:
+        result_conf.merge_with(o)
+    return result_conf
