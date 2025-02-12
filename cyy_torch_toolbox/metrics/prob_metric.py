@@ -18,7 +18,9 @@ class ProbabilityMetric(ClassificationMetric):
         epoch_prob = self.get_prob(epoch)
         if epoch_prob is None:
             epoch_prob = {}
-        for sample_output, sample_index_tensor in zip(output, sample_indices, strict=False):
+        for sample_output, sample_index_tensor in zip(
+            output, sample_indices, strict=False
+        ):
             sample_index: int = int(sample_index_tensor.item())
             probs: None | torch.Tensor = None
             if isinstance(last_layer, torch.nn.LogSoftmax):
