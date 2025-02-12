@@ -112,8 +112,10 @@ class Config(ConfigBase):
 
 
 def load_config_from_hydra(
-    config_path: str | None = None, *other_config_files: str
+    config_path: str | None = None, other_config_files: list[str] | None = None
 ) -> Any:
+    if other_config_files is None:
+        other_config_files = []
     other_confs = [OmegaConf.load(file) for file in other_config_files]
     if config_path is not None:
         conf_obj: Any = None
@@ -126,6 +128,7 @@ def load_config_from_hydra(
         load_config_hydra()
 
         other_confs.append(conf_obj)
+    assert other_confs
     for idx, conf_obj in enumerate(other_confs):
         while "dataset_name" not in conf_obj and len(conf_obj) == 1:
             conf_obj = next(iter(conf_obj.values()))
