@@ -29,8 +29,6 @@ def get_device_memory_info(
             device_type = "mps"
         elif torch.xpu.is_available():
             device_type = "xpu"
-        # elif torch.is_vulkan_available():
-        #     device_type = "vulkan"
         else:
             device_type = "cpu"
     match device_type:
