@@ -15,6 +15,7 @@ def get_cuda_memory_info(
 
     device_map = {i: i for i in range(device_cnt)}
     cuda_visible_devices = os.getenv("CUDA_VISIBLE_DEVICES", None)
+    device_list = list(range(device_cnt))
     if cuda_visible_devices is not None:
         device_list = sorted([int(d) for d in cuda_visible_devices.split(",")])
         device_map = {
@@ -22,7 +23,7 @@ def get_cuda_memory_info(
         }
 
     result = {}
-    for d_idx in range(device_cnt):
+    for d_idx in device_list:
         v_d_idx = device_map[d_idx]
         if device_idx is not None and v_d_idx != device_idx:
             continue
