@@ -42,7 +42,7 @@ def get_cuda_memory_info(
                 info.used -= cache_size
                 # pylint: disable=no-member
                 info.free += cache_size
-        result[torch.device(f"cuda:{v_idx}")] = MemoryInfo(
+        result[torch.device(f"cuda:{v_d_idx}")] = MemoryInfo(
             # pylint: disable=no-member
             used=info.used,
             # pylint: disable=no-member
