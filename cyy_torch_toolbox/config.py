@@ -116,7 +116,7 @@ class Config(ConfigBase):
         )
 
         for k, v in self.dc_config.dataset_kwargs.items():
-            if not k.endswith("files") and not k.endswith("file"):
+            if k not in ("train_files", "test_files", "validation_files"):
                 continue
             files = v
             if isinstance(v, str):
