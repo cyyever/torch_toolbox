@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import torch
 import torch.cuda
-from cyy_naive_lib.log import log_info
+from cyy_naive_lib.log import log_info, log_debug
 
 from ..metric_visualizers.performance_metric_logger import PerformanceMetricLogger
 from ..metric_visualizers.performance_metric_recorder import PerformanceMetricRecorder
@@ -37,12 +37,12 @@ class HookConfig(ConfigBase):
 
         if self.use_amp:
             if not isinstance(executor.model_evaluator, AMPModelEvaluator):
-                log_info("use amp")
+                log_debug("use amp")
                 executor.replace_model_evaluator(AMPModelEvaluator)
         else:
             if isinstance(executor.model_evaluator, AMPModelEvaluator):
                 if executor.phase == MachineLearningPhase.Training:
-                    log_info("disable amp")
+                    log_debug("disable amp")
                 executor.replace_model_evaluator(
                     lambda amp_evaluator: amp_evaluator.evaluator
                 )
