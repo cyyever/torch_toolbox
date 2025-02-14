@@ -1,16 +1,16 @@
 import functools
+from cyy_naive_lib.log import log_debug
 
-from ..data_pipeline import (
-    DataPipeline,
-    Transform,
-)
+from ..data_pipeline import DataPipeline, Transform
 from .collection import DatasetCollection
 
 
 def format_prompt(prompt: str, example: str | dict) -> str | dict:
     if isinstance(example, str):
+        log_debug("final input is %s", prompt + example)
         return prompt + example
     example["input"] = prompt.format(**example)
+    log_debug("final input is %s", example["input"])
     return example
 
 
