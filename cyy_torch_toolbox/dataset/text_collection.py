@@ -10,9 +10,7 @@ from .collection import DatasetCollection
 def format_prompt(prompt: str, example: str | dict) -> str | dict:
     if isinstance(example, str):
         return prompt + example
-    sample_input = example["input"]
-    assert isinstance(sample_input, dict)
-    example["input"] = prompt.format(**sample_input)
+    example["input"] = prompt.format(**example)
     return example
 
 
