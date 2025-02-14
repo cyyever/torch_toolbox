@@ -194,13 +194,12 @@ def get_recommended_hyper_parameter(
 @dataclass(kw_only=True)
 class HyperParameterConfig(HyperParameter):
     weight_decay: None | float = 1.0
-    real_weight_decay: None | float = None
     fake_weight_decay: None | float = 1.0
 
     def create_hyper_parameter(self) -> HyperParameter:
         hyper_parameter = copy.copy(self)
-        if self.real_weight_decay is not None:
-            hyper_parameter.optimizer_kwargs["weight_decay"] = self.real_weight_decay
+        if self.weight_decay is not None:
+            hyper_parameter.optimizer_kwargs["weight_decay"] = self.weight_decay
             hyper_parameter.optimizer_kwargs.pop("fake_weight_decay", None)
         else:
             if self.fake_weight_decay is not None:
