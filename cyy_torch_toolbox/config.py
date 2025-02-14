@@ -116,7 +116,7 @@ class Config(ConfigBase):
         )
 
         for k, v in self.dc_config.dataset_kwargs.items():
-            if not k.endswith("files"):
+            if not k.endswith("files") and not k.endswith("file"):
                 continue
             files = v
             if isinstance(v, str):
