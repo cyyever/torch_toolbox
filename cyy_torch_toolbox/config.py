@@ -111,6 +111,10 @@ class Config(ConfigBase):
         return self.save_dir
 
     def fix_paths(self, project_path: str) -> None:
+        data_dir = self.dc_config.dataset_kwargs.get(
+            "data_dir", os.path.join(project_path, "data")
+        )
+
         for k, v in self.dc_config.dataset_kwargs.items():
             if not k.endswith("files"):
                 continue
@@ -120,7 +124,7 @@ class Config(ConfigBase):
             new_files = []
             for file in files:
                 if not file.startswith("/"):
-                    file = str(os.path.join(project_path, file))
+                    file = str(os.path.join(data_dir, file))
                     assert os.path.isfile(file)
                 new_files.append(file)
             self.dc_config.dataset_kwargs[k] = new_files
