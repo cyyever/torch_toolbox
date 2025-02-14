@@ -64,7 +64,7 @@ def int_target_to_text(target: int, index: int, mapping: dict | None = None) -> 
     raise NotImplementedError()
 
 
-def __replace_target(label_map, target, index):
+def __replace_target(label_map: dict, target: Any, index: int) -> Any:
     if index in label_map:
         assert label_map[index] != target
         target = label_map[index]
