@@ -112,7 +112,7 @@ class DataPipeline:
         assert result is not None
         assert isinstance(result, dict)
         for k, v in result.items():
-            if isinstance(v, list):
+            if isinstance(v, list) and k in ("index", "input", "target"):
                 try:
                     collated_value = default_collate(v)
                     result[k] = collated_value
