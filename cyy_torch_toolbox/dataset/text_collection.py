@@ -14,14 +14,17 @@ def format_prompt(prompt: str, example: str | dict) -> str | dict:
         for k, v in example.items():
             new_k = f"space_join_{k}"
             if new_k in prompt:
-                extra_kwargs[new_k] = " ".join(v)
+                extra_kwargs[new_k] = " ".join([str(a) for a in v])
+            new_k = f"comma_join_{k}"
+            if new_k in prompt:
+                extra_kwargs[new_k] = ",".join([str(a) for a in v])
         example["input"] = prompt.format(**example, **extra_kwargs)
     except BaseException as e:
         log_error("formatting fail")
         log_error("prompt is:\n%s", prompt)
         log_error("input keys are:\n%s", example.keys())
         raise e
-    log_info("final input is %s", example["input"])
+    log_debug("final input is %s", example["input"])
     return example
 
 
