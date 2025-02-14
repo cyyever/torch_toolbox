@@ -1,5 +1,6 @@
-import pynvml
 import os
+
+import pynvml
 import torch
 
 from .base import MemoryInfo

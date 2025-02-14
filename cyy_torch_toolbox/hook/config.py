@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import torch
 import torch.cuda
-from cyy_naive_lib.log import log_info, log_debug
+from cyy_naive_lib.log import log_debug, log_info
 
 from ..metric_visualizers.performance_metric_logger import PerformanceMetricLogger
 from ..metric_visualizers.performance_metric_recorder import PerformanceMetricRecorder
