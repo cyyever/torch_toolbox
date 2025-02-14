@@ -7,10 +7,12 @@ from ..data_pipeline import (
 from .collection import DatasetCollection
 
 
-def str_concat(prefix: str, example: str | dict) -> str | dict:
+def format_prompt(prompt: str, example: str | dict) -> str | dict:
     if isinstance(example, str):
-        return prefix + example
-    example["input"] = prefix + example["input"]
+        return prompt + example
+    sample_input = example["input"]
+    assert isinstance(sample_input, dict)
+    example["input"] = prompt.format(**sample_input)
     return example
 
 
@@ -34,6 +36,6 @@ class TextDatasetCollection(DatasetCollection):
     def get_text_pipeline(self) -> DataPipeline | None:
         if self.prompt is not None:
             self.append_text_transform(
-                Transform(fun=functools.partial(str_concat, self.prompt))
+                Transform(fun=functools.partial(format_prompt, self.prompt))
             )
         return self.__text_pipeline
