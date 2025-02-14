@@ -26,7 +26,9 @@ def get_dataset_size(dataset: Any) -> int:
 
 def select_item(dataset: Any, indices: OptionalIndicesType = None) -> Generator:
     if indices is not None:
-        indices = set(indices)
+        indices = set(
+            int(idx.item()) if isinstance(idx, torch.Tensor) else idx for idx in indices
+        )
     match dataset:
         case torch.utils.data.IterableDataset():
             iterator = iter(dataset)
