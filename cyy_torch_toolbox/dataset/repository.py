@@ -204,7 +204,12 @@ def get_dataset(
             continue
         constructor: None | Callable = None
         for factory in __global_dataset_constructors.get(dataset_type, []):
-            constructor = factory.get(name, case_sensitive=True, cache_dir=cache_dir)
+            constructor = factory.get(
+                name,
+                case_sensitive=True,
+                cache_dir=cache_dir,
+                dataset_kwargs=dataset_kwargs,
+            )
             if constructor is not None:
                 break
         if constructor is not None:
@@ -212,7 +217,7 @@ def get_dataset(
                 dataset_name=name,
                 dataset_type=dataset_type,
                 dataset_constructor=constructor,
-                dataset_kwargs=dataset_kwargs,
+                dataset_kwargs=copy.deepcopy(dataset_kwargs),
                 cache_dir=cache_dir,
             )
 
