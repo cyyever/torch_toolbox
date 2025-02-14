@@ -92,6 +92,11 @@ def __prepare_dataset_kwargs(
         for k in new_dataset_kwargs:
             if k not in constructor_kwargs and "files" not in k:
                 discarded_dataset_kwargs.add(k)
+        if "dataset_kwargs" in constructor_kwargs:
+            discarded_dataset_kwargs.clear()
+            new_dataset_kwargs["dataset_kwargs"] = {
+                k: new_dataset_kwargs[k] for k in discarded_dataset_kwargs
+            }
         if discarded_dataset_kwargs:
             log_debug("discarded_dataset_kwargs %s", discarded_dataset_kwargs)
             for k in discarded_dataset_kwargs:
