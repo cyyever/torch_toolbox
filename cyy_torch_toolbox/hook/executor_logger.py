@@ -18,14 +18,24 @@ class ExecutorLogger(Hook):
             "parameter number is %s",
             sum(a.numel() for a in executor.model_util.get_parameter_seq(detach=False)),
         )
-        log_info(
-            "trainable parameter number is %s",
-            sum(
-                a.numel()
-                for a in executor.model_util.get_parameter_seq(detach=False)
-                if a.requires_grad
-            ),
-        )
+        trainable_parameter_number = 0
+        dtype_stat = {}
+        device_stat = {}
+        for name, parameter in executor.model.named_parameters():
+            if parameter.requires_grad:
+                trainable_parameter_number += parameter.numel()
+            if parameter.device not in device_stat:
+                device_stat[parameter.device] = []
+            device_stat[parameter.device].append(name)
+            if parameter.dtype not in dtype_stat:
+                dtype_stat[parameter.dtype] = []
+            dtype_stat[parameter.dtype].append(name)
+        log_info("trainable parameter number is %s", trainable_parameter_number)
+        if len(device_stat) == 1:
+            log_info("model use device %s", list(device_stat.keys())[0])
+        else:
+            log_info("model use device %s", device_stat)
+        log_info("model use dtype %s", list(dtype_stat.keys()))
         if hasattr(executor, "hyper_parameter"):
             log_info("hyper_parameter is %s", executor.hyper_parameter)
         if executor.has_optimizer():
