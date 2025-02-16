@@ -4,7 +4,7 @@ from typing import Any, Self
 import torch
 import torch.amp
 from cyy_naive_lib.decorator import Decorator
-from cyy_naive_lib.log import log_warning
+from cyy_naive_lib.log import log_debug
 
 from .evaluator import ModelEvaluator
 
@@ -73,6 +73,6 @@ class AMPModelEvaluator(Decorator):
             # Updates the scale for next iteration.
             self.__scaler.update()
             if has_inf > 0:
-                log_warning("found inf in AMP, scale is %s", self.__scaler._scale)
+                log_debug("found inf in AMP, scale is %s", self.__scaler._scale)
                 continue
             break
