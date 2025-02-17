@@ -59,6 +59,12 @@ class Executor(HookCollection, abc.ABC):
         self.set_default_device: bool = False
 
     @property
+    def mutable_model_config(self) -> ModelConfig:
+        assert self.__model_config is not None
+        assert self.__model_evaluator is None
+        return self.__model_config
+
+    @property
     def dataset_collection(self) -> DatasetCollection:
         return self.__dataset_collection
 
