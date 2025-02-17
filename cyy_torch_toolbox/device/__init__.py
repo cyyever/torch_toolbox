@@ -15,7 +15,7 @@ else:
 
 def get_device_memory_info(
     device: torch.device | None = None, consider_cache: bool = False
-) -> dict[torch.device | str, MemoryInfo]:
+) -> dict[torch.device, MemoryInfo]:
     device_type: str = ""
     device_idx: int | None = None
     if device is not None:
@@ -62,9 +62,7 @@ def set_device(device: torch.device) -> None:
 
 class DeviceGreedyAllocator:
     @classmethod
-    def get_devices(
-        cls, max_needed_bytes: int | None = None
-    ) -> list[torch.device | str]:
+    def get_devices(cls, max_needed_bytes: int | None = None) -> list[torch.device]:
         memory_info = get_device_memory_info()
         memory_to_device: dict = {}
         for device, info in memory_info.items():
@@ -75,13 +73,13 @@ class DeviceGreedyAllocator:
             if info.free not in memory_to_device:
                 memory_to_device[info.free] = []
             memory_to_device[info.free].append(device)
-        devices: list[str | torch.device] = []
+        devices: list[torch.device] = []
         for k in sorted(memory_to_device.keys(), reverse=True):
             devices += memory_to_device[k]
         return devices
 
     @classmethod
-    def get_device(cls, **kwargs: Any) -> torch.device | str:
+    def get_device(cls, **kwargs: Any) -> torch.device:
         return cls.get_devices(**kwargs)[0]
 
 

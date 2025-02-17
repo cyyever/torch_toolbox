@@ -5,7 +5,7 @@ import torch
 import torch.multiprocessing
 from cyy_naive_lib.concurrency import BatchPolicy, TaskQueue
 
-from ..device import get_device_memory_info, get_devices
+from ..device import get_device_memory_info, DeviceGreedyAllocator
 
 
 class CUDABatchPolicy(BatchPolicy):
@@ -24,7 +24,7 @@ class CUDABatchPolicy(BatchPolicy):
 
 class TorchTaskQueue(TaskQueue):
     def __init__(self, worker_num: int | None = None, **kwargs: Any) -> None:
-        self._devices: list = get_devices()
+        self._devices: list = DeviceGreedyAllocator.get_devices()
         if worker_num is None:
             worker_num = len(self._devices)
             if "cpu" in self._devices[0].type.lower():
