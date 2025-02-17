@@ -8,7 +8,7 @@ from .base import MemoryInfo
 
 def get_cuda_memory_info(
     device_idx: int | None = None, consider_cache: bool = True
-) -> dict[torch.device, MemoryInfo]:
+) -> dict[str, MemoryInfo]:
     assert torch.cuda.is_available()
     pynvml.nvmlInit()
     device_cnt = pynvml.nvmlDeviceGetCount()
@@ -43,7 +43,7 @@ def get_cuda_memory_info(
                 info.used -= cache_size
                 # pylint: disable=no-member
                 info.free += cache_size
-        result[torch.device(f"cuda:{v_d_idx}")] = MemoryInfo(
+        result[f"cuda:{v_d_idx}"] = MemoryInfo(
             # pylint: disable=no-member
             used=info.used,
             # pylint: disable=no-member
