@@ -73,6 +73,8 @@ class Executor(HookCollection, abc.ABC):
         self.__dataloader = None
         return self.__dataset_collection
 
+    def has_device(self) ->bool:
+        return self.__device is None
     @property
     def device(self) -> torch.device:
         if self.__device is None:

@@ -46,13 +46,10 @@ class Trainer(Executor):
         self,
         phase: MachineLearningPhase,
         deepcopy_model: bool = False,
+        copy_model: bool = True,
         copy_dataset: bool = False,
         inherent_device: bool = True,
     ) -> Inferencer:
-        if deepcopy_model:
-            model_evaluator: ModelEvaluator = copy.deepcopy(self.model_evaluator)
-        else:
-            model_evaluator = copy.copy(self.model_evaluator)
         inferencer = Inferencer(
             dataset_collection=self.dataset_collection
             if not copy_dataset
@@ -61,9 +58,15 @@ class Trainer(Executor):
             hyper_parameter=self.hyper_parameter,
             hook_config=self.hook_config,
             dataloader_kwargs=self.dataloader_kwargs,
+            model_config=self.mutable_model_config if not copy_model else None,
         )
-        inferencer.set_model_evaluator(model_evaluator=model_evaluator)
-        if inherent_device:
+        if copy_model:
+            if deepcopy_model:
+                model_evaluator: ModelEvaluator = copy.deepcopy(self.model_evaluator)
+            else:
+                model_evaluator = copy.copy(self.model_evaluator)
+            inferencer.set_model_evaluator(model_evaluator=model_evaluator)
+        if inherent_device and self.has_device():
             inferencer.set_device(self.device)
         if self.save_dir is not None:
             inferencer.set_save_dir(self.save_dir)

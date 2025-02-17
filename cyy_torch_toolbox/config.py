@@ -57,10 +57,8 @@ class Config(ConfigBase):
         self,
         dc: DatasetCollection | None = None,
         phase: MachineLearningPhase = MachineLearningPhase.Test,
-        inherent_device: bool = True,
     ) -> Inferencer:
-        trainer = self.create_trainer(dc=dc)
-        return trainer.get_inferencer(phase=phase, inherent_device=inherent_device)
+        return self.create_trainer(dc=dc).get_inferencer(phase=phase, copy_model=False)
 
     def apply_global_config(self) -> None:
         if self.log_level is not None:
