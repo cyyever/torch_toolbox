@@ -15,7 +15,7 @@ from cyy_naive_lib.log import log_debug
 
 from .data_pipeline.loader import get_dataloader
 from .dataset import DatasetCollection, DatasetUtil
-from .device import DefaultDeviceContext, SyncedStreamContext, get_device
+from .device import DefaultDeviceContext, SyncedStreamContext, DeviceGreedyAllocator
 from .hook import HookCollection
 from .hook.config import HookConfig
 from .hyper_parameter import HyperParameter, lr_scheduler_step_after_batch
@@ -48,7 +48,7 @@ class Executor(HookCollection, abc.ABC):
             hook_config = HookConfig()
         self.hook_config: HookConfig = copy.deepcopy(hook_config)
         self.__device: None | torch.device = None
-        self.__device_fun: Callable = get_device
+        self.__device_fun: Callable = DeviceGreedyAllocator.get_device
         self.__dataloader: None | torch.utils.data.DataLoader = None
         self.__dataloader_kwargs: dict = (
             copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
