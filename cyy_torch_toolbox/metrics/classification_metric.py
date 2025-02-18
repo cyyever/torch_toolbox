@@ -36,14 +36,15 @@ class ClassificationMetric(Metric):
 
     @torch.no_grad()
     def _get_output(self, executor, result: dict) -> tuple[torch.Tensor, torch.Tensor]:
-        targets = result["targets"]
+        targets: torch.Tensor = result["targets"].detach()
         if targets.dtype is torch.float:
-            targets = targets.to(dtype=torch.long)
+            targets = targets.to(dtype=torch.long, non_blocking=True)
 
         output = result.get("logits")
         if output is None:
             output = result.get("original_output")
         assert isinstance(output, torch.Tensor)
+        output = output.detach()
         if len(output.shape) == 2 and output.shape[-1] == 1:
             output = output.view(-1)
         assert isinstance(targets, torch.Tensor)

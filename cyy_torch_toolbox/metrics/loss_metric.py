@@ -12,8 +12,15 @@ class LossMetric(Metric):
     def _after_batch(self, result, **kwargs) -> None:
         loss_batch_size = result["loss_batch_size"]
         if isinstance(loss_batch_size, torch.Tensor):
-            loss_batch_size = loss_batch_size.detach().clone()
-        self.__batch_losses.append((result["loss"].detach().clone(), loss_batch_size))
+            loss_batch_size = loss_batch_size.detach().to(
+                device="cpu", non_blocking=True
+            )
+        self.__batch_losses.append(
+            (
+                result["loss"].detach().to(device="cpu", non_blocking=True),
+                loss_batch_size,
+            )
+        )
 
     def _after_epoch(self, epoch: int, **kwargs) -> None:
         if not self.__batch_losses:
