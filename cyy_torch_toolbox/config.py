@@ -109,13 +109,16 @@ class Config(ConfigBase):
         return self.save_dir
 
     def fix_paths(self, project_path: str) -> None:
-        data_dir = self.dc_config.dataset_kwargs.get(
-            "data_dir", os.path.join(project_path, "data")
-        )
-
         for k, v in self.dc_config.dataset_kwargs.items():
             if k not in ("train_files", "test_files", "validation_files"):
                 continue
+            data_dir = self.dc_config.dataset_kwargs.get(
+                "data_dir", os.path.join(project_path, "data")
+            )
+            if k == "train_files":
+                data_dir = self.dc_config.dataset_kwargs.get("train_data_dir", data_dir)
+            elif k == "test_files":
+                data_dir = self.dc_config.dataset_kwargs.get("test_data_dir", data_dir)
             files = v
             if isinstance(v, str):
                 files = [v]
