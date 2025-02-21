@@ -15,7 +15,7 @@ from cyy_naive_lib.log import log_debug
 
 from .data_pipeline.loader import get_dataloader
 from .dataset import DatasetCollection, DatasetUtil
-from .device import DefaultDeviceContext, SyncedStreamContext, DeviceGreedyAllocator
+from .device import DefaultDeviceContext, DeviceGreedyAllocator, SyncedStreamContext
 from .hook import HookCollection
 from .hook.config import HookConfig
 from .hyper_parameter import HyperParameter, lr_scheduler_step_after_batch

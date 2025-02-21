@@ -5,7 +5,7 @@ import torch
 import torch.multiprocessing
 from cyy_naive_lib.concurrency import BatchPolicy, TaskQueue
 
-from ..device import get_device_memory_info, DeviceGreedyAllocator
+from ..device import DeviceGreedyAllocator, get_device_memory_info
 
 
 class CUDABatchPolicy(BatchPolicy):
