@@ -14,10 +14,12 @@ class Base:
     def __init__(
         self,
         dataset_collection: DatasetCollection,
-        sample_phase: MachineLearningPhase | None = None,
+        sample_phase: MachineLearningPhase | list[MachineLearningPhase] | None = None,
     ) -> None:
         self._dc = dataset_collection
         self._samplers: dict[MachineLearningPhase, DatasetSampler] = {}
+        if isinstance(sample_phase, MachineLearningPhase):
+            sample_phase = [sample_phase]
         self.sample_phase = sample_phase
         self.set_dataset_collection(dataset_collection)
 
@@ -28,7 +30,7 @@ class Base:
     def get_phases(self) -> list[MachineLearningPhase]:
         phases = []
         for phase in MachineLearningPhase:
-            if self.sample_phase is not None and self.sample_phase != phase:
+            if self.sample_phase is not None and phase not in self.sample_phase:
                 continue
             if not self._dc.has_dataset(phase):
                 continue
