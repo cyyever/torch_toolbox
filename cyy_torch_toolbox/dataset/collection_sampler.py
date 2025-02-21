@@ -11,21 +11,35 @@ from .util import DatasetUtil
 
 
 class Base:
-    def __init__(self, dataset_collection: DatasetCollection) -> None:
+    def __init__(
+        self,
+        dataset_collection: DatasetCollection,
+        sample_phase: MachineLearningPhase | None = None,
+    ) -> None:
         self._dc = dataset_collection
         self._samplers: dict[MachineLearningPhase, DatasetSampler] = {}
+        self.sample_phase = sample_phase
         self.set_dataset_collection(dataset_collection)
 
     @property
     def dataset_collection(self) -> DatasetCollection:
         return self._dc
 
+    def get_phases(self) -> list[MachineLearningPhase]:
+        phases = []
+        for phase in MachineLearningPhase:
+            if self.sample_phase is not None and self.sample_phase != phase:
+                continue
+            if not self._dc.has_dataset(phase):
+                continue
+            phases.append(phase)
+        return phases
+
     def set_dataset_collection(self, dataset_collection: DatasetCollection) -> None:
         self._dc = dataset_collection
         self._samplers = {
             phase: DatasetSampler(dataset_collection.get_dataset_util(phase))
-            for phase in MachineLearningPhase
-            if dataset_collection.has_dataset(phase)
+            for phase in self.get_phases()
         }
 
     def __getstate__(self) -> dict:
@@ -36,16 +50,13 @@ class Base:
 
 
 class SamplerBase(Base):
-    def __init__(
-        self,
-        dataset_collection: DatasetCollection,
-    ) -> None:
-        super().__init__(dataset_collection=dataset_collection)
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
         self._dataset_indices: dict[MachineLearningPhase, set] = {}
 
     def sample(self) -> DatasetCollection:
         dc = copy.copy(self._dc)
-        for phase in MachineLearningPhase:
+        for phase in self.get_phases():
             indices = self._dataset_indices[phase]
             assert indices
             dc.set_subset(phase=phase, indices=indices)
@@ -57,20 +68,14 @@ class SamplerBase(Base):
 
 
 class SplitBase(Base):
-    def __init__(
-        self,
-        dataset_collection: DatasetCollection,
-        part_number: int,
-    ) -> None:
-        super().__init__(dataset_collection=dataset_collection)
+    def __init__(self, part_number: int, **kwargs) -> None:
+        super().__init__(**kwargs)
         self._part_number = part_number
         self._dataset_indices: dict[MachineLearningPhase, dict] = {}
 
     def sample(self, part_index: int) -> DatasetCollection:
         dc = copy.copy(self._dc)
-        for phase in MachineLearningPhase:
-            if not dc.has_dataset(phase):
-                continue
+        for phase in self.get_phases():
             indices = self._dataset_indices[phase][part_index]
             assert indices
             dc.set_subset(phase=phase, indices=indices)
@@ -100,7 +105,7 @@ class IIDSplit(SplitBase):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         parts: list[float] = [1] * self._part_number
-        for phase in MachineLearningPhase:
+        for phase in self.get_phases():
             self._dataset_indices[phase] = dict(
                 enumerate(self._samplers[phase].iid_split_indices(parts))
             )
