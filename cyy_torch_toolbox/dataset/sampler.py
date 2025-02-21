@@ -15,6 +15,10 @@ class DatasetSampler:
         self._excluded_indices: set = set()
         self.checked_indices: set | None = None
 
+    @property
+    def dataset(self):
+        return self.__dataset_util.dataset
+
     def set_excluded_indices(self, excluded_indices):
         self._excluded_indices = excluded_indices
 

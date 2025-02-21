@@ -1,4 +1,5 @@
 import functools
+
 from cyy_naive_lib.log import log_debug, log_error
 
 from ..data_pipeline import DataPipeline, Transform
