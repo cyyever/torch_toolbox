@@ -17,6 +17,7 @@ from .collection_sampler import (
     get_dataset_collection_split,
     global_sampler_factory,
 )
+from .local_file import load_local_files
 from .repository import DatasetFactory, get_dataset
 from .sampler import DatasetSampler
 from .text_collection import TextDatasetCollection
