@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from cyy_naive_lib.log import log_info
 
+from ..data_pipeline import DatasetWithIndex
 from ..ml_type import Factory, MachineLearningPhase, TargetType, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
@@ -99,7 +100,7 @@ class SplitBase(Base):
         self, phase: MachineLearningPhase, part_number: int, part_index: int
     ) -> None | SampleInfo:
         sampler = self._samplers[phase]
-        original_dataset = getattr(sampler.dataset, "original_dataset")
+        original_dataset = sampler.dataset.original_dataset
         file_key = f"{str(phase).lower()}_files"
         if phase == MachineLearningPhase.Training:
             file_key = "train_files"
@@ -123,9 +124,22 @@ class SplitBase(Base):
     def sample(self, part_index: int) -> DatasetCollection:
         dc = copy.copy(self._dc)
         for phase in self.get_phases():
-            indices = self._dataset_indices[phase][part_index].indices
-            assert indices
-            dc.set_subset(phase=phase, indices=set(indices))
+            sample_info = self._dataset_indices[phase][part_index]
+            indices = sample_info.indices
+            if indices:
+                dc.set_subset(phase=phase, indices=set(indices))
+            else:
+                assert sample_info.file_path is not None
+                file_path: str = sample_info.file_path
+                from .local_file import load_local_files
+
+                dc.transform_dataset(
+                    phase=phase,
+                    transformer=lambda dataset_util: DatasetWithIndex().apply(
+                        load_local_files(file_path)
+                    ),
+                )
+
         return dc
 
 
