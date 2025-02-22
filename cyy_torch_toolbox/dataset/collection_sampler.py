@@ -89,6 +89,8 @@ class SplitBase(Base):
                     phase=phase, part_number=part_number, part_index=part_index
                 )
                 if sample_info is not None:
+                    if phase not in self._dataset_indices:
+                        self._dataset_indices[phase] = {}
                     self._dataset_indices[phase][part_index] = sample_info
             if phase in self._dataset_indices and self._dataset_indices[phase]:
                 assert len(self._dataset_indices[phase]) == part_number
