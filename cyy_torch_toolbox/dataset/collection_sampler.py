@@ -102,7 +102,6 @@ class SplitBase(Base):
         if phase == MachineLearningPhase.Training:
             file_key = "train_files"
         files = getattr(original_dataset, file_key, [])
-        print(type(original_dataset))
         assert isinstance(files, list)
         if len(files) == part_number:
             for file in files:
