@@ -90,7 +90,7 @@ class SplitBase(Base):
                 )
                 if sample_info is not None:
                     self._dataset_indices[phase][part_index] = sample_info
-            if self._dataset_indices[phase]:
+            if phase in self._dataset_indices and self._dataset_indices[phase]:
                 assert len(self._dataset_indices[phase]) == part_number
 
     def get_preallocated_sample(
