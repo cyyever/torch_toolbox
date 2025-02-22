@@ -32,24 +32,6 @@ class Base:
         self.sample_phase = sample_phase
         self.set_dataset_collection(dataset_collection)
 
-    def get_preallocated_sample(
-        self, phase: MachineLearningPhase, part_number: int, part_index: int
-    ) -> None | SampleInfo:
-        sampler = self._samplers[phase]
-        original_dataset = getattr(sampler.dataset, "original_dataset")
-        file_key = f"{str(phase).lower()}_files"
-        if phase == MachineLearningPhase.Training:
-            file_key = "train_files"
-        files = getattr(original_dataset, file_key, [])
-        print(type(original_dataset))
-        assert isinstance(files, list)
-        if len(files) == part_number:
-            for file in files:
-                if f"worker_{part_index}" in os.path.basename(file):
-                    log_info("use path %s for index %s", file, part_index)
-                    return SampleInfo(file_path=file)
-        return None
-
     @property
     def dataset_collection(self) -> DatasetCollection:
         return self._dc
@@ -101,6 +83,33 @@ class SplitBase(Base):
         super().__init__(**kwargs)
         self._part_number = part_number
         self._dataset_indices: dict[MachineLearningPhase, dict[int, SampleInfo]] = {}
+        for phase in self.get_phases():
+            for part_index in range(self._part_number):
+                sample_info = self.get_preallocated_sample(
+                    phase=phase, part_number=part_number, part_index=part_index
+                )
+                if sample_info is not None:
+                    self._dataset_indices[phase][part_index] = sample_info
+            if self._dataset_indices[phase]:
+                assert len(self._dataset_indices[phase]) == part_number
+
+    def get_preallocated_sample(
+        self, phase: MachineLearningPhase, part_number: int, part_index: int
+    ) -> None | SampleInfo:
+        sampler = self._samplers[phase]
+        original_dataset = getattr(sampler.dataset, "original_dataset")
+        file_key = f"{str(phase).lower()}_files"
+        if phase == MachineLearningPhase.Training:
+            file_key = "train_files"
+        files = getattr(original_dataset, file_key, [])
+        print(type(original_dataset))
+        assert isinstance(files, list)
+        if len(files) == part_number:
+            for file in files:
+                if f"worker_{part_index}" in os.path.basename(file):
+                    log_info("use path %s for index %s", file, part_index)
+                    return SampleInfo(file_path=file)
+        return None
 
     def set_split_indices(
         self, phase: MachineLearningPhase, index_result: dict[int, set[int] | list[int]]
