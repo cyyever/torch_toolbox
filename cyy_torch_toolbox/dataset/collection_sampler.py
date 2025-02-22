@@ -138,6 +138,8 @@ class DatasetCollectionSplit(SplitBase):
             dataset_collection=dataset_collection, part_number=len(part_proportions)
         )
         for phase in self.get_phases():
+            if phase in self._dataset_indices and self._dataset_indices[phase]:
+                continue
             self.set_split_indices(
                 phase=phase,
                 index_result=dict(
@@ -245,6 +247,8 @@ class RandomSplitByLabel(SplitBase):
         super().__init__(*args, **kwargs)
         parts: list[float] = [1] * self._part_number
         for phase in MachineLearningPhase:
+            if phase in self._dataset_indices and self._dataset_indices[phase]:
+                continue
             self.set_split_indices(
                 phase=phase,
                 index_result=dict(
@@ -260,6 +264,8 @@ class RandomSplit(SplitBase):
         super().__init__(*args, **kwargs)
         parts: list[float] = [1] * self._part_number
         for phase, sample in self._samplers.items():
+            if phase in self._dataset_indices and self._dataset_indices[phase]:
+                continue
             self.set_split_indices(
                 phase=phase,
                 index_result=dict(
