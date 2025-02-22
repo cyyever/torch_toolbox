@@ -36,7 +36,7 @@ class Base:
         self, phase: MachineLearningPhase, part_number: int, part_index: int
     ) -> None | SampleInfo:
         sampler = self._samplers[phase]
-        original_dataset = sampler.dataset.original_dataset
+        original_dataset = getattr(sampler.dataset, "original_dataset")
         file_key = f"{str(phase).lower()}_files"
         if phase == MachineLearningPhase.Training:
             file_key = "train_files"
@@ -115,7 +115,7 @@ class SplitBase(Base):
         for phase in self.get_phases():
             indices = self._dataset_indices[phase][part_index].indices
             assert indices
-            dc.set_subset(phase=phase, indices=indices)
+            dc.set_subset(phase=phase, indices=set(indices))
         return dc
 
 
@@ -193,7 +193,7 @@ class IIDSplitWithFlip(IIDSplit):
                 continue
             sampler = DatasetSampler(dc.get_dataset_util(phase))
             flip_percent = self.get_flip_percent(part_index=part_index)
-            indices = sorted(self._dataset_indices[phase][part_index].indices)
+            indices = self._dataset_indices[phase][part_index].indices
             assert indices
             assert isinstance(dc, ClassificationDatasetCollection)
             flipped_indices = sampler.randomize_label_by_class(
@@ -218,11 +218,15 @@ class IIDSplitWithSample(IIDSplit):
         assert len(sample_probs) == part_number
         super().__init__(dataset_collection=dataset_collection, part_number=part_number)
         for phase, part_indices in self._dataset_indices.items():
-            for part_index, indices in part_indices.items():
-                self._samplers[phase].checked_indices = indices
-                part_indices[part_index] = self._samplers[phase].sample_indices(
-                    parts=[sample_probs[part_index]],
-                )[0]
+            for part_index, sample_info in part_indices.items():
+                indices = sample_info.indices
+                assert indices is not None
+                self._samplers[phase].checked_indices = set(indices)
+                part_indices[part_index] = SampleInfo(
+                    indices=self._samplers[phase].sample_indices(
+                        parts=[sample_probs[part_index]],
+                    )[0]
+                )
 
 
 class RandomSplitByLabel(SplitBase):
@@ -230,10 +234,13 @@ class RandomSplitByLabel(SplitBase):
         super().__init__(*args, **kwargs)
         parts: list[float] = [1] * self._part_number
         for phase in MachineLearningPhase:
-            self._dataset_indices[phase] = dict(
-                enumerate(
-                    self._samplers[phase].random_split_indices(parts, by_label=True)
-                )
+            self.set_split_indices(
+                phase=phase,
+                index_result=dict(
+                    enumerate(
+                        self._samplers[phase].random_split_indices(parts, by_label=True)
+                    )
+                ),
             )
 
 

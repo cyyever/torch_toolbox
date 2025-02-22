@@ -12,8 +12,8 @@ from .util import DatasetUtil
 class DatasetSampler:
     def __init__(self, dataset_util: DatasetUtil) -> None:
         self.__dataset_util: DatasetUtil = dataset_util
-        self._excluded_indices: set = set()
-        self.checked_indices: set | None = None
+        self._excluded_indices: set[int] = set()
+        self.checked_indices: set[int] | None = None
 
     @property
     def dataset(self):
