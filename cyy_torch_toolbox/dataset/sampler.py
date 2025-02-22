@@ -120,7 +120,7 @@ class DatasetSampler:
 
     def random_split_indices(
         self, parts: list[float], labels: list | None = None, by_label: bool = True
-    ) -> list[list]:
+    ) -> list[list[int]]:
         if by_label:
             collected_indices = set()
 

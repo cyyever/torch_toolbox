@@ -2,12 +2,21 @@ import copy
 import functools
 import json
 import os
+from dataclasses import dataclass
+
+from cyy_naive_lib.log import log_info
 
 from ..ml_type import Factory, MachineLearningPhase, TargetType, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
 from .sampler import DatasetSampler
 from .util import DatasetUtil
+
+
+@dataclass(kw_only=True)
+class SampleInfo:
+    indices: set[int] | list[int] | None = None
+    file_path: str | None = None
 
 
 class Base:
@@ -22,6 +31,24 @@ class Base:
             sample_phase = [sample_phase]
         self.sample_phase = sample_phase
         self.set_dataset_collection(dataset_collection)
+
+    def get_preallocated_sample(
+        self, phase: MachineLearningPhase, part_number: int, part_index: int
+    ) -> None | SampleInfo:
+        sampler = self._samplers[phase]
+        original_dataset = sampler.dataset.original_dataset
+        file_key = f"{str(phase).lower()}_files"
+        if phase == MachineLearningPhase.Training:
+            file_key = "train_files"
+        files = getattr(original_dataset, file_key, [])
+        print(type(original_dataset))
+        assert isinstance(files, list)
+        if len(files) == part_number:
+            for file in files:
+                if f"worker_{part_index}" in os.path.basename(file):
+                    log_info("use path %s for index %s", file, part_index)
+                    return SampleInfo(file_path=file)
+        return None
 
     @property
     def dataset_collection(self) -> DatasetCollection:
@@ -54,31 +81,39 @@ class Base:
 class SamplerBase(Base):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self._dataset_indices: dict[MachineLearningPhase, set] = {}
+        self._sample_info: dict[MachineLearningPhase, SampleInfo] = {}
 
     def sample(self) -> DatasetCollection:
         dc = copy.copy(self._dc)
         for phase in self.get_phases():
-            indices = self._dataset_indices[phase]
+            indices = self._sample_info[phase].indices
             assert indices
-            dc.set_subset(phase=phase, indices=indices)
+            dc.set_subset(phase=phase, indices=set(indices))
         return dc
 
     def save(self, save_dir: str) -> None:
         with open(os.path.join(save_dir, "sampler.json"), "w", encoding="utf8") as f:
-            json.dump(self._dataset_indices, f)
+            json.dump(self._sample_info, f)
 
 
 class SplitBase(Base):
     def __init__(self, part_number: int, **kwargs) -> None:
         super().__init__(**kwargs)
         self._part_number = part_number
-        self._dataset_indices: dict[MachineLearningPhase, dict] = {}
+        self._dataset_indices: dict[MachineLearningPhase, dict[int, SampleInfo]] = {}
+
+    def set_split_indices(
+        self, phase: MachineLearningPhase, index_result: dict[int, set[int] | list[int]]
+    ) -> None:
+        assert phase not in self._dataset_indices
+        self._dataset_indices[phase] = {}
+        for idx, dataset_indices in index_result.items():
+            self._dataset_indices[phase][idx] = SampleInfo(indices=dataset_indices)
 
     def sample(self, part_index: int) -> DatasetCollection:
         dc = copy.copy(self._dc)
         for phase in self.get_phases():
-            indices = self._dataset_indices[phase][part_index]
+            indices = self._dataset_indices[phase][part_index].indices
             assert indices
             dc.set_subset(phase=phase, indices=indices)
         return dc
@@ -93,13 +128,16 @@ class DatasetCollectionSplit(SplitBase):
         super().__init__(
             dataset_collection=dataset_collection, part_number=len(part_proportions)
         )
-        for phase in MachineLearningPhase:
-            self._dataset_indices[phase] = dict(
-                enumerate(
-                    self._samplers[phase].split_indices(
-                        part_proportions=part_proportions
+        for phase in self.get_phases():
+            self.set_split_indices(
+                phase=phase,
+                index_result=dict(
+                    enumerate(
+                        self._samplers[phase].split_indices(
+                            part_proportions=part_proportions
+                        )
                     )
-                )
+                ),
             )
 
 
@@ -108,8 +146,11 @@ class IIDSplit(SplitBase):
         super().__init__(*args, **kwargs)
         parts: list[float] = [1] * self._part_number
         for phase in self.get_phases():
-            self._dataset_indices[phase] = dict(
-                enumerate(self._samplers[phase].iid_split_indices(parts))
+            self.set_split_indices(
+                phase=phase,
+                index_result=dict(
+                    enumerate(self._samplers[phase].iid_split_indices(parts))
+                ),
             )
 
 
@@ -152,7 +193,7 @@ class IIDSplitWithFlip(IIDSplit):
                 continue
             sampler = DatasetSampler(dc.get_dataset_util(phase))
             flip_percent = self.get_flip_percent(part_index=part_index)
-            indices = list(self._dataset_indices[phase][part_index])
+            indices = sorted(self._dataset_indices[phase][part_index].indices)
             assert indices
             assert isinstance(dc, ClassificationDatasetCollection)
             flipped_indices = sampler.randomize_label_by_class(
@@ -201,8 +242,11 @@ class RandomSplit(SplitBase):
         super().__init__(*args, **kwargs)
         parts: list[float] = [1] * self._part_number
         for phase, sample in self._samplers.items():
-            self._dataset_indices[phase] = dict(
-                enumerate(sample.random_split_indices(parts, by_label=False))
+            self.set_split_indices(
+                phase=phase,
+                index_result=dict(
+                    enumerate(sample.random_split_indices(parts, by_label=False))
+                ),
             )
 
 
@@ -214,9 +258,9 @@ class ProbabilitySampler(SamplerBase):
     ) -> None:
         super().__init__(dataset_collection=dataset_collection)
         for phase in MachineLearningPhase:
-            self._dataset_indices[phase] = self._samplers[phase].sample_indices(
-                parts=[sample_prob]
-            )[0]
+            self._sample_info[phase] = SampleInfo(
+                indices=self._samplers[phase].sample_indices(parts=[sample_prob])[0]
+            )
 
 
 global_sampler_factory = Factory()

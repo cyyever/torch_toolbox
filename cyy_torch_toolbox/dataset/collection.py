@@ -33,7 +33,9 @@ class DatasetCollection:
         assert datasets
         if add_index:
             for k, v in datasets.items():
-                datasets[k] = DatasetWithIndex()(v)
+                v_index = DatasetWithIndex()(v)
+                v_index.original_dataset = v
+                datasets[k] = v_index
         self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset | list] = (
             datasets
         )
