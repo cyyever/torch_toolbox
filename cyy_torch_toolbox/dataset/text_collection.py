@@ -6,7 +6,7 @@ from ..data_pipeline import DataPipeline, Transform
 from .collection import DatasetCollection
 
 
-def format_prompt(prompt: str, example: str | dict, tokenizer) -> str | dict:
+def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
     if isinstance(example, str):
         log_debug("final input is %s", prompt + example)
         return prompt + example
@@ -23,7 +23,7 @@ def format_prompt(prompt: str, example: str | dict, tokenizer) -> str | dict:
                 extra_kwargs["eos_token"] = tokenizer.eos_token
         example["input"] = prompt.format(**example, **extra_kwargs)
     except BaseException as e:
-        log_error("formatting fail")
+        log_error("formatting fail %s", e)
         log_error("prompt is:\n%s", prompt)
         log_error("input keys are:\n%s", example.keys())
         raise e
