@@ -84,16 +84,20 @@ class DatasetCollection:
             self.has_enhanced_data_pipeline = True
 
     def transform_dataset(
-        self, phase: MachineLearningPhase, transformer: Callable
+        self,
+        phase: MachineLearningPhase,
+        transformer: Callable[[DatasetUtil], torch.utils.data.Dataset],
     ) -> None:
         dataset_util = self.get_dataset_util(phase)
         self.__datasets[phase] = transformer(dataset_util)
 
-    def transform_all_datasets(self, transformer: Callable) -> None:
+    def transform_all_datasets(
+        self, transformer: Callable[[DatasetUtil], torch.utils.data.Dataset]
+    ) -> None:
         for phase in self.__datasets:
             self.transform_dataset(phase, transformer)
 
-    def set_subset(self, phase: MachineLearningPhase, indices: set) -> None:
+    def set_subset(self, phase: MachineLearningPhase, indices: set[int]) -> None:
         self.transform_dataset(
             phase=phase,
             transformer=lambda dataset_util: dataset_util.get_subset(indices),
