@@ -46,10 +46,8 @@ class HyperParameter:
     learning_rate: HyperParameterAction | float = HyperParameterAction.FIND_LR
     learning_rate_scheduler_name: str = "ReduceLROnPlateau"
     learning_rate_scheduler_kwargs: dict = field(default_factory=lambda: {})
-    optimizer_name: str = "Adam"
-    optimizer_kwargs: dict = field(
-        default_factory=lambda: {"momentum": 0.9, "fake_weight_decay": 1.0}
-    )
+    optimizer_name: str = "AdamW"
+    optimizer_kwargs: dict = field(default_factory=lambda: {"fake_weight_decay": 1.0})
 
     def __get_learning_rate(self, trainer: Any | None = None) -> float:
         if isinstance(self.learning_rate, HyperParameterAction):
