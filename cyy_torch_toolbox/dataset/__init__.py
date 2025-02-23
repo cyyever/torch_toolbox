@@ -189,4 +189,5 @@ __all__ = [
     "DatasetCollectionSplit",
     "get_dataset_collection_split",
     "global_sampler_factory",
+    "load_local_files",
 ]
