@@ -6,7 +6,7 @@ from ..data_pipeline import DataPipeline, Transform
 from .collection import DatasetCollection
 
 
-def format_prompt(prompt: str, example: str | dict) -> str | dict:
+def format_prompt(prompt: str, example: str | dict, tokenizer) -> str | dict:
     if isinstance(example, str):
         log_debug("final input is %s", prompt + example)
         return prompt + example
@@ -19,6 +19,8 @@ def format_prompt(prompt: str, example: str | dict) -> str | dict:
             new_k = f"comma_join_{k}"
             if new_k in prompt:
                 extra_kwargs[new_k] = ",".join([str(a) for a in v])
+            if "eos_token" in prompt:
+                extra_kwargs["eos_token"] = tokenizer.eos_token
         example["input"] = prompt.format(**example, **extra_kwargs)
     except BaseException as e:
         log_error("formatting fail")
@@ -46,9 +48,9 @@ class TextDatasetCollection(DatasetCollection):
             self.__text_pipeline = DataPipeline()
         self.__text_pipeline.append(transform)
 
-    def get_text_pipeline(self) -> DataPipeline | None:
+    def get_text_pipeline(self, tokenizer) -> DataPipeline | None:
         if self.prompt is not None:
             self.append_text_transform(
-                Transform(fun=functools.partial(format_prompt, self.prompt))
+                Transform(fun=functools.partial(format_prompt, self.prompt, tokenizer))
             )
         return self.__text_pipeline
