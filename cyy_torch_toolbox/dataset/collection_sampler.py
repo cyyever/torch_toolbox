@@ -18,6 +18,25 @@ from .util import DatasetUtil
 class SampleInfo:
     indices: set[int] | list[int] | None = None
     file_path: str | None = None
+    whole_dataset: bool = False
+
+    def sample(self, dc: DatasetCollection, phase: MachineLearningPhase) -> None:
+        if self.indices is not None:
+            assert self.indices
+            dc.set_subset(phase=phase, indices=set(self.indices))
+            return
+        if self.file_path is not None:
+            from .local_file import load_local_files
+
+            file_path: str = self.file_path
+            dc.transform_dataset(
+                phase=phase,
+                transformer=lambda dataset_util: DatasetWithIndex().apply(
+                    load_local_files(file_path)
+                ),
+            )
+            return
+        assert self.whole_dataset
 
 
 class Base:
@@ -93,14 +112,19 @@ class SplitBase(Base):
                     if phase not in self._dataset_indices:
                         self._dataset_indices[phase] = {}
                     self._dataset_indices[phase][part_index] = sample_info
-            if phase in self._dataset_indices and self._dataset_indices[phase]:
+            if self._dataset_indices.get(phase, []):
                 assert len(self._dataset_indices[phase]) == part_number
 
     def get_preallocated_sample(
         self, phase: MachineLearningPhase, part_number: int, part_index: int
     ) -> None | SampleInfo:
+        if part_number == 1:
+            assert part_index == 0
+            return SampleInfo(whole_dataset=True)
+
         sampler = self._samplers[phase]
         original_dataset = sampler.dataset.original_dataset
+
         file_key = f"{str(phase).lower()}_files"
         if phase == MachineLearningPhase.Training:
             file_key = "train_files"
@@ -125,21 +149,7 @@ class SplitBase(Base):
         dc = copy.copy(self._dc)
         for phase in self.get_phases():
             sample_info = self._dataset_indices[phase][part_index]
-            indices = sample_info.indices
-            if indices:
-                dc.set_subset(phase=phase, indices=set(indices))
-            else:
-                assert sample_info.file_path is not None
-                file_path: str = sample_info.file_path
-                from .local_file import load_local_files
-
-                dc.transform_dataset(
-                    phase=phase,
-                    transformer=lambda dataset_util: DatasetWithIndex().apply(
-                        load_local_files(file_path)
-                    ),
-                )
-
+            sample_info.sample(dc=dc, phase=phase)
         return dc
 
 
