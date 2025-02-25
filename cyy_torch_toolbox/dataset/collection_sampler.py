@@ -123,7 +123,7 @@ class SplitBase(Base):
             return SampleInfo(whole_dataset=True)
 
         sampler = self._samplers[phase]
-        original_dataset = sampler.dataset.original_dataset
+        original_dataset = getattr(sampler.dataset, "original_dataset", sampler.dataset)
 
         file_key = f"{str(phase).lower()}_files"
         if phase == MachineLearningPhase.Training:
