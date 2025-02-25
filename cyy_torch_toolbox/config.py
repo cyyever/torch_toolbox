@@ -1,6 +1,7 @@
 import copy
 import datetime
 import os
+import sys
 import uuid
 from typing import Any
 
@@ -134,6 +135,14 @@ class Config(ConfigBase):
 def load_config_from_hydra(
     config_path: str | None = None, other_config_files: list[str] | None = None
 ) -> Any:
+    # disable hydra output dir
+    for option in [
+        "hydra.run.dir=.",
+        "hydra.output_subdir=null",
+        "hydra/job_logging=disabled",
+        "hydra/hydra_logging=disabled",
+    ]:
+        sys.argv.append(option)
     if other_config_files is None:
         other_config_files = []
     other_confs = [OmegaConf.load(file) for file in other_config_files]
