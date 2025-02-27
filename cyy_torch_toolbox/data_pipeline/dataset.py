@@ -24,7 +24,9 @@ def get_dataset_size(dataset: Any) -> int:
     raise NotImplementedError(dataset)
 
 
-def select_item(dataset: Any, indices: OptionalIndicesType = None) -> Generator:
+def select_item(
+    dataset: Any, indices: OptionalIndicesType = None, col: str | None = None
+) -> Generator:
     if indices is not None:
         indices = set(
             int(idx.item()) if isinstance(idx, torch.Tensor) else idx for idx in indices
@@ -35,8 +37,6 @@ def select_item(dataset: Any, indices: OptionalIndicesType = None) -> Generator:
             for idx, item in enumerate(iterator):
                 if indices is None or idx in indices:
                     yield idx, item
-                    if indices is not None:
-                        indices.remove(idx)
         case _:
             if indices is None:
                 indices = list(range(get_dataset_size(dataset)))

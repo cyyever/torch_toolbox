@@ -153,7 +153,8 @@ class DatasetCollection:
                 ).get_batch_labels(indices=[0]):
                     if not labels:
                         return False
-            except BaseException:
+            except BaseException as e:
+                log_debug("Get exception for text dataset %s", e)
                 return False
         return True
 
