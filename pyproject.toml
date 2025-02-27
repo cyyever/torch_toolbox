@@ -20,6 +20,7 @@ dependencies = [
   "hydra-core",
   "omegaconf",
   "torchmetrics",
+  "datasets",
   "nvidia-ml-py",
   "dill",
   "cyy_naive_lib@git+https://github.com/cyyever/naive_python_lib.git@main",
