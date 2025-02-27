@@ -153,6 +153,23 @@ class DatasetUtil:
     def __get_batch_labels_impl(
         self, indices: OptionalIndicesType = None
     ) -> Generator[tuple[int, Any]]:
+        # for hf datasets
+        try:
+            labels = self.dataset["label"]["data"]
+            assert len(labels) == len(self)
+            if indices is not None:
+                indices = set(
+                    int(idx.item()) if isinstance(idx, torch.Tensor) else idx
+                    for idx in indices
+                )
+            else:
+                indices = list(range(len(labels)))
+            for idx, label in enumerate(labels):
+                if idx in indices:
+                    yield idx, label
+        except BaseException:
+            pass
+
         for idx, sample in self.get_samples(indices):
             target: Any | None = None
             if "target" in sample:

@@ -5,7 +5,6 @@ import torch
 import torch.utils.data
 import torch.utils.data.datapipes
 import torch.utils.data.dataset
-import tqdm
 
 from ..ml_type import OptionalIndicesType
 from .transform import DatasetTransform
@@ -39,10 +38,8 @@ def select_item(dataset: Any, indices: OptionalIndicesType = None) -> Generator:
         case _:
             if indices is None:
                 indices = list(range(get_dataset_size(dataset)))
-            with tqdm.tqdm(total=len(indices)) as pbar:
-                for idx in indices:
-                    pbar.update(1)
-                    yield idx, dataset[idx]
+            for idx in indices:
+                yield idx, dataset[idx]
 
 
 def subset_dp(
