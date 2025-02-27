@@ -5,6 +5,7 @@ import torch
 import torch.utils.data
 import torch.utils.data.datapipes
 import torch.utils.data.dataset
+import tqdm
 
 from ..ml_type import OptionalIndicesType
 from .transform import DatasetTransform
@@ -24,9 +25,7 @@ def get_dataset_size(dataset: Any) -> int:
     raise NotImplementedError(dataset)
 
 
-def select_item(
-    dataset: Any, indices: OptionalIndicesType = None, col: str | None = None
-) -> Generator:
+def select_item(dataset: Any, indices: OptionalIndicesType = None) -> Generator:
     if indices is not None:
         indices = set(
             int(idx.item()) if isinstance(idx, torch.Tensor) else idx for idx in indices
@@ -40,8 +39,10 @@ def select_item(
         case _:
             if indices is None:
                 indices = list(range(get_dataset_size(dataset)))
-            for idx in indices:
-                yield idx, dataset[idx]
+            with tqdm.tqdm(total=len(indices)) as pbar:
+                for idx in indices:
+                    pbar.update(1)
+                    yield idx, dataset[idx]
 
 
 def subset_dp(
