@@ -197,6 +197,7 @@ class HyperParameterConfig(HyperParameter):
     def create_hyper_parameter(self) -> HyperParameter:
         hyper_parameter = copy.copy(self)
         if self.weight_decay is not None:
+            assert self.fake_weight_decay is None
             hyper_parameter.optimizer_kwargs["weight_decay"] = self.weight_decay
             hyper_parameter.optimizer_kwargs.pop("fake_weight_decay", None)
         else:
@@ -204,9 +205,5 @@ class HyperParameterConfig(HyperParameter):
                 hyper_parameter.optimizer_kwargs["fake_weight_decay"] = (
                     self.fake_weight_decay
                 )
-            if self.weight_decay is not None:
-                hyper_parameter.optimizer_kwargs["fake_weight_decay"] = (
-                    self.weight_decay
-                )
+            assert self.weight_decay is None
         return hyper_parameter
-        # get_recommended_hyper_parameter(dataset_name, model_name)
