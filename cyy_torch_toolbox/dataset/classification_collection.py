@@ -8,7 +8,7 @@ from ..ml_type import MachineLearningPhase
 class ClassificationDatasetCollection(Decorator):
     @functools.cached_property
     def label_number(self) -> int:
-        return len(self.get_labels())
+        return len(self.get_labels(use_cache=True))
 
     def get_labels(self, use_cache: bool = False) -> set:
         def computation_fun() -> set:
