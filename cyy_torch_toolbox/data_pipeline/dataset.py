@@ -26,8 +26,11 @@ def get_dataset_size(dataset: Any) -> int:
 
 def select_item(dataset: Any, indices: OptionalIndicesType = None) -> Generator:
     if indices is not None:
-        indices = set(
-            int(idx.item()) if isinstance(idx, torch.Tensor) else idx for idx in indices
+        indices = sorted(
+            set(
+                int(idx.item()) if isinstance(idx, torch.Tensor) else idx
+                for idx in indices
+            )
         )
     match dataset:
         case torch.utils.data.IterableDataset():
@@ -35,10 +38,15 @@ def select_item(dataset: Any, indices: OptionalIndicesType = None) -> Generator:
             if indices is None:
                 yield from enumerate(iterator)
             else:
+                assert indices
+                next_idx = indices[0]
                 for idx, item in enumerate(iterator):
-                    if idx in indices:
-                        indices.remove(idx)
+                    if idx == next_idx:
                         yield idx, item
+                        indices = indices[1:]
+                        if not indices:
+                            return
+                        next_idx = indices[0]
         case _:
             if indices is None:
                 indices = list(range(get_dataset_size(dataset)))
