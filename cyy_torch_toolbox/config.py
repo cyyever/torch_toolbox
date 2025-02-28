@@ -127,7 +127,7 @@ class Config(ConfigBase):
             for file in files:
                 if not file.startswith("/"):
                     file = str(os.path.join(data_dir, file))
-                    assert os.path.isfile(file)
+                    assert os.path.isfile(file), file
                 new_files.append(file)
             self.dc_config.dataset_kwargs[k] = new_files
 
