@@ -158,14 +158,16 @@ class DatasetUtil:
             labels = self.dataset["label"]["data"]
             assert len(labels) == len(self)
             if indices is not None:
-                indices = set(
-                    int(idx.item()) if isinstance(idx, torch.Tensor) else idx
-                    for idx in indices
+                indices = sorted(
+                    set(
+                        int(idx.item()) if isinstance(idx, torch.Tensor) else idx
+                        for idx in indices
+                    )
                 )
+                for idx in indices:
+                    yield idx, labels[idx]
             else:
-                indices = list(range(len(labels)))
-            for idx, label in enumerate(labels):
-                if idx in indices:
+                for idx, label in enumerate(labels):
                     yield idx, label
         except BaseException:
             pass
