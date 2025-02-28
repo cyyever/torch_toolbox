@@ -32,6 +32,7 @@ class AMPModelEvaluator(Decorator):
         self.__amp_ctx: None | torch.autocast = None
         self.__scaler: None | torch.GradScaler = None
         self.use_tf32: bool = True
+        self.check_inf: bool = False
 
     @property
     def evaluator(self) -> ModelEvaluator:
@@ -54,7 +55,7 @@ class AMPModelEvaluator(Decorator):
         loss,
         optimizer: torch.optim.Optimizer,
         **backward_kwargs,
-    ) -> Any:
+    ) -> None:
         assert self.__amp_ctx is not None
         if self.__scaler is None:
             self.__scaler = torch.GradScaler(device=self.__amp_ctx.device)
@@ -64,6 +65,8 @@ class AMPModelEvaluator(Decorator):
                 loss=self.__scaler.scale(loss), retain_graph=True, **backward_kwargs
             )
             self.__scaler.step(optimizer)
+            if not self.check_inf:
+                return
             has_inf = sum(
                 found_inf.item()
                 for state in self.__scaler._per_optimizer_states.values()
