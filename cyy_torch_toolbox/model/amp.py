@@ -66,6 +66,8 @@ class AMPModelEvaluator(Decorator):
             )
             self.__scaler.step(optimizer)
             if not self.check_inf:
+                # Updates the scale for next iteration.
+                self.__scaler.update()
                 return
             has_inf = sum(
                 found_inf.item()
