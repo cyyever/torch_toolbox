@@ -32,9 +32,13 @@ def select_item(dataset: Any, indices: OptionalIndicesType = None) -> Generator:
     match dataset:
         case torch.utils.data.IterableDataset():
             iterator = iter(dataset)
-            for idx, item in enumerate(iterator):
-                if indices is None or idx in indices:
-                    yield idx, item
+            if indices is None:
+                yield from enumerate(iterator)
+            else:
+                for idx, item in enumerate(iterator):
+                    if idx in indices:
+                        indices.remove(idx)
+                        yield idx, item
         case _:
             if indices is None:
                 indices = list(range(get_dataset_size(dataset)))
