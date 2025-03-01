@@ -26,6 +26,9 @@ dependencies = [
   "cyy_naive_lib@git+https://github.com/cyyever/naive_python_lib.git@main",
 ]
 
+[tool.setuptools.package-data]
+cyy_torch_toolbox = ["py.typed"]
+
 [project.urls]
 Repository = "https://github.com/cyyever/torch_toolbox"
 
