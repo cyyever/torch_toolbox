@@ -19,8 +19,8 @@ class ExecutorLogger(Hook):
             sum(a.numel() for a in executor.model_util.get_parameter_seq(detach=False)),
         )
         trainable_parameter_number = 0
-        dtype_stat = {}
-        device_stat = {}
+        dtype_stat: dict = {}
+        device_stat: dict = {}
         for name, parameter in executor.model.named_parameters():
             if parameter.requires_grad:
                 trainable_parameter_number += parameter.numel()
