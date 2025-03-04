@@ -103,26 +103,29 @@ class SplitBase(Base):
         super().__init__(**kwargs)
         self._part_number = part_number
         self._dataset_indices: dict[MachineLearningPhase, dict[int, SampleInfo]] = {}
+        self.get_preallocated_samples()
+
+    def get_preallocated_samples(self):
         for phase in self.get_phases():
             for part_index in range(self._part_number):
                 sample_info = self.get_preallocated_sample(
-                    phase=phase, part_number=part_number, part_index=part_index
+                    phase=phase, part_index=part_index
                 )
                 if sample_info is not None:
                     if phase not in self._dataset_indices:
                         self._dataset_indices[phase] = {}
                     self._dataset_indices[phase][part_index] = sample_info
             if self._dataset_indices.get(phase, []):
-                assert len(self._dataset_indices[phase]) == part_number
+                assert len(self._dataset_indices[phase]) == self._part_number
 
     def get_preallocated_sample(
         self,
         phase: MachineLearningPhase,
-        part_number: int,
         part_index: int,
         use_specified_file: bool = False,
     ) -> None | SampleInfo:
-        if part_number == 1:
+        assert 0 <= part_index < self._part_number
+        if self._part_number == 1:
             assert part_index == 0
             return SampleInfo(whole_dataset=True)
         if not use_specified_file:
@@ -136,7 +139,7 @@ class SplitBase(Base):
         if not files and phase == MachineLearningPhase.Training:
             file_key = "train_files"
             files = getattr(original_dataset, file_key, [])
-        assert isinstance(files, list) and len(files) == part_number
+        assert isinstance(files, list) and len(files) == self._part_number
         for file in files:
             if f"worker_{part_index}" in os.path.basename(file):
                 log_info("use path %s for index %s", file, part_index)
