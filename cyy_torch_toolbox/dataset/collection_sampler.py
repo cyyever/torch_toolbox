@@ -304,6 +304,15 @@ class RandomSplit(SplitBase):
         super().__init__(by_label_split=False, **kwargs)
 
 
+class SplitByFile(SplitBase):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(by_label_split=False, **kwargs)
+        for phase in self.get_phases():
+            assert len(self._dataset_indices.get(phase, [])) == self._part_number
+            for info in self._dataset_indices[phase].values():
+                assert info.file_path is not None
+
+
 class ProbabilitySampler(SamplerBase):
     def __init__(
         self,
@@ -323,6 +332,7 @@ global_sampler_factory.register("iid_split_and_flip", IIDSplitWithFlip)
 global_sampler_factory.register("iid_split_and_sample", IIDSplitWithSample)
 global_sampler_factory.register("random", RandomSplit)
 global_sampler_factory.register("prob_sampler", ProbabilitySampler)
+global_sampler_factory.register("file_split", SplitByFile)
 
 
 def get_dataset_collection_split(
