@@ -306,7 +306,7 @@ class RandomSplit(SplitBase):
 
 class SplitByFile(SplitBase):
     def __init__(self, **kwargs) -> None:
-        super().__init__(by_label_split=False, **kwargs)
+        super().__init__(**kwargs)
         for phase in self.get_phases():
             assert len(self._dataset_indices.get(phase, [])) == self._part_number
             for info in self._dataset_indices[phase].values():
