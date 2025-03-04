@@ -11,6 +11,7 @@ from .collection import DatasetCollection
 from .collection_sampler import (
     DatasetCollectionSplit,
     RandomSplit,
+    SampleInfo,
     SamplerBase,
     SplitBase,
     get_dataset_collection_sampler,
@@ -189,5 +190,6 @@ __all__ = [
     "DatasetCollectionSplit",
     "get_dataset_collection_split",
     "global_sampler_factory",
+    "SampleInfo",
     "load_local_files",
 ]
