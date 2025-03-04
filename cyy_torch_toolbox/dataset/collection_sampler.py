@@ -185,8 +185,8 @@ class DatasetCollectionSplit(SplitBase):
 
 
 class IIDSplit(SplitBase):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
         parts: list[float] = [1] * self._part_number
         for phase in self.get_phases():
             if phase in self._dataset_indices and self._dataset_indices[phase]:
@@ -233,7 +233,7 @@ class IIDSplitWithFlip(IIDSplit):
 
     def sample(self, part_index: int) -> DatasetCollection:
         dc = super().sample(part_index=part_index)
-        for phase in MachineLearningPhase:
+        for phase in self.get_phases():
             if phase == MachineLearningPhase.Test:
                 continue
             sampler = DatasetSampler(dc.get_dataset_util(phase))
@@ -274,26 +274,9 @@ class IIDSplitWithSample(IIDSplit):
                 )
 
 
-class RandomSplitByLabel(SplitBase):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        parts: list[float] = [1] * self._part_number
-        for phase in MachineLearningPhase:
-            if phase in self._dataset_indices and self._dataset_indices[phase]:
-                continue
-            self.set_split_indices(
-                phase=phase,
-                index_result=dict(
-                    enumerate(
-                        self._samplers[phase].random_split_indices(parts, by_label=True)
-                    )
-                ),
-            )
-
-
-class RandomSplit(SplitBase):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+class RandomSplitBase(SplitBase):
+    def __init__(self, by_label_split: bool, **kwargs) -> None:
+        super().__init__(**kwargs)
         parts: list[float] = [1] * self._part_number
         for phase, sample in self._samplers.items():
             if phase in self._dataset_indices and self._dataset_indices[phase]:
@@ -301,9 +284,21 @@ class RandomSplit(SplitBase):
             self.set_split_indices(
                 phase=phase,
                 index_result=dict(
-                    enumerate(sample.random_split_indices(parts, by_label=False))
+                    enumerate(
+                        sample.random_split_indices(parts, by_label=by_label_split)
+                    )
                 ),
             )
+
+
+class RandomSplitByLabel(RandomSplitBase):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(by_label_split=True, **kwargs)
+
+
+class RandomSplit(SplitBase):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(by_label_split=False, **kwargs)
 
 
 class ProbabilitySampler(SamplerBase):
