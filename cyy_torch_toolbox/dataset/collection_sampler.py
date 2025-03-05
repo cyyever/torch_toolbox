@@ -296,7 +296,7 @@ class RandomSplitByLabel(RandomSplitBase):
         super().__init__(by_label_split=True, **kwargs)
 
 
-class RandomSplit(SplitBase):
+class RandomSplit(RandomSplitBase):
     def __init__(self, **kwargs) -> None:
         super().__init__(by_label_split=False, **kwargs)
 
