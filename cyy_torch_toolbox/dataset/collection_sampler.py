@@ -122,14 +122,11 @@ class SplitBase(Base):
         self,
         phase: MachineLearningPhase,
         part_index: int,
-        use_specified_file: bool = False,
     ) -> None | SampleInfo:
         assert 0 <= part_index < self._part_number
         if self._part_number == 1:
             assert part_index == 0
             return SampleInfo(whole_dataset=True)
-        if not use_specified_file:
-            return None
 
         sampler = self._samplers[phase]
         original_dataset = getattr(sampler.dataset, "original_dataset", sampler.dataset)
