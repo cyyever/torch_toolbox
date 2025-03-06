@@ -136,7 +136,10 @@ class SplitBase(Base):
         if not files and phase == MachineLearningPhase.Training:
             file_key = "train_files"
             files = getattr(original_dataset, file_key, [])
-        assert isinstance(files, list) and len(files) == self._part_number
+        assert isinstance(files, list)
+        if not files:
+            return None
+        assert len(files) == self._part_number
         for file in files:
             if f"worker_{part_index}" in os.path.basename(file):
                 log_info("use path %s for index %s", file, part_index)
