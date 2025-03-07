@@ -43,14 +43,14 @@ class Config(ConfigBase):
         self,
         dc: DatasetCollection | None = None,
     ) -> Trainer:
-        if dc is None:
-            dc = self.create_dataset_collection()
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter()
         trainer: Trainer = self.trainer_config.create_trainer(
             dataset_collection_config=self.dc_config,
             model_config=self.model_config,
             hyper_parameter=hyper_parameter,
         )
+        if dc is not None:
+            trainer.set_dataset_collection(dc)
         trainer.set_save_dir(self.get_save_dir())
         return trainer
 
@@ -59,7 +59,10 @@ class Config(ConfigBase):
         dc: DatasetCollection | None = None,
         phase: MachineLearningPhase = MachineLearningPhase.Test,
     ) -> Inferencer:
-        return self.create_trainer(dc=dc).get_inferencer(phase=phase, copy_model=False)
+        inferencer = self.create_trainer().get_inferencer(phase=phase, copy_model=False)
+        if dc is not None:
+            inferencer.set_dataset_collection(dc)
+        return inferencer
 
     def apply_global_config(self) -> None:
         if self.log_level is not None:
