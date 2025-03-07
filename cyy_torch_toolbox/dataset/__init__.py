@@ -116,7 +116,7 @@ class DatasetCollectionConfig:
             dataset_kwargs=self.dataset_kwargs,
         )
         if self.keep_phases is not None:
-            for phase in dc.foreach_phase():
+            for phase in set(dc.foreach_phase()):
                 if phase not in self.keep_phases:
                     dc.remove_dataset(phase=phase)
         if dc.has_dataset(MachineLearningPhase.Training):
