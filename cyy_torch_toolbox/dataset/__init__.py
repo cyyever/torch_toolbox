@@ -113,10 +113,9 @@ class DatasetCollectionConfig:
         dc = create_dataset_collection(
             name=self.dataset_name,
             dataset_kwargs=self.dataset_kwargs,
-            save_dir=save_dir,
         )
 
-        self.__transform_training_dataset(dc=dc)
+        self.__transform_training_dataset(dc=dc, save_dir=save_dir)
         return dc
 
     def __transform_training_dataset(self, dc, save_dir: str | None = None) -> None:
