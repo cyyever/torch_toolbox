@@ -72,6 +72,9 @@ class DatasetCollection:
         for p in self.__pipeline.values():
             p.clear()
 
+    def foreach_phase(self) -> Generator:
+        yield from self.__datasets.keys()
+
     def foreach_dataset(self) -> Generator:
         yield from self.__datasets.values()
 

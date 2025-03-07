@@ -92,6 +92,7 @@ class DatasetCollectionConfig:
         self.training_dataset_label_map_path = None
         self.training_dataset_label_map = None
         self.training_dataset_label_noise_percentage = None
+        self.keep_phases: None | set[MachineLearningPhase] = None
 
     def create_dataset_collection(
         self, save_dir: str | None = None
@@ -114,8 +115,12 @@ class DatasetCollectionConfig:
             name=self.dataset_name,
             dataset_kwargs=self.dataset_kwargs,
         )
-
-        self.__transform_training_dataset(dc=dc, save_dir=save_dir)
+        if self.keep_phases is not None:
+            for phase in dc.foreach_phase():
+                if phase not in self.keep_phases:
+                    dc.remove_dataset(phase=phase)
+        if dc.has_dataset(MachineLearningPhase.Training):
+            self.__transform_training_dataset(dc=dc, save_dir=save_dir)
         return dc
 
     def __transform_training_dataset(self, dc, save_dir: str | None = None) -> None:
