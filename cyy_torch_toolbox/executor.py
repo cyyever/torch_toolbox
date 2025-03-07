@@ -81,6 +81,14 @@ class Executor(HookCollection, abc.ABC):
             )
         return self.__dataset_collection
 
+    def remove_unrelated_datasets(self) -> None:
+        if self.__dataset_collection is None:
+            self.__dataset_collection_config.keep_phases = {self.phase}
+        else:
+            for phase in self.dataset_collection.foreach_phase():
+                if phase != self.phase:
+                    self.dataset_collection.remove_dataset(phase=phase)
+
     @property
     def mutable_dataset_collection(self) -> DatasetCollection:
         self.__dataloader = None
