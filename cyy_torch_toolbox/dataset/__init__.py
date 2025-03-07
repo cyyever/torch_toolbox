@@ -92,14 +92,11 @@ class DatasetCollectionConfig:
         self.training_dataset_label_map_path = None
         self.training_dataset_label_map = None
         self.training_dataset_label_noise_percentage = None
-        self.save_dir: str | None = None
 
     def create_dataset_collection(
         self, save_dir: str | None = None
     ) -> DatasetCollection:
         assert self.dataset_name is not None
-        if save_dir is not None:
-            self.save_dir = save_dir
         if "dataset_type" in self.dataset_kwargs:
             if isinstance(self.dataset_kwargs["dataset_type"], str):
                 real_dataset_type: DatasetType | None = None
@@ -114,21 +111,23 @@ class DatasetCollectionConfig:
             assert isinstance(self.dataset_kwargs["dataset_type"], DatasetType)
 
         dc = create_dataset_collection(
-            name=self.dataset_name, dataset_kwargs=self.dataset_kwargs
+            name=self.dataset_name,
+            dataset_kwargs=self.dataset_kwargs,
+            save_dir=save_dir,
         )
 
         self.__transform_training_dataset(dc=dc)
         return dc
 
-    def __transform_training_dataset(self, dc) -> None:
+    def __transform_training_dataset(self, dc, save_dir: str | None = None) -> None:
         subset_indices = None
         dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
         if self.training_dataset_percentage is not None:
             subset_dict = dataset_util.iid_sample(self.training_dataset_percentage)
             subset_indices = sum(subset_dict.values(), [])
-            assert self.save_dir is not None
+            assert save_dir is not None
             with open(
-                os.path.join(self.save_dir, "training_dataset_indices.json"),
+                os.path.join(save_dir, "training_dataset_indices.json"),
                 mode="w",
                 encoding="utf-8",
             ) as f:
@@ -150,10 +149,10 @@ class DatasetCollectionConfig:
             label_map = dataset_util.randomize_subset_label(
                 self.training_dataset_label_noise_percentage
             )
-            assert self.save_dir is not None
+            assert save_dir is not None
             with open(
                 os.path.join(
-                    self.save_dir,
+                    save_dir,
                     "training_dataset_label_map.json",
                 ),
                 mode="w",

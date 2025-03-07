@@ -47,7 +47,7 @@ class Config(ConfigBase):
             dc = self.create_dataset_collection()
         hyper_parameter = self.hyper_parameter_config.create_hyper_parameter()
         trainer: Trainer = self.trainer_config.create_trainer(
-            dataset_collection=dc,
+            dataset_collection_config=self.dc_config,
             model_config=self.model_config,
             hyper_parameter=hyper_parameter,
         )
