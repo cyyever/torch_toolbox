@@ -5,7 +5,6 @@ from typing import Any
 import torch
 from cyy_naive_lib.log import log_warning
 
-from .dataset import DatasetCollection
 from .executor import Executor
 from .ml_type import (
     EvaluationMode,
