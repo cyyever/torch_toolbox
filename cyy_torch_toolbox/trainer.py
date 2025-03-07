@@ -5,7 +5,7 @@ from typing import Any
 import torch
 from cyy_naive_lib.log import log_debug, log_warning
 
-from .dataset import DatasetCollection
+from .dataset import DatasetCollectionConfig
 from .executor import Executor, ExecutorConfig
 from .hyper_parameter import HyperParameter
 from .inferencer import Inferencer
@@ -51,15 +51,15 @@ class Trainer(Executor):
         inherent_device: bool = True,
     ) -> Inferencer:
         inferencer = Inferencer(
-            dataset_collection=self.dataset_collection
-            if not copy_dataset
-            else copy.copy(self.dataset_collection),
+            dataset_collection_config=self.dataset_collection_config,
             phase=phase,
             hyper_parameter=self.hyper_parameter,
             hook_config=self.hook_config,
             dataloader_kwargs=self.dataloader_kwargs,
             model_config=self.mutable_model_config if not copy_model else None,
         )
+        if copy_dataset:
+            inferencer.set_dataset_collection(copy.copy(self.dataset_collection))
         if copy_model:
             if deepcopy_model:
                 model_evaluator: ModelEvaluator = copy.deepcopy(self.model_evaluator)
@@ -168,13 +168,13 @@ class Trainer(Executor):
 class TrainerConfig(ExecutorConfig):
     def create_trainer(
         self,
-        dataset_collection: DatasetCollection,
+        dataset_collection_config: DatasetCollectionConfig,
         model_config: ModelConfig,
         hyper_parameter: HyperParameter,
     ) -> Trainer:
         return self.create_executor(
             cls=Trainer,
-            dataset_collection=dataset_collection,
+            dataset_collection_config=dataset_collection_config,
             model_config=model_config,
             hyper_parameter=hyper_parameter,
         )

@@ -14,7 +14,7 @@ import torch.utils.data
 from cyy_naive_lib.log import log_debug
 
 from .data_pipeline.loader import get_dataloader
-from .dataset import DatasetCollection, DatasetUtil
+from .dataset import DatasetCollection, DatasetCollectionConfig, DatasetUtil
 from .device import DefaultDeviceContext, DeviceGreedyAllocator, SyncedStreamContext
 from .hook import HookCollection
 from .hook.config import HookConfig
@@ -28,7 +28,7 @@ from .model import ModelConfig, ModelEvaluator, ModelUtil
 class Executor(HookCollection, abc.ABC):
     def __init__(
         self,
-        dataset_collection: DatasetCollection,
+        dataset_collection_config: DatasetCollectionConfig,
         phase: MachineLearningPhase,
         hyper_parameter: HyperParameter,
         model_config: ModelConfig | None = None,
@@ -38,8 +38,11 @@ class Executor(HookCollection, abc.ABC):
     ) -> None:
         super().__init__()
         self._data: dict = {}
-        self.__dataset_collection: DatasetCollection = dataset_collection
-        self.__model_config = model_config
+        self.__dataset_collection_config: DatasetCollectionConfig = copy.deepcopy(
+            dataset_collection_config
+        )
+        self.__dataset_collection: DatasetCollection | None = None
+        self.__model_config = copy.deepcopy(model_config)
         self.__auto_create_model = auto_create_model
         self.__model_evaluator: ModelEvaluator | None = None
         self.__phase: MachineLearningPhase = phase
@@ -65,13 +68,23 @@ class Executor(HookCollection, abc.ABC):
         return self.__model_config
 
     @property
+    def dataset_collection_config(self) -> DatasetCollectionConfig:
+        return self.__dataset_collection_config
+
+    @property
     def dataset_collection(self) -> DatasetCollection:
+        if self.__dataset_collection is None:
+            self.__dataset_collection = (
+                self.__dataset_collection_config.create_dataset_collection(
+                    save_dir=self.save_dir
+                )
+            )
         return self.__dataset_collection
 
     @property
     def mutable_dataset_collection(self) -> DatasetCollection:
         self.__dataloader = None
-        return self.__dataset_collection
+        return self.dataset_collection
 
     def has_device(self) -> bool:
         return self.__device is None
@@ -430,7 +443,6 @@ class ExecutorConfig(ConfigBase):
     def create_executor(
         self,
         cls: Callable,
-        dataset_collection: DatasetCollection,
         **kwargs,
     ) -> Any:
         if (
@@ -441,6 +453,5 @@ class ExecutorConfig(ConfigBase):
         return cls(
             hook_config=self.hook_config,
             dataloader_kwargs=self.dataloader_kwargs,
-            dataset_collection=dataset_collection,
             **kwargs,
         )
