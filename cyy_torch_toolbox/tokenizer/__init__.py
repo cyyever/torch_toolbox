@@ -21,9 +21,6 @@ class TokenizerMixin:
     def get_token(self, token_id: TokenIDType) -> str:
         raise NotImplementedError()
 
-    def split_batch_input(self, inputs: Any, batch_size: int) -> dict:
-        raise NotImplementedError()
-
 
 class Tokenizer:
     def get_vocab(self) -> Mapping[str, int]:
