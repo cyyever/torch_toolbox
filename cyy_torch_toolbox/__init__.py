@@ -18,4 +18,10 @@ from .tensor import (
 from .tokenizer import *
 from .trainer import *
 
-# __all__ = ["cat_tensor_dict", "cat_tensors_to_vector", "tensor_clone", "tensor_to"]
+__all__ = [
+    "cat_tensor_dict",
+    "cat_tensors_to_vector",
+    "tensor_clone",
+    "tensor_to",
+    "recursive_tensor_op",
+]
