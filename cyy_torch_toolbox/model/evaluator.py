@@ -26,6 +26,7 @@ class ModelEvaluator:
         **kwargs,
     ) -> None:
         self._model: torch.nn.Module = model
+        self._model_kwargs = copy.deepcopy(kwargs)
         self.__loss_fun: Callable | None = None
         self.__loss_fun_type: type | None = None
         if loss_fun is not None:
@@ -44,7 +45,6 @@ class ModelEvaluator:
                 pass
             case _:
                 raise NotImplementedError(frozen_modules)
-        self._model_kwargs = copy.deepcopy(kwargs)
         self.__evaluation_kwargs: dict = {}
 
     @property
