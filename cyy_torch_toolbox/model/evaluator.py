@@ -1,3 +1,4 @@
+import copy
 from collections.abc import Callable, Iterable
 from typing import Any
 
@@ -43,6 +44,7 @@ class ModelEvaluator:
                 pass
             case _:
                 raise NotImplementedError(frozen_modules)
+        self._model_kwargs = copy.deepcopy(kwargs)
         self.__evaluation_kwargs: dict = {}
 
     @property
