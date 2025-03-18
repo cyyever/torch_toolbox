@@ -99,10 +99,13 @@ class SamplerBase(Base):
 
 
 class SplitBase(Base):
-    def __init__(self, part_number: int, **kwargs) -> None:
+    def __init__(
+        self, part_number: int, detect_allocated_file: bool = False, **kwargs
+    ) -> None:
         super().__init__(**kwargs)
         self._part_number = part_number
         self._dataset_indices: dict[MachineLearningPhase, dict[int, SampleInfo]] = {}
+        self._detect_allocated_file = detect_allocated_file
         self.get_preallocated_samples()
 
     def get_preallocated_samples(self):
@@ -127,6 +130,8 @@ class SplitBase(Base):
         if self._part_number == 1:
             assert part_index == 0
             return SampleInfo(whole_dataset=True)
+        if not self._detect_allocated_file:
+            return None
 
         sampler = self._samplers[phase]
         original_dataset = getattr(sampler.dataset, "original_dataset", sampler.dataset)
@@ -189,7 +194,7 @@ class DatasetCollectionSplit(SplitBase):
 
 class IIDSplit(SplitBase):
     def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(detect_allocated_file=True, **kwargs)
         parts: list[float] = [1] * self._part_number
         for phase in self.get_phases():
             if phase in self._dataset_indices and self._dataset_indices[phase]:
@@ -306,7 +311,7 @@ class RandomSplit(RandomSplitBase):
 
 class SplitByFile(SplitBase):
     def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(detect_allocated_file=True, **kwargs)
         for phase in self.get_phases():
             assert len(self._dataset_indices.get(phase, [])) == self._part_number
             for info in self._dataset_indices[phase].values():
