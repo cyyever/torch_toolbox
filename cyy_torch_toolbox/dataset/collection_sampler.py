@@ -158,6 +158,7 @@ class SplitBase(Base):
         assert phase not in self._dataset_indices
         self._dataset_indices[phase] = {}
         for idx, dataset_indices in index_result.items():
+            assert dataset_indices
             self._dataset_indices[phase][idx] = SampleInfo(indices=dataset_indices)
 
     def sample(self, part_index: int) -> DatasetCollection:
