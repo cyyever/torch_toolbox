@@ -34,6 +34,7 @@ def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
 class TextDatasetCollection(DatasetCollection):
     __prompt: str | None = None
     __text_pipeline: DataPipeline | None = None
+    __post_prompt_text_pipeline: DataPipeline | None = None
 
     @property
     def prompt(self) -> str | None:
@@ -42,15 +43,26 @@ class TextDatasetCollection(DatasetCollection):
     def set_prompt(self, prompt: str) -> None:
         assert self.__prompt is None
         self.__prompt = prompt
+        assert self.__text_pipeline is None or not self.__text_pipeline.has_transform(
+            "format_prompt"
+        )
 
     def append_text_transform(self, transform: Transform) -> None:
         if self.__text_pipeline is None:
             self.__text_pipeline = DataPipeline()
         self.__text_pipeline.append(transform)
 
+    def append_post_prompt_text_transform(self, transform: Transform) -> None:
+        if self.__post_prompt_text_pipeline is None:
+            self.__post_prompt_text_pipeline = DataPipeline()
+        self.__post_prompt_text_pipeline.append(transform)
+
     def get_text_pipeline(self, tokenizer) -> DataPipeline | None:
         if self.prompt is not None:
             self.append_text_transform(
-                Transform(fun=functools.partial(format_prompt, self.prompt, tokenizer))
+                Transform(
+                    name="format_prompt",
+                    fun=functools.partial(format_prompt, self.prompt, tokenizer),
+                )
             )
         return self.__text_pipeline
