@@ -65,4 +65,7 @@ class TextDatasetCollection(DatasetCollection):
                     fun=functools.partial(format_prompt, self.prompt, tokenizer),
                 )
             )
+            if self.__post_prompt_text_pipeline:
+                for t in self.__post_prompt_text_pipeline.transforms:
+                    self.append_text_transform(t)
         return self.__text_pipeline
