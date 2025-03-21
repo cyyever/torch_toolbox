@@ -25,6 +25,9 @@ class DataPipeline:
     def __len__(self) -> int:
         return len(self.__transforms)
 
+    def has_transform(self, name: str) -> bool:
+        return any(t.name == name for t in self.__transforms)
+
     def clear(self) -> None:
         self.__transforms = []
 
