@@ -1,4 +1,5 @@
 import functools
+from typing import Any
 
 from cyy_naive_lib.log import log_debug, log_error
 
@@ -11,8 +12,9 @@ def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
         log_debug("final input is %s", prompt + example)
         return prompt + example
     try:
-        extra_kwargs = {}
+        extra_kwargs: dict[str, Any] = {}
         for k, v in example.items():
+            extra_kwargs[f"__{k}_defined__"] = bool(v)
             new_k = f"space_join_{k}"
             if new_k in prompt:
                 extra_kwargs[new_k] = " ".join([str(a) for a in v])
