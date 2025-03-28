@@ -13,6 +13,8 @@ def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
     try:
         extra_kwargs = {}
         for k, v in example.items():
+            new_k = f"__{k}_defined__"
+            extra_kwargs[new_k] = "true" if v else "false"
             new_k = f"space_join_{k}"
             if new_k in prompt:
                 extra_kwargs[new_k] = " ".join([str(a) for a in v])
