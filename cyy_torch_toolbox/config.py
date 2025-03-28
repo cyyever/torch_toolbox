@@ -94,7 +94,7 @@ class Config(ConfigBase):
         if check_config:
             if conf_container:
                 log_error("remain config %s", conf_container)
-            assert not conf_container
+            assert not conf_container, conf_container
         return conf_container
 
     def get_save_dir(self) -> str:
