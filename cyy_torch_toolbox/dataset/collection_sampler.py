@@ -316,7 +316,7 @@ class SplitByFile(SplitBase):
         for phase in self.get_phases():
             assert len(self._dataset_indices.get(phase, [])) == self._part_number
             for info in self._dataset_indices[phase].values():
-                assert info.file_path is not None
+                assert info.file_path is not None or info.whole_dataset is not None
 
 
 class ProbabilitySampler(SamplerBase):
