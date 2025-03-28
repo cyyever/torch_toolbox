@@ -1,5 +1,4 @@
 import functools
-from typing import Any
 
 from cyy_naive_lib.log import log_debug, log_error
 
@@ -12,9 +11,8 @@ def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
         log_debug("final input is %s", prompt + example)
         return prompt + example
     try:
-        extra_kwargs: dict[str, Any] = {}
+        extra_kwargs = {}
         for k, v in example.items():
-            extra_kwargs[f"__{k}_defined__"] = "true" if v else "false"
             new_k = f"space_join_{k}"
             if new_k in prompt:
                 extra_kwargs[new_k] = " ".join([str(a) for a in v])
@@ -23,7 +21,29 @@ def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
                 extra_kwargs[new_k] = ",".join([str(a) for a in v])
             if "eos_token" in prompt:
                 extra_kwargs["eos_token"] = tokenizer.eos_token
-        example["input"] = prompt.format(**example, **extra_kwargs)
+        new_input = prompt.format(**example, **extra_kwargs)
+        if "__if__" in new_input or "__endif__" in new_input:
+            lines = new_input.splitlines()
+            branch_condition: bool | None = None
+            new_lines = []
+            for line in lines:
+                if line.strip() == "__endif__":
+                    assert branch_condition is not None
+                    branch_condition = None
+                    continue
+                if line.strip() == "__if__false":
+                    assert branch_condition is None
+                    branch_condition = False
+                    continue
+                if line.strip() == "__if__true":
+                    assert branch_condition is None
+                    branch_condition = True
+                    continue
+                if branch_condition is not False:
+                    new_lines.append(line)
+            assert branch_condition is None
+            new_input = "\n".join(new_lines)
+        example["input"] = new_input
     except BaseException as e:
         log_error("formatting fail %s", e)
         log_error("prompt is:\n%s", prompt)
