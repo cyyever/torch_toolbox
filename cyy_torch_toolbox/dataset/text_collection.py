@@ -86,6 +86,7 @@ class TextDatasetCollection(DatasetCollection):
             self.append_text_transform(
                 Transform(
                     name="format_prompt",
+                    cacheable=True,
                     fun=functools.partial(format_prompt, self.prompt, tokenizer),
                 )
             )
