@@ -16,7 +16,7 @@ classifiers = [
 ]
 
 dependencies = [
-  "torch",
+  "torch>=2.7",
   "hydra-core",
   "omegaconf",
   "torchmetrics",
