@@ -102,7 +102,7 @@ class Trainer(Executor):
         self.remove_optimizer()
 
     def train(self, validate: bool = True) -> None:
-        with self.complete_stream_context:
+        with self.stream_context:
             try:
                 self._prepare_execution()
                 for epoch in range(1, self.hyper_parameter.epoch + 1):

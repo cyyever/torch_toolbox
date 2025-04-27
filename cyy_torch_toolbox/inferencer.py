@@ -25,7 +25,7 @@ class Inferencer(Executor):
             EvaluationMode.SampleInference,
         )
         with (
-            self.complete_stream_context,
+            self.stream_context,
             torch.enable_grad() if require_grad else torch.inference_mode(),
         ):
             try:
