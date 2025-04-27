@@ -16,30 +16,24 @@ else:
 def get_device_memory_info(
     device: torch.device | None = None, consider_cache: bool = False
 ) -> dict[torch.device, MemoryInfo]:
-    device_type: str = ""
+    device_type: str = "cpu"
     device_idx: int | None = None
     if device is not None:
         device_type = device.type.lower()
         device_idx = device.index
     else:
-        if torch.cuda.is_available():
-            device_type = "cuda"
-        elif torch.backends.mps.is_available():
-            device_type = "mps"
-        elif torch.xpu.is_available():
-            device_type = "xpu"
-        else:
-            device_type = "cpu"
+        accelerator = torch.accelerator.current_accelerator()
+        if accelerator is not None:
+            device_type = accelerator.type
     match device_type:
         case "cuda":
             return get_cuda_memory_info(
                 device_idx=device_idx, consider_cache=consider_cache
             )
-        case "cpu" | "mps" | "vulkan" | "xpu":
-            device = torch.device(type=device_type, index=0)
+        case "cpu":
             vm = psutil.virtual_memory()
             return {
-                device: MemoryInfo(
+                torch.device("cpu"): MemoryInfo(
                     free=vm.available,
                     total=vm.total,
                     used=vm.used,
@@ -52,18 +46,10 @@ def get_cpu_device() -> torch.device:
     return torch.device("cpu")
 
 
-def set_device(device: torch.device) -> None:
-    match device.type.lower():
-        case "cuda":
-            torch.cuda.set_device(device)
-        case "xpu":
-            torch.xpu.set_device(device)
-
-
 class DeviceGreedyAllocator:
     @classmethod
     def get_devices(cls, max_needed_bytes: int | None = None) -> list[torch.device]:
-        memory_info = get_device_memory_info()
+        memory_info = get_device_memory_info(consider_cache=True)
         memory_to_device: dict = {}
         for device, info in memory_info.items():
             if max_needed_bytes is not None and info.free < max_needed_bytes:
