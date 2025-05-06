@@ -123,6 +123,10 @@ class Config(ConfigBase):
                 data_dir = self.dc_config.dataset_kwargs.get("train_data_dir", data_dir)
             elif k == "test_files":
                 data_dir = self.dc_config.dataset_kwargs.get("test_data_dir", data_dir)
+            elif k == "validation_files":
+                data_dir = self.dc_config.dataset_kwargs.get(
+                    "validation_data_dir", data_dir
+                )
             files = v
             if isinstance(v, str):
                 files = [v]
