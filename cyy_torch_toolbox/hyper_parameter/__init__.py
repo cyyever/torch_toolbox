@@ -192,7 +192,7 @@ def get_recommended_hyper_parameter(
 @dataclass(kw_only=True)
 class HyperParameterConfig(HyperParameter):
     weight_decay: None | float = None
-    fake_weight_decay: None | float = 1.0
+    fake_weight_decay: None | float = None
 
     def create_hyper_parameter(self) -> HyperParameter:
         hyper_parameter = copy.copy(self)
