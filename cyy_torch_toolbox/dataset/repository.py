@@ -13,7 +13,9 @@ class DatasetFactory(Factory):
     def get(
         self, key: Any, case_sensitive: bool = True, default: Any = None, **kwargs: Any
     ) -> Any:
-        return super().get(key=key, case_sensitive=case_sensitive, default=default)
+        return super().get(
+            key=key, case_sensitive=case_sensitive, default=default, **kwargs
+        )
 
 
 __global_dataset_constructors: dict[DatasetType, list[DatasetFactory]] = {}
