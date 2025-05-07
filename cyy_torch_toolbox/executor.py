@@ -85,7 +85,7 @@ class Executor(HookCollection, abc.ABC):
         if self.__dataset_collection is None:
             self.__dataset_collection_config.keep_phases = {self.phase}
         else:
-            for phase in self.dataset_collection.foreach_phase():
+            for phase in list(self.dataset_collection.foreach_phase()):
                 if phase != self.phase:
                     self.dataset_collection.remove_dataset(phase=phase)
 
