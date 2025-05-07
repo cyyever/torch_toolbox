@@ -33,13 +33,16 @@ def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
                     assert branch_condition is not None
                     branch_condition = None
                     continue
-                if line.strip() == "__if__false":
-                    assert branch_condition is None
-                    branch_condition = False
-                    continue
                 if line.strip() == "__if__true":
                     assert branch_condition is None
                     branch_condition = True
+                    continue
+                if line.strip() == "__if__false" or (
+                    line.strip().startswith("__if__{")
+                    and line.strip().endswith("defined__}")
+                ):
+                    assert branch_condition is None
+                    branch_condition = False
                     continue
                 if branch_condition is not False:
                     new_lines.append(line)
