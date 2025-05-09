@@ -1,4 +1,5 @@
 import functools
+import re
 
 from cyy_naive_lib.log import log_debug, log_error
 
@@ -10,8 +11,17 @@ def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
     if isinstance(example, str):
         log_debug("final input is %s", prompt + example)
         return prompt + example
+    extra_kwargs: dict[str, str] = {}
     try:
-        extra_kwargs = {}
+        p = re.compile("__if__{__(.*)_defined__}")
+        for line in prompt.splitlines():
+            line = line.strip()
+            m = re.fullmatch(p, line)
+            if m is not None:
+                k = m.group(1)
+                new_k = f"__{k}_defined__"
+                print("new_k", new_k)
+                extra_kwargs[new_k] = "false"
         for k, v in example.items():
             new_k = f"__{k}_defined__"
             extra_kwargs[new_k] = "true" if v else "false"
@@ -37,10 +47,7 @@ def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
                     assert branch_condition is None
                     branch_condition = True
                     continue
-                if line.strip() == "__if__false" or (
-                    line.strip().startswith("__if__{")
-                    and line.strip().endswith("defined__}")
-                ):
+                if line.strip() == "__if__false":
                     assert branch_condition is None
                     branch_condition = False
                     continue
@@ -53,6 +60,7 @@ def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
         log_error("formatting fail %s", e)
         log_error("prompt is:\n%s", prompt)
         log_error("input keys are:\n%s", example.keys())
+        log_error("extra kwargs are:\n%s", extra_kwargs)
         raise e
     log_debug("final input is %s", example["input"])
     return example
