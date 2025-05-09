@@ -13,15 +13,27 @@ def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
         return prompt + example
     extra_kwargs: dict[str, str] = {}
     try:
-        p = re.compile("__if__{__(.*)_defined__}")
-        for line in prompt.splitlines():
-            line = line.strip()
-            m = re.fullmatch(p, line)
-            if m is not None:
-                k = m.group(1)
-                new_k = f"__{k}_defined__"
-                print("new_k", new_k)
-                extra_kwargs[new_k] = "false"
+        if "__if__" in prompt or "__endif__" in prompt:
+            p = re.compile("__if__{__(.*)_defined__}")
+            branch_condition: bool | None = None
+            new_lines = []
+            for line in prompt.splitlines():
+                if line.strip() == "__endif__":
+                    assert branch_condition is not None
+                    branch_condition = None
+                    continue
+                m = re.fullmatch(p, line.strip())
+                if m is not None:
+                    k = m.group(1)
+                    defined = bool(example.get(k, False))
+                    assert branch_condition is None
+                    branch_condition = defined
+                    continue
+                if branch_condition is not False:
+                    new_lines.append(line)
+            assert branch_condition is None
+            prompt = "\n".join(new_lines)
+
         for k, v in example.items():
             new_k = f"__{k}_defined__"
             extra_kwargs[new_k] = "true" if v else "false"
@@ -34,27 +46,6 @@ def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
             if "eos_token" in prompt:
                 extra_kwargs["eos_token"] = tokenizer.eos_token
         new_input = prompt.format(**example, **extra_kwargs)
-        if "__if__" in new_input or "__endif__" in new_input:
-            lines = new_input.splitlines()
-            branch_condition: bool | None = None
-            new_lines = []
-            for line in lines:
-                if line.strip() == "__endif__":
-                    assert branch_condition is not None
-                    branch_condition = None
-                    continue
-                if line.strip() == "__if__true":
-                    assert branch_condition is None
-                    branch_condition = True
-                    continue
-                if line.strip() == "__if__false":
-                    assert branch_condition is None
-                    branch_condition = False
-                    continue
-                if branch_condition is not False:
-                    new_lines.append(line)
-            assert branch_condition is None
-            new_input = "\n".join(new_lines)
         example["input"] = new_input
     except BaseException as e:
         log_error("formatting fail %s", e)
