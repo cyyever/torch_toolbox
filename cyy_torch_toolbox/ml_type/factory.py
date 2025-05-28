@@ -20,7 +20,9 @@ class Factory:
             case _:
                 self.data[key] = value
 
-    def get(self, key: Any, case_sensitive: bool = True, default: Any = None) -> Any:
+    def get(
+        self, key: Any, case_sensitive: bool = True, default: Any = None, **kwargs: Any
+    ) -> Any:
         if not case_sensitive:
             key = self._lower_key(key)
         return self.data.get(key, default)
