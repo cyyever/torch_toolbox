@@ -170,7 +170,7 @@ class ModelEvaluator:
         if device is not None:
             if inputs is not None:
                 inputs = tensor_to(inputs, device=device, non_blocking=non_blocking)
-            kwargs = tensor_to(kwargs, non_blocking=non_blocking)
+            kwargs = tensor_to(kwargs, non_blocking=non_blocking, device=device)
             self.model_util.to_device(device=device)
         return {
             "inputs": inputs,
