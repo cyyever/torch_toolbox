@@ -174,7 +174,7 @@ class ModelEvaluator:
             self.model_util.to_device(device=device)
         return {
             "inputs": inputs,
-            "targets": kwargs.get("targets"),
+            "targets": kwargs.get("targets", kwargs.get("labels")),
             "raw_inputs": raw_inputs,
         } | self._forward_model(
             inputs=inputs,
