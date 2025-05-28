@@ -59,14 +59,14 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
             return tuple(
                 recursive_tensor_op(element, fun, **kwargs) for element in data
             )
-        case Mapping():
-            return {k: recursive_tensor_op(v, fun, **kwargs) for k, v in data.items()}
         case functools.partial():
             return functools.partial(
                 data.func,
                 *recursive_tensor_op(data.args, fun, **kwargs),
                 **recursive_tensor_op(data.keywords, fun, **kwargs),
             )
+    if hasattr(data, "items"):
+        return {k: recursive_tensor_op(v, fun, **kwargs) for k, v in data.items()}
     try:
         for field in dataclasses.fields(data):
             setattr(
