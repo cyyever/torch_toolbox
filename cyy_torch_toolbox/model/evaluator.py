@@ -158,27 +158,26 @@ class ModelEvaluator:
     def __call__(
         self,
         *,
-        inputs: Any,
-        targets: Any | None = None,
         device: None | torch.device = None,
+        inputs: Any | None = None,
         evaluation_mode: EvaluationMode | None = None,
         **kwargs: Any,
     ) -> dict:
         if evaluation_mode is not None:
             self.__set_model_mode(evaluation_mode=evaluation_mode)
         raw_inputs = inputs
-
+        non_blocking = kwargs.get("non_blocking", True)
         if device is not None:
-            inputs = tensor_to(inputs, device=device, non_blocking=True)
-            targets = tensor_to(targets, device=device, non_blocking=True)
+            if inputs is not None:
+                inputs = tensor_to(inputs, device=device, non_blocking=non_blocking)
+            tensor_to(kwargs, non_blocking=non_blocking)
             self.model_util.to_device(device=device)
         return {
             "inputs": inputs,
-            "targets": targets,
+            "targets": kwargs.get("targets"),
             "raw_inputs": raw_inputs,
         } | self._forward_model(
             inputs=inputs,
-            targets=targets,
             device=device,
             evaluation_mode=evaluation_mode,
             **(kwargs | self.__evaluation_kwargs),
@@ -193,7 +192,7 @@ class ModelEvaluator:
             log_debug("forward with function %s", fun)
         return fun
 
-    def _forward_model(self, inputs: Any, **kwargs: Any) -> dict:
+    def _forward_model(self, *, inputs: Any, **kwargs: Any) -> dict:
         fun: Callable = self._get_forward_fun()
         match inputs:
             case torch.Tensor():
