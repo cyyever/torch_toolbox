@@ -1,6 +1,6 @@
 import dataclasses
 import functools
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from typing import Any
 
 import dill
@@ -59,7 +59,7 @@ def recursive_tensor_op(data: Any, fun: Callable, **kwargs: Any) -> Any:
             return tuple(
                 recursive_tensor_op(element, fun, **kwargs) for element in data
             )
-        case dict():
+        case Mapping():
             return {k: recursive_tensor_op(v, fun, **kwargs) for k, v in data.items()}
         case functools.partial():
             return functools.partial(
