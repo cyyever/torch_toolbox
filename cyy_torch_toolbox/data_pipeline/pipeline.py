@@ -1,8 +1,9 @@
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from typing import Any, Self
 
 import torch
 import torch.utils.data
+from cyy_naive_lib.log import log_error
 from torch.utils.data import default_collate
 
 from .common import DataExtraction
@@ -113,7 +114,7 @@ class DataPipeline:
             result = {"input": result}
         result = batch_transforms.apply_batch(result)
         assert result is not None
-        assert isinstance(result, dict)
+        assert isinstance(result, Mapping)
         for k, v in result.items():
             if isinstance(v, list) and k in ("index", "input", "target"):
                 try:
