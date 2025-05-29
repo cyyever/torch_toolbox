@@ -113,6 +113,7 @@ class ModelEvaluator:
 
     def backward(
         self,
+        *,
         loss: torch.Tensor,
         optimizer: None | torch.optim.Optimizer = None,
         **backward_kwargs,

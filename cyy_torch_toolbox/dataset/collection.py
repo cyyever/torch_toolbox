@@ -5,7 +5,7 @@ from typing import Any, Self
 
 import torch
 import torch.utils.data
-from cyy_naive_lib.log import log_debug
+from cyy_naive_lib.log import log_debug, log_error
 from cyy_naive_lib.storage import get_cached_data
 
 from ..data_pipeline import (
@@ -157,7 +157,7 @@ class DatasetCollection:
                     if not labels:
                         return False
             except BaseException as e:
-                log_debug("Get exception for text dataset %s", e)
+                log_error("Get exception for text dataset: %s", e)
                 return False
         return True
 
