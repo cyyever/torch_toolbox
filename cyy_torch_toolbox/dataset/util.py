@@ -154,6 +154,7 @@ class DatasetUtil:
         self, indices: OptionalIndicesType = None
     ) -> Generator[tuple[int, Any]]:
         for idx, sample in self.get_samples(indices):
+            print("sample is",sample)
             target: Any | None = None
             if "target" in sample:
                 target = sample["target"]
@@ -162,6 +163,8 @@ class DatasetUtil:
                     sample = sample["input"]
                 if "ner_tags" in sample:
                     target = sample["ner_tags"]
+                if "labels" in sample:
+                    target = sample["labels"]
                 else:
                     raise NotImplementedError(sample.keys())
             assert target is not None
