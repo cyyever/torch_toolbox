@@ -127,6 +127,9 @@ def get_model(
         sys.path.append(repo_dir)
     if not isinstance(res, dict):
         res = {"model": res}
+    if model_type in (ModelType.TokenClassification,):
+        assert isinstance(dataset_collection, ClassificationDatasetCollection)
+        res["model"].labels = dataset_collection.get_labels()
     return res
 
 
