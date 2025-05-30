@@ -162,9 +162,9 @@ class DatasetUtil:
                     sample = sample["input"]
                 if "ner_tags" in sample:
                     target = sample["ner_tags"]
-                if "labels" in sample:
+                elif "labels" in sample:
                     target = sample["labels"]
-                if "tags" in sample:
+                elif "tags" in sample:
                     target = sample["tags"]
                 else:
                     raise NotImplementedError(sample.keys())
