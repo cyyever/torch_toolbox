@@ -1,5 +1,6 @@
 import copy
 import os
+import traceback
 from collections.abc import Callable, Generator, Iterable
 from typing import Any, Self
 
@@ -39,6 +40,9 @@ class DatasetCollection:
         self.__datasets: dict[MachineLearningPhase, torch.utils.data.Dataset | list] = (
             datasets
         )
+        self.__original_datasets: dict[
+            MachineLearningPhase, torch.utils.data.Dataset | list
+        ] = self.__datasets.copy()
         self.__dataset_type: DatasetType | None = dataset_type
         self.__pipeline: dict[MachineLearningPhase, DataPipeline] = {}
         for phase in self.__datasets:
@@ -53,6 +57,7 @@ class DatasetCollection:
         new_obj: Self = copy.deepcopy(self)
         # pylint: disable=protected-access, unused-private-member
         new_obj.__datasets = self.__datasets.copy()
+        new_obj.__original_datasets = self.__original_datasets.copy()
         return new_obj
 
     @property
@@ -74,6 +79,9 @@ class DatasetCollection:
 
     def foreach_phase(self) -> Generator:
         yield from self.__datasets.keys()
+
+    def foreach_original_phase(self) -> Generator:
+        yield from self.__original_datasets.keys()
 
     def foreach_dataset(self) -> Generator:
         yield from self.__datasets.values()
@@ -120,6 +128,18 @@ class DatasetCollection:
                 return self.get_dataset_util(phase)
         raise RuntimeError("no dataset")
 
+    def get_original_dataset_util(
+        self, phase: MachineLearningPhase = MachineLearningPhase.Test
+    ) -> DatasetUtil:
+        factor: type = global_dataset_util_factor.get(
+            self.dataset_type, default=DatasetUtil
+        )
+        return factor(
+            dataset=self.__original_datasets[phase],
+            pipeline=self.__pipeline[phase],
+            name=self.name,
+        )
+
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
@@ -157,7 +177,11 @@ class DatasetCollection:
                     if not labels:
                         return False
             except BaseException as e:
-                log_error("Get exception for text dataset: %s", e)
+                log_error(
+                    "Get exception for text dataset: %s, callback: %s",
+                    e,
+                    traceback.format_exc(),
+                )
                 return False
         return True
 
