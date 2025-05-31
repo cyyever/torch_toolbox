@@ -1,8 +1,11 @@
 import functools
 
 from cyy_naive_lib.decorator import Decorator
+from cyy_naive_lib.log import log_info
 
 from ..ml_type import MachineLearningPhase
+
+labels_cache: dict[str, set] = {}
 
 
 class ClassificationDatasetCollection(Decorator):
@@ -11,23 +14,18 @@ class ClassificationDatasetCollection(Decorator):
         return len(self.get_labels(use_cache=False))
 
     def get_labels(self, use_cache: bool = False) -> set:
-        def computation_fun() -> set:
-            if self.name.lower() == "imagenet":
-                return set(range(1000))
-            labels = set()
-            for phase in (
-                MachineLearningPhase.Training,
-                MachineLearningPhase.Validation,
-                MachineLearningPhase.Test,
-            ):
-                if self.has_dataset(phase):
-                    labels |= self.get_dataset_util(phase).get_labels()
-            return labels
+        global labels_cache
+        if self.name in labels_cache:
+            return labels_cache.get(self.name)
 
-        if not use_cache:
-            return computation_fun()
-
-        return self.get_cached_data("labels.pk", computation_fun)
+        if self.name.lower() == "imagenet":
+            return set(range(1000))
+        labels = set()
+        for phase in self.foreach_original_phase():
+            labels |= self.get_original_dataset_util(phase).get_labels()
+        log_info("%s label number %s", self.name, len(labels))
+        labels_cache[self.name] = labels
+        return labels
 
     def is_mutilabel(self) -> bool:
         def computation_fun() -> bool:
