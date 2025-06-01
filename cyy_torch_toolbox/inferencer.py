@@ -72,7 +72,7 @@ class Inferencer(Executor):
         return self._get_sample_output(
             evaluation_mode=EvaluationMode.SampleInference,
             evaluation_kwargs=evaluation_kwargs,
-            hook=functools.partial(self.__process_sample_output, callback),
+            hook=functools.partial(self.__process_sample_output, callback=callback),
         )
 
     def __collect_sample_loss(
@@ -93,7 +93,7 @@ class Inferencer(Executor):
         result: dict,
         **kwargs: Any,
     ) -> None:
-        callback(result)
+        callback(kwargs)
 
     def _get_sample_output(
         self, evaluation_mode: EvaluationMode, evaluation_kwargs: dict, hook: Callable
@@ -106,7 +106,7 @@ class Inferencer(Executor):
             self.append_named_hook(
                 hook_point=ExecutorHookPoint.AFTER_BATCH,
                 name=hook_name,
-                fun=functools.partial(hook, result),
+                fun=functools.partial(hook, result=result),
             )
             self.running_model_evaluator.add_evaluation_kwargs(**evaluation_kwargs)
             try:
