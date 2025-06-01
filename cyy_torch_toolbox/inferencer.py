@@ -117,5 +117,6 @@ class Inferencer(Executor):
                     evaluation_kwargs.keys()
                 )
                 self.remove_named_hook(name=hook_name)
-            assert len(result) == self.dataset_size
+            if result:
+                assert len(result) == self.dataset_size
             return result
