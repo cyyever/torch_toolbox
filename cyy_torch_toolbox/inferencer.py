@@ -87,14 +87,17 @@ class Inferencer(Executor):
 
     def __collect_sample_output(
         self,
-        sample_output: dict[int, Any],
+        sample_output: dict[int, Any] | list[Any],
         result: dict,
-        sample_indices: Iterable[int],
+        sample_indices: Iterable[int] | None = None,
         **kwargs: Any,
     ) -> None:
-        if isinstance(sample_indices, torch.Tensor):
-            sample_indices = sample_indices.tolist()
-        sample_output.update(zip(sample_indices, result["output"], strict=False))
+        if sample_indices is not None:
+            if isinstance(sample_indices, torch.Tensor):
+                sample_indices = sample_indices.tolist()
+            sample_output.update(zip(sample_indices, result["output"], strict=False))
+        else:
+            sample_output[len(sample_output)] = result
 
     def _get_sample_output(
         self, evaluation_mode: EvaluationMode, evaluation_kwargs: dict, hook: Callable
