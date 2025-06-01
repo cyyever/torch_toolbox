@@ -60,7 +60,9 @@ class Inferencer(Executor):
             hook=self.__collect_sample_loss,
         )
 
-    def get_sample_output(self, **generate_kwargs: Any) -> dict[int, Any]:
+    def process_sample_output(
+        self, callback: Callable, **generate_kwargs: Any
+    ) -> dict[int, Any]:
         evaluation_kwargs = {}
         if generate_kwargs:
             evaluation_kwargs |= {
@@ -70,7 +72,7 @@ class Inferencer(Executor):
         return self._get_sample_output(
             evaluation_mode=EvaluationMode.SampleInference,
             evaluation_kwargs=evaluation_kwargs,
-            hook=self.__collect_sample_output,
+            hook=functools.partial(self.__process_sample_output, callback),
         )
 
     def __collect_sample_loss(
@@ -85,19 +87,13 @@ class Inferencer(Executor):
             sample_indices = sample_indices.tolist()
         sample_loss.update(zip(sample_indices, result["loss"], strict=False))
 
-    def __collect_sample_output(
+    def __process_sample_output(
         self,
-        sample_output: dict[int, Any] | list[Any],
+        callback: Callable,
         result: dict,
-        sample_indices: Iterable[int] | None = None,
         **kwargs: Any,
     ) -> None:
-        if sample_indices is not None:
-            if isinstance(sample_indices, torch.Tensor):
-                sample_indices = sample_indices.tolist()
-            sample_output.update(zip(sample_indices, result["output"], strict=False))
-        else:
-            sample_output[len(sample_output)] = result
+        callback(result)
 
     def _get_sample_output(
         self, evaluation_mode: EvaluationMode, evaluation_kwargs: dict, hook: Callable
@@ -106,7 +102,7 @@ class Inferencer(Executor):
         with self.hook_config:
             self.hook_config.disable_log()
             self.hook_config.use_performance_metric = False
-            hook_name = "__collect_sample_output"
+            hook_name = "__get_sample_output"
             self.append_named_hook(
                 hook_point=ExecutorHookPoint.AFTER_BATCH,
                 name=hook_name,
