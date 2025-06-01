@@ -62,10 +62,13 @@ class Inferencer(Executor):
 
     def get_sample_output(self, **generate_kwargs: Any) -> dict[int, Any]:
         evaluation_kwargs = {
-            "generate": True,
             "need_sample_indices": True,
-            "generate_kwargs": generate_kwargs,
         }
+        if generate_kwargs:
+            evaluation_kwargs |= {
+                "generate": True,
+                "generate_kwargs": generate_kwargs,
+            }
         return self._get_sample_output(
             evaluation_mode=EvaluationMode.SampleInference,
             evaluation_kwargs=evaluation_kwargs,
