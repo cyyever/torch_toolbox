@@ -60,12 +60,8 @@ class Inferencer(Executor):
             hook=self.__collect_sample_loss,
         )
 
-    def get_sample_output(
-        self, need_sample_indices: bool = True, **generate_kwargs: Any
-    ) -> dict[int, Any]:
-        evaluation_kwargs = {
-            "need_sample_indices": need_sample_indices,
-        }
+    def get_sample_output(self, **generate_kwargs: Any) -> dict[int, Any]:
+        evaluation_kwargs = {}
         if generate_kwargs:
             evaluation_kwargs |= {
                 "generate": True,
