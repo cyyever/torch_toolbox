@@ -59,7 +59,9 @@ def create_dataset_collection(
         else:
             return dc
         if not merge_validation_to_training:
-            if not dc.has_dataset(MachineLearningPhase.Validation):
+            if not dc.has_dataset(
+                MachineLearningPhase.Validation
+            ) and not dc.dataset_kwargs.get("no_validation", False):
                 dc.iid_split(
                     from_phase=MachineLearningPhase.Training,
                     parts={
