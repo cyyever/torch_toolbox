@@ -133,14 +133,11 @@ class SplitBase(Base):
         if not self._detect_allocated_file:
             return None
 
-        sampler = self._samplers[phase]
-        original_dataset = getattr(sampler.dataset, "original_dataset", sampler.dataset)
-
         file_key = f"{str(phase).lower()}_files"
-        files = getattr(original_dataset, file_key, [])
+        files = self.dataset_collection.dataset_kwargs.get(file_key, [])
         if not files and phase == MachineLearningPhase.Training:
             file_key = "train_files"
-            files = getattr(original_dataset, file_key, [])
+            files = self.dataset_collection.dataset_kwargs.get(file_key, [])
         assert isinstance(files, list)
         if not files:
             return None
