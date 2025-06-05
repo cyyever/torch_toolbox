@@ -309,7 +309,11 @@ class ModelEvaluator:
                 case EvaluationMode.Training:
                     if not module.training:
                         module.train()
-                case EvaluationMode.Test | EvaluationMode.TestWithGrad:
+                case (
+                    EvaluationMode.Test
+                    | EvaluationMode.TestWithGrad
+                    | EvaluationMode.SampleInference
+                ):
                     if module.training:
                         module.eval()
                         if evaluation_mode == EvaluationMode.TestWithGrad:
