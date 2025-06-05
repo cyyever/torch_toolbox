@@ -77,7 +77,7 @@ class Inferencer(Executor):
 
     def __collect_sample_loss(
         self,
-        sample_loss: dict[int, Any],
+        final_result: dict[int, Any],
         result: dict,
         sample_indices: Iterable[int],
         **kwargs: Any,
@@ -85,12 +85,12 @@ class Inferencer(Executor):
         assert not result["is_averaged_loss"]
         if isinstance(sample_indices, torch.Tensor):
             sample_indices = sample_indices.tolist()
-        sample_loss.update(zip(sample_indices, result["loss"], strict=False))
+        final_result.update(zip(sample_indices, result["loss"], strict=False))
 
     def __process_sample_output(
         self,
         callback: Callable,
-        result: dict,
+        final_result: dict,
         **kwargs: Any,
     ) -> None:
         callback(kwargs)
@@ -106,7 +106,7 @@ class Inferencer(Executor):
             self.append_named_hook(
                 hook_point=ExecutorHookPoint.AFTER_BATCH,
                 name=hook_name,
-                fun=functools.partial(hook, result=result),
+                fun=functools.partial(hook, final_result=result),
             )
             self.running_model_evaluator.add_evaluation_kwargs(**evaluation_kwargs)
             try:
