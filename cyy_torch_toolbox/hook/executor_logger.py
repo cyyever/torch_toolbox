@@ -12,7 +12,7 @@ class ExecutorLogger(Hook):
         log_info("dataset is %s", executor.dataset_collection.name)
         log_info("device is %s", executor.device)
         log_info("model type is %s", executor.model.__class__)
-        log_debug("model is %s", executor.model)
+        log_info("model is %s", executor.model)
         # log_debug("loss function is %s", executor.loss_fun)
         total_parameter_number = 0
         trainable_parameter_number = 0
@@ -30,6 +30,10 @@ class ExecutorLogger(Hook):
             dtype_stat[parameter.dtype].append(name)
         log_info("total parameter number is %s", total_parameter_number)
         log_info("trainable parameter number is %s", trainable_parameter_number)
+        total_buffer_number = 0
+        for name, buffer in executor.model.named_buffers():
+            total_buffer_number += buffer.numel()
+        log_info("total buffer number is %s", total_buffer_number)
         if len(device_stat) == 1:
             log_info("model use device %s", list(device_stat.keys())[0])
         else:
