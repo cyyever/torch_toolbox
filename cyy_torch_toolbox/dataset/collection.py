@@ -102,11 +102,25 @@ class DatasetCollection:
         dataset_util = self.get_dataset_util(phase)
         self.__datasets[phase] = transformer(dataset_util)
 
+    def transform_original_dataset(
+        self,
+        phase: MachineLearningPhase,
+        transformer: Callable[[DatasetUtil], torch.utils.data.Dataset],
+    ) -> None:
+        dataset_util = self.get_dataset_util(phase)
+        self.__original_datasets[phase] = transformer(dataset_util)
+
     def transform_all_datasets(
         self, transformer: Callable[[DatasetUtil], torch.utils.data.Dataset]
     ) -> None:
         for phase in self.__datasets:
             self.transform_dataset(phase, transformer)
+
+    def transform_all_original_datasets(
+        self, transformer: Callable[[DatasetUtil], torch.utils.data.Dataset]
+    ) -> None:
+        for phase in self.__datasets:
+            self.transform_original_dataset(phase, transformer)
 
     def set_subset(self, phase: MachineLearningPhase, indices: set[int]) -> None:
         self.transform_dataset(
