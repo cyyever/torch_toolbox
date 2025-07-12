@@ -14,7 +14,8 @@ class NewAccuracyMetric(ClassificationMetric):
             with executor.device:
                 self._metric = Accuracy(**self._get_metric_kwargs(executor))
         output, targets = self._get_output(executor, result)
-        self.metric.update(output, targets)
+        if output.numel() > 0:
+            self.metric.update(output, targets)
 
     def _after_epoch(self, **kwargs) -> None:
         epoch = kwargs["epoch"]
