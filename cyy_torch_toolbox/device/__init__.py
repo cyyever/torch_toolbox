@@ -48,10 +48,6 @@ def get_device_memory_info(
     raise NotImplementedError(device_type)
 
 
-def get_cpu_device() -> torch.device:
-    return torch.device("cpu")
-
-
 def set_device(device: torch.device) -> None:
     match device.type.lower():
         case "cuda":
