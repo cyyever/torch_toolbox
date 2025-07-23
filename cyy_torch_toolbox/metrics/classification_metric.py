@@ -60,6 +60,8 @@ class ClassificationMetric(Metric):
             output = output.view(-1)
         assert isinstance(targets, torch.Tensor)
         if len(targets.shape) <= 1:
+            output = output.to("cpu", non_blocking=True)
+            targets = targets.to("cpu", non_blocking=True)
             mask = targets != -100
             output = output[mask]
             targets = targets[mask]
