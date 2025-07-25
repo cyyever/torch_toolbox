@@ -6,10 +6,11 @@ from ..ml_type.factory import Factory
 
 class OptimizerFactory(Factory):
     def __init__(self) -> None:
+        super().__init__()
         for name, cls in get_class_attrs(
             torch.optim,
             filter_fun=lambda _, v: issubclass(v, torch.optim.Optimizer),
-        ):
+        ).items():
             self.register(name, cls)
 
     def register(self, key, value) -> None:
