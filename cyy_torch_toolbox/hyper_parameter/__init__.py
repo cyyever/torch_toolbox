@@ -8,7 +8,9 @@ import torch
 from cyy_naive_lib.log import log_debug
 from cyy_naive_lib.reflection import call_fun, get_class_attrs
 
+from .lr import lr_scheduler_step_after_batch
 from .lr_finder import get_learning_rate
+from .optimizer_repository import get_optimizer_names, global_optimizer_factory
 
 
 class HyperParameterAction(StrEnum):
@@ -49,12 +51,14 @@ class HyperParameter:
                 default_kwargs["patience"] = patience
                 default_kwargs["factor"] = 0.1
                 default_kwargs.update(self.learning_rate_scheduler_kwargs)
-                log_debug("ReduceLROnPlateau patience is %s", default_kwargs["patience"])
+                log_debug(
+                    "ReduceLROnPlateau patience is %s", default_kwargs["patience"]
+                )
             case "OneCycleLR":
                 default_kwargs["pct_start"] = 0.4
                 default_kwargs["max_lr"] = 10 * self.__get_learning_rate(trainer)
-                default_kwargs["total_steps"] = self.epoch * self.get_iterations_per_epoch(
-                    trainer.dataset_size
+                default_kwargs["total_steps"] = (
+                    self.epoch * self.get_iterations_per_epoch(trainer.dataset_size)
                 )
                 default_kwargs["anneal_strategy"] = "linear"
                 default_kwargs["three_phase"] = True
@@ -67,18 +71,16 @@ class HyperParameter:
         return fun(**default_kwargs)
 
     @staticmethod
-    def get_optimizer_names() -> list[str]:
-        return sorted(HyperParameter.__get_optimizer_classes().keys())
-
-    @staticmethod
     def get_lr_scheduler_names() -> list[str]:
         return sorted(HyperParameter.__get_learning_rate_scheduler_classes().keys())
 
-    def get_optimizer(self, trainer: Any, parameters: None | Iterable[torch.Tensor] = None) -> Any:
-        optimizer_class = self.__get_optimizer_classes().get(self.optimizer_name, None)
+    def get_optimizer(
+        self, trainer: Any, parameters: None | Iterable[torch.Tensor] = None
+    ) -> Any:
+        optimizer_class = global_optimizer_factory.get(self.optimizer_name)
         if optimizer_class is None:
             raise RuntimeError(
-                f"unknown optimizer:{self.optimizer_name}, supported names are: {list(self.__get_optimizer_classes().keys())}"
+                f"unknown optimizer:{self.optimizer_name}, supported names are: {get_optimizer_names()}"
             )
 
         kwargs = copy.copy(self.optimizer_kwargs)
@@ -104,13 +106,6 @@ class HyperParameter:
     def __get_learning_rate_scheduler_classes() -> dict:
         return get_class_attrs(
             torch.optim.lr_scheduler,
-            filter_fun=lambda _, v: issubclass(v, torch.optim.Optimizer),
-        )
-
-    @staticmethod
-    def __get_optimizer_classes() -> dict:
-        return get_class_attrs(
-            torch.optim,
             filter_fun=lambda _, v: issubclass(v, torch.optim.Optimizer),
         )
 
@@ -173,3 +168,12 @@ class HyperParameterConfig(HyperParameter):
                 )
             assert self.weight_decay is None
         return hyper_parameter
+
+
+__all__ = [
+    "lr_scheduler_step_after_batch",
+    "HyperParameterAction",
+    "HyperParameter",
+    "HyperParameterConfig",
+    "get_optimizer_names",
+]
