@@ -38,33 +38,33 @@ class HyperParameter:
     def get_lr_scheduler(self, trainer) -> torch.optim.lr_scheduler.LRScheduler:
         name = self.learning_rate_scheduler_name
         optimizer = trainer.get_optimizer()
-        full_kwargs: dict = {}
-        full_kwargs["optimizer"] = optimizer
+        default_kwargs: dict = {}
+        default_kwargs["optimizer"] = optimizer
         fun = getattr(torch.optim.lr_scheduler, name)
         if fun is None:
             raise RuntimeError("Unknown learning rate scheduler:" + name)
         match self.learning_rate_scheduler_name:
             case "ReduceLROnPlateau":
                 patience = min(10, self.epoch + 9 // 10)
-                full_kwargs["patience"] = patience
-                full_kwargs["factor"] = 0.1
-                full_kwargs.update(self.learning_rate_scheduler_kwargs)
-                log_debug("ReduceLROnPlateau patience is %s", full_kwargs["patience"])
+                default_kwargs["patience"] = patience
+                default_kwargs["factor"] = 0.1
+                default_kwargs.update(self.learning_rate_scheduler_kwargs)
+                log_debug("ReduceLROnPlateau patience is %s", default_kwargs["patience"])
             case "OneCycleLR":
-                full_kwargs["pct_start"] = 0.4
-                full_kwargs["max_lr"] = 10 * self.__get_learning_rate(trainer)
-                full_kwargs["total_steps"] = self.epoch * self.get_iterations_per_epoch(
+                default_kwargs["pct_start"] = 0.4
+                default_kwargs["max_lr"] = 10 * self.__get_learning_rate(trainer)
+                default_kwargs["total_steps"] = self.epoch * self.get_iterations_per_epoch(
                     trainer.dataset_size
                 )
-                full_kwargs["anneal_strategy"] = "linear"
-                full_kwargs["three_phase"] = True
+                default_kwargs["anneal_strategy"] = "linear"
+                default_kwargs["three_phase"] = True
             case "CosineAnnealingLR":
-                full_kwargs["T_max"] = self.epoch
+                default_kwargs["T_max"] = self.epoch
             case "MultiStepLR":
-                full_kwargs["milestones"] = [30, 80]
+                default_kwargs["milestones"] = [30, 80]
         fun = getattr(torch.optim.lr_scheduler, name)
-        full_kwargs.update(self.learning_rate_scheduler_kwargs)
-        return fun(**full_kwargs)
+        default_kwargs.update(self.learning_rate_scheduler_kwargs)
+        return fun(**default_kwargs)
 
     @staticmethod
     def get_optimizer_names() -> list[str]:
