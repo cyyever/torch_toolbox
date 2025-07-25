@@ -1,38 +1,14 @@
 import copy
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
 from typing import Any
 
 import torch
-from cyy_naive_lib.log import log_debug, log_warning
+from cyy_naive_lib.log import log_debug
 from cyy_naive_lib.reflection import call_fun, get_class_attrs
 
-from ..concurrency import TorchThreadTaskQueue
-from .lr_finder import LRFinder
-
-
-def _determine_learning_rate(task: Any, **kwargs: Any) -> float:
-    tmp_trainer = task
-    with tmp_trainer.hook_config:
-        tmp_trainer.hook_config.use_amp = False
-        tmp_trainer.hook_config.disable_log()
-        tmp_trainer.disable_stripable_hooks()
-        lr_finder = LRFinder()
-        log_warning("register lr_finder %s", id(tmp_trainer))
-        tmp_trainer.prepend_hook(lr_finder)
-        tmp_trainer.train()
-        log_warning("suggested_learning_rate is %s", lr_finder.suggested_learning_rate)
-        assert lr_finder.suggested_learning_rate is not None
-        return lr_finder.suggested_learning_rate
-
-
-def lr_scheduler_step_after_batch(
-    lr_scheduler: torch.optim.lr_scheduler.LRScheduler,
-) -> bool:
-    return isinstance(
-        lr_scheduler,
-        torch.optim.lr_scheduler.OneCycleLR | torch.optim.lr_scheduler.CyclicLR,
-    )
+from .lr_finder import get_learning_rate
 
 
 class HyperParameterAction(StrEnum):
@@ -49,25 +25,15 @@ class HyperParameter:
     optimizer_name: str = "AdamW"
     optimizer_kwargs: dict = field(default_factory=lambda: {"fake_weight_decay": 1.0})
 
-    def __get_learning_rate(self, trainer: Any | None = None) -> float:
-        if isinstance(self.learning_rate, HyperParameterAction):
-            assert trainer is not None
-            task_queue = TorchThreadTaskQueue()
-            task_queue.start(worker_fun=_determine_learning_rate)
-            trainer.offload_from_device()
-            task_queue.add_task(copy.deepcopy(trainer))
-            data = task_queue.get_data()
-            assert data is not None
-            learning_rate = data[0]
-            assert isinstance(learning_rate, float)
-            self.learning_rate = learning_rate
-            task_queue.stop()
-        return self.learning_rate
-
     def get_iterations_per_epoch(self, dataset_size: int) -> int:
         if self.batch_size == 1:
             return dataset_size
         return (dataset_size + self.batch_size - 1) // self.batch_size
+
+    def __get_learning_rate(self, trainer: Any | None = None) -> float:
+        if isinstance(self.learning_rate, HyperParameterAction):
+            self.learning_rate = get_learning_rate(trainer=trainer)
+        return self.learning_rate
 
     def get_lr_scheduler(self, trainer) -> torch.optim.lr_scheduler.LRScheduler:
         name = self.learning_rate_scheduler_name
@@ -76,7 +42,7 @@ class HyperParameter:
         full_kwargs["optimizer"] = optimizer
         fun = getattr(torch.optim.lr_scheduler, name)
         if fun is None:
-            raise RuntimeError("unknown learning rate scheduler:" + name)
+            raise RuntimeError("Unknown learning rate scheduler:" + name)
         match self.learning_rate_scheduler_name:
             case "ReduceLROnPlateau":
                 patience = min(10, self.epoch + 9 // 10)
@@ -108,7 +74,7 @@ class HyperParameter:
     def get_lr_scheduler_names() -> list[str]:
         return sorted(HyperParameter.__get_learning_rate_scheduler_classes().keys())
 
-    def get_optimizer(self, trainer: Any, parameters=None) -> Any:
+    def get_optimizer(self, trainer: Any, parameters: None | Iterable[torch.Tensor] = None) -> Any:
         optimizer_class = self.__get_optimizer_classes().get(self.optimizer_name, None)
         if optimizer_class is None:
             raise RuntimeError(

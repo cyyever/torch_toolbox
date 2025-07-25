@@ -1,5 +1,10 @@
-import torch
+import copy
+from typing import Any
 
+import torch
+from cyy_naive_lib.log import log_warning
+
+from ..concurrency import TorchThreadTaskQueue
 from ..hook import Hook
 from ..ml_type import StopExecutingException
 
@@ -66,3 +71,32 @@ class LRFinder(Hook):
                 self.learning_rates[torch.tensor(self.losses).argmin()] / 10.0
             )
             raise StopExecutingException()
+
+
+def __determine_learning_rate(task: Any, **kwargs: Any) -> float:
+    tmp_trainer = task
+    with tmp_trainer.hook_config:
+        tmp_trainer.hook_config.use_amp = False
+        tmp_trainer.hook_config.disable_log()
+        tmp_trainer.disable_stripable_hooks()
+        lr_finder = LRFinder()
+        log_warning("register lr_finder %s", id(tmp_trainer))
+        tmp_trainer.prepend_hook(lr_finder)
+        tmp_trainer.train()
+        log_warning("suggested_learning_rate is %s", lr_finder.suggested_learning_rate)
+        assert lr_finder.suggested_learning_rate is not None
+        return lr_finder.suggested_learning_rate
+
+
+def get_learning_rate(trainer: Any | None = None) -> float:
+    assert trainer is not None
+    task_queue = TorchThreadTaskQueue()
+    task_queue.start(worker_fun=__determine_learning_rate)
+    trainer.offload_from_device()
+    task_queue.add_task(copy.deepcopy(trainer))
+    data = task_queue.get_data()
+    assert data is not None
+    learning_rate = data[0]
+    assert isinstance(learning_rate, float)
+    task_queue.stop()
+    return learning_rate
