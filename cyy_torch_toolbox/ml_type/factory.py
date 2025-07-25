@@ -30,6 +30,9 @@ class Factory:
     def get_similar_keys(self, key: str) -> list[str]:
         return get_close_matches(key, self.data.keys())
 
+    def get_keys(self) -> list[Any]:
+        return list(self.data.keys())
+
     @classmethod
     def _lower_key(cls, key: Any) -> Any:
         match key:
