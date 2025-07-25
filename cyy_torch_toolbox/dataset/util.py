@@ -66,7 +66,8 @@ class DatasetUtil:
 
     def cache_pipeline(self, device: torch.device) -> tuple[Any, DataPipeline]:
         data, remaining_pipeline = self._pipeline.cache_dataset(dataset=self.dataset)
-        data = tensor_to(data, device=device)
+        if device.type != "cpu":
+            data = tensor_to(data, device=device)
         return data, remaining_pipeline
 
     def decompose(self) -> None | dict:
