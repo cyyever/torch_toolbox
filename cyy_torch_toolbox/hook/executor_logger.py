@@ -31,7 +31,7 @@ class ExecutorLogger(Hook):
         log_info("total parameter number is %s", total_parameter_number)
         log_info("trainable parameter number is %s", trainable_parameter_number)
         total_buffer_number = 0
-        for name, buffer in executor.model.named_buffers():
+        for _, buffer in executor.model.named_buffers():
             total_buffer_number += buffer.numel()
         log_info("total buffer number is %s", total_buffer_number)
         if len(device_stat) == 1:
