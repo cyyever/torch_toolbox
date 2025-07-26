@@ -176,4 +176,5 @@ __all__ = [
     "HyperParameter",
     "HyperParameterConfig",
     "get_optimizer_names",
+    "global_optimizer_factory",
 ]
