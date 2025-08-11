@@ -39,24 +39,10 @@ def __prepare_dataloader_kwargs(
             pass
         case _:
             raise RuntimeError(cache_transforms)
-    use_process: bool = "USE_THREAD_DATALOADER" not in os.environ
-    if dc.dataset_type == DatasetType.Graph:
-        # don't pass large graphs around processes
-        use_process = False
-    if cache_transforms is not None:
-        use_process = False
-    use_process = False
-    if use_process:
-        kwargs["prefetch_factor"] = 2
-        kwargs["num_workers"] = 1
-        if data_device.type.lower() != "cpu":
-            kwargs["multiprocessing_context"] = TorchProcessContext().get_ctx()
-        kwargs["persistent_workers"] = True
-    else:
-        log_debug("use threads")
-        kwargs["num_workers"] = 0
-        kwargs["prefetch_factor"] = None
-        kwargs["persistent_workers"] = False
+    log_debug("use threads")
+    kwargs["num_workers"] = 0
+    kwargs["prefetch_factor"] = None
+    kwargs["persistent_workers"] = False
     kwargs["batch_size"] = hyper_parameter.batch_size
     kwargs["shuffle"] = phase == MachineLearningPhase.Training
     kwargs["pin_memory"] = False
