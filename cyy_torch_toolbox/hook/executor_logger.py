@@ -1,4 +1,4 @@
-from cyy_naive_lib.log import log_debug, log_info
+from cyy_naive_lib.log import log_info
 
 from ..ml_type import MachineLearningPhase
 from . import Hook

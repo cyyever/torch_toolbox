@@ -5,8 +5,8 @@ import os
 from dataclasses import dataclass
 
 from cyy_naive_lib.log import log_info
+from cyy_preprocessing_pipeline import DatasetWithIndex
 
-from ..data_pipeline import DatasetWithIndex
 from ..ml_type import Factory, MachineLearningPhase, TargetType, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection

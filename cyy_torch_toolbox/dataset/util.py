@@ -5,13 +5,13 @@ from typing import Any
 import torch
 import torch.nn.functional
 import torch.utils.data
-
-from ..data_pipeline import (
+from cyy_preprocessing_pipeline import (
     DataPipeline,
     get_dataset_size,
     select_item,
     subset_dp,
 )
+
 from ..ml_type import Factory, IndicesType, OptionalIndicesType
 from ..tensor import tensor_to
 

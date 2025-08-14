@@ -2,8 +2,8 @@ import json
 import os
 
 from cyy_naive_lib.log import log_info
+from cyy_preprocessing_pipeline.common import replace_target
 
-from ..data_pipeline.common import replace_target
 from ..ml_type import DatasetType, Factory, MachineLearningPhase, TransformType
 from .cache import DatasetCache
 from .classification_collection import ClassificationDatasetCollection

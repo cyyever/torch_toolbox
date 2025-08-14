@@ -2,8 +2,8 @@ import functools
 import re
 
 from cyy_naive_lib.log import log_debug, log_error
+from cyy_preprocessing_pipeline import DataPipeline, Transform
 
-from ..data_pipeline import DataPipeline, Transform
 from .collection import DatasetCollection
 
 
