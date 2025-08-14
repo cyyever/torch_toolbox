@@ -8,11 +8,13 @@ import torch
 import torch.utils.data
 from cyy_naive_lib.log import log_debug, log_error
 from cyy_naive_lib.storage import get_cached_data
-
-from ..data_pipeline import (
+from cyy_preprocessing_pipeline import (
     DataPipeline,
     DatasetWithIndex,
     Transform,
+)
+
+from ..data_pipeline import (
     append_transforms_to_dc,
 )
 from ..ml_type import DatasetType, MachineLearningPhase

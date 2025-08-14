@@ -1,10 +1,7 @@
-import os
-
 import torch
 import torch.utils.data
 from cyy_naive_lib.log import log_debug, log_info
 
-from ..concurrency import TorchProcessContext
 from ..dataset.collection import DatasetCollection
 from ..hyper_parameter import HyperParameter
 from ..ml_type import DatasetType, Factory, MachineLearningPhase

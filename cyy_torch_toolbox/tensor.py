@@ -1,6 +1,6 @@
 import dataclasses
 import functools
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable
 from typing import Any
 
 import dill
