@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 import torch.multiprocessing
@@ -8,5 +9,7 @@ class TorchProcessContext(ProcessContext):
     def __init__(self, **kwargs: Any) -> None:
         ctx: Any = torch.multiprocessing
         if torch.cuda.is_available():
-            ctx = torch.multiprocessing.get_context("spawn")
+            ctx = torch.multiprocessing.get_context(
+                os.getenv("CYY_TORCH_MP_CTX", "spawn")
+            )
         super().__init__(ctx=ctx, **kwargs)

@@ -14,12 +14,10 @@ class ExecutorLogger(Hook):
         log_info("model type is %s", executor.model.__class__)
         log_info("model is %s", executor.model)
         # log_debug("loss function is %s", executor.loss_fun)
-        total_parameter_number = 0
         trainable_parameter_number = 0
         dtype_stat: dict = {}
         device_stat: dict = {}
         for name, parameter in executor.model.named_parameters():
-            total_parameter_number += parameter.numel()
             if parameter.requires_grad:
                 trainable_parameter_number += parameter.numel()
             if parameter.device not in device_stat:
@@ -28,7 +26,7 @@ class ExecutorLogger(Hook):
             if parameter.dtype not in dtype_stat:
                 dtype_stat[parameter.dtype] = []
             dtype_stat[parameter.dtype].append(name)
-        log_info("total parameter number is %s", total_parameter_number)
+        log_info("total parameter number is %s", executor.model_util.get_total_paramater_number())
         log_info("trainable parameter number is %s", trainable_parameter_number)
         total_buffer_number = 0
         for _, buffer in executor.model.named_buffers():

@@ -150,6 +150,23 @@ class ModelUtil:
             flag = True
         return flag
 
+    def total_paramater_number(self, **kwargs: Any) -> int:
+        total_number: int = 0
+
+        def count(name, module, model_util) -> None:
+            nonlocal total_number
+            for parameter in module.parameters():
+                total_number += parameter.numel()
+
+            if not hasattr(module, "fronzen_parameters"):
+                return
+            for param_name in module.fronzen_parameters:
+                param = getattr(module, param_name)
+                total_number += param.numel()
+
+        self.change_modules(f=count, **kwargs)
+        return total_number
+
     def freeze_modules(self, **kwargs: Any) -> bool:
         def freeze(name, module, model_util) -> None:
             log_debug("freeze %s", name)
@@ -170,7 +187,6 @@ class ModelUtil:
             if not hasattr(module, "fronzen_parameters"):
                 log_debug("nothing to unfreeze")
                 return
-            assert module.fronzen_parameters
             parameter_dict = {
                 f"{name}.{param_name}": getattr(module, param_name)
                 for param_name in module.fronzen_parameters
