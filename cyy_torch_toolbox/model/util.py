@@ -150,7 +150,7 @@ class ModelUtil:
             flag = True
         return flag
 
-    def total_paramater_number(self, **kwargs: Any) -> int:
+    def get_total_paramater_number(self, **kwargs: Any) -> int:
         total_number: int = 0
 
         def count(name, module, model_util) -> None:
