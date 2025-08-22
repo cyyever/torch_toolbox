@@ -150,21 +150,19 @@ class ModelUtil:
             flag = True
         return flag
 
-    def get_total_paramater_number(self, **kwargs: Any) -> int:
+    def get_total_paramater_number(self) -> int:
         total_number: int = 0
 
-        def count(name, module, model_util) -> None:
-            nonlocal total_number
+        for _, module in self.get_modules():
             for parameter in module.parameters():
                 total_number += parameter.numel()
 
             if not hasattr(module, "fronzen_parameters"):
-                return
+                continue
             for param_name in module.fronzen_parameters:
                 param = getattr(module, param_name)
                 total_number += param.numel()
 
-        self.change_modules(f=count, **kwargs)
         return total_number
 
     def freeze_modules(self, **kwargs: Any) -> bool:
