@@ -150,7 +150,7 @@ class ModelUtil:
             flag = True
         return flag
 
-    def get_total_paramater_number(self) -> int:
+    def get_total_parameter_number(self) -> int:
         total_number: int = 0
 
         for _, module in self.get_modules():
