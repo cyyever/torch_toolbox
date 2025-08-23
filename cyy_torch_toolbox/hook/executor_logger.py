@@ -28,7 +28,7 @@ class ExecutorLogger(Hook):
             dtype_stat[parameter.dtype].append(name)
         log_info(
             "total parameter number is %s",
-            executor.model_util.get_total_paramater_number(),
+            executor.model_util.get_total_parameter_number(),
         )
         log_info("trainable parameter number is %s", trainable_parameter_number)
         total_buffer_number = 0

@@ -41,7 +41,7 @@ class ModelType(StrEnum):
     TokenClassification = auto()
     CausalLM = auto()
     TextGeneration = auto()
-    UnkownType = auto()
+    UnknownType = auto()
 
 
 class DatasetType(StrEnum):
