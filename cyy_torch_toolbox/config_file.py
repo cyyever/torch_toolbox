@@ -28,11 +28,14 @@ def load_combined_config_from_files(
     other_confs = [OmegaConf.load(file) for file in other_config_files]
     conf_obj: Any = None
     config_path = os.path.abspath(config_path)
-    assert config_path.endswith(".yaml")
+    config_name = None
+    if config_path.endswith(".yaml"):
+        config_path = os.path.dirname(config_path)
+        config_name = os.path.basename(config_path).removesuffix(".yaml")
 
     @hydra.main(
-        config_path=os.path.dirname(config_path),
-        config_name=os.path.basename(config_path).removesuffix(".yaml"),
+        config_path=config_path,
+        config_name=config_name,
         version_base=None,
     )
     def load_config_hydra(conf) -> None:
