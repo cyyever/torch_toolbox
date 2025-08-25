@@ -1,3 +1,4 @@
+import os
 import sys
 from typing import Any
 
@@ -26,8 +27,14 @@ def load_combined_config_from_files(
         )
     other_confs = [OmegaConf.load(file) for file in other_config_files]
     conf_obj: Any = None
+    config_path = os.path.abspath(config_path)
+    assert config_path.endswith(".yaml")
 
-    @hydra.main(config_path=config_path, version_base=None)
+    @hydra.main(
+        config_path=os.path.dirname(config_path),
+        config_name=os.path.basename(config_path).removesuffix(".yaml"),
+        version_base=None,
+    )
     def load_config_hydra(conf) -> None:
         nonlocal conf_obj
         conf_obj = conf
