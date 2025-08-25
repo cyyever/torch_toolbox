@@ -30,8 +30,9 @@ def load_combined_config_from_files(
     config_path = os.path.abspath(config_path)
     config_name = None
     if config_path.endswith(".yaml"):
-        config_path = os.path.dirname(config_path)
         config_name = os.path.basename(config_path).removesuffix(".yaml")
+        config_path = os.path.dirname(config_path)
+
 
     @hydra.main(
         config_path=config_path,
