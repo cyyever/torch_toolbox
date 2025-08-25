@@ -12,7 +12,6 @@ from .amp import AMPModelEvaluator
 from .evaluator import ModelEvaluator
 from .util import ModelUtil
 
-
 global_model_evaluator_factory = Factory()
 
 
