@@ -7,7 +7,24 @@ from .concurrency import (
 from .config import Config
 from .config_file import load_combined_config_from_files
 from .data_pipeline import global_data_transform_factory
-from .dataset import *
+from .dataset import (
+    ClassificationDatasetCollection,
+    DatasetCollection,
+    DatasetCollectionSplit,
+    DatasetFactory,
+    DatasetSampler,
+    DatasetUtil,
+    RandomSplit,
+    SampleInfo,
+    SamplerBase,
+    SplitBase,
+    TextDatasetCollection,
+    create_dataset_collection,
+    get_dataset_collection_sampler,
+    get_dataset_collection_split,
+    global_sampler_factory,
+    load_local_files,
+)
 from .executor import *
 from .hook import *
 from .hyper_parameter import *
@@ -78,4 +95,20 @@ __all__ = [
     "TorchProcessTaskQueue",
     "TorchThreadTaskQueue",
     "TransformType",
+    "DatasetSampler",
+    "DatasetUtil",
+    "create_dataset_collection",
+    "get_dataset_collection_sampler",
+    "ClassificationDatasetCollection",
+    "TextDatasetCollection",
+    "DatasetCollection",
+    "SamplerBase",
+    "SplitBase",
+    "RandomSplit",
+    "DatasetFactory",
+    "DatasetCollectionSplit",
+    "get_dataset_collection_split",
+    "global_sampler_factory",
+    "SampleInfo",
+    "load_local_files",
 ]
