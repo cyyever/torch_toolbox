@@ -1,6 +1,6 @@
 import functools
 
-from cyy_naive_lib.decorator import Decorator
+from cyy_naive_lib import Decorator
 from cyy_naive_lib.log import log_info
 
 from ..ml_type import MachineLearningPhase
