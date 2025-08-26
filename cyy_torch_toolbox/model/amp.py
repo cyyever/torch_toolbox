@@ -3,7 +3,7 @@ from typing import Any, Self
 
 import torch
 import torch.amp
-from cyy_naive_lib.decorator import Decorator
+from cyy_naive_lib import Decorator
 from cyy_naive_lib.log import log_debug
 
 from .evaluator import ModelEvaluator
