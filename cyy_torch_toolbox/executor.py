@@ -12,9 +12,10 @@ import torch
 import torch.cuda
 import torch.utils.data
 from cyy_naive_lib.log import log_debug
+from cyy_preprocessing_pipeline import DatasetUtil
 
 from .data_pipeline.loader import get_dataloader
-from .dataset import DatasetCollection, DatasetCollectionConfig, DatasetUtil
+from .dataset import DatasetCollection, DatasetCollectionConfig
 from .device import DefaultDeviceContext, DeviceGreedyAllocator, SyncedStreamContext
 from .hook import HookCollection
 from .hook.config import HookConfig
