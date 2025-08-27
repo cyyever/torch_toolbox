@@ -9,7 +9,9 @@ import torch.utils.data
 from cyy_naive_lib.log import log_debug, log_error
 from cyy_naive_lib.storage import get_cached_data
 from cyy_preprocessing_pipeline import (
+    ClassificationDatasetSampler,
     DataPipeline,
+    DatasetUtil,
     DatasetWithIndex,
     Transform,
 )
@@ -19,8 +21,7 @@ from ..data_pipeline import (
 )
 from ..ml_type import DatasetType, MachineLearningPhase
 from .cache import DatasetCache
-from .sampler import DatasetSampler
-from .util import DatasetUtil, global_dataset_util_factor
+from .factory import global_dataset_util_factor
 
 
 class DatasetCollection:
@@ -211,7 +212,9 @@ class DatasetCollection:
         log_debug("split %s dataset for %s", from_phase, self.name)
         part_list = list(parts.items())
 
-        sampler = DatasetSampler(dataset_util=self.get_dataset_util(phase=from_phase))
+        sampler = ClassificationDatasetSampler(
+            dataset_util=self.get_dataset_util(phase=from_phase)
+        )
         datasets = sampler.iid_split([part for (_, part) in part_list])
         for (phase, _), dataset in zip(part_list, datasets, strict=False):
             self.__datasets[phase] = dataset
