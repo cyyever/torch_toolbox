@@ -20,10 +20,10 @@ from .collection_sampler import (
     get_dataset_collection_split,
     global_sampler_factory,
 )
+from .factory import global_dataset_util_factor
 from .repository import DatasetFactory, get_dataset
 from .text_collection import TextDatasetCollection
 
-global_dataset_util_factor = Factory()
 global_dataset_collection_factory: Factory = Factory()
 
 
@@ -196,5 +196,6 @@ __all__ = [
     "DatasetCollectionSplit",
     "get_dataset_collection_split",
     "global_sampler_factory",
+    "global_dataset_util_factor",
     "SampleInfo",
 ]
