@@ -150,20 +150,47 @@ class ModelUtil:
             flag = True
         return flag
 
-    def get_total_parameter_number(self) -> int:
+    def get_parameter_numbers(self) -> tuple[int, int, int]:
         total_number: int = 0
+        trainable_number: int = 0
+        trainable_size: int = 0
+        checked_param_names = set()
 
-        for _, module in self.get_modules():
-            for parameter in module.parameters():
+        for name, module in self.get_modules():
+            for param_name, parameter in module.named_parameters():
+                full_param_name = f"{name}.{param_name}" if name else param_name
+                if full_param_name in checked_param_names:
+                    continue
+                checked_param_names.add(full_param_name)
+                log_debug(
+                    "count parameter from %s",
+                    f"{full_param_name} => {parameter.numel()}",
+                )
                 total_number += parameter.numel()
+                if parameter.requires_grad:
+                    trainable_number += parameter.numel()
+                    trainable_size += parameter.nbytes
+                else:
+                    log_debug(
+                        "count non trailable parameter from %s",
+                        f"{full_param_name} => {parameter.numel()}",
+                    )
 
             if not hasattr(module, "fronzen_parameters"):
                 continue
             for param_name in module.fronzen_parameters:
+                full_param_name = f"{name}.{param_name}" if name else param_name
+                if full_param_name in checked_param_names:
+                    continue
+                checked_param_names.add(full_param_name)
                 param = getattr(module, param_name)
+                log_debug(
+                    "count fronzen parameter from %s",
+                    f"{full_param_name} => {param.numel()}",
+                )
                 total_number += param.numel()
 
-        return total_number
+        return total_number, trainable_number, trainable_size
 
     def freeze_modules(self, **kwargs: Any) -> bool:
         def freeze(name, module, model_util) -> None:
@@ -202,8 +229,10 @@ class ModelUtil:
             return True
         return False
 
-    def get_modules(self) -> Generator:
-        def get_module_impl(model: torch.nn.Module, prefix: str) -> Generator:
+    def get_modules(self) -> Generator[tuple[str, torch.nn.Module], None, None]:
+        def get_module_impl(
+            model: torch.nn.Module, prefix: str
+        ) -> Generator[tuple[str, torch.nn.Module], None, None]:
             yield prefix, model
             for name, module in model.named_children():
                 if module is None:
