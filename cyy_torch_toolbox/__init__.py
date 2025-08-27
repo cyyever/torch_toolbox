@@ -1,3 +1,10 @@
+from cyy_preprocessing_pipeline import (
+    ClassificationDatasetSampler,
+    DatasetSampler,
+    DatasetUtil,
+    load_local_files,
+)
+
 from .concurrency import (
     TorchProcessContext,
     TorchProcessPool,
@@ -12,8 +19,6 @@ from .dataset import (
     DatasetCollection,
     DatasetCollectionSplit,
     DatasetFactory,
-    DatasetSampler,
-    DatasetUtil,
     RandomSplit,
     SampleInfo,
     SamplerBase,
@@ -23,7 +28,6 @@ from .dataset import (
     get_dataset_collection_sampler,
     get_dataset_collection_split,
     global_sampler_factory,
-    load_local_files,
 )
 from .executor import *
 from .hook import *
@@ -110,5 +114,6 @@ __all__ = [
     "get_dataset_collection_split",
     "global_sampler_factory",
     "SampleInfo",
+    "ClassificationDatasetSampler",
     "load_local_files",
 ]
