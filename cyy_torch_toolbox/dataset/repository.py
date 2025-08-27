@@ -4,9 +4,10 @@ from typing import Any
 
 from cyy_naive_lib.log import log_debug, log_error, log_info
 from cyy_naive_lib.reflection import get_kwarg_names
+from cyy_preprocessing_pipeline import DatasetUtil
 
-from ..dataset.util import DatasetUtil, global_dataset_util_factor
 from ..ml_type import DatasetType, Factory, MachineLearningPhase
+from .factory import global_dataset_util_factor
 
 
 class DatasetFactory(Factory):
