@@ -5,13 +5,15 @@ import os
 from dataclasses import dataclass
 
 from cyy_naive_lib.log import log_info
-from cyy_preprocessing_pipeline import DatasetWithIndex
+from cyy_preprocessing_pipeline import (
+    ClassificationDatasetSampler,
+    DatasetUtil,
+    DatasetWithIndex,
+)
 
 from ..ml_type import Factory, MachineLearningPhase, TargetType, TransformType
 from .classification_collection import ClassificationDatasetCollection
 from .collection import DatasetCollection
-from .sampler import DatasetSampler
-from .util import DatasetUtil
 
 
 @dataclass(kw_only=True)
@@ -26,7 +28,7 @@ class SampleInfo:
             dc.set_subset(phase=phase, indices=set(self.indices))
             return
         if self.file_path is not None:
-            from .local_file import load_local_files
+            from cyy_preprocessing_pipeline import load_local_files
 
             file_path: str = self.file_path
             dc.transform_dataset(
@@ -46,7 +48,7 @@ class Base:
         sample_phase: MachineLearningPhase | list[MachineLearningPhase] | None = None,
     ) -> None:
         self._dc = dataset_collection
-        self._samplers: dict[MachineLearningPhase, DatasetSampler] = {}
+        self._samplers: dict[MachineLearningPhase, ClassificationDatasetSampler] = {}
         if isinstance(sample_phase, MachineLearningPhase):
             sample_phase = [sample_phase]
         self.sample_phase = sample_phase
@@ -69,7 +71,9 @@ class Base:
     def set_dataset_collection(self, dataset_collection: DatasetCollection) -> None:
         self._dc = dataset_collection
         self._samplers = {
-            phase: DatasetSampler(dataset_collection.get_dataset_util(phase))
+            phase: ClassificationDatasetSampler(
+                dataset_collection.get_dataset_util(phase)
+            )
             for phase in self.get_phases()
         }
 
@@ -242,7 +246,7 @@ class IIDSplitWithFlip(IIDSplit):
         for phase in self.get_phases():
             if phase == MachineLearningPhase.Test:
                 continue
-            sampler = DatasetSampler(dc.get_dataset_util(phase))
+            sampler = ClassificationDatasetSampler(dc.get_dataset_util(phase))
             flip_percent = self.get_flip_percent(part_index=part_index)
             indices = self._dataset_indices[phase][part_index].indices
             assert indices
