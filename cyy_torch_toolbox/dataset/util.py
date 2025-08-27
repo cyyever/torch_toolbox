@@ -3,16 +3,17 @@ from collections.abc import Generator, Iterable
 from typing import Any
 
 import torch
-import torch.nn.functional
 import torch.utils.data
 from cyy_preprocessing_pipeline import (
     DataPipeline,
+    IndicesType,
+    OptionalIndicesType,
     get_dataset_size,
     select_item,
     subset_dp,
 )
 
-from ..ml_type import Factory, IndicesType, OptionalIndicesType
+from ..ml_type import Factory
 from ..tensor import tensor_to
 
 
@@ -22,16 +23,14 @@ class DatasetUtil:
         dataset: torch.utils.data.Dataset,
         name: None | str = None,
         pipeline: DataPipeline | None = None,
-        cache_dir: None | str = None,
     ) -> None:
         self.__dataset: torch.utils.data.Dataset = dataset
         self.__len: None | int = None
         self.__sample_number: None | int = None
         self._name: str = name if name else ""
-        self._pipeline: DataPipeline = (
+        self.__pipeline: DataPipeline = (
             pipeline if pipeline is not None else DataPipeline()
         )
-        self._cache_dir = cache_dir
 
     def __len__(self) -> int:
         if self.__len is None:
@@ -62,10 +61,10 @@ class DatasetUtil:
 
     @property
     def pipeline(self) -> DataPipeline:
-        return self._pipeline
+        return self.__pipeline
 
     def cache_pipeline(self, device: torch.device) -> tuple[Any, DataPipeline]:
-        data, remaining_pipeline = self._pipeline.cache_dataset(dataset=self.dataset)
+        data, remaining_pipeline = self.__pipeline.cache_dataset(dataset=self.dataset)
         if device.type != "cpu":
             data = tensor_to(data, device=device)
         return data, remaining_pipeline
@@ -82,8 +81,8 @@ class DatasetUtil:
     def get_samples(self, indices: OptionalIndicesType = None) -> Generator:
         raw_samples = self.get_raw_samples(indices=indices)
         for idx, sample in raw_samples:
-            if self._pipeline is not None:
-                sample = self._pipeline.apply_first(sample)
+            if self.__pipeline is not None:
+                sample = self.__pipeline.apply_first(sample)
             yield idx, sample
 
     def get_sample(self, index: int) -> Any:

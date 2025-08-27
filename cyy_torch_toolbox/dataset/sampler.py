@@ -4,6 +4,7 @@ import random
 from collections.abc import Callable
 from typing import Any
 
+import torch
 from cyy_naive_lib.log import log_warning
 
 from .util import DatasetUtil
@@ -37,7 +38,7 @@ class DatasetSampler:
                     label_sample_dict[label].add(index)
         return label_sample_dict
 
-    def get_subsets(self, index_list: list) -> list:
+    def get_subsets(self, index_list: list) -> list[torch.utils.data.MapDataPipe]:
         return [
             self.__dataset_util.get_subset(indices=indices) for indices in index_list
         ]
@@ -124,7 +125,7 @@ class DatasetSampler:
         if by_label:
             collected_indices = set()
 
-            def __collect(label: Any, indices: set) -> set:
+            def __collect(_: Any, indices: set) -> set:
                 collected_indices.update(indices)
                 return indices
 
