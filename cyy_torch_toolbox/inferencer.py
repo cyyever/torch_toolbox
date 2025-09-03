@@ -63,7 +63,7 @@ class Inferencer(Executor):
     def process_sample_output(
         self, callback: Callable, **generate_kwargs: Any
     ) -> dict[int, Any]:
-        evaluation_kwargs = {}
+        evaluation_kwargs: dict[str, Any] = {}
         if generate_kwargs:
             evaluation_kwargs |= {
                 "generate": True,

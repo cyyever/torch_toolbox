@@ -7,7 +7,7 @@ class DataloaderProfiler(Metric):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.__dataloader_time_counter = TimeCounter()
-        self.__accumulated_time = 0
+        self.__accumulated_time: float = 0
 
     def _before_epoch(self, **kwargs) -> None:
         self.__accumulated_time = 0
