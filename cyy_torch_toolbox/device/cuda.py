@@ -35,7 +35,6 @@ def get_cuda_memory_info(
             if processes:
                 continue
         info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-        assert isinstance(info, pynvml.c_nvmlMemory_v2_t)
         used = info.used  # noqa
         free = info.free  # noqa
         total = info.total  # noqa
