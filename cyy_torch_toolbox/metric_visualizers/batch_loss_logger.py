@@ -33,5 +33,5 @@ class BatchLossLogger(MetricVisualizer):
             epoch,
             batch_index,
             learning_rates,
-            result["loss"],
+            result["loss"].detach(),
         )
