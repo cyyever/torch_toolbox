@@ -2,7 +2,12 @@ from cyy_preprocessing_pipeline import (
     ClassificationDatasetSampler,
     DatasetSampler,
     DatasetUtil,
+    cat_tensor_dict,
+    cat_tensors_to_vector,
     load_local_files,
+    recursive_tensor_op,
+    tensor_clone,
+    tensor_to,
 )
 
 from .concurrency import (
@@ -56,13 +61,6 @@ from .ml_type import (
     TransformType,
 )
 from .model import *
-from .tensor import (
-    cat_tensor_dict,
-    cat_tensors_to_vector,
-    recursive_tensor_op,
-    tensor_clone,
-    tensor_to,
-)
 from .tokenizer import *
 from .trainer import *
 

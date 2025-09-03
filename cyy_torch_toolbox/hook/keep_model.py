@@ -1,9 +1,9 @@
 import os
 
 from cyy_naive_lib.storage import DataStorage
+from cyy_preprocessing_pipeline.tensor import tensor_to
 
 from ..ml_type import MachineLearningPhase
-from ..tensor import tensor_to
 from . import Hook
 
 
