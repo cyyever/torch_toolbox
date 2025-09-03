@@ -33,7 +33,6 @@ def load_combined_config_from_files(
         config_name = os.path.basename(config_path).removesuffix(".yaml")
         config_path = os.path.dirname(config_path)
 
-
     @hydra.main(
         config_path=config_path,
         config_name=config_name,
@@ -43,7 +42,7 @@ def load_combined_config_from_files(
         nonlocal conf_obj
         conf_obj = conf
 
-    load_config_hydra()
+    load_config_hydra()  # noqa
 
     other_confs.append(conf_obj)
     for idx, conf_obj in enumerate(other_confs):

@@ -9,6 +9,7 @@ from cyy_preprocessing_pipeline import (
     ClassificationDatasetSampler,
     DatasetUtil,
     DatasetWithIndex,
+    load_local_files,
 )
 
 from ..ml_type import Factory, MachineLearningPhase, TargetType, TransformType
@@ -28,8 +29,6 @@ class SampleInfo:
             dc.set_subset(phase=phase, indices=set(self.indices))
             return
         if self.file_path is not None:
-            from cyy_preprocessing_pipeline import load_local_files
-
             file_path: str = self.file_path
             dc.transform_dataset(
                 phase=phase,

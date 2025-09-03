@@ -85,7 +85,7 @@ class ModelUtil:
 
     def disable_running_stats(self) -> None:
         for _, module in self.get_modules():
-            if hasattr(module, "track_running_stats"):
+            if isinstance(module, torch.nn.modules.batchnorm._NormBase):
                 module.track_running_stats = False
                 module.register_buffer("running_mean", None)
                 module.register_buffer("running_var", None)
@@ -93,7 +93,7 @@ class ModelUtil:
 
     def reset_running_stats(self) -> None:
         for _, module in self.get_modules():
-            if hasattr(module, "reset_running_stats"):
+            if isinstance(module, torch.nn.modules.batchnorm._NormBase):
                 module.reset_running_stats()
 
     def set_grad(
@@ -178,11 +178,13 @@ class ModelUtil:
 
             if not hasattr(module, "fronzen_parameters"):
                 continue
+            assert isinstance(module.fronzen_parameters, set)
             for param_name in module.fronzen_parameters:
                 full_param_name = f"{name}.{param_name}" if name else param_name
                 if full_param_name in checked_param_names:
                     continue
                 checked_param_names.add(full_param_name)
+                assert isinstance(param_name, str)
                 param = getattr(module, param_name)
                 log_debug(
                     "count fronzen parameter from %s",

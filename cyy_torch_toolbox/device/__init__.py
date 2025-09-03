@@ -9,7 +9,7 @@ if torch.cuda.is_available():
     from .cuda import get_cuda_memory_info
 else:
 
-    def get_cuda_memory_info(**kwargs: Any) -> dict:
+    def get_cuda_memory_info(*args: Any, **kwargs: Any) -> dict:
         raise NotImplementedError()
 
 
@@ -91,9 +91,8 @@ class SyncedStreamContext:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        if hasattr(self.__stream, "synchronize"):
+        if isinstance(self.__stream, torch.Stream):
             self.__stream.synchronize()
-        if hasattr(self.__stream, "query"):
             assert self.__stream.query()
 
 

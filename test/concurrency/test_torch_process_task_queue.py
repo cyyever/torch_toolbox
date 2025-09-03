@@ -14,8 +14,8 @@ def test_process_task_queue() -> None:
     queue.start(worker_fun=hello)
     queue.add_task(())
     res = queue.get_data()
-    assert res is not None
-    data = res[0]
+    assert res.is_ok()
+    data = res.value()
     assert isinstance(data, dict)
     assert len(data) == 1
     assert "1" in data
