@@ -6,8 +6,9 @@ import torch.nn
 from cyy_naive_lib.algorithm.mapping_op import get_mapping_values_by_key_order
 from cyy_naive_lib.log import log_debug
 
+from cyy_torch_toolbox import cat_tensors_to_vector
+
 from ..ml_type import BlockType, ModelGradient, ModelParameter, TensorDict
-from ..tensor import cat_tensors_to_vector
 
 
 class ModelUtil:

@@ -5,10 +5,10 @@ from typing import Any
 import torch
 from cyy_naive_lib.log import log_debug, log_error
 from cyy_preprocessing_pipeline import DatasetUtil
+from cyy_preprocessing_pipeline.tensor import tensor_to
 from torch import nn
 
 from ..ml_type import EvaluationMode, ModelType
-from ..tensor import tensor_to
 from .util import ModelUtil
 
 
