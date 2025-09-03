@@ -5,13 +5,6 @@ import torch
 
 from .base import MemoryInfo
 
-if torch.cuda.is_available():
-    from .cuda import get_cuda_memory_info
-else:
-
-    def get_cuda_memory_info(*args: Any, **kwargs: Any) -> dict:
-        raise NotImplementedError()
-
 
 def get_device_memory_info(
     device: torch.device | None = None, consider_cache: bool = False
@@ -32,6 +25,8 @@ def get_device_memory_info(
             device_type = "cpu"
     match device_type:
         case "cuda":
+            from .cuda import get_cuda_memory_info
+
             return get_cuda_memory_info(
                 device_idx=device_idx, consider_cache=consider_cache
             )
