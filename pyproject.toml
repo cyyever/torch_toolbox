@@ -20,6 +20,7 @@ dependencies = [
   "hydra-core",
   "omegaconf",
   "torchmetrics",
+  "torchvision",
   "datasets",
   "nvidia-ml-py",
   "dill",
