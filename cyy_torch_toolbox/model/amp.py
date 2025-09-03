@@ -2,7 +2,6 @@ import contextlib
 from typing import Any, Self
 
 import torch
-import torch.amp
 from cyy_naive_lib import Decorator
 from cyy_naive_lib.log import log_debug
 
@@ -65,15 +64,13 @@ class AMPModelEvaluator(Decorator):
                 loss=self.__scaler.scale(loss), retain_graph=True, **backward_kwargs
             )
             self.__scaler.step(optimizer)
-            if not self.check_inf:
-                # Updates the scale for next iteration.
-                self.__scaler.update()
-                return
-            has_inf = sum(
-                found_inf.item()
-                for state in self.__scaler._per_optimizer_states.values()
-                for found_inf in state["found_inf_per_device"].values()
-            )
+            has_inf = 0
+            if self.check_inf:
+                has_inf = sum(
+                    found_inf.item()
+                    for state in self.__scaler._per_optimizer_states.values()
+                    for found_inf in state["found_inf_per_device"].values()
+                )
 
             # Updates the scale for next iteration.
             self.__scaler.update()
