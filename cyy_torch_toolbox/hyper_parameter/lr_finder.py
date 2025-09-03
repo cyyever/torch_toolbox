@@ -88,15 +88,14 @@ def __determine_learning_rate(task: Any, **kwargs: Any) -> float:
         return lr_finder.suggested_learning_rate
 
 
-def get_learning_rate(trainer: Any | None = None) -> float:
-    assert trainer is not None
+def get_learning_rate(trainer: Any) -> float:
     task_queue = TorchThreadTaskQueue()
     task_queue.start(worker_fun=__determine_learning_rate)
     trainer.offload_from_device()
     task_queue.add_task(copy.deepcopy(trainer))
     data = task_queue.get_data()
-    assert data is not None
-    learning_rate = data[0]
+    assert data.is_ok()
+    learning_rate = data.value()
     assert isinstance(learning_rate, float)
     task_queue.stop()
     return learning_rate

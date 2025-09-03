@@ -55,7 +55,7 @@ def create_dataset_collection(
             dataset_kwargs=dataset_kwargs,
         )
         if dc.is_classification_dataset():
-            dc = ClassificationDatasetCollection(dc)
+            dc = ClassificationDatasetCollection(dc)  # noqa
         else:
             return dc
         if not merge_validation_to_training:

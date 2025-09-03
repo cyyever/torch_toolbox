@@ -35,21 +35,23 @@ def get_cuda_memory_info(
             if processes:
                 continue
         info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+        assert isinstance(info, pynvml.c_nvmlMemory_v2_t)
+        used = info.used  # noqa
+        free = info.free  # noqa
+        total = info.total  # noqa
+        assert isinstance(used, int)
+        assert isinstance(free, int)
+        assert isinstance(total, int)
         if consider_cache:
             cache_size = torch.cuda.memory_reserved(device=v_d_idx)
             # PyTorch bug
-            if cache_size <= info.used:
-                # pylint: disable=no-member
-                info.used -= cache_size
-                # pylint: disable=no-member
-                info.free += cache_size
+            if cache_size <= used:
+                used -= cache_size
+                free += cache_size
         result[torch.device(f"cuda:{v_d_idx}")] = MemoryInfo(
-            # pylint: disable=no-member
-            used=info.used,
-            # pylint: disable=no-member
-            free=info.free,
-            # pylint: disable=no-member
-            total=info.total,
+            used=used,
+            free=free,
+            total=total,
         )
     pynvml.nvmlShutdown()
     return result

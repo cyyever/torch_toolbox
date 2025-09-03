@@ -33,7 +33,7 @@ class PerformanceMetricRecorder(MetricVisualizer):
             if value is None:
                 continue
             if isinstance(value, torch.Tensor):
-                value = value.item()
+                value = value.detach().item()
             json_record[k][epoch] = value
         with open(json_filename, "w", encoding="utf8") as f:
             json.dump(json_record, f)

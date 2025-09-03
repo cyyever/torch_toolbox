@@ -14,9 +14,8 @@ class ClassificationDatasetCollection(Decorator):
         return len(self.get_labels(use_cache=False))
 
     def get_labels(self, use_cache: bool = False) -> set:
-        global labels_cache
         if use_cache and self.name in labels_cache:
-            return labels_cache.get(self.name)
+            return labels_cache[self.name]
 
         if self.name.lower() == "imagenet":
             return set(range(1000))
