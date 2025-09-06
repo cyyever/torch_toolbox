@@ -4,7 +4,6 @@ import functools
 import gc
 import os
 from collections.abc import Callable, Generator
-from contextlib import AbstractContextManager, ExitStack
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -16,7 +15,7 @@ from cyy_preprocessing_pipeline import DatasetUtil
 
 from .data_pipeline.loader import get_dataloader
 from .dataset import DatasetCollection, DatasetCollectionConfig
-from .device import DefaultDeviceContext, DeviceGreedyAllocator, SyncedStreamContext
+from .device import DeviceGreedyAllocator
 from .hook import HookCollection
 from .hook.config import HookConfig
 from .hyper_parameter import HyperParameter, lr_scheduler_step_after_batch
@@ -24,6 +23,43 @@ from .metric_visualizers import MetricVisualizer
 from .metrics import PerformanceMetric
 from .ml_type import ConfigBase, EvaluationMode, ExecutorHookPoint, MachineLearningPhase
 from .model import ModelConfig, ModelEvaluator, ModelUtil
+
+
+class StreamContext:
+    r"""Context-manager that selects a given stream.
+
+    Args:
+        Stream (Stream): selected stream. This manager is a no-op if it's
+            ``None``.
+    .. note:: Streams are per-device.
+    """
+
+    def __init__(self, stream: torch.Stream | None, synchronized: bool = False) -> None:
+        self.stream: torch.Stream | None = stream
+        self.prev_stream: torch.Stream | None = None
+        self.synchronized: bool = synchronized
+
+    def __enter__(self) -> None:
+        cur_stream = self.stream
+        # Return if stream is None
+        if cur_stream is None:
+            return
+        self.prev_stream = torch.accelerator.current_stream()
+        if self.synchronized:
+            cur_stream.wait_stream(self.prev_stream)
+        torch.accelerator.set_stream(cur_stream)
+
+    def __exit__(self, *args, **kwargs) -> None:
+        cur_stream = self.stream
+        # If stream is None, return
+        if cur_stream is None:
+            return
+
+        if self.synchronized:
+            cur_stream.synchronize()
+        # Reset the stream on the original device
+        assert self.prev_stream is not None
+        torch.accelerator.set_stream(self.prev_stream)
 
 
 class Executor(HookCollection, abc.ABC):
@@ -57,7 +93,7 @@ class Executor(HookCollection, abc.ABC):
         self.__dataloader_kwargs: dict = (
             copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
         )
-        self.__stream: None | torch.cpu.Stream | torch.Stream = None
+        self.__stream: None | torch.Stream = None
         self.__save_dir: None | str = None
         self.__visualizer_prefix: str = ""
         self.set_default_device: bool = False
@@ -106,40 +142,20 @@ class Executor(HookCollection, abc.ABC):
         return self.__device
 
     @property
-    def stream(self) -> torch.cpu.Stream | torch.Stream:
+    def stream(self) -> None | torch.Stream:
         if self.__stream is None:
             match self.device.type.lower():
-                case "cuda":
-                    self.__stream = torch.cuda.Stream(device=self.device)
-                case "cpu" | "mps":
-                    self.__stream = torch.cpu.Stream()
+                case "cpu":
+                    pass
                 case _:
-                    raise RuntimeError(self.device)
-        assert self.__stream is not None
+                    self.__stream = torch.Stream(device=self.device)
         return self.__stream
 
     @property
     def stream_context(
         self,
-    ) -> AbstractContextManager:
-        s = self.stream
-        match self.device.type.lower():
-            case "cuda":
-                assert isinstance(s, torch.cuda.Stream)
-                return torch.cuda.stream(s)
-            case "cpu" | "mps":
-                assert isinstance(s, torch.cpu.Stream)
-                return torch.cpu.stream(s)
-        raise RuntimeError(self.device)
-
-    @property
-    def complete_stream_context(self) -> AbstractContextManager:
-        stack = ExitStack()
-        stack.enter_context(SyncedStreamContext(self.stream))
-        stack.enter_context(self.stream_context)
-        if self.set_default_device:
-            stack.enter_context(DefaultDeviceContext(self.device))
-        return stack
+    ) -> StreamContext:
+        return StreamContext(self.stream, synchronized=True)
 
     @property
     def dataloader_kwargs(self) -> dict:
@@ -293,9 +309,9 @@ class Executor(HookCollection, abc.ABC):
         return state
 
     def wait_stream(self) -> None:
-        if self.__stream is not None:
-            with SyncedStreamContext(self.__stream):
-                pass
+        match self.__stream:
+            case torch.Stream():
+                self.__stream.synchronize()
 
     def set_dataset_collection(self, dc: DatasetCollection) -> None:
         self.wait_stream()
