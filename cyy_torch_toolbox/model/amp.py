@@ -51,7 +51,7 @@ class AMPModelEvaluator(Decorator):
 
     def backward_and_step(
         self,
-        loss,
+        loss: torch.Tensor,
         optimizer: torch.optim.Optimizer,
         **backward_kwargs,
     ) -> None:
