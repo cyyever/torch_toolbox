@@ -7,34 +7,26 @@ from .base import MemoryInfo
 
 
 def get_device_memory_info(
-    device: torch.device | None = None, consider_cache: bool = False
+    device: torch.device | None = None,
 ) -> dict[torch.device, MemoryInfo]:
-    device_type: str = ""
+    device_type: str = "cpu"
     device_idx: int | None = None
     if device is not None:
         device_type = device.type.lower()
         device_idx = device.index
     else:
-        if torch.cuda.is_available():
-            device_type = "cuda"
-        elif torch.backends.mps.is_available():
-            device_type = "mps"
-        elif torch.xpu.is_available():
-            device_type = "xpu"
-        else:
-            device_type = "cpu"
+        accelerator = torch.accelerator.current_accelerator()
+        if accelerator is not None:
+            device_type = accelerator.type
     match device_type:
         case "cuda":
             from .cuda import get_cuda_memory_info  # noqa
 
-            return get_cuda_memory_info(
-                device_idx=device_idx, consider_cache=consider_cache
-            )
-        case "cpu" | "mps" | "vulkan" | "xpu":
-            device = torch.device(type=device_type, index=0)
+            return get_cuda_memory_info(device_idx=device_idx)
+        case "cpu":
             vm = psutil.virtual_memory()
             return {
-                device: MemoryInfo(
+                torch.device("cpu"): MemoryInfo(
                     free=vm.available,
                     total=vm.total,
                     used=vm.used,

@@ -9,7 +9,6 @@ from .base import MemoryInfo
 def get_cuda_memory_info(
     device_idx: int | None = None, consider_cache: bool = True
 ) -> dict[torch.device, MemoryInfo]:
-    assert torch.cuda.is_available()
     pynvml.nvmlInit()
     device_cnt = pynvml.nvmlDeviceGetCount()
     assert device_cnt > 0
