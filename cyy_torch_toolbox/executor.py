@@ -55,7 +55,7 @@ class StreamContext:
         if cur_stream is None:
             return
 
-        if self.synchronized:
+        if self.synchronized and "mps" not in str(cur_stream).lower():
             cur_stream.synchronize()
         # Reset the stream on the original device
         assert self.prev_stream is not None
@@ -309,9 +309,10 @@ class Executor(HookCollection, abc.ABC):
         return state
 
     def wait_stream(self) -> None:
-        match self.__stream:
-            case torch.Stream():
-                self.__stream.synchronize()
+        if self.__device is None:
+            return
+        with self.stream_context:
+            pass
 
     def set_dataset_collection(self, dc: DatasetCollection) -> None:
         self.wait_stream()

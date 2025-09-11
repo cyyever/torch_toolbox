@@ -23,10 +23,10 @@ def get_device_memory_info(
             from .cuda import get_cuda_memory_info  # noqa
 
             return get_cuda_memory_info(device_idx=device_idx)
-        case "cpu":
+        case "cpu" | "mps":
             vm = psutil.virtual_memory()
             return {
-                torch.device("cpu"): MemoryInfo(
+                torch.device(device_type): MemoryInfo(
                     free=vm.available,
                     total=vm.total,
                     used=vm.used,
