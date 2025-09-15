@@ -155,14 +155,17 @@ class ModelUtil:
         total_number: int = 0
         trainable_number: int = 0
         trainable_size: int = 0
+        checked_params = set()
         checked_param_names = set()
 
         for name, module in self.get_modules():
             for param_name, parameter in module.named_parameters():
                 full_param_name = f"{name}.{param_name}" if name else param_name
-                if full_param_name in checked_param_names:
+                if parameter in checked_params:
+                    checked_param_names.add(name)
                     continue
-                checked_param_names.add(full_param_name)
+                checked_params.add(parameter)
+                checked_param_names.add(name)
                 log_debug(
                     "count parameter from %s",
                     f"{full_param_name} => {parameter.numel()}",
@@ -173,7 +176,7 @@ class ModelUtil:
                     trainable_size += parameter.nbytes
                 else:
                     log_debug(
-                        "count non trailable parameter from %s",
+                        "see non-trainable parameter from %s",
                         f"{full_param_name} => {parameter.numel()}",
                     )
 
