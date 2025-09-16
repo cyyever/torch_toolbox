@@ -174,11 +174,11 @@ class ModelUtil:
                 if parameter.requires_grad:
                     trainable_number += parameter.numel()
                     trainable_size += parameter.nbytes
-                else:
-                    log_debug(
-                        "see non-trainable parameter from %s",
-                        f"{full_param_name} => {parameter.numel()}",
-                    )
+                # else:
+                #     log_debug(
+                #         "see non-trainable parameter from %s",
+                #         f"{full_param_name} => {parameter.numel()}",
+                #     )
 
             if not hasattr(module, "fronzen_parameters"):
                 continue
