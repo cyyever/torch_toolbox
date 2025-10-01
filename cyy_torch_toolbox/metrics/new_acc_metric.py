@@ -17,6 +17,6 @@ class NewAccuracyMetric(ClassificationMetric):
         if output.numel() > 0:
             self.metric.update(output, targets)
 
-    def _after_epoch(self, **kwargs) -> None:
+    def _after_epoch(self, **kwargs: Any) -> None:
         epoch = kwargs["epoch"]
         self._set_epoch_metric(epoch, "accuracy", self.metric.compute())

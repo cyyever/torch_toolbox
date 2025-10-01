@@ -2,6 +2,7 @@ import copy
 import os
 import sys
 from collections.abc import Callable
+from typing import Any
 
 import torch
 from cyy_naive_lib.log import log_debug
@@ -45,7 +46,7 @@ def get_model_evaluator(
 global_model_factory: dict[DatasetType, list[Factory]] = {}
 
 
-def create_model(constructor, **kwargs) -> Callable:
+def create_model(constructor, **kwargs: Any) -> Callable:
     while True:
         try:
             res = constructor(**kwargs)
@@ -146,12 +147,11 @@ class ModelConfig:
             dataset_collection=dc,
             model_kwargs=model_kwargs,
         )
-        model_evaluator = get_model_evaluator(
+        return get_model_evaluator(
             dataset_collection=dc,
             model_name=self.model_name,
             **(model_kwargs | model_res),
         )
-        return model_evaluator
 
 
 __all__ = ["AMPModelEvaluator", "ModelConfig", "ModelUtil"]

@@ -1,3 +1,5 @@
+from typing import Any
+
 import torch
 
 from .metric import Metric
@@ -6,10 +8,10 @@ from .metric import Metric
 class LossMetric(Metric):
     __batch_losses: list[tuple] = []
 
-    def _before_epoch(self, **kwargs) -> None:
+    def _before_epoch(self, **kwargs: Any) -> None:
         self.__batch_losses = []
 
-    def _after_batch(self, result, **kwargs) -> None:
+    def _after_batch(self, result, **kwargs: Any) -> None:
         loss_batch_size = result["loss_batch_size"]
         if isinstance(loss_batch_size, torch.Tensor):
             loss_batch_size = loss_batch_size.detach().to(
@@ -22,7 +24,7 @@ class LossMetric(Metric):
             )
         )
 
-    def _after_epoch(self, epoch: int, **kwargs) -> None:
+    def _after_epoch(self, epoch: int, **kwargs: Any) -> None:
         if not self.__batch_losses:
             return
         total_size = sum(

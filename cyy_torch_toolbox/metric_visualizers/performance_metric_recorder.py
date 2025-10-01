@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from typing import Any
 
 import torch
 
@@ -9,7 +10,7 @@ from .metric_visualizer import MetricVisualizer
 
 
 class PerformanceMetricRecorder(MetricVisualizer):
-    def _after_epoch(self, executor, epoch, **kwargs) -> None:
+    def _after_epoch(self, executor, epoch, **kwargs: Any) -> None:
         prefix = re.sub(r"[: ,]+$", "", self._prefix)
         prefix = re.sub(r"[: ,]+", "_", prefix)
 

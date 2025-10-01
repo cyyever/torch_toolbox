@@ -18,6 +18,6 @@ class F1Metric(ClassificationMetric):
             targets.to(device="cpu", non_blocking=True),
         )
 
-    def _after_epoch(self, **kwargs) -> None:
+    def _after_epoch(self, **kwargs: Any) -> None:
         epoch = kwargs["epoch"]
         self._set_epoch_metric(epoch, "F1", self.metric.compute())

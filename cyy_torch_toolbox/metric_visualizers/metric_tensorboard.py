@@ -1,6 +1,7 @@
 import datetime
 import os
 import threading
+from typing import Any
 
 from torch.utils.tensorboard.writer import SummaryWriter
 
@@ -10,7 +11,7 @@ from .metric_visualizer import MetricVisualizer
 
 
 class MetricTensorBoard(MetricVisualizer):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.__writer: None | SummaryWriter = None
 
@@ -31,7 +32,7 @@ class MetricTensorBoard(MetricVisualizer):
             )
         return self.__writer
 
-    def _before_execute(self, executor, **kwargs) -> None:
+    def _before_execute(self, executor, **kwargs: Any) -> None:
         if self.prefix is None:
             date = datetime.datetime.now()
             self.set_prefix(
@@ -48,7 +49,7 @@ class MetricTensorBoard(MetricVisualizer):
     def __del__(self) -> None:
         self.close()
 
-    def _after_validation(self, executor, epoch, **kwargs) -> None:
+    def _after_validation(self, executor, epoch, **kwargs: Any) -> None:
         trainer = executor
 
         # if "cur_learning_rates" not in trainer._data:

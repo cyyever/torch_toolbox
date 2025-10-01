@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 from cyy_naive_lib.storage import DataStorage
 from cyy_preprocessing_pipeline.tensor import tensor_to
@@ -23,13 +24,13 @@ class KeepModelHook(Hook):
         os.makedirs(model_dir, exist_ok=True)
         return model_dir
 
-    def _before_execute(self, **kwargs) -> None:
+    def _before_execute(self, **kwargs: Any) -> None:
         self.clear()
 
     def clear(self) -> None:
         self.__best_model.clear()
 
-    def _after_validation(self, executor, epoch: int, **kwargs) -> None:
+    def _after_validation(self, executor, epoch: int, **kwargs: Any) -> None:
         trainer = executor
         if self.save_epoch_model:
             model_path = os.path.join(
@@ -73,7 +74,7 @@ class KeepModelHook(Hook):
             )
             self.__best_model.save()
 
-    def _after_execute(self, executor, **kwargs) -> None:
+    def _after_execute(self, executor, **kwargs: Any) -> None:
         trainer = executor
         if self.save_last_model:
             trainer.save_model(

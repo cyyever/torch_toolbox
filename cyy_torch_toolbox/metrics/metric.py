@@ -7,7 +7,7 @@ from ..hook import Hook
 
 
 class Metric(Hook):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.__epoch_metrics: dict = {}
         self.__batch_metrics: dict = {}

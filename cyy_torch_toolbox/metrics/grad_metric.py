@@ -12,7 +12,7 @@ class GradMetric(Metric):
         if self.__prev_parameter_list is None:
             self.__prev_parameter_list = executor.model_util.get_parameter_list()
 
-    def _after_epoch(self, epoch, executor, **kwargs) -> None:
+    def _after_epoch(self, epoch, executor, **kwargs: Any) -> None:
         parameter_list = executor.model_util.get_parameter_list()
         self._set_epoch_metric(
             epoch,

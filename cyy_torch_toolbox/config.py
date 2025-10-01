@@ -32,10 +32,9 @@ class Config(ConfigBase):
 
     def create_dataset_collection(self) -> DatasetCollection:
         log_debug("use dataset %s", self.dc_config.dataset_name)
-        dc = self.dc_config.create_dataset_collection(
+        return self.dc_config.create_dataset_collection(
             save_dir=self.get_save_dir(),
         )
-        return dc
 
     def create_trainer(
         self,

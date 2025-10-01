@@ -1,8 +1,10 @@
+from typing import Any
+
 from .metric import Metric
 
 
 class LearningRateMetric(Metric):
-    def _before_batch(self, executor, batch_index, **kwargs) -> None:
+    def _before_batch(self, executor, batch_index, **kwargs: Any) -> None:
         optimizer = executor.get_optimizer()
         assert optimizer is not None
         self._set_batch_metric(

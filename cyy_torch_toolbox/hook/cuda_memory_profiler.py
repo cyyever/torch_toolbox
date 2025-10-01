@@ -1,4 +1,5 @@
 import functools
+from typing import Any
 
 import torch
 from cyy_naive_lib.log import log_info
@@ -7,16 +8,16 @@ from . import Hook
 
 
 class CUDAMemoryProfiler(Hook):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__hooks: list = []
         self.__used_memory: list[tuple[str, float]] = []
 
-    def _before_execute(self, **kwargs) -> None:
+    def _before_execute(self, **kwargs: Any) -> None:
         self.__hooks = []
         self.__used_memory = []
 
-    def _before_batch(self, executor, batch_index, **kwargs) -> None:
+    def _before_batch(self, executor, batch_index, **kwargs: Any) -> None:
         if batch_index != 0:
             return
         assert not self.__hooks

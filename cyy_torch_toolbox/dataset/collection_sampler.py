@@ -3,6 +3,7 @@ import functools
 import json
 import os
 from dataclasses import dataclass
+from typing import Any
 
 from cyy_naive_lib.log import log_info
 from cyy_preprocessing_pipeline import (
@@ -84,7 +85,7 @@ class Base:
 
 
 class SamplerBase(Base):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._sample_info: dict[MachineLearningPhase, SampleInfo] = {}
 
@@ -194,7 +195,7 @@ class DatasetCollectionSplit(SplitBase):
 
 
 class IIDSplit(SplitBase):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(detect_allocated_file=True, **kwargs)
         parts: list[float] = [1] * self._part_number
         for phase in self.get_phases():
@@ -284,7 +285,7 @@ class IIDSplitWithSample(IIDSplit):
 
 
 class RandomSplitBase(SplitBase):
-    def __init__(self, by_label_split: bool, **kwargs) -> None:
+    def __init__(self, by_label_split: bool, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         parts: list[float] = [1] * self._part_number
         for phase, sample in self._samplers.items():
@@ -301,17 +302,17 @@ class RandomSplitBase(SplitBase):
 
 
 class RandomSplitByLabel(RandomSplitBase):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(by_label_split=True, **kwargs)
 
 
 class RandomSplit(RandomSplitBase):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(by_label_split=False, **kwargs)
 
 
 class SplitByFile(SplitBase):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(detect_allocated_file=True, **kwargs)
         for phase in self.get_phases():
             assert len(self._dataset_indices.get(phase, [])) == self._part_number
