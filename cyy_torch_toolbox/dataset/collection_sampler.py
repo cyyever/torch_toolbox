@@ -179,7 +179,7 @@ class DatasetCollectionSplit(SplitBase):
             dataset_collection=dataset_collection, part_number=len(part_proportions)
         )
         for phase in self.get_phases():
-            if phase in self._dataset_indices and self._dataset_indices[phase]:
+            if self._dataset_indices.get(phase):
                 continue
             self.set_split_indices(
                 phase=phase,
@@ -198,7 +198,7 @@ class IIDSplit(SplitBase):
         super().__init__(detect_allocated_file=True, **kwargs)
         parts: list[float] = [1] * self._part_number
         for phase in self.get_phases():
-            if phase in self._dataset_indices and self._dataset_indices[phase]:
+            if self._dataset_indices.get(phase):
                 continue
             self.set_split_indices(
                 phase=phase,
@@ -288,7 +288,7 @@ class RandomSplitBase(SplitBase):
         super().__init__(**kwargs)
         parts: list[float] = [1] * self._part_number
         for phase, sample in self._samplers.items():
-            if phase in self._dataset_indices and self._dataset_indices[phase]:
+            if self._dataset_indices.get(phase):
                 continue
             self.set_split_indices(
                 phase=phase,

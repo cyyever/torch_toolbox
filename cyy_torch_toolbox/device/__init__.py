@@ -20,7 +20,7 @@ def get_device_memory_info(
             device_type = accelerator.type
     match device_type:
         case "cuda":
-            from .cuda import get_cuda_memory_info  # noqa
+            from .cuda import get_cuda_memory_info
 
             return get_cuda_memory_info(device_idx=device_idx)
         case "cpu" | "mps":

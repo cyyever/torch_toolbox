@@ -55,7 +55,7 @@ def create_dataset_collection(
             dataset_kwargs=dataset_kwargs,
         )
         if dc.is_classification_dataset():
-            dc = ClassificationDatasetCollection(dc)  # noqa
+            dc = ClassificationDatasetCollection(dc)
         else:
             return dc
         if not merge_validation_to_training:
@@ -184,18 +184,18 @@ class DatasetCollectionConfig:
 
 
 __all__ = [
-    "create_dataset_collection",
-    "get_dataset_collection_sampler",
     "ClassificationDatasetCollection",
-    "TextDatasetCollection",
     "DatasetCollection",
+    "DatasetCollectionSplit",
+    "DatasetFactory",
+    "RandomSplit",
+    "SampleInfo",
     "SamplerBase",
     "SplitBase",
-    "RandomSplit",
-    "DatasetFactory",
-    "DatasetCollectionSplit",
+    "TextDatasetCollection",
+    "create_dataset_collection",
+    "get_dataset_collection_sampler",
     "get_dataset_collection_split",
-    "global_sampler_factory",
     "global_dataset_util_factor",
-    "SampleInfo",
+    "global_sampler_factory",
 ]
