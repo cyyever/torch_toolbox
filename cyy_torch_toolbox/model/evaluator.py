@@ -77,7 +77,7 @@ class ModelEvaluator:
     def set_forward_fun(self, forward_fun: str) -> None:
         self.add_evaluation_kwargs(forward_fun=forward_fun)
 
-    def add_evaluation_kwargs(self, **kwargs) -> None:
+    def add_evaluation_kwargs(self, **kwargs: Any) -> None:
         self.__evaluation_kwargs.update(kwargs)
 
     def remove_evaluation_kwargs(self, keys: Iterable[str]) -> None:

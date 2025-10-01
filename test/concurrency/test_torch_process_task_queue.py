@@ -1,8 +1,10 @@
+from typing import Any
+
 import torch
 from cyy_torch_toolbox.concurrency import TorchProcessTaskQueue
 
 
-def hello(tasks, **kwargs):
+def hello(tasks, **kwargs: Any):
     assert tasks == [()]
     return {"1": torch.Tensor([1, 2, 3])}
 

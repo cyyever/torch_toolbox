@@ -1,8 +1,10 @@
+from typing import Any
+
 from ..hook import Hook
 
 
 class MetricVisualizer(Hook):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(stripable=True, **kwargs)
         self._prefix: str = ""
         self._data_dir: None | str = None

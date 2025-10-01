@@ -1,3 +1,5 @@
+from typing import Any
+
 import torch
 
 from .metric import Metric
@@ -13,7 +15,7 @@ class ClassAccuracyMetric(Metric):
     def get_class_accuracy(self, epoch):
         return self.get_epoch_metric(epoch, "class_accuracy")
 
-    def _before_epoch(self, **kwargs) -> None:
+    def _before_epoch(self, **kwargs: Any) -> None:
         if self.__labels is None:
             executor = kwargs["executor"]
             self.__labels = executor.dataset_collection.get_labels(use_cache=False)
@@ -22,7 +24,7 @@ class ClassAccuracyMetric(Metric):
             self.__classification_correct_count_per_label[label] = 0
             self.__classification_count_per_label[label] = 0
 
-    def _after_batch(self, **kwargs) -> None:
+    def _after_batch(self, **kwargs: Any) -> None:
         output = kwargs["result"]["classification_output"]
         targets = kwargs["result"]["targets"]
         assert isinstance(targets, torch.Tensor)
@@ -41,7 +43,7 @@ class ClassAccuracyMetric(Metric):
                 <= self.__classification_count_per_label[label]
             )
 
-    def _after_epoch(self, **kwargs) -> None:
+    def _after_epoch(self, **kwargs: Any) -> None:
         epoch = kwargs["epoch"]
 
         class_accuracy = {}

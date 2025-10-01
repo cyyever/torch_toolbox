@@ -14,7 +14,7 @@ def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
     extra_kwargs: dict[str, str] = {}
     try:
         if "__if__" in prompt or "__endif__" in prompt:
-            p = re.compile("__if__{__(.*)_defined__}")
+            p = re.compile(r"__if__{__(.*)_defined__}")
             branch_condition: bool | None = None
             new_lines = []
             for line in prompt.splitlines():

@@ -17,7 +17,7 @@ class ClassificationMetric(Metric):
         assert self._metric is not None
         return self._metric
 
-    def _before_execution(self, **kwargs) -> None:
+    def _before_execution(self, **kwargs: Any) -> None:
         executor = kwargs["executor"]
         if executor.running_model_evaluator.model_type != ModelType.Classification:
             self.disable()

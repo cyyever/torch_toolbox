@@ -30,7 +30,7 @@ class LRFinder(Hook):
         self.total_batch_num: int = 0
         self.suggested_learning_rate: float = 0
 
-    def _before_execute(self, **kwargs) -> None:
+    def _before_execute(self, **kwargs: Any) -> None:
         trainer = kwargs["executor"]
         trainer.remove_optimizer()
         trainer.remove_lr_scheduler()
@@ -41,7 +41,7 @@ class LRFinder(Hook):
             // trainer.hyper_parameter.batch_size
         )
 
-    def _before_batch(self, **kwargs) -> None:
+    def _before_batch(self, **kwargs: Any) -> None:
         trainer = kwargs["executor"]
         learning_rate = self.lr_getter(self.batch_index / (self.total_batch_num - 1))
         self.learning_rates.append(learning_rate)
@@ -49,7 +49,7 @@ class LRFinder(Hook):
         for group in optimizer.param_groups:
             group["lr"] = learning_rate
 
-    def _after_batch(self, **kwargs):
+    def _after_batch(self, **kwargs: Any):
         batch_loss = kwargs["result"]["loss"].clone()
         if self.losses:
             batch_loss = batch_loss + 0.98 * (self.losses[-1] - batch_loss)

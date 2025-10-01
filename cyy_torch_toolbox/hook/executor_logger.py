@@ -1,3 +1,5 @@
+from typing import Any
+
 from cyy_naive_lib.log import log_info
 
 from ..ml_type import MachineLearningPhase
@@ -8,7 +10,7 @@ class ExecutorLogger(Hook):
     def __init__(self) -> None:
         super().__init__(stripable=True)
 
-    def _before_execute(self, executor, **kwargs) -> None:
+    def _before_execute(self, executor, **kwargs: Any) -> None:
         log_info("dataset is %s", executor.dataset_collection.name)
         log_info("device is %s", executor.device)
         log_info("model type is %s", executor.model.__class__)
@@ -34,7 +36,7 @@ class ExecutorLogger(Hook):
             total_buffer_number += buffer.numel()
         log_info("total buffer number is %s", total_buffer_number)
         if len(device_stat) == 1:
-            log_info("model use device %s", list(device_stat.keys())[0])
+            log_info("model use device %s", next(iter(device_stat.keys())))
         else:
             log_info("model use device %s", device_stat)
         log_info("model use dtype %s", list(dtype_stat.keys()))

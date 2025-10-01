@@ -1,9 +1,11 @@
+from typing import Any
+
 from ..ml_type import MachineLearningPhase
 from . import Hook
 
 
 class GradientSanitizer(Hook):
-    def _before_batch(self, executor, batch_index, **kwargs):
+    def _before_batch(self, executor, batch_index: int, **kwargs: Any):
         if executor.phase != MachineLearningPhase.Training:
             return
         if batch_index % 100 != 0:

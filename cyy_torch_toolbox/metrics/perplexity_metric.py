@@ -13,6 +13,6 @@ class PerplexityMetric(ClassificationMetric):
         output, targets = self._get_output(executor, result)
         self.metric.update(output, targets.detach())
 
-    def _after_epoch(self, **kwargs) -> None:
+    def _after_epoch(self, **kwargs: Any) -> None:
         epoch = kwargs["epoch"]
         self._set_epoch_metric(epoch, "perplexity", self.metric.compute())

@@ -1,9 +1,11 @@
+from typing import Any
+
 import torch
 from cyy_torch_toolbox import StopExecutingException
 from cyy_torch_toolbox.concurrency import TorchProcessPool
 
 
-def stop_training(*args, **kwargs):
+def stop_training(*args, **kwargs: Any):
     raise StopExecutingException()
 
 

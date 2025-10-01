@@ -53,6 +53,7 @@ select = [
     # isort
     "I",
     "RUF",
+    "RET"
 ]
 
 ignore = ["E501","F403"]

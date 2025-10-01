@@ -144,7 +144,7 @@ class ModelUtil:
             ):
                 yield name, module
 
-    def change_modules(self, f: Callable, **kwargs) -> bool:
+    def change_modules(self, f: Callable, **kwargs: Any) -> bool:
         flag = False
         for name, module in self.filter_modules(**kwargs):
             f(name, module, self)

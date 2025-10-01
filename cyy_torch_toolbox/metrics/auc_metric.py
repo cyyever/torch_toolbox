@@ -15,6 +15,6 @@ class AUROCMetric(ClassificationMetric):
         self.metric.update(output, targets)
         # .detach().long())
 
-    def _after_epoch(self, **kwargs) -> None:
+    def _after_epoch(self, **kwargs: Any) -> None:
         epoch = kwargs["epoch"]
         self._set_epoch_metric(epoch, "AUROC", self.metric.compute())
