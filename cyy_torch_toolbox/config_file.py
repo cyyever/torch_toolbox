@@ -42,7 +42,7 @@ def load_combined_config_from_files(
         nonlocal conf_obj
         conf_obj = conf
 
-    load_config_hydra()  # noqa
+    load_config_hydra()
 
     other_confs.append(conf_obj)
     for idx, conf_obj in enumerate(other_confs):

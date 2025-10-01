@@ -16,7 +16,7 @@ classifiers = [
 ]
 
 dependencies = [
-  "torch>=2.7",
+  "torch>=2.8",
   "hydra-core",
   "omegaconf",
   "torchmetrics",
@@ -52,6 +52,7 @@ select = [
     "SIM",
     # isort
     "I",
+    "RUF",
 ]
 
 ignore = ["E501","F403"]

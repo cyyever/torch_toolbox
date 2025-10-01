@@ -154,4 +154,4 @@ class ModelConfig:
         return model_evaluator
 
 
-__all__ = ["AMPModelEvaluator", "ModelUtil", "ModelConfig"]
+__all__ = ["AMPModelEvaluator", "ModelConfig", "ModelUtil"]

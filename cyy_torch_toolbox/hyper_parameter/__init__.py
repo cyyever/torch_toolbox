@@ -171,10 +171,10 @@ class HyperParameterConfig(HyperParameter):
 
 
 __all__ = [
-    "lr_scheduler_step_after_batch",
-    "HyperParameterAction",
     "HyperParameter",
+    "HyperParameterAction",
     "HyperParameterConfig",
     "get_optimizer_names",
     "global_optimizer_factory",
+    "lr_scheduler_step_after_batch",
 ]
