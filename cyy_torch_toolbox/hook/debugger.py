@@ -1,6 +1,5 @@
 from typing import Any
 
-import torch
 import torch.autograd
 from cyy_naive_lib.log import log_warning
 

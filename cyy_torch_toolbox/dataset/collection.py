@@ -4,7 +4,6 @@ import traceback
 from collections.abc import Callable, Generator, Iterable
 from typing import Any, Self
 
-import torch
 import torch.utils.data
 from cyy_naive_lib.log import log_debug, log_error
 from cyy_naive_lib.storage import get_cached_data

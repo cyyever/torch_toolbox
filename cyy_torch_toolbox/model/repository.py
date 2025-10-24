@@ -1,7 +1,6 @@
 import functools
 
 import torch
-import torch.nn
 from cyy_naive_lib.log import log_debug
 from cyy_naive_lib.reflection import get_kwarg_names
 
