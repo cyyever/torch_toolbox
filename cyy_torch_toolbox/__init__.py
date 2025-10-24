@@ -34,6 +34,7 @@ from .dataset import (
     get_dataset_collection_split,
     global_sampler_factory,
 )
+from .device import get_device_memory_info
 from .executor import *
 from .hook import *
 from .hyper_parameter import *
@@ -107,6 +108,7 @@ __all__ = [
     "create_dataset_collection",
     "get_dataset_collection_sampler",
     "get_dataset_collection_split",
+    "get_device_memory_info",
     "global_data_transform_factory",
     "global_sampler_factory",
     "load_combined_config_from_files",
