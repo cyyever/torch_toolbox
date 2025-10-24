@@ -2,7 +2,6 @@ import os
 from typing import Any
 
 import torch
-import torch.multiprocessing
 from cyy_naive_lib.concurrency import BatchPolicy, TaskQueue
 
 from ..device import DeviceGreedyAllocator, get_device_memory_info

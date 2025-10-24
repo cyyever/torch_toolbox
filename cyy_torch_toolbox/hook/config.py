@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-import torch
 import torch.cuda
 from cyy_naive_lib.log import log_debug
 
