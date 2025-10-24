@@ -16,8 +16,8 @@ def get_device_memory_info(
         device_idx = device.index
     else:
         accelerator = torch.accelerator.current_accelerator()
-        if accelerator is not None:
-            device_type = accelerator.type
+        assert accelerator is not None
+        device_type = accelerator.type
     match device_type:
         case "cuda":
             from .cuda import get_cuda_memory_info
