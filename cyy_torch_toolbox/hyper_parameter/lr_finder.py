@@ -49,7 +49,7 @@ class LRFinder(Hook):
         for group in optimizer.param_groups:
             group["lr"] = learning_rate
 
-    def _after_batch(self, **kwargs: Any):
+    def _after_batch(self, **kwargs: Any) -> None:
         batch_loss = kwargs["result"]["loss"].clone()
         if self.losses:
             batch_loss = batch_loss + 0.98 * (self.losses[-1] - batch_loss)

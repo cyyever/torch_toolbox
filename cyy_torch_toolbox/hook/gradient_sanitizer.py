@@ -5,7 +5,7 @@ from . import Hook
 
 
 class GradientSanitizer(Hook):
-    def _before_batch(self, executor, batch_index: int, **kwargs: Any):
+    def _before_batch(self, executor, batch_index: int, **kwargs: Any) -> None:
         if executor.phase != MachineLearningPhase.Training:
             return
         if batch_index % 100 != 0:
