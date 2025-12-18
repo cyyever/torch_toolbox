@@ -11,30 +11,36 @@ class CUDABatchPolicy(BatchPolicy):
     def adjust_batch_size(self, batch_size: int, **kwargs: Any) -> int:
         device = kwargs["device"]
         if (
-            batch_size + 1 not in self._processing_times
-            or self._processing_times[batch_size + 1]
-            < self._processing_times[batch_size]
+            batch_size + 1 not in self._mean_processing_times
+            or self._mean_processing_times[batch_size + 1]
+            < self._mean_processing_times[batch_size]
         ):
-            memory_info = get_device_memory_info(device=device, consider_cache=True)
+            memory_info = get_device_memory_info(device=device)
             if memory_info[device].free / memory_info[device].total > 0.2:
                 return batch_size + 1
         return batch_size
 
 
 class TorchTaskQueue(TaskQueue):
-    def __init__(self, worker_num: int | None = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        worker_num: int | None = None,
+        batch_policy_type: type[BatchPolicy] | None = None,
+        **kwargs: Any,
+    ) -> None:
         self._devices: list = DeviceGreedyAllocator.get_devices()
         if worker_num is None:
             worker_num = len(self._devices)
             if "cpu" in self._devices[0].type.lower():
                 worker_num = os.cpu_count()
         assert worker_num is not None
-        super().__init__(worker_num=worker_num, **kwargs)
+        if batch_policy_type is None and torch.cuda.is_available():
+            batch_policy_type = CUDABatchPolicy
+        super().__init__(
+            worker_num=worker_num, batch_policy_type=batch_policy_type, **kwargs
+        )
 
-    def _get_task_kwargs(self, worker_id: int, in_thread: bool) -> dict:
-        kwargs = super()._get_task_kwargs(worker_id, in_thread=in_thread) | {
+    def _get_task_kwargs(self, worker_id: int, use_spwan: bool) -> dict:
+        return super()._get_task_kwargs(worker_id, use_spwan=use_spwan) | {
             "device": self._devices[worker_id % len(self._devices)]
         }
-        if self._batch_process and torch.cuda.is_available():
-            kwargs["batch_policy"] = CUDABatchPolicy()
-        return kwargs
