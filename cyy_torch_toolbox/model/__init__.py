@@ -11,6 +11,7 @@ from ..dataset import ClassificationDatasetCollection, DatasetCollection
 from ..ml_type import DatasetType, Factory, ModelType
 from .amp import AMPModelEvaluator
 from .evaluator import ModelEvaluator
+from .repository import get_model_info
 from .util import ModelUtil
 
 global_model_evaluator_factory = Factory()
@@ -154,4 +155,4 @@ class ModelConfig:
         )
 
 
-__all__ = ["AMPModelEvaluator", "ModelConfig", "ModelUtil"]
+__all__ = ["AMPModelEvaluator", "ModelConfig", "ModelUtil", "get_model_info"]
