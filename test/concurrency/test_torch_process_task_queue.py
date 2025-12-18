@@ -1,16 +1,17 @@
 from typing import Any
 
 import torch
+from cyy_naive_lib import BatchPolicy
 from cyy_torch_toolbox.concurrency import TorchProcessTaskQueue
 
 
 def hello(tasks, **kwargs: Any):
     assert tasks == [()]
-    return {"1": torch.Tensor([1, 2, 3])}
+    return [{"1": torch.Tensor([1, 2, 3])}]
 
 
 def test_process_task_queue() -> None:
-    queue = TorchProcessTaskQueue()
+    queue = TorchProcessTaskQueue(batch_policy_type=BatchPolicy)
     queue.start(worker_fun=hello)
     queue.add_task(())
     res = queue.get_data()
