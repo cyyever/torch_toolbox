@@ -19,8 +19,8 @@ class ExecutorLogger(Hook):
         total_parameter_number, trainable_parameter_number, trainable_parameter_size = (
             executor.model_util.get_parameter_numbers()
         )
-        dtype_stat: dict = {}
-        device_stat: dict = {}
+        dtype_stat: dict[Any, list[str]] = {}
+        device_stat: dict[Any, list[str]] = {}
         for name, parameter in executor.model.named_parameters():
             if parameter.device not in device_stat:
                 device_stat[parameter.device] = []

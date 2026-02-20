@@ -22,7 +22,7 @@ def get_model_evaluator(
     dataset_collection: DatasetCollection | None = None,
     **model_kwargs: Any,
 ) -> ModelEvaluator:
-    model_evaluator_funs: type | list[type] = [ModelEvaluator]
+    model_evaluator_funs: list[type] = [ModelEvaluator]
     dataset_type: DatasetType | None = model_kwargs.get("dataset_type")
     if dataset_type is None and dataset_collection is not None:
         dataset_type = dataset_collection.dataset_type
@@ -75,7 +75,7 @@ def get_model(
     else:
         for v in global_model_factory.values():
             factories += v
-    model_constructor: Callable | None | dict = None
+    model_constructor: Callable[..., Any] | None | dict[str, Any] = None
 
     for factory in factories:
         model_constructor = factory.get(name)

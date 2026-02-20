@@ -21,13 +21,13 @@ class ModelEvaluator:
         self,
         model: torch.nn.Module,
         model_type: None | ModelType = None,
-        loss_fun: str | Callable | None = None,
+        loss_fun: str | Callable[..., Any] | None = None,
         frozen_modules: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         self._model: torch.nn.Module = model
         self._model_kwargs: dict[str, Any] = copy.deepcopy(kwargs)
-        self.__loss_fun: Callable | None = None
+        self.__loss_fun: Callable[..., Any] | None = None
         self.__loss_fun_type: type | None = None
         if loss_fun is not None:
             self.set_loss_fun(loss_fun)
@@ -60,7 +60,7 @@ class ModelEvaluator:
         return self.__model_type
 
     @property
-    def loss_fun(self) -> Callable:
+    def loss_fun(self) -> Callable[..., Any]:
         if self.__loss_fun is None:
             if self.__loss_fun_type is None:
                 self.__loss_fun_type = self._choose_loss_function_type()
@@ -84,7 +84,7 @@ class ModelEvaluator:
         for key in keys:
             self.__evaluation_kwargs.pop(key, None)
 
-    def set_loss_fun(self, loss_fun: Callable | str) -> None:
+    def set_loss_fun(self, loss_fun: Callable[..., Any] | str) -> None:
         match loss_fun:
             case "CrossEntropyLoss":
                 self.__loss_fun_type = nn.CrossEntropyLoss
@@ -184,8 +184,8 @@ class ModelEvaluator:
             **(kwargs | self.__evaluation_kwargs),
         )
 
-    def _get_forward_fun(self) -> Callable:
-        fun: Callable = self.model
+    def _get_forward_fun(self) -> Callable[..., Any]:
+        fun: Callable[..., Any] = self.model
         if "forward_fun" in self.__evaluation_kwargs:
             fun = self.__evaluation_kwargs["forward_fun"]
             if isinstance(fun, str):
@@ -194,7 +194,7 @@ class ModelEvaluator:
         return fun
 
     def _forward_model(self, *, inputs: Any, **kwargs: Any) -> dict[str, Any]:
-        fun: Callable = self._get_forward_fun()
+        fun: Callable[..., Any] = self._get_forward_fun()
         match inputs:
             case torch.Tensor():
                 output = fun(inputs)
@@ -242,7 +242,7 @@ class ModelEvaluator:
             res |= {"loss_batch_size": (targets.view(-1) != -100).sum()}
         return res
 
-    def _choose_loss_function(self) -> Callable:
+    def _choose_loss_function(self) -> Callable[..., Any]:
         raise NotImplementedError()
 
     def _choose_loss_function_type(self) -> type | None:
@@ -267,7 +267,7 @@ class ModelEvaluator:
         return loss_fun_type
 
     @classmethod
-    def __is_averaged_loss(cls, loss_fun: Callable) -> bool:
+    def __is_averaged_loss(cls, loss_fun: Callable[..., Any]) -> bool:
         if hasattr(loss_fun, "reduction"):
             match loss_fun.reduction:
                 case "mean":

@@ -41,7 +41,7 @@ class Hook:
         for _, name, __ in self.yield_hooks():
             yield name
 
-    def __get_hook(self, hook_point: ExecutorHookPoint) -> tuple[ExecutorHookPoint, str, Callable] | None:
+    def __get_hook(self, hook_point: ExecutorHookPoint) -> tuple[ExecutorHookPoint, str, Callable[..., Any]] | None:
         if not self._enabled:
             return None
         method_name = "_" + str(hook_point).rsplit(".", maxsplit=1)[-1].lower()
@@ -50,7 +50,7 @@ class Hook:
             return (hook_point, name, getattr(self, method_name))
         return None
 
-    def yield_hooks(self) -> Generator[tuple[ExecutorHookPoint, str, Callable], None, None]:
+    def yield_hooks(self) -> Generator[tuple[ExecutorHookPoint, str, Callable[..., Any]], None, None]:
         if not self._enabled:
             return
         for c in self._sub_hooks:
@@ -64,12 +64,12 @@ class Hook:
 
 class HookCollection:
     def __init__(self) -> None:
-        self._hooks: dict[ExecutorHookPoint, list[dict[str, Callable]]] = {}
+        self._hooks: dict[ExecutorHookPoint, list[dict[str, Callable[..., Any]]]] = {}
         self.__stripable_hooks: set[str] = set()
         self.__disabled_hooks: set[str] = set()
         self._hook_objs: dict[str, Hook] = {}
 
-    def __iterate_hooks(self, hook_point: ExecutorHookPoint) -> Generator[Callable, None, None]:
+    def __iterate_hooks(self, hook_point: ExecutorHookPoint) -> Generator[Callable[..., Any], None, None]:
         for hook in copy.copy(self._hooks.get(hook_point, [])):
             for name, fun in copy.copy(hook).items():
                 if name not in self.__disabled_hooks:
@@ -99,7 +99,7 @@ class HookCollection:
         self,
         hook_point: ExecutorHookPoint,
         name: str,
-        fun: Callable,
+        fun: Callable[..., Any],
         stripable: bool = False,
     ) -> None:
         self.__insert_hook(-1, hook_point, name, fun, stripable)
@@ -108,7 +108,7 @@ class HookCollection:
         self,
         hook_point: ExecutorHookPoint,
         name: str,
-        fun: Callable,
+        fun: Callable[..., Any],
         stripable: bool = False,
     ) -> None:
         self.__insert_hook(0, hook_point, name, fun, stripable)
@@ -118,7 +118,7 @@ class HookCollection:
         pos: int,
         hook_point: ExecutorHookPoint,
         name: str,
-        fun: Callable,
+        fun: Callable[..., Any],
         stripable: bool = False,
     ) -> None:
         if stripable:
