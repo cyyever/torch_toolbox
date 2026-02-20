@@ -30,7 +30,7 @@ class ProbabilityMetric(ClassificationMetric):
             else:
                 raise RuntimeError("unsupported layer", type(last_layer))
             assert probs is not None
-            max_prob_index = int(torch.argmax(probs).data.item())
+            max_prob_index = int(torch.argmax(probs).item())
             epoch_prob[sample_index] = (
                 max_prob_index,
                 probs[max_prob_index].item(),

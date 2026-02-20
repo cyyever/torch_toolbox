@@ -31,7 +31,7 @@ class ClassificationMetric(Metric):
             return self._task_type
         if (
             executor.running_model_evaluator.model_type != ModelType.TokenClassification
-            and executor.dataset_collection.is_mutilabel()
+            and executor.dataset_collection.is_multilabel()
         ):
             self._task_type = "multilabel"
             return self._task_type
