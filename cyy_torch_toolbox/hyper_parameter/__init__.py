@@ -47,7 +47,7 @@ class HyperParameter:
             raise RuntimeError("Unknown learning rate scheduler:" + name)
         match self.learning_rate_scheduler_name:
             case "ReduceLROnPlateau":
-                patience = min(10, self.epoch + 9 // 10)
+                patience = min(10, (self.epoch + 9) // 10)
                 default_kwargs["patience"] = patience
                 default_kwargs["factor"] = 0.1
                 default_kwargs.update(self.learning_rate_scheduler_kwargs)
