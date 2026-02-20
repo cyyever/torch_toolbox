@@ -293,7 +293,7 @@ class ModelEvaluator:
                 check_modules.remove(module)
                 modules.add(module)
                 for k in dir(module):
-                    if "k".startswith("_"):
+                    if k.startswith("_"):
                         continue
                     if "loss" in k:
                         continue

@@ -291,7 +291,7 @@ class ModelUtil:
                     module_class_name = module.__class__.__name__
                     return (
                         module_class_name == module_type
-                        or module_class_name.endswith("." + module_class_name)
+                        or module_class_name.endswith("." + module_type)
                     )
                 case _:
                     return isinstance(module, module_type)

@@ -44,10 +44,6 @@ class Hook:
     def __get_hook(self, hook_point: ExecutorHookPoint) -> tuple | None:
         if not self._enabled:
             return None
-        assert (
-            str(hook_point).rsplit(".", maxsplit=1)[-1]
-            == str(hook_point).rsplit(".", maxsplit=1)[-1]
-        )
         method_name = "_" + str(hook_point).rsplit(".", maxsplit=1)[-1].lower()
         name = self.__class__.__name__ + "." + str(method_name)
         if hasattr(self, method_name):

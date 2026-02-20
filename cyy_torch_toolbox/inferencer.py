@@ -20,7 +20,7 @@ class Inferencer(Executor):
         evaluation_mode: EvaluationMode = EvaluationMode.Test,
     ) -> bool:
         succ_flag: bool = False
-        require_grad: bool = EvaluationMode not in (
+        require_grad: bool = evaluation_mode not in (
             EvaluationMode.Test,
             EvaluationMode.SampleInference,
         )
