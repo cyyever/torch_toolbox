@@ -6,7 +6,9 @@ from .metric import Metric
 
 
 class LossMetric(Metric):
-    __batch_losses: list[tuple] = []
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.__batch_losses: list[tuple] = []
 
     def _before_epoch(self, **kwargs: Any) -> None:
         self.__batch_losses = []
