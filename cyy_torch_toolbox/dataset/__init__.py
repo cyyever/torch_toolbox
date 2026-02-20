@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Any
 
 from cyy_naive_lib.log import log_info
 from cyy_preprocessing_pipeline.common import (
@@ -88,12 +89,12 @@ def create_dataset_collection(
 class DatasetCollectionConfig:
     def __init__(self, dataset_name: str = "") -> None:
         self.dataset_name: str = dataset_name
-        self.dataset_kwargs: dict = {}
-        self.training_dataset_percentage = None
-        self.training_dataset_indices_path = None
-        self.training_dataset_label_map_path = None
-        self.training_dataset_label_map = None
-        self.training_dataset_label_noise_percentage = None
+        self.dataset_kwargs: dict[str, Any] = {}
+        self.training_dataset_percentage: float | None = None
+        self.training_dataset_indices_path: str | None = None
+        self.training_dataset_label_map_path: str | None = None
+        self.training_dataset_label_map: dict[str, Any] | None = None
+        self.training_dataset_label_noise_percentage: float | None = None
         self.keep_phases: None | set[MachineLearningPhase] = None
 
     def create_dataset_collection(
@@ -125,7 +126,7 @@ class DatasetCollectionConfig:
             self.__transform_training_dataset(dc=dc, save_dir=save_dir)
         return dc
 
-    def __transform_training_dataset(self, dc, save_dir: str | None = None) -> None:
+    def __transform_training_dataset(self, dc: DatasetCollection, save_dir: str | None = None) -> None:
         subset_indices = None
         dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
         if self.training_dataset_percentage is not None:

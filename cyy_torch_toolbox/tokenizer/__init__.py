@@ -26,7 +26,7 @@ class Tokenizer:
     def get_vocab(self) -> Mapping[str, int]:
         raise NotImplementedError()
 
-    def tokenize(self, phrase: str) -> list[str] | Any:
+    def tokenize(self, phrase: str) -> Any:
         raise NotImplementedError()
 
     def get_token_id(self, token: str) -> TokenIDType:
@@ -44,7 +44,7 @@ class Tokenizer:
     def strip_special_tokens(self, token_ids: TokenIDsType) -> TokenIDsType:
         raise NotImplementedError()
 
-    def split_batch_input(self, inputs: Any, batch_size: int) -> dict:
+    def split_batch_input(self, inputs: Any, batch_size: int) -> dict[str, Any]:
         raise NotImplementedError()
 
 
@@ -52,8 +52,8 @@ def collect_tokens(
     tokenizer: Tokenizer,
     dc: DatasetCollection,
     phase: MachineLearningPhase | None = None,
-) -> Counter:
-    counter: Counter = Counter()
+) -> Counter[str]:
+    counter: Counter[str] = Counter()
     if phase is None:
         util_list = [
             dc.get_dataset_util(phase=phase)

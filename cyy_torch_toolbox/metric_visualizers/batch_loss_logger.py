@@ -6,9 +6,9 @@ from .metric_visualizer import MetricVisualizer
 
 
 class BatchLossLogger(MetricVisualizer):
-    log_times = 5
+    log_times: int = 5
 
-    def _after_batch(self, executor, epoch, batch_index, result, **kwargs: Any) -> None:
+    def _after_batch(self, executor: Any, epoch: int, batch_index: int, result: dict[str, Any], **kwargs: Any) -> None:
         if self.log_times == 0:
             return
         if not executor.has_hook_obj("performance_metric"):

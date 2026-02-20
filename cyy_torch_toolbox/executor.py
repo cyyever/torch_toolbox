@@ -70,11 +70,11 @@ class Executor(HookCollection, abc.ABC):
         hyper_parameter: HyperParameter,
         model_config: ModelConfig | None = None,
         hook_config: HookConfig | None = None,
-        dataloader_kwargs: dict | None = None,
+        dataloader_kwargs: dict[str, Any] | None = None,
         auto_create_model: bool = True,
     ) -> None:
         super().__init__()
-        self._data: dict = {}
+        self._data: dict[str, Any] = {}
         self.__dataset_collection_config: DatasetCollectionConfig = copy.deepcopy(
             dataset_collection_config
         )
@@ -83,14 +83,14 @@ class Executor(HookCollection, abc.ABC):
         self.__auto_create_model = auto_create_model
         self.__model_evaluator: ModelEvaluator | None = None
         self.__phase: MachineLearningPhase = phase
-        self.__hyper_parameters: dict = {phase: copy.deepcopy(hyper_parameter)}
+        self.__hyper_parameters: dict[MachineLearningPhase, HyperParameter] = {phase: copy.deepcopy(hyper_parameter)}
         if not hook_config:
             hook_config = HookConfig()
         self.hook_config: HookConfig = copy.deepcopy(hook_config)
         self.__device: None | torch.device = None
-        self.__device_fun: Callable = DeviceGreedyAllocator.get_device
+        self.__device_fun: Callable[..., torch.device] = DeviceGreedyAllocator.get_device
         self.__dataloader: None | torch.utils.data.DataLoader = None
-        self.__dataloader_kwargs: dict = (
+        self.__dataloader_kwargs: dict[str, Any] = (
             copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
         )
         self.__stream: None | torch.Stream = None
@@ -158,7 +158,7 @@ class Executor(HookCollection, abc.ABC):
         return StreamContext(self.stream, synchronized=True)
 
     @property
-    def dataloader_kwargs(self) -> dict:
+    def dataloader_kwargs(self) -> dict[str, Any]:
         return self.__dataloader_kwargs
 
     @property
@@ -271,10 +271,10 @@ class Executor(HookCollection, abc.ABC):
                 dc=self.dataset_collection
             )
 
-    def replace_model(self, fun: Callable) -> None:
+    def replace_model(self, fun: Callable[[torch.nn.Module], torch.nn.Module]) -> None:
         self.running_model_evaluator.set_model(fun(self.model))
 
-    def replace_model_evaluator(self, fun: Callable) -> None:
+    def replace_model_evaluator(self, fun: Callable[[ModelEvaluator], ModelEvaluator]) -> None:
         self.wait_stream()
         self.__model_evaluator = fun(self.model_evaluator)
 
@@ -286,7 +286,7 @@ class Executor(HookCollection, abc.ABC):
             self.set_visualizer_prefix(self.__visualizer_prefix)
         self.exec_hooks(hook_point=ExecutorHookPoint.BEFORE_EXECUTE)
 
-    def set_device_fun(self, device_fun: Callable) -> None:
+    def set_device_fun(self, device_fun: Callable[..., torch.device]) -> None:
         self.__device_fun = device_fun
 
     def set_device(self, device: torch.device) -> None:
@@ -322,7 +322,7 @@ class Executor(HookCollection, abc.ABC):
         self.wait_stream()
         self.__model_evaluator = model_evaluator
 
-    def _foreach_sub_executor(self) -> Generator:
+    def _foreach_sub_executor(self) -> Generator["Executor", None, None]:
         yield from []
 
     def save_model(self, model_path: str) -> None:
@@ -354,7 +354,7 @@ class Executor(HookCollection, abc.ABC):
     def __execute_batch(
         self,
         batch_index: int,
-        batch: dict,
+        batch: dict[str, Any],
         epoch: int,
         evaluation_mode: EvaluationMode,
     ) -> None:
@@ -383,7 +383,7 @@ class Executor(HookCollection, abc.ABC):
         )
 
         evaluation_kwargs = batch
-        forward_result: dict = {}
+        forward_result: dict[str, Any] = {}
         if self.has_hook(ExecutorHookPoint.MODEL_FORWARD):
             self.exec_hooks(
                 hook_point=ExecutorHookPoint.MODEL_FORWARD,
@@ -463,13 +463,13 @@ class Executor(HookCollection, abc.ABC):
 @dataclass(kw_only=True)
 class ExecutorConfig(ConfigBase):
     hook_config: HookConfig = field(default_factory=HookConfig)
-    dataloader_kwargs: dict = field(default_factory=dict)
+    dataloader_kwargs: dict[str, Any] = field(default_factory=dict)
     cache_transforms: None | str = None
 
     def create_executor(
         self,
         cls: Callable,
-        **kwargs,
+        **kwargs: Any,
     ) -> Any:
         if (
             self.cache_transforms is not None

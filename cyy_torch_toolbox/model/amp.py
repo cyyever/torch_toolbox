@@ -20,7 +20,7 @@ class TF32Context:
         torch.backends.cuda.matmul.allow_tf32 = True
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
         torch.backends.cudnn.allow_tf32 = self.__old_cudnn_allow_tf32
         torch.backends.cuda.matmul.allow_tf32 = self.__old_cuda_allow_tf32
 

@@ -77,7 +77,7 @@ class Base:
             for phase in self.get_phases()
         }
 
-    def __getstate__(self) -> dict:
+    def __getstate__(self) -> dict[str, Any]:
         # capture what is normally pickled
         state = self.__dict__.copy()
         state["_samplers"] = None
@@ -104,7 +104,7 @@ class SamplerBase(Base):
 
 class SplitBase(Base):
     def __init__(
-        self, part_number: int, detect_allocated_file: bool = False, **kwargs
+        self, part_number: int, detect_allocated_file: bool = False, **kwargs: Any
     ) -> None:
         super().__init__(**kwargs)
         self._part_number = part_number
@@ -112,7 +112,7 @@ class SplitBase(Base):
         self._detect_allocated_file = detect_allocated_file
         self.get_preallocated_samples()
 
-    def get_preallocated_samples(self):
+    def get_preallocated_samples(self) -> None:
         for phase in self.get_phases():
             for part_index in range(self._part_number):
                 sample_info = self.get_preallocated_sample(
@@ -221,7 +221,7 @@ class IIDSplitWithFlip(IIDSplit):
         super().__init__(dataset_collection=dataset_collection, part_number=part_number)
         self.__flip_percent = flip_percent
 
-    def get_flip_percent(self, part_index: int) -> float | dict:
+    def get_flip_percent(self, part_index: int) -> float | dict[TargetType, float]:
         if isinstance(self.__flip_percent, dict | list):
             assert len(self.__flip_percent) == len(
                 self._dataset_indices[MachineLearningPhase.Training]
@@ -343,7 +343,7 @@ global_sampler_factory.register("file_split", SplitByFile)
 
 
 def get_dataset_collection_split(
-    name: str, dataset_collection: DatasetCollection, **kwargs
+    name: str, dataset_collection: DatasetCollection, **kwargs: Any
 ) -> SplitBase:
     constructor = global_sampler_factory.get(name.lower())
     if constructor is None:
@@ -352,7 +352,7 @@ def get_dataset_collection_split(
 
 
 def get_dataset_collection_sampler(
-    name: str, dataset_collection: DatasetCollection, **kwargs
+    name: str, dataset_collection: DatasetCollection, **kwargs: Any
 ) -> SamplerBase:
     constructor = global_sampler_factory.get(name.lower())
     if constructor is None:

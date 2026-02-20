@@ -4,9 +4,9 @@ from typing import Any
 
 class Factory:
     def __init__(self) -> None:
-        self.data: dict = {}
+        self.data: dict[Any, Any] = {}
 
-    def register(self, key, value) -> None:
+    def register(self, key: Any, value: Any) -> None:
         match value:
             case list():
                 if key not in self.data:

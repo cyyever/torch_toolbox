@@ -1,8 +1,11 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 
 from ..ml_type import ModelType
+
+if TYPE_CHECKING:
+    from ..executor import Executor
 from .auc_metric import AUROCMetric
 from .dataloader_profiler import DataloaderProfiler
 from .f1_metric import F1Metric
@@ -17,7 +20,7 @@ from .time_metric import TimeMetric
 class PerformanceMetric(Metric):
     def __init__(
         self,
-        executor,
+        executor: "Executor",
         profile: bool = False,
         extra_metrics: bool = False,
         use_grad_norm: bool = False,
@@ -45,10 +48,10 @@ class PerformanceMetric(Metric):
     def _after_epoch(self, epoch: int, **kwargs: Any) -> None:
         self.__last_epoch = epoch
 
-    def get_loss(self, epoch: int, to_item: bool = True) -> float | torch.Tensor:
+    def get_loss(self, epoch: int, to_item: bool = True) -> float | torch.Tensor | None:
         self.loss_metric._after_epoch(epoch=epoch)
         return self.get_epoch_metric(epoch=epoch, name="loss", to_item=to_item)
 
-    def get_last_loss(self) -> float | torch.Tensor:
+    def get_last_loss(self) -> float | torch.Tensor | None:
         assert self.__last_epoch is not None
         return self.get_loss(epoch=self.__last_epoch)

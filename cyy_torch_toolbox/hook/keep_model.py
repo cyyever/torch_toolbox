@@ -16,7 +16,7 @@ class KeepModelHook(Hook):
     save_best_model: bool = False
 
     @property
-    def best_model(self) -> dict:
+    def best_model(self) -> dict[str, Any]:
         return self.__best_model.data
 
     def __get_model_dir(self, root_dir: str) -> str:

@@ -9,19 +9,19 @@ from ..hook import Hook
 class Metric(Hook):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.__epoch_metrics: dict = {}
-        self.__batch_metrics: dict = {}
+        self.__epoch_metrics: dict[int, dict[str, Any]] = {}
+        self.__batch_metrics: dict[int, dict[str, Any]] = {}
 
     def get_epoch_metric(self, epoch: int, name: str, to_item: bool = True) -> Any:
         return self.get_metric(
             metric_type="epoch", key=epoch, name=name, to_item=to_item
         )
 
-    def get_epoch_metrics(self, epoch: int, to_item: bool = True) -> dict:
+    def get_epoch_metrics(self, epoch: int, to_item: bool = True) -> dict[str, Any]:
         return self.get_metrics(metric_type="epoch", key=epoch, to_item=to_item)
 
-    def get_metrics(self, metric_type: str, key: int, to_item: bool = True) -> dict:
-        metric: dict = {}
+    def get_metrics(self, metric_type: str, key: int, to_item: bool = True) -> dict[str, Any]:
+        metric: dict[str, Any] = {}
         match metric_type:
             case "epoch":
                 metric = copy.copy(self.__epoch_metrics.get(key, {}))
@@ -45,7 +45,7 @@ class Metric(Hook):
     def get_metric(
         self, metric_type: str, key: int, name: str, to_item: bool = True
     ) -> Any:
-        metric: dict = {}
+        metric: dict[str, Any] = {}
         match metric_type:
             case "epoch":
                 metric = copy.copy(self.__epoch_metrics.get(key, {}))
@@ -69,7 +69,7 @@ class Metric(Hook):
                 return res
         return None
 
-    def _set_epoch_metric(self, epoch, name, data) -> None:
+    def _set_epoch_metric(self, epoch: int, name: str, data: Any) -> None:
         if epoch not in self.__epoch_metrics:
             self.__epoch_metrics[epoch] = {}
         if isinstance(data, torch.Tensor):
@@ -79,7 +79,7 @@ class Metric(Hook):
     def get_batch_metric(self, batch: int, name: str) -> Any:
         return self.get_metric(metric_type="batch", key=batch, name=name)
 
-    def _set_batch_metric(self, batch_index, name, data) -> None:
+    def _set_batch_metric(self, batch_index: int, name: str, data: Any) -> None:
         if batch_index not in self.__batch_metrics:
             self.__batch_metrics[batch_index] = {}
         self.__batch_metrics[batch_index][name] = data

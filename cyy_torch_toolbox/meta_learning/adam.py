@@ -8,8 +8,8 @@ class MetaAdam(MetaOptimizer):
     def __init__(self, optimizer: Adam) -> None:
         self.__optimizer = optimizer
 
-    def step(self) -> list[list]:
-        results: list[list] = []
+    def step(self) -> list[list[torch.Tensor]]:
+        results: list[list[torch.Tensor]] = []
         for group in self.__optimizer.param_groups:
             params = group["params"]
             weight_decay = group["weight_decay"]

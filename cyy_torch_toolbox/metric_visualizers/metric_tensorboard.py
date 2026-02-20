@@ -49,7 +49,7 @@ class MetricTensorBoard(MetricVisualizer):
     def __del__(self) -> None:
         self.close()
 
-    def _after_validation(self, executor, epoch, **kwargs: Any) -> None:
+    def _after_validation(self, executor: Any, epoch: int, **kwargs: Any) -> None:
         trainer = executor
 
         # if "cur_learning_rates" not in trainer._data:

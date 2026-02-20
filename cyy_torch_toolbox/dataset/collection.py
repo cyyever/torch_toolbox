@@ -29,7 +29,7 @@ class DatasetCollection:
         datasets: dict[MachineLearningPhase, torch.utils.data.Dataset | list],
         dataset_type: DatasetType | None = None,
         name: str | None = None,
-        dataset_kwargs: dict | None = None,
+        dataset_kwargs: dict[str, Any] | None = None,
         add_index: bool = True,
     ) -> None:
         self.__name: str = "" if name is None else name
@@ -50,7 +50,7 @@ class DatasetCollection:
         for phase in self.__datasets:
             self.__pipeline[phase] = DataPipeline()
         assert self.__pipeline
-        self.__dataset_kwargs: dict = (
+        self.__dataset_kwargs: dict[str, Any] = (
             copy.deepcopy(dataset_kwargs) if dataset_kwargs else {}
         )
         self.has_enhanced_data_pipeline: bool = False
@@ -67,7 +67,7 @@ class DatasetCollection:
         return self.__name
 
     @property
-    def dataset_kwargs(self) -> dict:
+    def dataset_kwargs(self) -> dict[str, Any]:
         return self.__dataset_kwargs
 
     @property
@@ -79,19 +79,19 @@ class DatasetCollection:
         for p in self.__pipeline.values():
             p.clear()
 
-    def foreach_phase(self) -> Generator:
+    def foreach_phase(self) -> Generator[MachineLearningPhase, None, None]:
         yield from self.__datasets.keys()
 
-    def foreach_original_phase(self) -> Generator:
+    def foreach_original_phase(self) -> Generator[MachineLearningPhase, None, None]:
         yield from self.__original_datasets.keys()
 
-    def foreach_dataset(self) -> Generator:
+    def foreach_dataset(self) -> Generator[torch.utils.data.Dataset | list, None, None]:
         yield from self.__datasets.values()
 
     def has_dataset(self, phase: MachineLearningPhase) -> bool:
         return phase in self.__datasets
 
-    def add_data_pipeline(self, model_evaluator: Any) -> None:
+    def add_data_pipeline(self, model_evaluator: "ModelEvaluator | Any") -> None:
         if not self.has_enhanced_data_pipeline:
             append_transforms_to_dc(dc=self, model_evaluator=model_evaluator)
             self.has_enhanced_data_pipeline = True
@@ -147,7 +147,7 @@ class DatasetCollection:
     def get_original_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
-        factor: type = global_dataset_util_factor.get(
+        factor: type[DatasetUtil] = global_dataset_util_factor.get(
             self.dataset_type, default=DatasetUtil
         )
         return factor(
@@ -159,7 +159,7 @@ class DatasetCollection:
     def get_dataset_util(
         self, phase: MachineLearningPhase = MachineLearningPhase.Test
     ) -> DatasetUtil:
-        factor: type = global_dataset_util_factor.get(
+        factor: type[DatasetUtil] = global_dataset_util_factor.get(
             self.dataset_type, default=DatasetUtil
         )
         return factor(
@@ -169,7 +169,7 @@ class DatasetCollection:
         )
 
     def prepend_named_transform(
-        self, transform: Transform, phases: None | Iterable = None
+        self, transform: Transform, phases: Iterable[MachineLearningPhase] | None = None
     ) -> None:
         for phase, pipeline in self.__pipeline.items():
             if phases is not None and phase not in phases:
@@ -177,7 +177,7 @@ class DatasetCollection:
             pipeline.prepend(transform)
 
     def append_named_transform(
-        self, transform: Transform, phases: None | Iterable = None
+        self, transform: Transform, phases: Iterable[MachineLearningPhase] | None = None
     ) -> None:
         for phase, pipeline in self.__pipeline.items():
             if phases is not None and phase not in phases:

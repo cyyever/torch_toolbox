@@ -1,6 +1,9 @@
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import torch
+
+if TYPE_CHECKING:
+    from ..executor import Executor
 import torchmetrics.metric
 
 from ..ml_type import ModelType
@@ -26,7 +29,7 @@ class ClassificationMetric(Metric):
         self._metric = None
 
     @torch.no_grad()
-    def _get_task(self, executor) -> Literal["binary", "multiclass", "multilabel"]:
+    def _get_task(self, executor: "Executor") -> Literal["binary", "multiclass", "multilabel"]:
         if self._task_type is not None:
             return self._task_type
         if (
@@ -42,7 +45,7 @@ class ClassificationMetric(Metric):
         return self._task_type
 
     @torch.no_grad()
-    def _get_output(self, executor, result: dict) -> tuple[torch.Tensor, torch.Tensor]:
+    def _get_output(self, executor: "Executor", result: dict[str, Any]) -> tuple[torch.Tensor, torch.Tensor]:
         targets: torch.Tensor = result["targets"].detach()
         if targets.dtype is torch.float:
             targets = targets.to(dtype=torch.long, non_blocking=True)
@@ -71,7 +74,7 @@ class ClassificationMetric(Metric):
                 output = torch.argmax(output, dim=-1)
         return output, targets
 
-    def _get_metric_kwargs(self, executor) -> dict:
+    def _get_metric_kwargs(self, executor: "Executor") -> dict[str, Any]:
         task = self._get_task(executor)
         kwargs = {"task": task}
         if task == "multilabel":

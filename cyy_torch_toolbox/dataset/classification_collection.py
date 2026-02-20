@@ -5,7 +5,7 @@ from cyy_naive_lib.log import log_info
 
 from ..ml_type import MachineLearningPhase
 
-labels_cache: dict[str, set] = {}
+labels_cache: dict[str, set[int]] = {}
 
 
 class ClassificationDatasetCollection(Decorator):
@@ -13,7 +13,7 @@ class ClassificationDatasetCollection(Decorator):
     def label_number(self) -> int:
         return len(self.get_labels(use_cache=False))
 
-    def get_labels(self, use_cache: bool = False) -> set:
+    def get_labels(self, use_cache: bool = False) -> set[int]:
         if use_cache and self.name in labels_cache:
             return labels_cache[self.name]
 
@@ -40,8 +40,8 @@ class ClassificationDatasetCollection(Decorator):
 
         return self.get_cached_data("is_multilabel.pk", computation_fun)
 
-    def get_label_names(self) -> dict:
-        def computation_fun():
+    def get_label_names(self) -> dict[int, str]:
+        def computation_fun() -> dict[int, str]:
             label_names = self.get_dataset_util(
                 phase=MachineLearningPhase.Training
             ).get_label_names()

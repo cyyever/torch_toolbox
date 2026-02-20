@@ -20,14 +20,14 @@ class Config(ConfigBase):
     def __init__(self, dataset_name: str = "", model_name: str = "") -> None:
         super().__init__()
         self.save_dir: str = ""
-        self.log_level: Any | None = None
+        self.log_level: int | str | None = None
         self.reproducible_env_config = ReproducibleEnvConfig()
         self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
         self.model_config = ModelConfig(model_name=model_name)
         self.hyper_parameter_config: HyperParameterConfig = HyperParameterConfig()
         self.trainer_config = TrainerConfig()
 
-    def load_config(self, conf: Any, check_config: bool = True) -> dict:
+    def load_config(self, conf: Any, check_config: bool = True) -> dict[str, Any]:
         return self.__load_config(self, conf, check_config)
 
     def create_dataset_collection(self) -> DatasetCollection:
@@ -67,7 +67,7 @@ class Config(ConfigBase):
         self.reproducible_env_config.set_reproducible_env(self.get_save_dir())
 
     @classmethod
-    def __load_config(cls, obj: Any, conf: Any, check_config: bool = True) -> dict:
+    def __load_config(cls, obj: Any, conf: Any, check_config: bool = True) -> dict[str, Any]:
         if not isinstance(conf, dict):
             conf_container: Any = OmegaConf.to_container(conf)
         else:

@@ -38,7 +38,7 @@ def load_combined_config_from_files(
         config_name=config_name,
         version_base=None,
     )
-    def load_config_hydra(conf) -> None:
+    def load_config_hydra(conf: Any) -> None:
         nonlocal conf_obj
         conf_obj = conf
 

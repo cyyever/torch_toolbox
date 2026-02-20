@@ -20,7 +20,7 @@ global_model_evaluator_factory = Factory()
 def get_model_evaluator(
     model: torch.nn.Module,
     dataset_collection: DatasetCollection | None = None,
-    **model_kwargs,
+    **model_kwargs: Any,
 ) -> ModelEvaluator:
     model_evaluator_funs: type | list[type] = [ModelEvaluator]
     dataset_type: DatasetType | None = model_kwargs.get("dataset_type")
@@ -47,7 +47,7 @@ def get_model_evaluator(
 global_model_factory: dict[DatasetType, list[Factory]] = {}
 
 
-def create_model(constructor, **kwargs: Any) -> Callable:
+def create_model(constructor: Callable[..., Any], **kwargs: Any) -> Any:
     while True:
         try:
             res = constructor(**kwargs)
@@ -66,8 +66,8 @@ def create_model(constructor, **kwargs: Any) -> Callable:
 
 
 def get_model(
-    name: str, model_kwargs: dict, dataset_collection: DatasetCollection | None = None
-) -> dict:
+    name: str, model_kwargs: dict[str, Any], dataset_collection: DatasetCollection | None = None
+) -> dict[str, Any]:
     model_kwargs = copy.copy(model_kwargs)
     factories = []
     if dataset_collection is not None:
@@ -136,7 +136,7 @@ def get_model(
 class ModelConfig:
     def __init__(self, model_name: str) -> None:
         self.model_name: str = model_name
-        self.model_kwargs: dict = {}
+        self.model_kwargs: dict[str, Any] = {}
 
     def get_model(self, dc: DatasetCollection) -> ModelEvaluator:
         self.model_kwargs["name"] = self.model_name

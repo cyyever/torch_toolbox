@@ -28,7 +28,7 @@ class TorchTaskQueue(TaskQueue):
         batch_policy_type: type[BatchPolicy] | None = None,
         **kwargs: Any,
     ) -> None:
-        self._devices: list = DeviceGreedyAllocator.get_devices()
+        self._devices: list[torch.device] = DeviceGreedyAllocator.get_devices()
         if worker_num is None:
             worker_num = len(self._devices)
             if "cpu" in self._devices[0].type.lower():
@@ -40,7 +40,7 @@ class TorchTaskQueue(TaskQueue):
             worker_num=worker_num, batch_policy_type=batch_policy_type, **kwargs
         )
 
-    def _get_task_kwargs(self, worker_id: int, use_spwan: bool) -> dict:
+    def _get_task_kwargs(self, worker_id: int, use_spwan: bool) -> dict[str, Any]:
         return super()._get_task_kwargs(worker_id, use_spwan=use_spwan) | {
             "device": self._devices[worker_id % len(self._devices)]
         }
