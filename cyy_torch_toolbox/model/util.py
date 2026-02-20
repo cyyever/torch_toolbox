@@ -180,10 +180,10 @@ class ModelUtil:
                 #         f"{full_param_name} => {parameter.numel()}",
                 #     )
 
-            if not hasattr(module, "fronzen_parameters"):
+            if not hasattr(module, "frozen_parameters"):
                 continue
-            assert isinstance(module.fronzen_parameters, set)
-            for param_name in module.fronzen_parameters:
+            assert isinstance(module.frozen_parameters, set)
+            for param_name in module.frozen_parameters:
                 full_param_name = f"{name}.{param_name}" if name else param_name
                 if full_param_name in checked_param_names:
                     continue
@@ -191,7 +191,7 @@ class ModelUtil:
                 assert isinstance(param_name, str)
                 param = getattr(module, param_name)
                 log_debug(
-                    "count fronzen parameter from %s",
+                    "count frozen parameter from %s",
                     f"{full_param_name} => {param.numel()}",
                 )
                 total_number += param.numel()
@@ -201,11 +201,11 @@ class ModelUtil:
     def freeze_modules(self, **kwargs: Any) -> bool:
         def freeze(name, module, model_util) -> None:
             log_debug("freeze %s", name)
-            module.fronzen_parameters = set()
+            module.frozen_parameters = set()
             parameter_dict: ModelParameter = {}
             for param_name, parameter in module.named_parameters():
                 parameter_dict[name + "." + param_name] = parameter.data
-                module.fronzen_parameters.add(param_name)
+                module.frozen_parameters.add(param_name)
 
             for k, v in parameter_dict.items():
                 model_util.set_attr(k, v, as_parameter=False)
@@ -215,14 +215,14 @@ class ModelUtil:
     def unfreeze_modules(self, **kwargs: Any) -> bool:
         def unfreeze(name, module, model_util) -> None:
             parameter_dict: ModelParameter = {}
-            if not hasattr(module, "fronzen_parameters"):
+            if not hasattr(module, "frozen_parameters"):
                 log_debug("nothing to unfreeze")
                 return
             parameter_dict = {
                 f"{name}.{param_name}": getattr(module, param_name)
-                for param_name in module.fronzen_parameters
+                for param_name in module.frozen_parameters
             }
-            delattr(module, "fronzen_parameters")
+            delattr(module, "frozen_parameters")
             assert parameter_dict
             log_debug("unfreeze %s %s", name, parameter_dict.keys())
             for k, v in parameter_dict.items():
@@ -264,12 +264,12 @@ class ModelUtil:
                     for name, module in self.get_modules()
                     if not isinstance(
                         module,
-                        torch.quantization.QuantStub
-                        | torch.quantization.DeQuantStub
-                        | torch.quantization.QuantWrapper
-                        | torch.quantization.FakeQuantize
-                        | torch.quantization.MovingAverageMinMaxObserver
-                        | torch.quantization.MovingAveragePerChannelMinMaxObserver
+                        torch.ao.quantization.QuantStub
+                        | torch.ao.quantization.DeQuantStub
+                        | torch.ao.quantization.QuantWrapper
+                        | torch.ao.quantization.FakeQuantize
+                        | torch.ao.quantization.MovingAverageMinMaxObserver
+                        | torch.ao.quantization.MovingAveragePerChannelMinMaxObserver
                         | torch.nn.modules.dropout.Dropout,
                     )
                 ]

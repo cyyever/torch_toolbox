@@ -26,7 +26,7 @@ class ClassificationDatasetCollection(Decorator):
         labels_cache[self.name] = labels
         return labels
 
-    def is_mutilabel(self) -> bool:
+    def is_multilabel(self) -> bool:
         def computation_fun() -> bool:
             if self.name.lower() == "imagenet":
                 return False
@@ -38,7 +38,7 @@ class ClassificationDatasetCollection(Decorator):
         if not self.has_dataset(MachineLearningPhase.Training):
             return computation_fun()
 
-        return self.get_cached_data("is_mutilabel.pk", computation_fun)
+        return self.get_cached_data("is_multilabel.pk", computation_fun)
 
     def get_label_names(self) -> dict:
         def computation_fun():

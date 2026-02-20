@@ -135,7 +135,7 @@ class ModelEvaluator:
 
     def get_underlying_model(self) -> torch.nn.Module:
         match self.model:
-            case torch.quantization.QuantWrapper():
+            case torch.ao.quantization.QuantWrapper():
                 return self.model.module
             case _:
                 return self.model
