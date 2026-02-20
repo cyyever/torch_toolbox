@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from typing import Any
 
 import torch
 from cyy_naive_lib.log import log_debug
@@ -11,7 +12,7 @@ class ReproducibleEnv(ReproducibleRandomEnv):
         super().__init__()
         self.__torch_seed: None | int = None
         self.__torch_rng_state: None | torch.Tensor = None
-        self.__torch_cuda_rng_state: None | list = None
+        self.__torch_cuda_rng_state: list[torch.Tensor] | None = None
 
     def enable(self) -> None:
         """
@@ -52,14 +53,14 @@ class ReproducibleEnv(ReproducibleRandomEnv):
             torch.set_deterministic_debug_mode(0)
             super().disable()
 
-    def get_state(self) -> dict:
+    def get_state(self) -> dict[str, Any]:
         return super().get_state() | {
             "torch_seed": self.__torch_seed,
             "torch_cuda_rng_state": self.__torch_cuda_rng_state,
             "torch_rng_state": self.__torch_rng_state,
         }
 
-    def load_state(self, state: dict) -> None:
+    def load_state(self, state: dict[str, Any]) -> None:
         super().load_state(state)
         self.__torch_seed = state["torch_seed"]
         self.__torch_cuda_rng_state = state["torch_cuda_rng_state"]

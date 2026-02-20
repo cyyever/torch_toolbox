@@ -1,4 +1,5 @@
 import functools
+from typing import Any
 
 import torch
 from cyy_naive_lib.log import log_debug
@@ -7,8 +8,8 @@ from cyy_naive_lib.reflection import get_kwarg_names
 from ..ml_type import DatasetType
 
 
-def get_torch_hub_model_info(repo: str) -> dict:
-    model_info: dict = {}
+def get_torch_hub_model_info(repo: str) -> dict[str, dict[str, Any]]:
+    model_info: dict[str, dict[str, Any]] = {}
     kwargs = {
         "force_reload": False,
         "trust_repo": True,
@@ -40,8 +41,8 @@ def get_torch_hub_model_info(repo: str) -> dict:
     return model_info
 
 
-def get_model_info() -> dict:
-    model_info: dict = {}
+def get_model_info() -> dict[DatasetType, dict[str, dict[str, Any]]]:
+    model_info: dict[DatasetType, dict[str, dict[str, Any]]] = {}
     for dataset_type in DatasetType:
         model_info[dataset_type] = get_torch_hub_model_info(
             repo="cyyever/torch_models:main"

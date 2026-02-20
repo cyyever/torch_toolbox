@@ -1,3 +1,4 @@
+import torch
 from torch.optim import SGD
 
 from .optimizer import MetaOptimizer
@@ -7,8 +8,8 @@ class MetaSGD(MetaOptimizer):
     def __init__(self, optimizer: SGD) -> None:
         self.__optimizer = optimizer
 
-    def step(self) -> list[list]:
-        results: list[list] = []
+    def step(self) -> list[list[torch.Tensor]]:
+        results: list[list[torch.Tensor]] = []
         for param_group in self.__optimizer.param_groups:
             nesterov = param_group["nesterov"]
             maximize = param_group["maximize"]

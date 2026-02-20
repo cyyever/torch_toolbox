@@ -1,3 +1,5 @@
+from typing import Any
+
 import torch
 import torch.utils.data
 from cyy_naive_lib.log import log_debug, log_info
@@ -16,8 +18,8 @@ def __prepare_dataloader_kwargs(
     hyper_parameter: HyperParameter,
     device: torch.device,
     cache_transforms: str | None = None,
-    **kwargs,
-) -> dict:
+    **kwargs: Any,
+) -> dict[str, Any]:
     dc_util = dc.get_dataset_util(phase=phase)
     if dc.dataset_type == DatasetType.Graph:
         cache_transforms = None
@@ -54,7 +56,7 @@ def get_dataloader(
     phase: MachineLearningPhase,
     model_evaluator: ModelEvaluator,
     device: torch.device,
-    **kwargs,
+    **kwargs: Any,
 ) -> torch.utils.data.DataLoader:
     dc.add_data_pipeline(model_evaluator=model_evaluator)
     dataloader_kwargs = __prepare_dataloader_kwargs(

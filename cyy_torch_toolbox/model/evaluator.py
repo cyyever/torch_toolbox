@@ -22,11 +22,11 @@ class ModelEvaluator:
         model: torch.nn.Module,
         model_type: None | ModelType = None,
         loss_fun: str | Callable | None = None,
-        frozen_modules: dict | None = None,
-        **kwargs,
+        frozen_modules: dict[str, Any] | None = None,
+        **kwargs: Any,
     ) -> None:
         self._model: torch.nn.Module = model
-        self._model_kwargs = copy.deepcopy(kwargs)
+        self._model_kwargs: dict[str, Any] = copy.deepcopy(kwargs)
         self.__loss_fun: Callable | None = None
         self.__loss_fun_type: type | None = None
         if loss_fun is not None:
@@ -45,7 +45,7 @@ class ModelEvaluator:
                 pass
             case _:
                 raise NotImplementedError(frozen_modules)
-        self.__evaluation_kwargs: dict = {}
+        self.__evaluation_kwargs: dict[str, Any] = {}
 
     @property
     def model(self) -> torch.nn.Module:
@@ -71,7 +71,7 @@ class ModelEvaluator:
         assert self.__loss_fun is not None
         return self.__loss_fun
 
-    def set_model(self, model) -> None:
+    def set_model(self, model: torch.nn.Module) -> None:
         self._model = model
 
     def set_forward_fun(self, forward_fun: str) -> None:
@@ -108,7 +108,7 @@ class ModelEvaluator:
             return fun(inputs)
         return None
 
-    def split_batch_input(self, inputs: Any, **kwargs: Any) -> dict:
+    def split_batch_input(self, inputs: Any, **kwargs: Any) -> dict[str, Any]:
         return {"inputs": inputs, "batch_dim": 0}
 
     def backward(
@@ -116,7 +116,7 @@ class ModelEvaluator:
         *,
         loss: torch.Tensor,
         optimizer: None | torch.optim.Optimizer = None,
-        **backward_kwargs,
+        **backward_kwargs: Any,
     ) -> None:
         if optimizer is not None:
             optimizer.zero_grad(set_to_none=True)
@@ -128,7 +128,7 @@ class ModelEvaluator:
         self,
         loss: torch.Tensor,
         optimizer: torch.optim.Optimizer,
-        **backward_kwargs,
+        **backward_kwargs: Any,
     ) -> None:
         self.backward(loss=loss, optimizer=optimizer, **backward_kwargs)
         optimizer.step()
@@ -141,7 +141,7 @@ class ModelEvaluator:
                 return self.model
 
     def get_normalized_batch_loss(
-        self, dataset_util: DatasetUtil, forward_result: dict
+        self, dataset_util: DatasetUtil, forward_result: dict[str, Any]
     ) -> Any:
         if forward_result["is_averaged_loss"]:
             sample_number = 0
@@ -163,7 +163,7 @@ class ModelEvaluator:
         inputs: Any | None = None,
         evaluation_mode: EvaluationMode | None = None,
         **kwargs: Any,
-    ) -> dict:
+    ) -> dict[str, Any]:
         if evaluation_mode is not None:
             self.__set_model_mode(evaluation_mode=evaluation_mode)
         raw_inputs = inputs
@@ -193,7 +193,7 @@ class ModelEvaluator:
             log_debug("forward with function %s", fun)
         return fun
 
-    def _forward_model(self, *, inputs: Any, **kwargs: Any) -> dict:
+    def _forward_model(self, *, inputs: Any, **kwargs: Any) -> dict[str, Any]:
         fun: Callable = self._get_forward_fun()
         match inputs:
             case torch.Tensor():
@@ -213,7 +213,7 @@ class ModelEvaluator:
         targets: Any,
         reduce_loss: bool = True,
         **kwargs: Any,
-    ) -> dict:
+    ) -> dict[str, Any]:
         res = {
             "original_output": output,
         }
@@ -267,7 +267,7 @@ class ModelEvaluator:
         return loss_fun_type
 
     @classmethod
-    def __is_averaged_loss(cls, loss_fun) -> bool:
+    def __is_averaged_loss(cls, loss_fun: Callable) -> bool:
         if hasattr(loss_fun, "reduction"):
             match loss_fun.reduction:
                 case "mean":

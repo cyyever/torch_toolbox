@@ -48,7 +48,7 @@ class Inferencer(Executor):
             return self.model_util.get_gradients()
 
     def get_sample_loss(
-        self, evaluation_mode=EvaluationMode.SampleInference
+        self, evaluation_mode: EvaluationMode = EvaluationMode.SampleInference
     ) -> dict[int, Any]:
         evaluation_kwargs = {
             "reduce_loss": False,
@@ -78,7 +78,7 @@ class Inferencer(Executor):
     def __collect_sample_loss(
         self,
         final_result: dict[int, Any],
-        result: dict,
+        result: dict[str, Any],
         sample_indices: Iterable[int],
         **kwargs: Any,
     ) -> None:
@@ -90,13 +90,13 @@ class Inferencer(Executor):
     def __process_sample_output(
         self,
         callback: Callable,
-        final_result: dict,
+        final_result: dict[int, Any],
         **kwargs: Any,
     ) -> None:
         callback(kwargs)
 
     def _get_sample_output(
-        self, evaluation_mode: EvaluationMode, evaluation_kwargs: dict, hook: Callable
+        self, evaluation_mode: EvaluationMode, evaluation_kwargs: dict[str, Any], hook: Callable
     ) -> dict[int, Any]:
         result: dict[int, Any] = {}
         with self.hook_config:

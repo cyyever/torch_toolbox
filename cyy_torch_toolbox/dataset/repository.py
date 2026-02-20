@@ -50,15 +50,15 @@ def register_dataset_constructors(
 
 
 def __prepare_dataset_kwargs(
-    constructor_kwargs: set, dataset_kwargs: dict, cache_dir: str
+    constructor_kwargs: set[str], dataset_kwargs: dict[str, Any], cache_dir: str
 ) -> Callable:
-    new_dataset_kwargs: dict = copy.deepcopy(dataset_kwargs)
+    new_dataset_kwargs: dict[str, Any] = copy.deepcopy(dataset_kwargs)
     if "download" not in new_dataset_kwargs:
         new_dataset_kwargs["download"] = True
 
     def get_dataset_kwargs_of_phase(
         dataset_type: DatasetType, phase: MachineLearningPhase
-    ) -> dict | None:
+    ) -> dict[str, Any] | None:
         if "cache_dir" in constructor_kwargs and "cache_dir" not in new_dataset_kwargs:
             new_dataset_kwargs["cache_dir"] = cache_dir
         if "root" in constructor_kwargs and "root" not in new_dataset_kwargs:
@@ -109,16 +109,16 @@ def __prepare_dataset_kwargs(
     return get_dataset_kwargs_of_phase
 
 
-__dataset_cache: dict = {}
+__dataset_cache: dict[tuple[str, DatasetType, MachineLearningPhase], Any] = {}
 
 
 def __create_dataset(
     dataset_name: str,
     dataset_type: DatasetType,
     dataset_constructor: Callable,
-    dataset_kwargs: dict,
+    dataset_kwargs: dict[str, Any],
     cache_dir: str,
-) -> tuple[DatasetType, dict] | None:
+) -> tuple[DatasetType, dict[MachineLearningPhase, Any]] | None:
     dataset_kwargs_fun = __prepare_dataset_kwargs(
         constructor_kwargs=get_kwarg_names(dataset_constructor),
         dataset_kwargs=dataset_kwargs,
@@ -180,7 +180,7 @@ def __create_dataset(
         test_dataset = None
 
     if validation_dataset is None and test_dataset is None:
-        datasets: dict = global_dataset_util_factor.get(
+        datasets: dict[MachineLearningPhase, Any] = global_dataset_util_factor.get(
             dataset_type, default=DatasetUtil
         )(training_dataset).decompose()
         if datasets is not None:
@@ -195,8 +195,8 @@ def __create_dataset(
 
 
 def get_dataset(
-    name: str, dataset_kwargs: dict, cache_dir: str
-) -> None | tuple[DatasetType, dict]:
+    name: str, dataset_kwargs: dict[str, Any], cache_dir: str
+) -> None | tuple[DatasetType, dict[MachineLearningPhase, Any]]:
     real_dataset_type = dataset_kwargs.get("dataset_type")
     similar_names = []
 

@@ -15,7 +15,7 @@ class AccuracyMetric(Metric):
         self.__correct_count = None
 
     @torch.no_grad()
-    def _after_batch(self, result: dict, **kwargs: Any) -> None:
+    def _after_batch(self, result: dict[str, Any], **kwargs: Any) -> None:
         targets = result["targets"]
         output = result.get("model_output")
         if output is None:

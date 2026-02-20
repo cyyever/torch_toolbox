@@ -8,12 +8,12 @@ from .metric import Metric
 class LossMetric(Metric):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.__batch_losses: list[tuple] = []
+        self.__batch_losses: list[tuple[torch.Tensor, torch.Tensor | int]] = []
 
     def _before_epoch(self, **kwargs: Any) -> None:
         self.__batch_losses = []
 
-    def _after_batch(self, result, **kwargs: Any) -> None:
+    def _after_batch(self, result: dict[str, Any], **kwargs: Any) -> None:
         loss_batch_size = result["loss_batch_size"]
         if isinstance(loss_batch_size, torch.Tensor):
             loss_batch_size = loss_batch_size.detach().to(

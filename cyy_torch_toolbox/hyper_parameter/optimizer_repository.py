@@ -13,7 +13,7 @@ class OptimizerFactory(Factory):
         ).items():
             self.register(name, cls)
 
-    def register(self, key, value) -> None:
+    def register(self, key: str, value: type[torch.optim.Optimizer]) -> None:
         assert key not in self.data, key
         super().register(key, value)
 

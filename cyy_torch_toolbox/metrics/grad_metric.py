@@ -6,13 +6,13 @@ from .metric import Metric
 
 
 class GradMetric(Metric):
-    __prev_parameter_list: Any = None
+    __prev_parameter_list: torch.Tensor | None = None
 
-    def _before_epoch(self, executor, **kwargs: Any) -> None:
+    def _before_epoch(self, executor: Any, **kwargs: Any) -> None:
         if self.__prev_parameter_list is None:
             self.__prev_parameter_list = executor.model_util.get_parameter_list()
 
-    def _after_epoch(self, epoch, executor, **kwargs: Any) -> None:
+    def _after_epoch(self, epoch: int, executor: Any, **kwargs: Any) -> None:
         parameter_list = executor.model_util.get_parameter_list()
         self._set_epoch_metric(
             epoch,

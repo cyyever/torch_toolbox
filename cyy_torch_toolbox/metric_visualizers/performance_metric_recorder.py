@@ -10,7 +10,7 @@ from .metric_visualizer import MetricVisualizer
 
 
 class PerformanceMetricRecorder(MetricVisualizer):
-    def _after_epoch(self, executor, epoch, **kwargs: Any) -> None:
+    def _after_epoch(self, executor: Any, epoch: int, **kwargs: Any) -> None:
         prefix = re.sub(r"[: ,]+$", "", self._prefix)
         prefix = re.sub(r"[: ,]+", "_", prefix)
 

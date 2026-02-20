@@ -7,7 +7,7 @@ from .metric_visualizer import MetricVisualizer
 
 
 class PerformanceMetricLogger(MetricVisualizer):
-    def _after_epoch(self, executor, epoch, **kwargs: Any) -> None:
+    def _after_epoch(self, executor: Any, epoch: int, **kwargs: Any) -> None:
         performance_metric = executor.performance_metric
 
         epoch_metrics = performance_metric.get_epoch_metrics(epoch)

@@ -10,7 +10,7 @@ from . import Hook
 class CUDAMemoryProfiler(Hook):
     def __init__(self, *args, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.__hooks: list = []
+        self.__hooks: list[Any] = []
         self.__used_memory: list[tuple[str, float]] = []
 
     def _before_execute(self, **kwargs: Any) -> None:
@@ -39,7 +39,7 @@ class CUDAMemoryProfiler(Hook):
             )
 
     def __compute_gpu_memory_assumption(
-        self, module_name, hook_idx, module, *args, **kwargs
+        self, module_name: str, hook_idx: int, module: torch.nn.Module, *args: Any, **kwargs: Any
     ) -> None:
         cur_used_memory = torch.cuda.memory_allocated()
         self.__used_memory.append((module_name, float(cur_used_memory) / 1024 / 1024))

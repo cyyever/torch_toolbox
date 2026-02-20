@@ -1,13 +1,17 @@
 import functools
 import re
+from typing import TYPE_CHECKING
 
 from cyy_naive_lib.log import log_debug, log_error
 from cyy_preprocessing_pipeline import DataPipeline, Transform
 
 from .collection import DatasetCollection
 
+if TYPE_CHECKING:
+    from ..tokenizer import Tokenizer
 
-def format_prompt(prompt: str, tokenizer, example: str | dict) -> str | dict:
+
+def format_prompt(prompt: str, tokenizer: "Tokenizer", example: str | dict) -> str | dict:
     if isinstance(example, str):
         log_debug("final input is %s", prompt + example)
         return prompt + example
@@ -83,7 +87,7 @@ class TextDatasetCollection(DatasetCollection):
             self.__post_prompt_text_pipeline = DataPipeline()
         self.__post_prompt_text_pipeline.append(transform)
 
-    def get_text_pipeline(self, tokenizer) -> DataPipeline | None:
+    def get_text_pipeline(self, tokenizer: "Tokenizer") -> DataPipeline | None:
         if self.prompt is not None:
             self.append_text_transform(
                 Transform(

@@ -8,11 +8,11 @@ from .metric import Metric
 class ClassAccuracyMetric(Metric):
     def __init__(self) -> None:
         super().__init__()
-        self.__classification_count_per_label: dict = {}
-        self.__classification_correct_count_per_label: dict = {}
-        self.__labels: None | set = None
+        self.__classification_count_per_label: dict[int, int] = {}
+        self.__classification_correct_count_per_label: dict[int, int] = {}
+        self.__labels: set[int] | None = None
 
-    def get_class_accuracy(self, epoch):
+    def get_class_accuracy(self, epoch: int) -> Any:
         return self.get_epoch_metric(epoch, "class_accuracy")
 
     def _before_epoch(self, **kwargs: Any) -> None:

@@ -1,6 +1,10 @@
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import torch.cuda
+
+if TYPE_CHECKING:
+    from ..executor import Executor
 from cyy_naive_lib.log import log_debug
 
 from ..metric_visualizers.performance_metric_logger import PerformanceMetricLogger
@@ -30,7 +34,7 @@ class HookConfig(ConfigBase):
         self.log_performance_metric = False
         self.summarize_executor = False
 
-    def set_hooks(self, executor) -> None:
+    def set_hooks(self, executor: "Executor") -> None:
         if executor.phase != MachineLearningPhase.Training:
             self.use_amp = False
 

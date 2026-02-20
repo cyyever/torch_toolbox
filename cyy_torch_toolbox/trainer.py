@@ -32,7 +32,7 @@ class Trainer(Executor):
         self.__inferencers: dict[MachineLearningPhase, Inferencer] = {}
         self.append_hook(BatchLossLogger(), "batch_loss_logger")
 
-    def __getstate__(self) -> dict:
+    def __getstate__(self) -> dict[str, Any]:
         # capture what is normally pickled
         state = super().__getstate__()
         state["_Trainer__inferencers"] = {}
@@ -161,7 +161,7 @@ class Trainer(Executor):
         inferencer.inference()
         return True
 
-    def _foreach_sub_executor(self) -> Generator:
+    def _foreach_sub_executor(self) -> Generator[Inferencer, None, None]:
         yield from self.__inferencers.values()
 
 

@@ -38,7 +38,7 @@ class ModelUtil:
         if not flag:
             self.model.to(device=device, non_blocking=non_blocking)
 
-    def get_parameter_seq(self, **kwargs: Any) -> Generator:
+    def get_parameter_seq(self, **kwargs: Any) -> Generator[torch.Tensor, None, None]:
         return get_mapping_values_by_key_order(self.get_parameters(**kwargs))
 
     def get_parameter_list(self, **kwargs: Any) -> torch.Tensor:
@@ -135,7 +135,7 @@ class ModelUtil:
         self,
         module_type: type | None = None,
         module_names: Iterable[str] | None = None,
-    ) -> Generator:
+    ) -> Generator[tuple[str, torch.nn.Module], None, None]:
         if module_names is not None:
             module_names = set(module_names)
         for name, module in self.get_modules():
@@ -199,7 +199,7 @@ class ModelUtil:
         return total_number, trainable_number, trainable_size
 
     def freeze_modules(self, **kwargs: Any) -> bool:
-        def freeze(name, module, model_util) -> None:
+        def freeze(name: str, module: torch.nn.Module, model_util: "ModelUtil") -> None:
             log_debug("freeze %s", name)
             module.frozen_parameters = set()
             parameter_dict: ModelParameter = {}
@@ -213,7 +213,7 @@ class ModelUtil:
         return self.change_modules(f=freeze, **kwargs)
 
     def unfreeze_modules(self, **kwargs: Any) -> bool:
-        def unfreeze(name, module, model_util) -> None:
+        def unfreeze(name: str, module: torch.nn.Module, model_util: "ModelUtil") -> None:
             parameter_dict: ModelParameter = {}
             if not hasattr(module, "frozen_parameters"):
                 log_debug("nothing to unfreeze")
@@ -283,9 +283,9 @@ class ModelUtil:
 
     def get_module_blocks(
         self,
-        block_types: set,
+        block_types: set[tuple],
     ) -> list[BlockType]:
-        def module_has_type(module, module_type) -> bool:
+        def module_has_type(module: torch.nn.Module, module_type: type | str) -> bool:
             match module_type:
                 case str():
                     module_class_name = module.__class__.__name__
@@ -300,7 +300,7 @@ class ModelUtil:
         modules = list(self.get_modules())
         while modules:
             end_index = None
-            candidates: set = block_types
+            candidates: set[tuple] = block_types
             for i, (module_name, module) in enumerate(modules):
                 new_candidates = set()
                 for candidate in candidates:

@@ -23,9 +23,9 @@ class HyperParameter:
     batch_size: int = 64
     learning_rate: HyperParameterAction | float = HyperParameterAction.FIND_LR
     learning_rate_scheduler_name: str = "ReduceLROnPlateau"
-    learning_rate_scheduler_kwargs: dict = field(default_factory=dict)
+    learning_rate_scheduler_kwargs: dict[str, Any] = field(default_factory=dict)
     optimizer_name: str = "AdamW"
-    optimizer_kwargs: dict = field(default_factory=lambda: {"fake_weight_decay": 1.0})
+    optimizer_kwargs: dict[str, Any] = field(default_factory=lambda: {"fake_weight_decay": 1.0})
 
     def get_iterations_per_epoch(self, dataset_size: int) -> int:
         if self.batch_size == 1:
@@ -37,10 +37,10 @@ class HyperParameter:
             self.learning_rate = get_learning_rate(trainer=trainer)
         return self.learning_rate
 
-    def get_lr_scheduler(self, trainer) -> torch.optim.lr_scheduler.LRScheduler:
+    def get_lr_scheduler(self, trainer: Any) -> torch.optim.lr_scheduler.LRScheduler:
         name = self.learning_rate_scheduler_name
         optimizer = trainer.get_optimizer()
-        default_kwargs: dict = {}
+        default_kwargs: dict[str, Any] = {}
         default_kwargs["optimizer"] = optimizer
         fun = getattr(torch.optim.lr_scheduler, name)
         if fun is None:
@@ -75,8 +75,8 @@ class HyperParameter:
         return sorted(HyperParameter.__get_learning_rate_scheduler_classes().keys())
 
     def get_optimizer(
-        self, trainer: Any, parameters: None | Iterable[torch.Tensor] = None
-    ) -> Any:
+        self, trainer: Any, parameters: Iterable[torch.Tensor] | None = None
+    ) -> torch.optim.Optimizer:
         optimizer_class = global_optimizer_factory.get(self.optimizer_name)
         if optimizer_class is None:
             raise RuntimeError(
@@ -103,7 +103,7 @@ class HyperParameter:
         return call_fun(optimizer_class, kwargs)
 
     @staticmethod
-    def __get_learning_rate_scheduler_classes() -> dict:
+    def __get_learning_rate_scheduler_classes() -> dict[str, type]:
         return get_class_attrs(
             torch.optim.lr_scheduler,
             filter_fun=lambda _, v: issubclass(v, torch.optim.Optimizer),
