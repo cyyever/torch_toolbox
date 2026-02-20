@@ -49,7 +49,7 @@ class StreamContext:
             cur_stream.wait_stream(self.prev_stream)
         torch.accelerator.set_stream(cur_stream)
 
-    def __exit__(self, *args, **kwargs: Any) -> None:
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
         cur_stream = self.stream
         # If stream is None, return
         if cur_stream is None:
@@ -468,7 +468,7 @@ class ExecutorConfig(ConfigBase):
 
     def create_executor(
         self,
-        cls: Callable,
+        cls: Callable[..., Any],
         **kwargs: Any,
     ) -> Any:
         if (

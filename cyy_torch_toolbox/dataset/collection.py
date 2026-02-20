@@ -91,7 +91,7 @@ class DatasetCollection:
     def has_dataset(self, phase: MachineLearningPhase) -> bool:
         return phase in self.__datasets
 
-    def add_data_pipeline(self, model_evaluator: "ModelEvaluator | Any") -> None:
+    def add_data_pipeline(self, model_evaluator: Any) -> None:
         if not self.has_enhanced_data_pipeline:
             append_transforms_to_dc(dc=self, model_evaluator=model_evaluator)
             self.has_enhanced_data_pipeline = True
@@ -220,7 +220,7 @@ class DatasetCollection:
             if phase not in self.__pipeline:
                 self.__pipeline[phase] = copy.deepcopy(self.__pipeline[from_phase])
 
-    def get_cached_data(self, file: str, computation_fun: Callable) -> Any:
+    def get_cached_data(self, file: str, computation_fun: Callable[..., Any]) -> Any:
         assert self.name is not None
         cache_dir = DatasetCache().get_dataset_cache_dir(self.name)
         return get_cached_data(os.path.join(cache_dir, file), computation_fun)

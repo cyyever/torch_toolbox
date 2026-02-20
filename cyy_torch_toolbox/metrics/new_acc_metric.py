@@ -8,7 +8,7 @@ from .classification_metric import ClassificationMetric
 
 class NewAccuracyMetric(ClassificationMetric):
     @torch.no_grad()
-    def _after_batch(self, result: dict, **kwargs: Any) -> None:
+    def _after_batch(self, result: dict[str, Any], **kwargs: Any) -> None:
         executor = kwargs["executor"]
         if self._metric is None:
             with executor.device:

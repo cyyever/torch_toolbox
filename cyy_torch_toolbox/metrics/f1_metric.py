@@ -6,7 +6,7 @@ from .classification_metric import ClassificationMetric
 
 
 class F1Metric(ClassificationMetric):
-    def _after_batch(self, result: dict, **kwargs: Any) -> None:
+    def _after_batch(self, result: dict[str, Any], **kwargs: Any) -> None:
         executor = kwargs["executor"]
         if self._metric is None:
             assert executor.dataset_collection.label_number > 0

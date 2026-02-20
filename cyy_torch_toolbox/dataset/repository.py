@@ -41,7 +41,7 @@ def register_dataset_factory(
 
 
 def register_dataset_constructors(
-    name: str, constructor: Callable, dataset_type: DatasetType | None = None
+    name: str, constructor: Callable[..., Any], dataset_type: DatasetType | None = None
 ) -> None:
     for t in __get_dataset_types(dataset_type):
         if t not in __global_dataset_constructors:
@@ -51,7 +51,7 @@ def register_dataset_constructors(
 
 def __prepare_dataset_kwargs(
     constructor_kwargs: set[str], dataset_kwargs: dict[str, Any], cache_dir: str
-) -> Callable:
+) -> Callable[..., Any]:
     new_dataset_kwargs: dict[str, Any] = copy.deepcopy(dataset_kwargs)
     if "download" not in new_dataset_kwargs:
         new_dataset_kwargs["download"] = True
@@ -115,7 +115,7 @@ __dataset_cache: dict[tuple[str, DatasetType, MachineLearningPhase], Any] = {}
 def __create_dataset(
     dataset_name: str,
     dataset_type: DatasetType,
-    dataset_constructor: Callable,
+    dataset_constructor: Callable[..., Any],
     dataset_kwargs: dict[str, Any],
     cache_dir: str,
 ) -> tuple[DatasetType, dict[MachineLearningPhase, Any]] | None:
@@ -210,7 +210,7 @@ def get_dataset(
         dataset_type = DatasetType(dataset_type)
         if dataset_type not in __global_dataset_constructors:
             continue
-        constructor: None | Callable = None
+        constructor: None | Callable[..., Any] = None
         for factory in __global_dataset_constructors.get(dataset_type, []):
             constructor = factory.get(
                 name,
