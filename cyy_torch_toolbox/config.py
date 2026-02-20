@@ -80,7 +80,7 @@ class Config(ConfigBase):
             if value is not None:
                 match value:
                     case dict():
-                        setattr(obj, attr, value | getattr(obj, attr))
+                        setattr(obj, attr, getattr(obj, attr) | value)
                     case _:
                         setattr(obj, attr, value)
         for attr in dir(obj):
