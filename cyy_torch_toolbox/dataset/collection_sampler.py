@@ -98,8 +98,18 @@ class SamplerBase(Base):
         return dc
 
     def save(self, save_dir: str | Path) -> None:
+        serializable = {}
+        for phase, info in self._sample_info.items():
+            entry: dict[str, Any] = {}
+            if info.indices is not None:
+                entry["indices"] = sorted(info.indices)
+            if info.file_path is not None:
+                entry["file_path"] = str(info.file_path)
+            if info.whole_dataset:
+                entry["whole_dataset"] = True
+            serializable[str(phase)] = entry
         with open(Path(save_dir) / "sampler.json", "w", encoding="utf8") as f:
-            json.dump(self._sample_info, f)
+            json.dump(serializable, f)
 
 
 class SplitBase(Base):
