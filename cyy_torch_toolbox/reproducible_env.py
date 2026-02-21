@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, override
 
 import torch
 from cyy_naive_lib.log import log_debug
@@ -14,6 +14,7 @@ class ReproducibleEnv(ReproducibleRandomEnv):
         self.__torch_rng_state: None | torch.Tensor = None
         self.__torch_cuda_rng_state: list[torch.Tensor] | None = None
 
+    @override
     def enable(self) -> None:
         """
         https://pytorch.org/docs/stable/notes/randomness.html
@@ -47,12 +48,14 @@ class ReproducibleEnv(ReproducibleRandomEnv):
                 self.__torch_rng_state = torch.get_rng_state()
             super().enable()
 
+    @override
     def disable(self) -> None:
         with ReproducibleEnv.lock:
             torch.use_deterministic_algorithms(False)
             torch.set_deterministic_debug_mode(0)
             super().disable()
 
+    @override
     def get_state(self) -> dict[str, Any]:
         return super().get_state() | {
             "torch_seed": self.__torch_seed,
@@ -60,6 +63,7 @@ class ReproducibleEnv(ReproducibleRandomEnv):
             "torch_rng_state": self.__torch_rng_state,
         }
 
+    @override
     def load_state(self, state: dict[str, Any]) -> None:
         super().load_state(state)
         self.__torch_seed = state["torch_seed"]

@@ -1,3 +1,5 @@
+from typing import override
+
 import torch
 from torch.optim import SGD
 
@@ -8,6 +10,7 @@ class MetaSGD(MetaOptimizer):
     def __init__(self, optimizer: SGD) -> None:
         self.__optimizer = optimizer
 
+    @override
     def step(self) -> list[list[torch.Tensor]]:
         results: list[list[torch.Tensor]] = []
         for param_group in self.__optimizer.param_groups:

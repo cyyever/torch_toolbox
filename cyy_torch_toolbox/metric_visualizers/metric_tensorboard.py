@@ -1,7 +1,7 @@
 import datetime
 import os
 import threading
-from typing import Any
+from typing import Any, override
 
 from torch.utils.tensorboard.writer import SummaryWriter
 
@@ -20,6 +20,7 @@ class MetricTensorBoard(MetricVisualizer):
             self.__writer.close()
             self.__writer = None
 
+    @override
     def set_prefix(self, prefix: str) -> None:
         super().set_prefix(prefix)
         self.close()

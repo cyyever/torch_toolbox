@@ -1,5 +1,5 @@
 import os
-from typing import Any
+from typing import Any, override
 
 import torch
 from cyy_naive_lib.concurrency import BatchPolicy, TaskQueue
@@ -40,6 +40,7 @@ class TorchTaskQueue(TaskQueue):
             worker_num=worker_num, batch_policy_type=batch_policy_type, **kwargs
         )
 
+    @override
     def _get_task_kwargs(self, worker_id: int, use_spwan: bool) -> dict[str, Any]:
         return super()._get_task_kwargs(worker_id, use_spwan=use_spwan) | {
             "device": self._devices[worker_id % len(self._devices)]
