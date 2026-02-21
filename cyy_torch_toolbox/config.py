@@ -29,10 +29,26 @@ class Config(ConfigBase):
 
     def load_config(self, conf: Any, check_config: bool = True) -> dict[str, Any]:
         result = self.__load_config(self, conf, check_config)
-        # Normalize save_dir from OmegaConf str to Path
+        # Normalize Path fields that OmegaConf sets as str
         if isinstance(self.save_dir, str):
-            self.save_dir = Path(self.save_dir)
+            self.save_dir = Path(self.save_dir) if self.save_dir else None
+        self.__normalize_path_fields()
         return result
+
+    def __normalize_path_fields(self) -> None:
+        """Normalize str values to Path for fields typed as Path | None across sub-configs."""
+        for attr_name in (
+            "training_dataset_indices_path",
+            "training_dataset_label_map_path",
+        ):
+            val = getattr(self.dc_config, attr_name, None)
+            if isinstance(val, str):
+                setattr(self.dc_config, attr_name, Path(val) if val else None)
+        val = getattr(self.reproducible_env_config, "reproducible_env_load_path", None)
+        if isinstance(val, str):
+            self.reproducible_env_config.reproducible_env_load_path = (
+                Path(val) if val else None
+            )
 
     def create_dataset_collection(self) -> DatasetCollection:
         log_debug("use dataset %s", self.dc_config.dataset_name)
