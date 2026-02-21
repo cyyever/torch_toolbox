@@ -5,7 +5,7 @@ import gc
 import os
 from collections.abc import Callable, Generator
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, override
 
 import torch
 import torch.cuda
@@ -185,6 +185,7 @@ class Executor(HookCollection, abc.ABC):
     def phase(self) -> MachineLearningPhase:
         return self.__phase
 
+    @override
     def exec_hooks(self, hook_point: ExecutorHookPoint, **kwargs: Any) -> None:
         kwargs["executor"] = self
         super().exec_hooks(hook_point=hook_point, **kwargs)

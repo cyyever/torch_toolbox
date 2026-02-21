@@ -1,6 +1,6 @@
 import copy
 from collections.abc import Generator
-from typing import Any
+from typing import Any, override
 
 import torch
 from cyy_naive_lib.log import log_debug, log_warning
@@ -32,6 +32,7 @@ class Trainer(Executor):
         self.__inferencers: dict[MachineLearningPhase, Inferencer] = {}
         self.append_hook(BatchLossLogger(), "batch_loss_logger")
 
+    @override
     def __getstate__(self) -> dict[str, Any]:
         # capture what is normally pickled
         state = super().__getstate__()
@@ -77,6 +78,7 @@ class Trainer(Executor):
         self._data["optimizer_parameters"] = parameters
         self.remove_optimizer()
 
+    @override
     def get_optimizer(self) -> torch.optim.Optimizer:
         if "optimizer" not in self._data:
             self._data["optimizer"] = self.hyper_parameter.get_optimizer(
@@ -84,6 +86,7 @@ class Trainer(Executor):
             )
         return self._data["optimizer"]
 
+    @override
     def remove_model(self, remove_optimizer: bool = True) -> None:
         self.__inferencers.clear()
         if remove_optimizer:
@@ -120,6 +123,7 @@ class Trainer(Executor):
                 log_warning("stop training")
                 self.exec_hooks(hook_point=ExecutorHookPoint.AFTER_EXECUTE)
 
+    @override
     def _execute_epoch(
         self,
         epoch: int,
@@ -161,6 +165,7 @@ class Trainer(Executor):
         inferencer.inference()
         return True
 
+    @override
     def _foreach_sub_executor(self) -> Generator[Inferencer, None, None]:
         yield from self.__inferencers.values()
 

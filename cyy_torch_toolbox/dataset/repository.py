@@ -1,6 +1,6 @@
 import copy
 from collections.abc import Callable
-from typing import Any
+from typing import Any, override
 
 from cyy_naive_lib.log import log_debug, log_error, log_info
 from cyy_naive_lib.reflection import get_kwarg_names
@@ -11,6 +11,7 @@ from .factory import global_dataset_util_factor
 
 
 class DatasetFactory(Factory):
+    @override
     def get(
         self, key: Any, case_sensitive: bool = True, default: Any = None, **kwargs: Any
     ) -> Any:

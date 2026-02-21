@@ -3,7 +3,7 @@ import functools
 import json
 import os
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, override
 
 from cyy_naive_lib.log import log_info
 from cyy_preprocessing_pipeline import (
@@ -241,6 +241,7 @@ class IIDSplitWithFlip(IIDSplit):
             return DatasetUtil.replace_target(target, flipped_indices[index])
         return target
 
+    @override
     def sample(self, part_index: int) -> DatasetCollection:
         dc = super().sample(part_index=part_index)
         for phase in self.get_phases():
