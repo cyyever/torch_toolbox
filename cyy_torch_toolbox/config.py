@@ -1,7 +1,7 @@
 import copy
 import datetime
-import os
 import uuid
+from pathlib import Path
 from typing import Any
 
 from cyy_naive_lib.log import log_debug, log_error, set_level
@@ -19,7 +19,7 @@ from .trainer import Trainer, TrainerConfig
 class Config(ConfigBase):
     def __init__(self, dataset_name: str = "", model_name: str = "") -> None:
         super().__init__()
-        self.save_dir: str = ""
+        self.save_dir: Path | None = None
         self.log_level: int | str | None = None
         self.reproducible_env_config = ReproducibleEnvConfig()
         self.dc_config: DatasetCollectionConfig = DatasetCollectionConfig(dataset_name)
@@ -28,7 +28,11 @@ class Config(ConfigBase):
         self.trainer_config = TrainerConfig()
 
     def load_config(self, conf: Any, check_config: bool = True) -> dict[str, Any]:
-        return self.__load_config(self, conf, check_config)
+        result = self.__load_config(self, conf, check_config)
+        # Normalize save_dir from OmegaConf str to Path
+        if isinstance(self.save_dir, str):
+            self.save_dir = Path(self.save_dir)
+        return result
 
     def create_dataset_collection(self) -> DatasetCollection:
         log_debug("use dataset %s", self.dc_config.dataset_name)
@@ -96,43 +100,49 @@ class Config(ConfigBase):
             assert not conf_container, conf_container
         return conf_container
 
-    def get_save_dir(self) -> str:
-        if not self.save_dir:
+    def get_save_dir(self) -> Path:
+        if self.save_dir is None:
             model_name = self.model_config.model_name
             if not model_name:
                 model_name = "custom_model"
             date = datetime.datetime.now()
-            self.save_dir = os.path.join(
-                "session",
-                self.dc_config.dataset_name,
-                model_name,
-                f"{date:%Y-%m-%d_%H_%M_%S}",
-                str(uuid.uuid4()),
+            self.save_dir = (
+                Path("session")
+                / self.dc_config.dataset_name
+                / model_name
+                / f"{date:%Y-%m-%d_%H_%M_%S}"
+                / str(uuid.uuid4())
             )
         return self.save_dir
 
-    def fix_paths(self, project_path: str) -> None:
+    def fix_paths(self, project_path: str | Path) -> None:
+        project_path = Path(project_path)
         for k, v in self.dc_config.dataset_kwargs.items():
             if k not in ("train_files", "test_files", "validation_files"):
                 continue
-            data_dir = self.dc_config.dataset_kwargs.get(
-                "data_dir", os.path.join(project_path, "data")
+            data_dir = Path(
+                self.dc_config.dataset_kwargs.get("data_dir", project_path / "data")
             )
             if k == "train_files":
-                data_dir = self.dc_config.dataset_kwargs.get("train_data_dir", data_dir)
+                data_dir = Path(
+                    self.dc_config.dataset_kwargs.get("train_data_dir", data_dir)
+                )
             elif k == "test_files":
-                data_dir = self.dc_config.dataset_kwargs.get("test_data_dir", data_dir)
+                data_dir = Path(
+                    self.dc_config.dataset_kwargs.get("test_data_dir", data_dir)
+                )
             elif k == "validation_files":
-                data_dir = self.dc_config.dataset_kwargs.get(
-                    "validation_data_dir", data_dir
+                data_dir = Path(
+                    self.dc_config.dataset_kwargs.get("validation_data_dir", data_dir)
                 )
             files = v
             if isinstance(v, str):
                 files = [v]
             new_files = []
             for file in files:
-                if not file.startswith("/"):
-                    file = str(os.path.join(data_dir, file))
-                    assert os.path.isfile(file), file
-                new_files.append(file)
+                file_path = Path(file)
+                if not file_path.is_absolute():
+                    file_path = data_dir / file
+                    assert file_path.is_file(), str(file_path)
+                new_files.append(file_path)
             self.dc_config.dataset_kwargs[k] = new_files

@@ -1,5 +1,4 @@
 import datetime
-import os
 import threading
 from typing import Any, override
 
@@ -28,9 +27,7 @@ class MetricTensorBoard(MetricVisualizer):
     @property
     def writer(self) -> SummaryWriter:
         if self.__writer is None:
-            self.__writer = SummaryWriter(
-                log_dir=os.path.join(self.data_dir, self.prefix)
-            )
+            self.__writer = SummaryWriter(log_dir=self.data_dir / self.prefix)
         return self.__writer
 
     def _before_execute(self, executor, **kwargs: Any) -> None:

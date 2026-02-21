@@ -2,9 +2,9 @@ import abc
 import copy
 import functools
 import gc
-import os
 from collections.abc import Callable, Generator
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, override
 
 import torch
@@ -98,7 +98,7 @@ class Executor(HookCollection, abc.ABC):
             copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
         )
         self.__stream: None | torch.Stream = None
-        self.__save_dir: None | str = None
+        self.__save_dir: Path | None = None
         self.__visualizer_prefix: str = ""
         self.set_default_device: bool = False
 
@@ -194,9 +194,9 @@ class Executor(HookCollection, abc.ABC):
         kwargs["executor"] = self
         super().exec_hooks(hook_point=hook_point, **kwargs)
 
-    def set_save_dir(self, save_dir: str) -> None:
-        self.__save_dir = save_dir
-        data_dir = os.path.join(save_dir, "visualizer")
+    def set_save_dir(self, save_dir: str | Path) -> None:
+        self.__save_dir = Path(save_dir)
+        data_dir = self.__save_dir / "visualizer"
         for hook in self._hook_objs.values():
             if isinstance(hook, MetricVisualizer):
                 hook.set_data_dir(data_dir)
@@ -214,7 +214,7 @@ class Executor(HookCollection, abc.ABC):
         return self.__visualizer_prefix
 
     @property
-    def save_dir(self) -> None | str:
+    def save_dir(self) -> Path | None:
         return self.__save_dir
 
     @functools.cached_property
@@ -287,7 +287,7 @@ class Executor(HookCollection, abc.ABC):
 
     def _prepare_execution(self) -> None:
         self.hook_config.set_hooks(self)
-        if self.save_dir:
+        if self.save_dir is not None:
             self.set_save_dir(self.save_dir)
         if self.__visualizer_prefix:
             self.set_visualizer_prefix(self.__visualizer_prefix)
@@ -332,7 +332,7 @@ class Executor(HookCollection, abc.ABC):
     def _foreach_sub_executor(self) -> Generator["Executor", None, None]:
         yield from []
 
-    def save_model(self, model_path: str) -> None:
+    def save_model(self, model_path: str | Path) -> None:
         torch.save(self.model.state_dict(), model_path)
 
     def offload_from_device(self) -> None:

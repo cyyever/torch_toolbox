@@ -1,5 +1,5 @@
 import json
-import os
+from pathlib import Path
 from typing import Any
 
 from cyy_naive_lib.log import log_info
@@ -91,14 +91,14 @@ class DatasetCollectionConfig:
         self.dataset_name: str = dataset_name
         self.dataset_kwargs: dict[str, Any] = {}
         self.training_dataset_percentage: float | None = None
-        self.training_dataset_indices_path: str | None = None
-        self.training_dataset_label_map_path: str | None = None
+        self.training_dataset_indices_path: Path | None = None
+        self.training_dataset_label_map_path: Path | None = None
         self.training_dataset_label_map: dict[str, Any] | None = None
         self.training_dataset_label_noise_percentage: float | None = None
         self.keep_phases: None | set[MachineLearningPhase] = None
 
     def create_dataset_collection(
-        self, save_dir: str | None = None
+        self, save_dir: str | Path | None = None
     ) -> DatasetCollection:
         assert self.dataset_name is not None
         if "dataset_type" in self.dataset_kwargs:
@@ -127,7 +127,7 @@ class DatasetCollectionConfig:
         return dc
 
     def __transform_training_dataset(
-        self, dc: DatasetCollection, save_dir: str | None = None
+        self, dc: DatasetCollection, save_dir: str | Path | None = None
     ) -> None:
         subset_indices = None
         dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
@@ -136,7 +136,7 @@ class DatasetCollectionConfig:
             subset_indices = sum(subset_dict.values(), [])
             assert save_dir is not None
             with open(
-                os.path.join(save_dir, "training_dataset_indices.json"),
+                Path(save_dir) / "training_dataset_indices.json",
                 mode="w",
                 encoding="utf-8",
             ) as f:
@@ -160,10 +160,7 @@ class DatasetCollectionConfig:
             )
             assert save_dir is not None
             with open(
-                os.path.join(
-                    save_dir,
-                    "training_dataset_label_map.json",
-                ),
+                Path(save_dir) / "training_dataset_label_map.json",
                 mode="w",
                 encoding="utf-8",
             ) as f:

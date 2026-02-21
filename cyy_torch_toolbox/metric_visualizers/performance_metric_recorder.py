@@ -1,5 +1,4 @@
 import json
-import os
 import re
 from typing import Any
 
@@ -15,13 +14,13 @@ class PerformanceMetricRecorder(MetricVisualizer):
         prefix = re.sub(r"[: ,]+", "_", prefix)
 
         assert self._data_dir is not None
-        json_filename = os.path.join(
-            self._data_dir, prefix, str(executor.phase), "performance_metric.json"
+        json_path = (
+            self._data_dir / prefix / str(executor.phase) / "performance_metric.json"
         )
-        os.makedirs(os.path.dirname(json_filename), exist_ok=True)
+        json_path.parent.mkdir(parents=True, exist_ok=True)
         json_record = {}
-        if os.path.isfile(json_filename):
-            with open(json_filename, encoding="utf8") as f:
+        if json_path.is_file():
+            with open(json_path, encoding="utf8") as f:
                 json_record = json.load(f)
         epoch_metrics = executor.performance_metric.get_epoch_metrics(epoch)
         if not epoch_metrics and executor.phase != MachineLearningPhase.Training:
@@ -36,5 +35,5 @@ class PerformanceMetricRecorder(MetricVisualizer):
             if isinstance(value, torch.Tensor):
                 value = value.detach().item()
             json_record[k][epoch] = value
-        with open(json_filename, "w", encoding="utf8") as f:
+        with open(json_path, "w", encoding="utf8") as f:
             json.dump(json_record, f)
