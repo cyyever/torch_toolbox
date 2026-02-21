@@ -20,7 +20,9 @@ class Metric(Hook):
     def get_epoch_metrics(self, epoch: int, to_item: bool = True) -> dict[str, Any]:
         return self.get_metrics(metric_type="epoch", key=epoch, to_item=to_item)
 
-    def get_metrics(self, metric_type: str, key: int, to_item: bool = True) -> dict[str, Any]:
+    def get_metrics(
+        self, metric_type: str, key: int, to_item: bool = True
+    ) -> dict[str, Any]:
         metric: dict[str, Any] = {}
         match metric_type:
             case "epoch":

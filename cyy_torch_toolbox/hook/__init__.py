@@ -9,7 +9,7 @@ class Hook:
     def __init__(self, stripable: bool = False) -> None:
         self.__stripable: bool = stripable
         self.is_cyy_torch_toolbox_hook: bool = True
-        self._sub_hooks: list["Hook"] = []
+        self._sub_hooks: list[Hook] = []
         self._enabled: bool = True
 
     def __setattr__(self, name: str, value: Any) -> None:
@@ -41,7 +41,9 @@ class Hook:
         for _, name, __ in self.yield_hooks():
             yield name
 
-    def __get_hook(self, hook_point: ExecutorHookPoint) -> tuple[ExecutorHookPoint, str, Callable[..., Any]] | None:
+    def __get_hook(
+        self, hook_point: ExecutorHookPoint
+    ) -> tuple[ExecutorHookPoint, str, Callable[..., Any]] | None:
         if not self._enabled:
             return None
         method_name = "_" + str(hook_point).rsplit(".", maxsplit=1)[-1].lower()
@@ -50,7 +52,9 @@ class Hook:
             return (hook_point, name, getattr(self, method_name))
         return None
 
-    def yield_hooks(self) -> Generator[tuple[ExecutorHookPoint, str, Callable[..., Any]], None, None]:
+    def yield_hooks(
+        self,
+    ) -> Generator[tuple[ExecutorHookPoint, str, Callable[..., Any]], None, None]:
         if not self._enabled:
             return
         for c in self._sub_hooks:
@@ -69,7 +73,9 @@ class HookCollection:
         self.__disabled_hooks: set[str] = set()
         self._hook_objs: dict[str, Hook] = {}
 
-    def __iterate_hooks(self, hook_point: ExecutorHookPoint) -> Generator[Callable[..., Any], None, None]:
+    def __iterate_hooks(
+        self, hook_point: ExecutorHookPoint
+    ) -> Generator[Callable[..., Any], None, None]:
         for hook in copy.copy(self._hooks.get(hook_point, [])):
             for name, fun in copy.copy(hook).items():
                 if name not in self.__disabled_hooks:

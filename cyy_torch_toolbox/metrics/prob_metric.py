@@ -11,7 +11,12 @@ class ProbabilityMetric(ClassificationMetric):
         return self.get_epoch_metric(epoch, "prob")
 
     def _after_batch(
-        self, executor: Any, epoch: int, result: dict[str, Any], sample_indices: Any, **kwargs: Any
+        self,
+        executor: Any,
+        epoch: int,
+        result: dict[str, Any],
+        sample_indices: Any,
+        **kwargs: Any,
     ) -> None:
         output, _ = self._get_output(executor, result)
         last_layer = executor.model_util.get_last_underlying_module()

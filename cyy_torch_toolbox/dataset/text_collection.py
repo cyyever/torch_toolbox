@@ -11,7 +11,9 @@ if TYPE_CHECKING:
     from ..tokenizer import Tokenizer
 
 
-def format_prompt(prompt: str, tokenizer: "Tokenizer", example: str | dict) -> str | dict:
+def format_prompt(
+    prompt: str, tokenizer: "Tokenizer", example: str | dict
+) -> str | dict:
     if isinstance(example, str):
         log_debug("final input is %s", prompt + example)
         return prompt + example

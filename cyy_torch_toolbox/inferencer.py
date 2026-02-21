@@ -96,7 +96,10 @@ class Inferencer(Executor):
         callback(kwargs)
 
     def _get_sample_output(
-        self, evaluation_mode: EvaluationMode, evaluation_kwargs: dict[str, Any], hook: Callable
+        self,
+        evaluation_mode: EvaluationMode,
+        evaluation_kwargs: dict[str, Any],
+        hook: Callable,
     ) -> dict[int, Any]:
         result: dict[int, Any] = {}
         with self.hook_config:

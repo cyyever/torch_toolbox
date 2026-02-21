@@ -77,7 +77,12 @@ class SyncedStreamContext:
                 self.__stream.wait_stream(torch.cuda.default_stream(device))
         return self
 
-    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any,
+    ) -> None:
         if isinstance(self.__stream, torch.Stream):
             self.__stream.synchronize()
             assert self.__stream.query()
@@ -93,5 +98,10 @@ class DefaultDeviceContext:
         torch.set_default_device(self.__device)
         return self
 
-    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: Any,
+    ) -> None:
         torch.set_default_device(self.__previous_device)

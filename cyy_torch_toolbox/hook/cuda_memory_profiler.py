@@ -39,7 +39,12 @@ class CUDAMemoryProfiler(Hook):
             )
 
     def __compute_gpu_memory_assumption(
-        self, module_name: str, hook_idx: int, module: torch.nn.Module, *args: Any, **kwargs: Any
+        self,
+        module_name: str,
+        hook_idx: int,
+        module: torch.nn.Module,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         cur_used_memory = torch.cuda.memory_allocated()
         self.__used_memory.append((module_name, float(cur_used_memory) / 1024 / 1024))
