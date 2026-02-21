@@ -83,12 +83,16 @@ class Executor(HookCollection, abc.ABC):
         self.__auto_create_model = auto_create_model
         self.__model_evaluator: ModelEvaluator | None = None
         self.__phase: MachineLearningPhase = phase
-        self.__hyper_parameters: dict[MachineLearningPhase, HyperParameter] = {phase: copy.deepcopy(hyper_parameter)}
+        self.__hyper_parameters: dict[MachineLearningPhase, HyperParameter] = {
+            phase: copy.deepcopy(hyper_parameter)
+        }
         if not hook_config:
             hook_config = HookConfig()
         self.hook_config: HookConfig = copy.deepcopy(hook_config)
         self.__device: None | torch.device = None
-        self.__device_fun: Callable[..., torch.device] = DeviceGreedyAllocator.get_device
+        self.__device_fun: Callable[..., torch.device] = (
+            DeviceGreedyAllocator.get_device
+        )
         self.__dataloader: None | torch.utils.data.DataLoader = None
         self.__dataloader_kwargs: dict[str, Any] = (
             copy.deepcopy(dataloader_kwargs) if dataloader_kwargs is not None else {}
@@ -275,7 +279,9 @@ class Executor(HookCollection, abc.ABC):
     def replace_model(self, fun: Callable[[torch.nn.Module], torch.nn.Module]) -> None:
         self.running_model_evaluator.set_model(fun(self.model))
 
-    def replace_model_evaluator(self, fun: Callable[[ModelEvaluator], ModelEvaluator]) -> None:
+    def replace_model_evaluator(
+        self, fun: Callable[[ModelEvaluator], ModelEvaluator]
+    ) -> None:
         self.wait_stream()
         self.__model_evaluator = fun(self.model_evaluator)
 

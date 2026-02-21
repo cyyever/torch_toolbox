@@ -25,7 +25,9 @@ class HyperParameter:
     learning_rate_scheduler_name: str = "ReduceLROnPlateau"
     learning_rate_scheduler_kwargs: dict[str, Any] = field(default_factory=dict)
     optimizer_name: str = "AdamW"
-    optimizer_kwargs: dict[str, Any] = field(default_factory=lambda: {"fake_weight_decay": 1.0})
+    optimizer_kwargs: dict[str, Any] = field(
+        default_factory=lambda: {"fake_weight_decay": 1.0}
+    )
 
     def get_iterations_per_epoch(self, dataset_size: int) -> int:
         if self.batch_size == 1:

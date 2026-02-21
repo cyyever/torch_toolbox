@@ -126,7 +126,9 @@ class DatasetCollectionConfig:
             self.__transform_training_dataset(dc=dc, save_dir=save_dir)
         return dc
 
-    def __transform_training_dataset(self, dc: DatasetCollection, save_dir: str | None = None) -> None:
+    def __transform_training_dataset(
+        self, dc: DatasetCollection, save_dir: str | None = None
+    ) -> None:
         subset_indices = None
         dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
         if self.training_dataset_percentage is not None:

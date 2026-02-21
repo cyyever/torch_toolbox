@@ -67,7 +67,9 @@ class Config(ConfigBase):
         self.reproducible_env_config.set_reproducible_env(self.get_save_dir())
 
     @classmethod
-    def __load_config(cls, obj: Any, conf: Any, check_config: bool = True) -> dict[str, Any]:
+    def __load_config(
+        cls, obj: Any, conf: Any, check_config: bool = True
+    ) -> dict[str, Any]:
         if not isinstance(conf, dict):
             conf_container: Any = OmegaConf.to_container(conf)
         else:

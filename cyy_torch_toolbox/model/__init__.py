@@ -66,7 +66,9 @@ def create_model(constructor: Callable[..., Any], **kwargs: Any) -> Any:
 
 
 def get_model(
-    name: str, model_kwargs: dict[str, Any], dataset_collection: DatasetCollection | None = None
+    name: str,
+    model_kwargs: dict[str, Any],
+    dataset_collection: DatasetCollection | None = None,
 ) -> dict[str, Any]:
     model_kwargs = copy.copy(model_kwargs)
     factories = []

@@ -213,7 +213,9 @@ class ModelUtil:
         return self.change_modules(f=freeze, **kwargs)
 
     def unfreeze_modules(self, **kwargs: Any) -> bool:
-        def unfreeze(name: str, module: torch.nn.Module, model_util: "ModelUtil") -> None:
+        def unfreeze(
+            name: str, module: torch.nn.Module, model_util: "ModelUtil"
+        ) -> None:
             parameter_dict: ModelParameter = {}
             if not hasattr(module, "frozen_parameters"):
                 log_debug("nothing to unfreeze")
