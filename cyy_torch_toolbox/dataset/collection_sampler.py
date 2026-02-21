@@ -1,8 +1,8 @@
 import copy
 import functools
 import json
-import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, override
 
 from cyy_naive_lib.log import log_info
@@ -21,7 +21,7 @@ from .collection import DatasetCollection
 @dataclass(kw_only=True)
 class SampleInfo:
     indices: set[int] | list[int] | None = None
-    file_path: str | None = None
+    file_path: Path | None = None
     whole_dataset: bool = False
 
     def sample(self, dc: DatasetCollection, phase: MachineLearningPhase) -> None:
@@ -30,7 +30,7 @@ class SampleInfo:
             dc.set_subset(phase=phase, indices=set(self.indices))
             return
         if self.file_path is not None:
-            file_path: str = self.file_path
+            file_path = self.file_path
             dc.transform_dataset(
                 phase=phase,
                 transformer=lambda dataset_util: DatasetWithIndex().apply(
@@ -97,8 +97,8 @@ class SamplerBase(Base):
             dc.set_subset(phase=phase, indices=set(indices))
         return dc
 
-    def save(self, save_dir: str) -> None:
-        with open(os.path.join(save_dir, "sampler.json"), "w", encoding="utf8") as f:
+    def save(self, save_dir: str | Path) -> None:
+        with open(Path(save_dir) / "sampler.json", "w", encoding="utf8") as f:
             json.dump(self._sample_info, f)
 
 
@@ -147,11 +147,11 @@ class SplitBase(Base):
             return None
         assert len(files) == self._part_number
         for file in files:
-            if f"worker_{part_index}" in os.path.basename(file):
+            if f"worker_{part_index}" in Path(file).name:
                 log_info("use path %s for index %s", file, part_index)
-                return SampleInfo(file_path=file)
+                return SampleInfo(file_path=Path(file))
         log_info("use path %s for index %s", files[part_index], part_index)
-        return SampleInfo(file_path=files[part_index])
+        return SampleInfo(file_path=Path(files[part_index]))
 
     def set_split_indices(
         self, phase: MachineLearningPhase, index_result: dict[int, set[int] | list[int]]

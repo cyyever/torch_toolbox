@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 from typing import Any
 
 from cyy_naive_lib.storage import DataStorage
@@ -19,9 +19,9 @@ class KeepModelHook(Hook):
     def best_model(self) -> dict[str, Any] | None:
         return self.__best_model.data
 
-    def __get_model_dir(self, root_dir: str) -> str:
-        model_dir = os.path.join(root_dir, "model")
-        os.makedirs(model_dir, exist_ok=True)
+    def __get_model_dir(self, root_dir: Path) -> Path:
+        model_dir = root_dir / "model"
+        model_dir.mkdir(parents=True, exist_ok=True)
         return model_dir
 
     def _before_execute(self, **kwargs: Any) -> None:
@@ -33,9 +33,7 @@ class KeepModelHook(Hook):
     def _after_validation(self, executor, epoch: int, **kwargs: Any) -> None:
         trainer = executor
         if self.save_epoch_model:
-            model_path = os.path.join(
-                self.__get_model_dir(trainer.save_dir), f"epoch_{epoch}.pt"
-            )
+            model_path = self.__get_model_dir(trainer.save_dir) / f"epoch_{epoch}.pt"
             trainer.save_model(model_path)
 
         if not self.save_best_model and not self.keep_best_model:
@@ -70,15 +68,13 @@ class KeepModelHook(Hook):
         if self.save_best_model:
             assert trainer.save_dir is not None
             self.__best_model.set_data_path(
-                os.path.join(self.__get_model_dir(trainer.save_dir), "best_model.pk")
+                self.__get_model_dir(trainer.save_dir) / "best_model.pk"
             )
             self.__best_model.save()
 
     def _after_execute(self, executor, **kwargs: Any) -> None:
         trainer = executor
         if self.save_last_model:
-            trainer.save_model(
-                os.path.join(self.__get_model_dir(trainer.save_dir), "last.pt")
-            )
+            trainer.save_model(self.__get_model_dir(trainer.save_dir) / "last.pt")
         if self.save_best_model:
             self.__best_model.save()

@@ -1,5 +1,6 @@
 import copy
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any, override
 
 from cyy_naive_lib.log import log_debug, log_error, log_info
@@ -51,7 +52,7 @@ def register_dataset_constructors(
 
 
 def __prepare_dataset_kwargs(
-    constructor_kwargs: set[str], dataset_kwargs: dict[str, Any], cache_dir: str
+    constructor_kwargs: set[str], dataset_kwargs: dict[str, Any], cache_dir: str | Path
 ) -> Callable[..., Any]:
     new_dataset_kwargs: dict[str, Any] = copy.deepcopy(dataset_kwargs)
     if "download" not in new_dataset_kwargs:
@@ -118,7 +119,7 @@ def __create_dataset(
     dataset_type: DatasetType,
     dataset_constructor: Callable[..., Any],
     dataset_kwargs: dict[str, Any],
-    cache_dir: str,
+    cache_dir: str | Path,
 ) -> tuple[DatasetType, dict[MachineLearningPhase, Any]] | None:
     dataset_kwargs_fun = __prepare_dataset_kwargs(
         constructor_kwargs=get_kwarg_names(dataset_constructor),
@@ -196,7 +197,7 @@ def __create_dataset(
 
 
 def get_dataset(
-    name: str, dataset_kwargs: dict[str, Any], cache_dir: str
+    name: str, dataset_kwargs: dict[str, Any], cache_dir: str | Path
 ) -> None | tuple[DatasetType, dict[MachineLearningPhase, Any]]:
     real_dataset_type = dataset_kwargs.get("dataset_type")
     similar_names = []

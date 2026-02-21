@@ -1,5 +1,4 @@
 import copy
-import os
 import traceback
 from collections.abc import Callable, Generator, Iterable
 from typing import Any, Self
@@ -223,4 +222,4 @@ class DatasetCollection:
     def get_cached_data(self, file: str, computation_fun: Callable[..., Any]) -> Any:
         assert self.name is not None
         cache_dir = DatasetCache().get_dataset_cache_dir(self.name)
-        return get_cached_data(os.path.join(cache_dir, file), computation_fun)
+        return get_cached_data(cache_dir / file, computation_fun)

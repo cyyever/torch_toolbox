@@ -1,7 +1,7 @@
 import copy
-import os
 import sys
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -125,8 +125,8 @@ def get_model(
         repo_owner, repo_name, ref = torch.hub._parse_repo_info(repo)
         normalized_br = ref.replace("/", "_")
         owner_name_branch = "_".join([repo_owner, repo_name, normalized_br])
-        repo_dir = os.path.join(hub_dir, owner_name_branch)
-        sys.path.append(repo_dir)
+        repo_dir = Path(hub_dir) / owner_name_branch
+        sys.path.append(str(repo_dir))  # sys.path requires str
     if not isinstance(res, dict):
         res = {"model": res}
     if model_type in (ModelType.TokenClassification,):

@@ -1,5 +1,5 @@
-import os
 import sys
+from pathlib import Path
 from typing import Any
 
 import hydra
@@ -8,7 +8,7 @@ from omegaconf import OmegaConf
 
 
 def load_combined_config_from_files(
-    config_path: str, other_config_files: list[str] | None = None
+    config_path: str | Path, other_config_files: list[str | Path] | None = None
 ) -> Any:
     # disable hydra output dir
     for option in [
@@ -27,15 +27,18 @@ def load_combined_config_from_files(
         )
     other_confs = [OmegaConf.load(file) for file in other_config_files]
     conf_obj: Any = None
-    config_path = os.path.abspath(config_path)
-    config_name = None
-    if config_path.endswith(".yaml"):
-        config_name = os.path.basename(config_path).removesuffix(".yaml")
-        config_path = os.path.dirname(config_path)
+    resolved_path = Path(config_path).resolve()
+    config_name_str: str | None = None
+    config_path_str: str
+    if resolved_path.suffix == ".yaml":
+        config_name_str = resolved_path.stem
+        config_path_str = str(resolved_path.parent)  # hydra.main requires str
+    else:
+        config_path_str = str(resolved_path)  # hydra.main requires str
 
     @hydra.main(
-        config_path=config_path,
-        config_name=config_name,
+        config_path=config_path_str,
+        config_name=config_name_str,
         version_base=None,
     )
     def load_config_hydra(conf: Any) -> None:

@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, override
 
 import torch
@@ -77,9 +78,9 @@ global_reproducible_env: ReproducibleEnv = ReproducibleEnv()
 @dataclass(kw_only=True)
 class ReproducibleEnvConfig:
     make_reproducible_env: bool = True
-    reproducible_env_load_path: str | None = None
+    reproducible_env_load_path: Path | None = None
 
-    def set_reproducible_env(self, save_dir: str | None = None) -> None:
+    def set_reproducible_env(self, save_dir: str | Path | None = None) -> None:
         if self.reproducible_env_load_path is not None:
             assert not global_reproducible_env.enabled
             global_reproducible_env.load(self.reproducible_env_load_path)
