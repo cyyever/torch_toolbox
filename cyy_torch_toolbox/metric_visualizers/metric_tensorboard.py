@@ -31,7 +31,7 @@ class MetricTensorBoard(MetricVisualizer):
         return self.__writer
 
     def _before_execute(self, executor, **kwargs: Any) -> None:
-        if self.prefix is None:
+        if not self.prefix:
             date = datetime.datetime.now()
             self.set_prefix(
                 "training_"
