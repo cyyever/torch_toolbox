@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Self
 
 import psutil
@@ -36,9 +37,12 @@ def get_device_memory_info(
 
 
 def set_device(device: torch.device) -> None:
-    backend = getattr(torch, device.type, None)
-    if backend is not None and hasattr(backend, "set_device"):
-        backend.set_device(device)
+    warnings.warn(
+        "set_device() is deprecated, use torch.accelerator.set_device_index() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    torch.accelerator.set_device_index(device)
 
 
 class DeviceGreedyAllocator:
@@ -70,10 +74,9 @@ class SyncedStreamContext:
 
     def __enter__(self) -> Self:
         if isinstance(self.__stream, torch.Stream):
-            device = self.__stream.device
-            backend = getattr(torch, device.type, None)
-            if backend is not None and hasattr(backend, "default_stream"):
-                self.__stream.wait_stream(backend.default_stream(device))
+            self.__stream.wait_stream(
+                torch.accelerator.current_stream(self.__stream.device)
+            )
         return self
 
     def __exit__(
