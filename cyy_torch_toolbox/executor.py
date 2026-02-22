@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any, override
 
 import torch
-import torch.cuda
 import torch.utils.data
 from cyy_naive_lib.log import log_debug
 from cyy_preprocessing_pipeline import DatasetUtil
@@ -342,7 +341,10 @@ class Executor(HookCollection, abc.ABC):
         for executor in self._foreach_sub_executor():
             executor.offload_from_device()
         gc.collect()
-        torch.cuda.empty_cache()
+        if self.__device is not None:
+            backend = getattr(torch, self.__device.type, None)
+            if backend is not None and hasattr(backend, "empty_cache"):
+                backend.empty_cache()
 
     def has_optimizer(self) -> bool:
         return "optimizer" in self._data

@@ -36,11 +36,9 @@ def get_device_memory_info(
 
 
 def set_device(device: torch.device) -> None:
-    match device.type.lower():
-        case "cuda":
-            torch.cuda.set_device(device)
-        case "xpu":
-            torch.xpu.set_device(device)
+    backend = getattr(torch, device.type, None)
+    if backend is not None and hasattr(backend, "set_device"):
+        backend.set_device(device)
 
 
 class DeviceGreedyAllocator:
@@ -73,8 +71,9 @@ class SyncedStreamContext:
     def __enter__(self) -> Self:
         if isinstance(self.__stream, torch.Stream):
             device = self.__stream.device
-            if "cuda" in device.type.lower():
-                self.__stream.wait_stream(torch.cuda.default_stream(device))
+            backend = getattr(torch, device.type, None)
+            if backend is not None and hasattr(backend, "default_stream"):
+                self.__stream.wait_stream(backend.default_stream(device))
         return self
 
     def __exit__(
