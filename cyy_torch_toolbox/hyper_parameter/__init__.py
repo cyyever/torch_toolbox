@@ -44,7 +44,7 @@ class HyperParameter:
         optimizer = trainer.get_optimizer()
         default_kwargs: dict[str, Any] = {}
         default_kwargs["optimizer"] = optimizer
-        fun = getattr(torch.optim.lr_scheduler, name)
+        fun = getattr(torch.optim.lr_scheduler, name, None)
         if fun is None:
             raise RuntimeError("Unknown learning rate scheduler:" + name)
         match self.learning_rate_scheduler_name:
@@ -68,7 +68,6 @@ class HyperParameter:
                 default_kwargs["T_max"] = self.epoch
             case "MultiStepLR":
                 default_kwargs["milestones"] = [30, 80]
-        fun = getattr(torch.optim.lr_scheduler, name)
         default_kwargs.update(self.learning_rate_scheduler_kwargs)
         return fun(**default_kwargs)
 
@@ -108,7 +107,7 @@ class HyperParameter:
     def __get_learning_rate_scheduler_classes() -> dict[str, type]:
         return get_class_attrs(
             torch.optim.lr_scheduler,
-            filter_fun=lambda _, v: issubclass(v, torch.optim.Optimizer),
+            filter_fun=lambda _, v: issubclass(v, torch.optim.lr_scheduler.LRScheduler),
         )
 
 

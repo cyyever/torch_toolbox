@@ -37,7 +37,7 @@ class Trainer(Executor):
         # capture what is normally pickled
         state = super().__getstate__()
         state["_Trainer__inferencers"] = {}
-        state["_Trainer__optimizer_parameters"] = None
+        state["_Executor__data"].pop("optimizer_parameters", None)
         return state
 
     def get_cached_inferencer(self, phase: MachineLearningPhase) -> Inferencer | None:

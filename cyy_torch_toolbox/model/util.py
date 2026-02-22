@@ -102,8 +102,8 @@ class ModelUtil:
         name: str,
         grad: torch.Tensor,
     ) -> None:
-        module = self.model.get_submodule(name)
-        module.grad = grad
+        parameter = self.model.get_parameter(name)
+        parameter.grad = grad
 
     def set_attr(
         self,

@@ -342,9 +342,7 @@ class Executor(HookCollection, abc.ABC):
             executor.offload_from_device()
         gc.collect()
         if self.__device is not None:
-            backend = getattr(torch, self.__device.type, None)
-            if backend is not None and hasattr(backend, "empty_cache"):
-                backend.empty_cache()
+            torch.accelerator.empty_cache()
 
     def has_optimizer(self) -> bool:
         return "optimizer" in self._data
