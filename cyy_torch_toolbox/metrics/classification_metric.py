@@ -28,7 +28,7 @@ class ClassificationMetric(Metric):
     def _before_epoch(self, **kwargs: Any) -> None:
         self._metric = None
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def _get_task(
         self, executor: "Executor"
     ) -> Literal["binary", "multiclass", "multilabel"]:
@@ -46,12 +46,12 @@ class ClassificationMetric(Metric):
         self._task_type = "multiclass"
         return self._task_type
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def _get_output(
         self, executor: "Executor", result: dict[str, Any]
     ) -> tuple[torch.Tensor, torch.Tensor]:
         targets: torch.Tensor = result["targets"].detach()
-        if targets.dtype is torch.float:
+        if targets.dtype == torch.float:
             targets = targets.to(dtype=torch.long, non_blocking=True)
 
         output = result.get("logits")

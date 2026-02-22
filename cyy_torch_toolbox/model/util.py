@@ -204,7 +204,7 @@ class ModelUtil:
             module.frozen_parameters = set()
             parameter_dict: ModelParameter = {}
             for param_name, parameter in module.named_parameters():
-                parameter_dict[name + "." + param_name] = parameter.data
+                parameter_dict[name + "." + param_name] = parameter.detach()
                 module.frozen_parameters.add(param_name)
 
             for k, v in parameter_dict.items():

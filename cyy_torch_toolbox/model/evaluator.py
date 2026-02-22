@@ -229,7 +229,7 @@ class ModelEvaluator:
             output = output.view(-1)
         match loss_fun:
             case nn.BCEWithLogitsLoss():
-                if targets.dtype is torch.long or targets.dtype is torch.int:
+                if targets.dtype == torch.long or targets.dtype == torch.int:
                     convert_kwargs["dtype"] = torch.float
         targets = targets.to(**convert_kwargs, non_blocking=True)
         loss = loss_fun(output, targets)
