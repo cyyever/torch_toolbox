@@ -51,7 +51,7 @@ class AMPModelEvaluator(Decorator):
             else contextlib.nullcontext(),
             self.__amp_ctx,
         ):
-            return self.evaluator.__call__(**kwargs)
+            return self.evaluator.__call__(device=device, **kwargs)
 
     def backward_and_step(
         self,
