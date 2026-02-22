@@ -1,4 +1,3 @@
-import warnings
 from typing import Any, Self
 
 import psutil
@@ -34,15 +33,6 @@ def get_device_memory_info(
                 )
             }
     raise NotImplementedError(device_type)
-
-
-def set_device(device: torch.device) -> None:
-    warnings.warn(
-        "set_device() is deprecated, use torch.accelerator.set_device_index() instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    torch.accelerator.set_device_index(device)
 
 
 class DeviceGreedyAllocator:

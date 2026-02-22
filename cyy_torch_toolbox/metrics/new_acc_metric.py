@@ -7,7 +7,7 @@ from .classification_metric import ClassificationMetric
 
 
 class NewAccuracyMetric(ClassificationMetric):
-    @torch.no_grad()
+    @torch.inference_mode()
     def _after_batch(self, result: dict[str, Any], **kwargs: Any) -> None:
         executor = kwargs["executor"]
         if self._metric is None:
