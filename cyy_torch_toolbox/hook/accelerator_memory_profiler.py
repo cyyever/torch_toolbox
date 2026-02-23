@@ -7,7 +7,7 @@ from cyy_naive_lib.log import log_info
 from . import Hook
 
 
-class CUDAMemoryProfiler(Hook):
+class AcceleratorMemoryProfiler(Hook):
     def __init__(self, *args, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.__hooks: list[Any] = []
@@ -26,19 +26,19 @@ class CUDAMemoryProfiler(Hook):
                 continue
             if not any(True for _ in module.parameters()):
                 continue
-            cur_used_memory = torch.cuda.memory_allocated()
+            cur_used_memory = torch.accelerator.memory_allocated()
             self.__used_memory.append(("", float(cur_used_memory) / 1024 / 1024))
             self.__hooks.append(
                 module.register_forward_hook(
                     functools.partial(
-                        self.__compute_gpu_memory_assumption,
+                        self.__compute_memory_usage,
                         module_name,
                         len(self.__hooks),
                     )
                 )
             )
 
-    def __compute_gpu_memory_assumption(
+    def __compute_memory_usage(
         self,
         module_name: str,
         hook_idx: int,
@@ -46,10 +46,10 @@ class CUDAMemoryProfiler(Hook):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        cur_used_memory = torch.cuda.memory_allocated()
+        cur_used_memory = torch.accelerator.memory_allocated()
         self.__used_memory.append((module_name, float(cur_used_memory) / 1024 / 1024))
         log_info(
-            "%.1f MB CUDA memory is used for module %s",
+            "%.1f MB accelerator memory is used for module %s",
             self.__used_memory[-1][1] - self.__used_memory[-2][1],
             self.__used_memory[-1][0],
         )

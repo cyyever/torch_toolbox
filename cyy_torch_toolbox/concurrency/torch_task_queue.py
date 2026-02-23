@@ -7,7 +7,7 @@ from cyy_naive_lib.concurrency import BatchPolicy, TaskQueue
 from ..device import DeviceGreedyAllocator, get_device_memory_info
 
 
-class CUDABatchPolicy(BatchPolicy):
+class AcceleratorBatchPolicy(BatchPolicy):
     def adjust_batch_size(self, batch_size: int, **kwargs: Any) -> int:
         device = kwargs["device"]
         if (
@@ -34,8 +34,8 @@ class TorchTaskQueue(TaskQueue):
             if "cpu" in self._devices[0].type.lower():
                 worker_num = os.cpu_count()
         assert worker_num is not None
-        if batch_policy_type is None and torch.cuda.is_available():
-            batch_policy_type = CUDABatchPolicy
+        if batch_policy_type is None and torch.accelerator.is_available():
+            batch_policy_type = AcceleratorBatchPolicy
         super().__init__(
             worker_num=worker_num, batch_policy_type=batch_policy_type, **kwargs
         )

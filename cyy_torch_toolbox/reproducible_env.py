@@ -13,7 +13,26 @@ class ReproducibleEnv(ReproducibleRandomEnv):
         super().__init__()
         self.__torch_seed: None | int = None
         self.__torch_rng_state: None | torch.Tensor = None
-        self.__torch_cuda_rng_state: list[torch.Tensor] | None = None
+        self.__torch_accelerator_rng_state: list[torch.Tensor] | None = None
+
+    @staticmethod
+    def __get_accelerator_rng_state() -> list[torch.Tensor] | None:
+        accelerator = torch.accelerator.current_accelerator()
+        if accelerator is None:
+            return None
+        match accelerator.type:
+            case "cuda":
+                return torch.cuda.get_rng_state_all()
+        return None
+
+    @staticmethod
+    def __set_accelerator_rng_state(state: list[torch.Tensor]) -> None:
+        accelerator = torch.accelerator.current_accelerator()
+        if accelerator is None:
+            return
+        match accelerator.type:
+            case "cuda":
+                torch.cuda.set_rng_state_all(state)
 
     @override
     def enable(self) -> None:
@@ -21,9 +40,10 @@ class ReproducibleEnv(ReproducibleRandomEnv):
         https://pytorch.org/docs/stable/notes/randomness.html
         """
         with self.lock:
-            os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
-            torch.backends.cudnn.deterministic = True
-            torch.backends.cudnn.benchmark = False
+            if torch.cuda.is_available():
+                os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+                torch.backends.cudnn.deterministic = True
+                torch.backends.cudnn.benchmark = False
             torch.use_deterministic_algorithms(True)
             torch.set_deterministic_debug_mode(2)
 
@@ -34,12 +54,12 @@ class ReproducibleEnv(ReproducibleRandomEnv):
                 log_debug("collect torch seed")
                 self.__torch_seed = torch.initial_seed()
 
-            if self.__torch_cuda_rng_state is not None:
-                log_debug("overwrite torch cuda rng state")
-                torch.cuda.set_rng_state_all(self.__torch_cuda_rng_state)
-            elif torch.cuda.is_available():
-                log_debug("collect torch cuda rng state")
-                self.__torch_cuda_rng_state = torch.cuda.get_rng_state_all()
+            if self.__torch_accelerator_rng_state is not None and torch.accelerator.is_available():
+                log_debug("overwrite torch accelerator rng state")
+                self.__set_accelerator_rng_state(self.__torch_accelerator_rng_state)
+            elif torch.accelerator.is_available():
+                log_debug("collect torch accelerator rng state")
+                self.__torch_accelerator_rng_state = self.__get_accelerator_rng_state()
 
             if self.__torch_rng_state is not None:
                 log_debug("overwrite torch rng state")
@@ -60,7 +80,7 @@ class ReproducibleEnv(ReproducibleRandomEnv):
     def get_state(self) -> dict[str, Any]:
         return super().get_state() | {
             "torch_seed": self.__torch_seed,
-            "torch_cuda_rng_state": self.__torch_cuda_rng_state,
+            "torch_accelerator_rng_state": self.__torch_accelerator_rng_state,
             "torch_rng_state": self.__torch_rng_state,
         }
 
@@ -68,7 +88,7 @@ class ReproducibleEnv(ReproducibleRandomEnv):
     def load_state(self, state: dict[str, Any]) -> None:
         super().load_state(state)
         self.__torch_seed = state["torch_seed"]
-        self.__torch_cuda_rng_state = state["torch_cuda_rng_state"]
+        self.__torch_accelerator_rng_state = state["torch_accelerator_rng_state"]
         self.__torch_rng_state = state["torch_rng_state"]
 
 
