@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-import torch.cuda
+import torch
 
 if TYPE_CHECKING:
     from ..executor import Executor
