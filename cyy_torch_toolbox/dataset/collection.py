@@ -3,6 +3,7 @@ import traceback
 from collections.abc import Callable, Generator, Iterable
 from typing import Any, Self
 
+import numpy as np
 import torch.utils.data
 from cyy_naive_lib.log import log_debug, log_error
 from cyy_naive_lib.storage import get_cached_data
@@ -13,6 +14,7 @@ from cyy_preprocessing_pipeline import (
     DatasetWithIndex,
     Transform,
 )
+from PIL import Image as PILImage
 
 from ..data_pipeline import (
     append_transforms_to_dc,
@@ -20,6 +22,31 @@ from ..data_pipeline import (
 from ..ml_type import DatasetType, MachineLearningPhase
 from .cache import DatasetCache
 from .factory import global_dataset_util_factor
+
+
+def _convert_pil_item(obj: Any) -> Any:
+    """Recursively convert PIL Images to numpy arrays."""
+    if isinstance(obj, PILImage.Image):
+        obj.load()
+        return np.array(obj)
+    if isinstance(obj, dict):
+        return {k: _convert_pil_item(v) for k, v in obj.items()}
+    if isinstance(obj, tuple):
+        return tuple(_convert_pil_item(x) for x in obj)
+    if isinstance(obj, list):
+        return [_convert_pil_item(x) for x in obj]
+    return obj
+
+
+def _convert_pil_images(dataset: Any) -> None:
+    """Convert PIL Images in a materialized dataset to numpy arrays.
+
+    PIL's ImagingCore C object is not thread-safe and segfaults when pickled
+    from the multiprocessing queue feeder thread. Converting to numpy in the
+    main thread avoids this.
+    """
+    if hasattr(dataset, "sequence") and isinstance(dataset.sequence, list):
+        dataset.sequence[:] = [_convert_pil_item(item) for item in dataset.sequence]
 
 
 class DatasetCollection:
@@ -215,6 +242,7 @@ class DatasetCollection:
         )
         datasets = sampler.iid_split([part for (_, part) in part_list])
         for (phase, _), dataset in zip(part_list, datasets, strict=False):
+            _convert_pil_images(dataset)
             self.__datasets[phase] = dataset
             if phase not in self.__pipeline:
                 self.__pipeline[phase] = copy.deepcopy(self.__pipeline[from_phase])
