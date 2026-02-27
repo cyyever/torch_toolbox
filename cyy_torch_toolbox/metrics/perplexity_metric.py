@@ -1,7 +1,5 @@
 from typing import Any
 
-from torchmetrics.text.perplexity import Perplexity
-
 from .classification_metric import ClassificationMetric
 
 
@@ -9,6 +7,8 @@ class PerplexityMetric(ClassificationMetric):
     def _after_batch(self, result: dict[str, Any], **kwargs: Any) -> None:
         executor = kwargs["executor"]
         if self._metric is None:
+            from torchmetrics.text.perplexity import Perplexity
+
             self._metric = Perplexity()
         output, targets = self._get_output(executor, result)
         self.metric.update(output, targets.detach())
