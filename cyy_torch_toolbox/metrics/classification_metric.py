@@ -3,20 +3,21 @@ from typing import TYPE_CHECKING, Any, Literal
 import torch
 
 if TYPE_CHECKING:
+    import torchmetrics.metric
+
     from ..executor import Executor
-import torchmetrics.metric
 
 from ..ml_type import ModelType
 from .metric import Metric
 
 
 class ClassificationMetric(Metric):
-    _metric: None | torchmetrics.metric.Metric = None
+    _metric: "None | torchmetrics.metric.Metric" = None
 
     _task_type: Literal["binary", "multiclass", "multilabel"] | None = None
 
     @property
-    def metric(self) -> torchmetrics.metric.Metric:
+    def metric(self) -> "torchmetrics.metric.Metric":
         assert self._metric is not None
         return self._metric
 

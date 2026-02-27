@@ -54,7 +54,10 @@ class ReproducibleEnv(ReproducibleRandomEnv):
                 log_debug("collect torch seed")
                 self.__torch_seed = torch.initial_seed()
 
-            if self.__torch_accelerator_rng_state is not None and torch.accelerator.is_available():
+            if (
+                self.__torch_accelerator_rng_state is not None
+                and torch.accelerator.is_available()
+            ):
                 log_debug("overwrite torch accelerator rng state")
                 self.__set_accelerator_rng_state(self.__torch_accelerator_rng_state)
             elif torch.accelerator.is_available():

@@ -1,7 +1,5 @@
 from typing import Any
 
-from torchmetrics.classification import F1Score
-
 from .classification_metric import ClassificationMetric
 
 
@@ -10,6 +8,8 @@ class F1Metric(ClassificationMetric):
         executor = kwargs["executor"]
         if self._metric is None:
             assert executor.dataset_collection.label_number > 0
+            from torchmetrics.classification import F1Score
+
             with executor.device:
                 self._metric = F1Score(**self._get_metric_kwargs(executor))
         output, targets = self._get_output(executor, result)

@@ -1,7 +1,6 @@
 from typing import Any
 
 import torch
-from torchmetrics.classification import Accuracy
 
 from .classification_metric import ClassificationMetric
 
@@ -11,6 +10,8 @@ class NewAccuracyMetric(ClassificationMetric):
     def _after_batch(self, result: dict[str, Any], **kwargs: Any) -> None:
         executor = kwargs["executor"]
         if self._metric is None:
+            from torchmetrics.classification import Accuracy
+
             with executor.device:
                 self._metric = Accuracy(**self._get_metric_kwargs(executor))
         output, targets = self._get_output(executor, result)
