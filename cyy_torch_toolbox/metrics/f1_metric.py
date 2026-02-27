@@ -13,10 +13,7 @@ class F1Metric(ClassificationMetric):
             with executor.device:
                 self._metric = F1Score(**self._get_metric_kwargs(executor))
         output, targets = self._get_output(executor, result)
-        self.metric.update(
-            output.to(device="cpu", non_blocking=True),
-            targets.to(device="cpu", non_blocking=True),
-        )
+        self.metric.update(output, targets)
 
     def _after_epoch(self, **kwargs: Any) -> None:
         epoch = kwargs["epoch"]

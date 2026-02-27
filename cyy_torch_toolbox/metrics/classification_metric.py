@@ -50,7 +50,7 @@ class ClassificationMetric(Metric):
     def _get_output(
         self, executor: "Executor", result: dict[str, Any]
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        targets: torch.Tensor = result["targets"].detach()
+        targets: torch.Tensor = result["targets"].detach().clone()
         if targets.dtype == torch.float:
             targets = targets.to(dtype=torch.long, non_blocking=True)
 
@@ -58,7 +58,7 @@ class ClassificationMetric(Metric):
         if output is None:
             output = result.get("original_output")
         assert isinstance(output, torch.Tensor)
-        output = output.detach()
+        output = output.detach().clone()
         if self._task_type == "multiclass":
             output = output.view(-1, output.shape[-1])
             targets = targets.view(-1)
@@ -67,8 +67,6 @@ class ClassificationMetric(Metric):
             output = output.view(-1)
         assert isinstance(targets, torch.Tensor)
         if len(targets.shape) <= 1:
-            output = output.to("cpu", non_blocking=True)
-            targets = targets.to("cpu", non_blocking=True)
             mask = targets != -100
             output = output[mask]
             targets = targets[mask]
