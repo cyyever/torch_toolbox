@@ -9,7 +9,8 @@ class PerplexityMetric(ClassificationMetric):
         if self._metric is None:
             from torchmetrics.text.perplexity import Perplexity
 
-            self._metric = Perplexity()
+            with executor.device:
+                self._metric = Perplexity()
         output, targets = self._get_output(executor, result)
         self.metric.update(output, targets.detach())
 

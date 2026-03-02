@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, override
 
 import torch
-from cyy_naive_lib.log import log_debug
+from cyy_naive_lib.log import log_debug, log_warning
 from cyy_naive_lib.reproducible_random_env import ReproducibleRandomEnv
 
 
@@ -23,6 +23,13 @@ class ReproducibleEnv(ReproducibleRandomEnv):
         match accelerator.type:
             case "cuda":
                 return torch.cuda.get_rng_state_all()
+            case "xpu":
+                return torch.xpu.get_rng_state_all()
+            case _:
+                log_warning(
+                    "RNG state save not supported for accelerator %s",
+                    accelerator.type,
+                )
         return None
 
     @staticmethod
@@ -33,6 +40,13 @@ class ReproducibleEnv(ReproducibleRandomEnv):
         match accelerator.type:
             case "cuda":
                 torch.cuda.set_rng_state_all(state)
+            case "xpu":
+                torch.xpu.set_rng_state_all(state)
+            case _:
+                log_warning(
+                    "RNG state restore not supported for accelerator %s",
+                    accelerator.type,
+                )
 
     @override
     def enable(self) -> None:
