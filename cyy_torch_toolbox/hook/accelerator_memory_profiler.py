@@ -16,17 +16,19 @@ class AcceleratorMemoryProfiler(Hook):
     def _before_execute(self, **kwargs: Any) -> None:
         self.__hooks = []
         self.__used_memory = []
+        self.__device: torch.device | None = None
 
     def _before_batch(self, executor, batch_index, **kwargs: Any) -> None:
         if batch_index != 0:
             return
         assert not self.__hooks
+        self.__device = executor.device
         for module_name, module in executor.model.named_modules():
             if not module_name:
                 continue
             if not any(True for _ in module.parameters()):
                 continue
-            cur_used_memory = torch.accelerator.memory_allocated()
+            cur_used_memory = torch.accelerator.memory_allocated(self.__device)
             self.__used_memory.append(("", float(cur_used_memory) / 1024 / 1024))
             self.__hooks.append(
                 module.register_forward_hook(
@@ -46,7 +48,7 @@ class AcceleratorMemoryProfiler(Hook):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        cur_used_memory = torch.accelerator.memory_allocated()
+        cur_used_memory = torch.accelerator.memory_allocated(self.__device)
         self.__used_memory.append((module_name, float(cur_used_memory) / 1024 / 1024))
         log_info(
             "%.1f MB accelerator memory is used for module %s",

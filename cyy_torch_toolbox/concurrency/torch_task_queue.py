@@ -41,7 +41,7 @@ class TorchTaskQueue(TaskQueue):
         )
 
     @override
-    def _get_task_kwargs(self, worker_id: int, use_spwan: bool) -> dict[str, Any]:
-        return super()._get_task_kwargs(worker_id, use_spwan=use_spwan) | {
+    def _get_task_kwargs(self, worker_id: int) -> dict[str, Any]:
+        return super()._get_task_kwargs(worker_id) | {
             "device": self._devices[worker_id % len(self._devices)]
         }

@@ -1,11 +1,17 @@
 from pathlib import Path
 from typing import Any
 
+import torch
 from cyy_naive_lib.storage import DataStorage
 from cyy_preprocessing_pipeline.tensor import tensor_to
 
 from ..ml_type import MachineLearningPhase
 from . import Hook
+
+
+def _sync_accelerator() -> None:
+    if torch.accelerator.is_available():
+        torch.accelerator.synchronize()
 
 
 class KeepModelHook(Hook):
@@ -70,11 +76,14 @@ class KeepModelHook(Hook):
             self.__best_model.set_data_path(
                 self.__get_model_dir(trainer.save_dir) / "best_model.pk"
             )
+            _sync_accelerator()
             self.__best_model.save()
 
     def _after_execute(self, executor, **kwargs: Any) -> None:
         trainer = executor
         if self.save_last_model:
+            _sync_accelerator()
             trainer.save_model(self.__get_model_dir(trainer.save_dir) / "last.pt")
         if self.save_best_model:
+            _sync_accelerator()
             self.__best_model.save()

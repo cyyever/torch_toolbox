@@ -50,7 +50,7 @@ class LRFinder(Hook):
             group["lr"] = learning_rate
 
     def _after_batch(self, **kwargs: Any) -> None:
-        batch_loss = kwargs["result"]["loss"].clone()
+        batch_loss = kwargs["result"]["loss"].detach().clone()
         if self.losses:
             batch_loss = batch_loss + 0.98 * (self.losses[-1] - batch_loss)
         self.losses.append(batch_loss)

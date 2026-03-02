@@ -65,7 +65,9 @@ class AMPModelEvaluator(Decorator):
         while True:
             optimizer.zero_grad(set_to_none=True)
             self.evaluator.backward(
-                loss=self.__scaler.scale(loss), retain_graph=True, **backward_kwargs
+                loss=self.__scaler.scale(loss),
+                retain_graph=self.check_inf,
+                **backward_kwargs,
             )
             self.__scaler.step(optimizer)
             has_inf = 0

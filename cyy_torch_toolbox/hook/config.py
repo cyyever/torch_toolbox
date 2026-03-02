@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-import torch
-
 if TYPE_CHECKING:
     from ..executor import Executor
 from cyy_naive_lib.log import log_debug
@@ -12,7 +10,7 @@ from ..metric_visualizers.performance_metric_recorder import PerformanceMetricRe
 from ..metrics.performance_metric import PerformanceMetric
 from ..ml_type import ConfigBase, MachineLearningPhase
 from ..model import AMPModelEvaluator
-from .cudnn import CUDNNHook
+from .backend_benchmark import BackendBenchmarkHook
 from .debugger import Debugger
 from .executor_logger import ExecutorLogger
 from .profiler import Profiler
@@ -23,7 +21,7 @@ class HookConfig(ConfigBase):
     debug: bool = False
     profile: bool = False
     use_amp: bool = False
-    benchmark_cudnn: bool = True
+    benchmark_backend: bool = True
     use_performance_metric: bool = True
     use_slow_performance_metrics: bool = False
     save_performance_metric: bool = False
@@ -55,8 +53,9 @@ class HookConfig(ConfigBase):
         executor.append_or_disable_hook(
             "logger", self.summarize_executor, ExecutorLogger()
         )
-        if torch.cuda.is_available():
-            executor.append_or_disable_hook("cudnn", self.benchmark_cudnn, CUDNNHook())
+        executor.append_or_disable_hook(
+            "backend_benchmark", self.benchmark_backend, BackendBenchmarkHook()
+        )
         executor.append_or_disable_hook(
             "performance_metric",
             self.use_performance_metric,

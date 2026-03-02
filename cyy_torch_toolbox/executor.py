@@ -54,7 +54,7 @@ class StreamContext:
         if cur_stream is None:
             return
 
-        if self.synchronized and "mps" not in str(cur_stream).lower():
+        if self.synchronized:
             cur_stream.synchronize()
         # Reset the stream on the original device
         assert self.prev_stream is not None
@@ -332,6 +332,7 @@ class Executor(HookCollection, abc.ABC):
         yield from []
 
     def save_model(self, model_path: str | Path) -> None:
+        self.wait_stream()
         torch.save(self.model.state_dict(), model_path)
 
     def offload_from_device(self) -> None:
@@ -342,7 +343,8 @@ class Executor(HookCollection, abc.ABC):
             executor.offload_from_device()
         gc.collect()
         if self.__device is not None:
-            torch.accelerator.empty_cache()
+            with torch.device(self.__device):
+                torch.accelerator.empty_cache()
 
     def has_optimizer(self) -> bool:
         return "optimizer" in self._data
