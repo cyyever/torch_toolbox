@@ -1,4 +1,5 @@
 import copy
+import warnings
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import StrEnum, auto
@@ -65,11 +66,21 @@ class HyperParameter:
                 default_kwargs["anneal_strategy"] = "linear"
                 default_kwargs["three_phase"] = True
             case "CosineAnnealingLR":
-                default_kwargs["T_max"] = self.epoch
+                default_kwargs["T_max"] = (
+                    self.epoch * self.get_iterations_per_epoch(trainer.dataset_size)
+                )
             case "MultiStepLR":
                 default_kwargs["milestones"] = [30, 80]
         default_kwargs.update(self.learning_rate_scheduler_kwargs)
-        return fun(**default_kwargs)
+        # Suppress the expected UserWarning from LRScheduler.__init__ which
+        # internally calls step() before any optimizer.step() has occurred.
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message="Detected call of `lr_scheduler.step\\(\\)` before `optimizer.step\\(\\)`",
+                category=UserWarning,
+            )
+            return fun(**default_kwargs)
 
     @staticmethod
     def get_lr_scheduler_names() -> list[str]:

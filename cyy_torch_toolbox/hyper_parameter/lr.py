@@ -6,5 +6,7 @@ def lr_scheduler_step_after_batch(
 ) -> bool:
     return isinstance(
         lr_scheduler,
-        torch.optim.lr_scheduler.OneCycleLR | torch.optim.lr_scheduler.CyclicLR,
+        torch.optim.lr_scheduler.OneCycleLR
+        | torch.optim.lr_scheduler.CyclicLR
+        | torch.optim.lr_scheduler.CosineAnnealingLR,
     )
