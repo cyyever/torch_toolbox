@@ -104,8 +104,8 @@ class HyperParameter:
             "params": parameters,
             "lr": self.__get_learning_rate(trainer=trainer),
         }
-        if "foreach" not in kwargs:
-            kwargs["foreach"] = True
+        if "fused" not in kwargs and "foreach" not in kwargs:
+            kwargs["fused"] = True
         kwargs.pop("learning_rate", None)
         if "fake_weight_decay" in kwargs and "weight_decay" not in kwargs:
             kwargs["weight_decay"] = (

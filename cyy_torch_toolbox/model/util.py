@@ -85,7 +85,7 @@ class ModelUtil:
 
     def disable_running_stats(self) -> None:
         for _, module in self.get_modules():
-            if isinstance(module, torch.nn.modules.batchnorm._NormBase):
+            if hasattr(module, "track_running_stats"):
                 module.track_running_stats = False
                 module.register_buffer("running_mean", None)
                 module.register_buffer("running_var", None)
@@ -93,7 +93,7 @@ class ModelUtil:
 
     def reset_running_stats(self) -> None:
         for _, module in self.get_modules():
-            if isinstance(module, torch.nn.modules.batchnorm._NormBase):
+            if hasattr(module, "reset_running_stats"):
                 module.reset_running_stats()
 
     def set_grad(
