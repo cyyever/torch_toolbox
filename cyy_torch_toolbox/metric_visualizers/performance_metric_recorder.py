@@ -1,8 +1,8 @@
-import json
 import re
 from typing import Any
 
 import torch
+from cyy_naive_lib.storage import load_json, save_json
 
 from ..ml_type import MachineLearningPhase
 from .metric_visualizer import MetricVisualizer
@@ -18,10 +18,7 @@ class PerformanceMetricRecorder(MetricVisualizer):
             self._data_dir / prefix / str(executor.phase) / "performance_metric.json"
         )
         json_path.parent.mkdir(parents=True, exist_ok=True)
-        json_record = {}
-        if json_path.is_file():
-            with open(json_path, encoding="utf8") as f:
-                json_record = json.load(f)
+        json_record = load_json(json_path) if json_path.is_file() else {}
         epoch_metrics = executor.performance_metric.get_epoch_metrics(epoch)
         if not epoch_metrics and executor.phase != MachineLearningPhase.Training:
             epoch_metrics = executor.performance_metric.get_epoch_metrics(epoch=1)
@@ -35,5 +32,4 @@ class PerformanceMetricRecorder(MetricVisualizer):
             if isinstance(value, torch.Tensor):
                 value = value.detach().item()
             json_record[k][epoch] = value
-        with open(json_path, "w", encoding="utf8") as f:
-            json.dump(json_record, f)
+        save_json(json_record, json_path, backup=False)

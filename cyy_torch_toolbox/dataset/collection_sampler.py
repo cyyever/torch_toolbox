@@ -1,11 +1,11 @@
 import copy
 import functools
-import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, override
 
 from cyy_naive_lib.log import log_info
+from cyy_naive_lib.storage import save_json
 from cyy_preprocessing_pipeline import (
     ClassificationDatasetSampler,
     DatasetUtil,
@@ -108,8 +108,7 @@ class SamplerBase(Base):
             if info.whole_dataset:
                 entry["whole_dataset"] = True
             serializable[str(phase)] = entry
-        with open(Path(save_dir) / "sampler.json", "w", encoding="utf8") as f:
-            json.dump(serializable, f)
+        save_json(serializable, Path(save_dir) / "sampler.json", backup=False)
 
 
 class SplitBase(Base):

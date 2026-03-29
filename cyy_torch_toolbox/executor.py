@@ -333,7 +333,9 @@ class Executor(HookCollection, abc.ABC):
 
     def save_model(self, model_path: str | Path) -> None:
         self.wait_stream()
-        torch.save(self.model.state_dict(), model_path)
+        from .device import save_state_dict
+
+        save_state_dict(self.model.state_dict(), model_path)
 
     def offload_from_device(self) -> None:
         self.wait_stream()

@@ -4,6 +4,9 @@ import psutil
 import torch
 
 from .base import MemoryInfo
+from .gds import is_gds_available, load_state_dict, save_state_dict
+
+__all__ = ["is_gds_available", "load_state_dict", "save_state_dict"]
 
 
 def get_device_memory_info(

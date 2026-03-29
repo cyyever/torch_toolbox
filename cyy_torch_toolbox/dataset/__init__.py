@@ -1,8 +1,8 @@
-import json
 from pathlib import Path
 from typing import Any
 
 from cyy_naive_lib.log import log_info
+from cyy_naive_lib.storage import load_json, save_json
 from cyy_preprocessing_pipeline.common import (
     replace_target,
 )
@@ -135,12 +135,11 @@ class DatasetCollectionConfig:
             subset_dict = dataset_util.iid_sample(self.training_dataset_percentage)
             subset_indices = sum(subset_dict.values(), [])
             assert save_dir is not None
-            with open(
+            save_json(
+                subset_indices,
                 Path(save_dir) / "training_dataset_indices.json",
-                mode="w",
-                encoding="utf-8",
-            ) as f:
-                json.dump(subset_indices, f)
+                backup=False,
+            )
 
         if self.training_dataset_indices_path is not None:
             assert subset_indices is None
@@ -148,8 +147,7 @@ class DatasetCollectionConfig:
                 "use training_dataset_indices_path %s",
                 self.training_dataset_indices_path,
             )
-            with open(self.training_dataset_indices_path, encoding="utf-8") as f:
-                subset_indices = json.load(f)
+            subset_indices = load_json(self.training_dataset_indices_path)
         if subset_indices is not None:
             dc.set_subset(phase=MachineLearningPhase.Training, indices=subset_indices)
         dataset_util = dc.get_dataset_util(phase=MachineLearningPhase.Training)
@@ -159,12 +157,11 @@ class DatasetCollectionConfig:
                 self.training_dataset_label_noise_percentage
             )
             assert save_dir is not None
-            with open(
+            save_json(
+                label_map,
                 Path(save_dir) / "training_dataset_label_map.json",
-                mode="w",
-                encoding="utf-8",
-            ) as f:
-                json.dump(label_map, f)
+                backup=False,
+            )
 
         if self.training_dataset_label_map_path is not None:
             assert label_map is not None
@@ -172,8 +169,9 @@ class DatasetCollectionConfig:
                 "use training_dataset_label_map_path %s",
                 self.training_dataset_label_map_path,
             )
-            with open(self.training_dataset_label_map_path, encoding="utf-8") as f:
-                self.training_dataset_label_map = json.load(f)
+            self.training_dataset_label_map = load_json(
+                self.training_dataset_label_map_path
+            )
 
         if self.training_dataset_label_map is not None:
             dc.append_transform(
