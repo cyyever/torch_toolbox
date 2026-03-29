@@ -11,14 +11,11 @@ classifiers = ["Programming Language :: Python"]
 dependencies = [
   "cyy_naive_lib@git+https://github.com/cyyever/naive_python_lib.git@main",
   "cyy_preprocessing_pipeline@git+https://github.com/cyyever/preprocessing_pipeline.git@main",
-  "datasets",
-  "dill",
   "hydra-core",
   "nvidia-ml-py",
   "omegaconf",
   "torch>=2.10",
   "torchmetrics",
-  "torchvision",
 ]
 
 [project.urls]
@@ -30,9 +27,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.uv.sources]
 torch = [
-  { index = "pytorch-cu130", marker = "sys_platform == 'win32'" },
-]
-torchvision = [
   { index = "pytorch-cu130", marker = "sys_platform == 'win32'" },
 ]
 
