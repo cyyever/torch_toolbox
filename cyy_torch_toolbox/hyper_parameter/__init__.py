@@ -66,8 +66,8 @@ class HyperParameter:
                 default_kwargs["anneal_strategy"] = "linear"
                 default_kwargs["three_phase"] = True
             case "CosineAnnealingLR":
-                default_kwargs["T_max"] = (
-                    self.epoch * self.get_iterations_per_epoch(trainer.dataset_size)
+                default_kwargs["T_max"] = self.epoch * self.get_iterations_per_epoch(
+                    trainer.dataset_size
                 )
             case "MultiStepLR":
                 default_kwargs["milestones"] = [30, 80]

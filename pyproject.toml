@@ -18,6 +18,9 @@ dependencies = [
   "torchmetrics",
 ]
 
+[project.optional-dependencies]
+trl = ["trl"]
+
 [project.urls]
 Repository = "https://github.com/cyyever/torch_toolbox"
 

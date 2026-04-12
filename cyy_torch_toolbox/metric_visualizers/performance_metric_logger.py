@@ -26,6 +26,8 @@ class PerformanceMetricLogger(MetricVisualizer):
                 metric_str = metric_str + f"in {value:.3f} seconds, "
             elif k == "data_waiting_time":
                 metric_str = metric_str + f"data loader uses {value:.3f} seconds, "
+            elif "flop" in k:
+                metric_str = metric_str + f"{k}:{value:.4e}, "
             else:
                 metric_str = metric_str + f"{k}:{value}, "
         metric_str = metric_str[:-2]

@@ -27,6 +27,7 @@ class HookConfig(ConfigBase):
     save_performance_metric: bool = False
     log_performance_metric: bool = True
     summarize_executor: bool = True
+    profile_flops: bool = False
 
     def disable_log(self) -> None:
         self.log_performance_metric = False
@@ -63,6 +64,7 @@ class HookConfig(ConfigBase):
                 executor=executor,
                 profile=self.profile,
                 extra_metrics=self.use_slow_performance_metrics,
+                profile_flops=self.profile_flops,
             ),
         )
         if self.use_performance_metric:

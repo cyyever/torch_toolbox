@@ -7,6 +7,7 @@ from ..ml_type import ModelType
 if TYPE_CHECKING:
     from ..executor import Executor
 from .auc_metric import AUROCMetric
+from .flops_profiler import FLOPMetric
 from .dataloader_profiler import DataloaderProfiler
 from .f1_metric import F1Metric
 from .grad_metric import GradMetric
@@ -24,6 +25,7 @@ class PerformanceMetric(Metric):
         profile: bool = False,
         extra_metrics: bool = False,
         use_grad_norm: bool = False,
+        profile_flops: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -42,6 +44,10 @@ class PerformanceMetric(Metric):
             self.grad_metric = GradMetric()
         if profile:
             self.dataloader_profiler = DataloaderProfiler()
+        if profile_flops:
+            self.flops_profiler = FLOPMetric(
+                model=executor.model, save_dir=executor.save_dir
+            )
         if hasattr(executor, "train"):
             self.lr_metric = LearningRateMetric()
 
