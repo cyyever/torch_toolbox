@@ -4,14 +4,26 @@ from pathlib import Path
 from typing import Any
 
 import torch
-from cyy_naive_lib.log import log_info, log_warning
-from torch.profiler import ProfilerActivity
+import torch.nn as nn
+from cyy_naive_lib.log import log_info
 
 from .metric import Metric
 
+_LINEAR_CLASSES: tuple[type, ...] = (nn.Linear,)
+try:
+    import bitsandbytes as bnb
+
+    _LINEAR_CLASSES = (nn.Linear, bnb.nn.Linear4bit, bnb.nn.Linear8bitLt)
+except ImportError:
+    pass
+
 
 class FLOPMetric(Metric):
-    """Profiles training FLOP count and FLOPS throughput using torch.profiler.
+    """Profiles training FLOP count and FLOPS throughput via module forward hooks.
+
+    Registers forward hooks on all Linear-like modules (including bitsandbytes
+    quantized layers) to count FLOPs as 2 * in_features * out_features * tokens.
+    This is kernel-agnostic and works with bnb::matmul_4bit, aten::mm, etc.
 
     Reports:
         total_flop  — total floating point operations (hardware-independent)
@@ -36,62 +48,59 @@ class FLOPMetric(Metric):
         super().__init__(**kwargs)
         self._model = model
         self._save_dir = Path(save_dir) if save_dir is not None else None
-        self._prof: torch.profiler.profile | None = None
-        self._forward_hook: Any = None
+        self._hooks: list = []
         self._total_flop: float = 0
+        self._bnb_flop: float = 0
         self._flops: float = 0
         self._start_time: float = 0
         self._profiled: bool = False
 
-    def _on_trace_ready(self, prof: torch.profiler.profile) -> None:
-        self._total_flop += sum(
-            e.flops for e in prof.key_averages() if e.flops
-        )
+    def _forward_hook(
+        self,
+        module: nn.Module,
+        input: tuple[torch.Tensor, ...],
+        _output: Any,
+    ) -> None:
+        inp = input[0]
+        tokens = inp.shape[:-1].numel()
+        in_features: int = module.in_features  # type: ignore[assignment]
+        out_features: int = module.out_features  # type: ignore[assignment]
+        flop = 2.0 * in_features * out_features * tokens
+        self._total_flop += flop
+        if isinstance(module, _LINEAR_CLASSES[1:]):
+            self._bnb_flop += flop
 
     def start(self) -> None:
         self._total_flop = 0
+        self._bnb_flop = 0
         self._flops = 0
         self._start_time = time.monotonic()
-        self._prof = torch.profiler.profile(
-            activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
-            with_flops=True,
-            record_shapes=True,
-            profile_memory=False,
-            schedule=torch.profiler.schedule(
-                wait=0, warmup=0, active=1, repeat=0
-            ),
-            on_trace_ready=self._on_trace_ready,
-        )
-        self._prof.start()
-        self._forward_hook = self._model.register_forward_hook(self._on_forward)
+        for module in self._model.modules():
+            if isinstance(module, _LINEAR_CLASSES):
+                self._hooks.append(
+                    module.register_forward_hook(self._forward_hook)
+                )
 
     def step(self) -> None:
-        if self._prof is not None:
-            self._prof.step()
+        pass
 
     def stop(self) -> None:
         elapsed = time.monotonic() - self._start_time
-        if self._forward_hook is not None:
-            self._forward_hook.remove()
-            self._forward_hook = None
-        if self._prof is not None:
-            self._prof.stop()
-            self._prof = None
-            if self._total_flop == 0:
-                log_warning(
-                    "FLOP profiler recorded 0 FLOP. "
-                    "Quantized kernels (e.g. bnb::matmul_4bit) may bypass aten::mm."
-                )
-            else:
-                self._flops = self._total_flop / elapsed if elapsed > 0 else 0
-                log_info(
-                    "total_flop: %.4e, wall_time: %.2fs, flops: %.4e",
-                    self._total_flop,
-                    elapsed,
-                    self._flops,
-                )
-            self._profiled = True
-            self._save()
+        for h in self._hooks:
+            h.remove()
+        self._hooks.clear()
+        if self._total_flop > 0:
+            self._flops = self._total_flop / elapsed if elapsed > 0 else 0
+        log_info(
+            "total_flop: %.4e (bnb: %.4e, %.1f%%), wall_time: %.2fs, flops: %.4e",
+            self._total_flop,
+            self._bnb_flop,
+            self._bnb_flop / self._total_flop * 100 if self._total_flop > 0 else 0,
+            elapsed,
+            self._flops,
+        )
+        self._profiled = True
+        self._save()
 
     def _save(self) -> None:
         if self._save_dir is None:
@@ -102,7 +111,7 @@ class FLOPMetric(Metric):
         if path.is_file():
             with open(path, encoding="utf8") as f:
                 data = json.load(f)
-        entry = {"total_flop": self._total_flop, "flops": self._flops}
+        entry = {"total_flop": self._total_flop, "bnb_flop": self._bnb_flop, "flops": self._flops}
         data.setdefault("rounds", []).append(entry)
         with open(path, "w", encoding="utf8") as f:
             json.dump(data, f, indent=2)
@@ -132,11 +141,6 @@ class FLOPMetric(Metric):
 
         return _Callback()
 
-    def _on_forward(self, _module: torch.nn.Module, _args: Any, _output: Any) -> None:
-        if self._forward_hook is not None:
-            self._forward_hook.remove()
-            self._forward_hook = None
-
     def _before_epoch(self, **kwargs: Any) -> None:
         if not self._profiled:
             self.start()
@@ -145,7 +149,7 @@ class FLOPMetric(Metric):
         self.step()
 
     def _after_epoch(self, epoch: int, **kwargs: Any) -> None:
-        if not self._profiled and self._prof is not None:
+        if not self._profiled and self._hooks:
             self.stop()
             self._set_epoch_metric(epoch, "total_flop", self._total_flop)
             self._set_epoch_metric(epoch, "flops", self._flops)
