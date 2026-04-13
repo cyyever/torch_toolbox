@@ -1,3 +1,4 @@
+import functools
 from collections.abc import Callable, Generator, Iterable
 from typing import Any
 
@@ -188,7 +189,7 @@ class ModelUtil:
                     continue
                 checked_param_names.add(full_param_name)
                 assert isinstance(param_name, str)
-                param = getattr(module, param_name)
+                param = functools.reduce(getattr, param_name.split("."), module)
                 log_debug(
                     "count frozen parameter from %s",
                     f"{full_param_name} => {param.numel()}",
